@@ -1,0 +1,17 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/.vs
+/builds/nuget
+/test/unit.webapp/.vs
+/test/unit.webapp/unit.webapp.common
+/test/unit.webapp/unit.webapp.domain
+/test/unit.webapp/unit.webapp.entry/obj
+/test/unit.webapp/unit.webapp.entry/bin
+/test/unit.webapp/unit.webapp.model/bin
+/test/unit.webapp/unit.webapp.model/obj
+/test/unit.webapp/unit.webapp.repository/bin
+/test/unit.webapp/unit.webapp.repository/obj
+/test/unit.webapp/unit.webapp.service/bin
+/test/unit.webapp/unit.webapp.service/obj
