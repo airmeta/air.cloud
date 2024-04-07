@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Air.Cloud.WebApp</id>
+    <version>1.0.0</version>
+    <authors>AC</authors>
+    <icon>logo.png</icon>
+    <description>Air.Cloud.WebApp 包含了Furion v3.8.6的一些常用功能,包括动态接口,数据验证,可以使用该库快速搭建一个WebApp
+如您需要使用身份验证等功能,请您参阅Air.Cloud 系列的Plugins</description>
+    <repository type="git" />
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Air.Cloud.Core" version="1.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="E:\三实研究院\air.cloud\air.net.cloud\core\Air.Cloud.WebApp\bin\Debug\net6.0\Air.Cloud.WebApp.dll" target="lib\net6.0\Air.Cloud.WebApp.dll" />
+    <file src="C:\Users\23129\Pictures\logo.png" target="\logo.png" />
+  </files>
+</package>

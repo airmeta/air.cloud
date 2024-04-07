@@ -1,0 +1,121 @@
+{
+  "format": 1,
+  "restore": {
+    "E:\\三实研究院\\air.cloud\\air.net.cloud\\core\\sss.cloud.core\\SSS.Cloud.Core.csproj": {}
+  },
+  "projects": {
+    "E:\\三实研究院\\air.cloud\\air.net.cloud\\core\\sss.cloud.core\\SSS.Cloud.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "E:\\三实研究院\\air.cloud\\air.net.cloud\\core\\sss.cloud.core\\SSS.Cloud.Core.csproj",
+        "projectName": "SSS.Cloud.Core",
+        "projectPath": "E:\\三实研究院\\air.cloud\\air.net.cloud\\core\\sss.cloud.core\\SSS.Cloud.Core.csproj",
+        "packagesPath": "D:\\Microsoft\\Microsoft SDKs\\NuGetPackages",
+        "outputPath": "E:\\三实研究院\\air.cloud\\air.net.cloud\\core\\sss.cloud.core\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "D:\\Microsoft\\Visual Studio Shared\\2022\\Preview\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\23129\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://mirrors.cloud.tencent.com/nuget/": {},
+          "https://nuget.cdn.azure.cn/v3/index.json": {},
+          "https://repo.huaweicloud.com/repository/nuget/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "Ben.Demystifier": {
+              "target": "Package",
+              "version": "[0.4.1, )"
+            },
+            "BouncyCastle.NetCore": {
+              "target": "Package",
+              "version": "[2.2.1, )"
+            },
+            "CompareNETObjects": {
+              "target": "Package",
+              "version": "[4.76.0, )"
+            },
+            "Mapster": {
+              "target": "Package",
+              "version": "[7.3.0, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[6.0.21, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.1, )"
+            },
+            "Serilog.AspNetCore": {
+              "target": "Package",
+              "version": "[6.0.1, )"
+            },
+            "System.Drawing.Common": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "System.Net.Primitives": {
+              "target": "Package",
+              "version": "[4.3.1, )"
+            },
+            "UAParser": {
+              "target": "Package",
+              "version": "[3.1.47, )"
+            },
+            "XC.RSAUtil": {
+              "target": "Package",
+              "version": "[1.3.6, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

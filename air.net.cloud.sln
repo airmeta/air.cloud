@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34414.90
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "core", "core", "{CB796284-E5F8-4096-9505-C9EDAD65DFBB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Core", "src\core\Air.Cloud.Core\Air.Cloud.Core.csproj", "{05126575-EB48-4320-8D71-99BD80DFF8E9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "plugins", "plugins", "{AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.WebApp", "src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj", "{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DataBase", "src\core\Air.Cloud.DataBase\Air.Cloud.DataBase.csproj", "{677BDD1E-EB22-4927-AA46-5508BD983633}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Plugins.Jwt", "src\plugins\Air.Cloud.Plugins.Jwt\Air.Cloud.Plugins.Jwt.csproj", "{F302A20A-72BE-4592-98C7-0060F0C8D28E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{05126575-EB48-4320-8D71-99BD80DFF8E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05126575-EB48-4320-8D71-99BD80DFF8E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05126575-EB48-4320-8D71-99BD80DFF8E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05126575-EB48-4320-8D71-99BD80DFF8E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{677BDD1E-EB22-4927-AA46-5508BD983633}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{677BDD1E-EB22-4927-AA46-5508BD983633}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{677BDD1E-EB22-4927-AA46-5508BD983633}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{677BDD1E-EB22-4927-AA46-5508BD983633}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F302A20A-72BE-4592-98C7-0060F0C8D28E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F302A20A-72BE-4592-98C7-0060F0C8D28E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F302A20A-72BE-4592-98C7-0060F0C8D28E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F302A20A-72BE-4592-98C7-0060F0C8D28E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{05126575-EB48-4320-8D71-99BD80DFF8E9} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
+		{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
+		{677BDD1E-EB22-4927-AA46-5508BD983633} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
+		{F302A20A-72BE-4592-98C7-0060F0C8D28E} = {AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}
+	EndGlobalSection
+EndGlobal

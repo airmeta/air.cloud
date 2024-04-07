@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Air.Enhance.WebApp</id>
+    <version>1.0.0</version>
+    <authors>Air.Enhance.WebApp</authors>
+    <description>Package Description</description>
+    <repository type="git" />
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Air.Cloud.Core" version="1.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="E:\三实研究院\air.cloud\air.net.cloud\enhance\Air.Enhance.WebApp\bin\Debug\net6.0\Air.Enhance.WebApp.dll" target="lib\net6.0\Air.Enhance.WebApp.dll" />
+  </files>
+</package>

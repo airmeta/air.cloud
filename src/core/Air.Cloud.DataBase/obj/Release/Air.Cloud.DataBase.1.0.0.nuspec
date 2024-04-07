@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Air.Cloud.DataBase</id>
+    <version>1.0.0</version>
+    <authors>AC</authors>
+    <license type="file">LICENSE</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>logo.png</icon>
+    <description>Air.Cloud.DataBase 为Furion v3.8.6 的数据库操作功能剥离,将数据库操作与框架内核隔离开,方便后续进行扩展或者更换,Air.Cloud本身不限制你使用什么样的ORM来操作数据库,换而言之,你可以用你自己熟悉的ORM来进行融入Air.Cloud中</description>
+    <repository type="git" />
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Air.Cloud.Core" version="1.0.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore" version="6.0.21" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Relational" version="6.0.21" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="E:\三实研究院\air.cloud\src\core\Air.Cloud.DataBase\bin\Release\net6.0\Air.Cloud.DataBase.dll" target="lib\net6.0\Air.Cloud.DataBase.dll" />
+    <file src="E:\三实研究院\air.cloud\assets\logo.png" target="\logo.png" />
+    <file src="E:\三实研究院\air.cloud\LICENSE" target="\LICENSE" />
+  </files>
+</package>
