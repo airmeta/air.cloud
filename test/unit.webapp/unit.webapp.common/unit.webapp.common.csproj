@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Air.Cloud.Plugins.Jwt" Version="1.0.0" />
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.RedisCache\Air.Cloud.Modules.RedisCache.csproj" />
+    <ProjectReference Include="..\..\..\src\plugins\Air.Cloud.Plugins.Jwt\Air.Cloud.Plugins.Jwt.csproj" />
   </ItemGroup>
 
 </Project>

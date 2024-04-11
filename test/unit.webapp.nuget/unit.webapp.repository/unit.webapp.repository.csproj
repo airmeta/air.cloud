@@ -6,12 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Air.Cloud.Core" Version="1.0.0" />
+    <PackageReference Include="Air.Cloud.DataBase" Version="1.0.0" />
     <PackageReference Include="EntityFrameworkProfiler.Appender" Version="6.0.6031" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="6.21.5" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\src\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\core\Air.Cloud.DataBase\Air.Cloud.DataBase.csproj" />
   </ItemGroup>
 
 </Project>

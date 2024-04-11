@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\unit.webapp.repository\unit.webapp.repository.csproj" />
+    <PackageReference Include="Air.Cloud.Plugins.Jwt" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
