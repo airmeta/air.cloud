@@ -1,6 +1,6 @@
-﻿using Air.Cloud.Core.Standard;
+﻿using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.Cache.Redis;
-using Air.Cloud.Core.Standard.Dependencies;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,15 +35,15 @@ namespace unit.webapp.service.services.test
         [AllowAnonymous]
         public object RedisCacheTest()
         {
-            IRedisCacheStandard redis = AppStandardRealization.RedisCacheStandard;
+            IRedisCacheStandard redis = AppStandardRealization.RedisCache;
             redis.Key.Fulsh();
-            AppStandardRealization.AppCacheStandard.SetCache("123", "456");
-            string Value1 = AppStandardRealization.AppCacheStandard.GetCache("123");
+            AppStandardRealization.Cache.SetCache("123", "456");
+            string Value1 = AppStandardRealization.Cache.GetCache("123");
 
-            AppStandardRealization.AppCacheStandard.SetCache("1234", "456", new TimeSpan(0, 0, 2));
+            AppStandardRealization.Cache.SetCache("1234", "456", new TimeSpan(0, 0, 2));
 
             Thread.Sleep(3000);
-            string Value2 = AppStandardRealization.AppCacheStandard.GetCache("1234");
+            string Value2 = AppStandardRealization.Cache.GetCache("1234");
 
 
             redis.String.Set("String123", "456");

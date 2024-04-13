@@ -21,7 +21,7 @@ namespace Air.Cloud.Core.Standard.Assemblies
         /// <summary>
         /// 扫描程序集类型时的动作
         /// </summary>
-        public static ConcurrentDictionary<string, Action<Type,Type[]>> Evensts = new ConcurrentDictionary<string, Action<Type, Type[]>>();
+        public static ConcurrentDictionary<string, Action<Type>> Evensts = new ConcurrentDictionary<string, Action<Type>>();
         /// <summary>
         /// 开始执行扫描
         /// </summary>
@@ -29,6 +29,6 @@ namespace Air.Cloud.Core.Standard.Assemblies
         /// <summary>
         /// 添加动作
         /// </summary>
-        public void Add(KeyValuePair<string,Action<Type, Type[]>> keyValuePair);
+        public void Add(KeyValuePair<string,Action<Type>> keyValuePair);
     }
 }

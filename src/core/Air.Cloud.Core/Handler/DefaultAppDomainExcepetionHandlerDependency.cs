@@ -26,7 +26,7 @@ namespace Air.Cloud.Core.Handler
         {
             var exception = (Exception)e.ExceptionObject;
             if (exception is IFriendlyExceptionStandard) return;
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "domain-errors",
                 Type = "Information",

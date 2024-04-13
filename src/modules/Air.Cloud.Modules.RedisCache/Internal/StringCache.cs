@@ -21,7 +21,7 @@ namespace SSS.Modules.Redis.Service
         /// <summary>
         /// 添加单个key value
         /// </summary>
-        /// <param name="key">Redis Key</param>
+        /// <param name="key">RedisCache Key</param>
         /// <param name="value">保存的值</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>
@@ -62,7 +62,7 @@ namespace SSS.Modules.Redis.Service
         /// <summary>
         /// 异步方法 保存单个key value
         /// </summary>
-        /// <param name="key">Redis Key</param>
+        /// <param name="key">RedisCache Key</param>
         /// <param name="value">保存的值</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>

@@ -159,7 +159,7 @@ public sealed class DataValidationFilter : IAsyncActionFilter, IOrderedFilter
             finalContext.Result = unifyResult.OnValidateFailed(context, validationMetadata);
         }
         // 打印完整的堆栈信息
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "validation",
             Type = "Error",

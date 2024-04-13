@@ -422,7 +422,7 @@ namespace Air.Cloud.Plugins.Jwt
                 Guids = Guid.NewGuid().ToString();
                 File.WriteAllText(Path, Guids);
             }
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "domain-security",
                 Type = "Information",

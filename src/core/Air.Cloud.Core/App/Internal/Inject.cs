@@ -30,7 +30,7 @@ public static class Inject
     public static IServiceCollection Create(Action<ILoggingBuilder> configureLogging = default)
     {
         // 监听全局异常
-        AppDomain.CurrentDomain.UnhandledException += AppStandardRealization.AppDomainExceptionHandlerStandard.OnException;
+        AppDomain.CurrentDomain.UnhandledException += AppStandardRealization.DomainExceptionHandler.OnException;
 
         // 创建配置构建器
         var configurationBuilder = new ConfigurationBuilder();

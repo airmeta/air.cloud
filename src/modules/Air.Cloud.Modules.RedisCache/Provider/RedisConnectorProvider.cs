@@ -46,7 +46,7 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         private static ConnectionMultiplexer Connect()
         {
             string? ConnectionString = AppCore.GetOptions<RedisSettingsOptions>()?.ConnectionString;
-            if (ConnectionString.IsNullOrEmpty()) AppStandardRealization.PrintStandard.Print(new
+            if (ConnectionString.IsNullOrEmpty()) AppStandardRealization.Print.Print(new
             {
                 Title = "domain-errors",
                 Type = "Error",

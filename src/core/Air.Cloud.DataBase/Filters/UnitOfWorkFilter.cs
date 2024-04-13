@@ -56,7 +56,7 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         }
 
         // 打印工作单元开始消息
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "unitofwork",
             Type = "Information",
@@ -91,7 +91,7 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         _unitOfWork.OnCompleted(context, resultContext);
 
         // 打印工作单元开始消息
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "unitofwork",
             Type = "Information",

@@ -21,24 +21,37 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     /// </summary>
     public const string PLUGINS_DIR = "plugins";
     #endregion
+
     /// <summary>
-    /// 是否启用引用程序集扫描
+    /// <para>zh-cn: 是否启用引用程序集扫描</para>
+    /// <para>en-us: Whether to enable reference assembly scanning</para>
     /// </summary>
     public bool? EnabledReferenceAssemblyScan { get; set; } = false;
 
     /// <summary>
-    /// 是否输出原始 Sql 执行日志（ADO.NET）
+    /// <para>zh-cn: 是否输出原始 SQL 执行日志</para>
+    /// <para>en-us: Whether to output the original SQL execution log</para>
     /// </summary>
     public bool? OutputOriginalSqlExecuteLog { get; set; } = true;
 
     /// <summary>
-    /// 网关地址
+    /// <para>zh-cn: 网关地址</para>
+    /// <para>en-us: Gateway address</para>
     /// </summary>
+    /// <remarks>
+    /// <para>zh-cn: 该配置暂时只会应用于微服务系统中</para>
+    /// <para>en-us: This configuration will only be applied to microservice systems for the time being</para>
+    /// </remarks>
     public string GateWayAddress { get; set; }
 
     /// <summary>
-    /// 是否启用规范化文档
+    /// <para>zh-cn:是否启用规范化文档</para>
+    /// <para>en-us:Enable SpecificationDocument</para>
     /// </summary>
+    /// <remarks>
+    /// <para> zh-cn: 如果没有主动配置是否启用规范化文档，则生产环境默认关闭,其他环境默认开启</para>
+    /// <para> en-us: If the configuration of whether to enable the specification document is not actively configured, it is turned off by default in the production environment, and turned on by default in other environments</para>
+    /// </remarks>
     public bool? InjectSpecificationDocument { get; set; }
 
     /// <summary>
@@ -48,7 +61,7 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     public string[] ExternalAssemblies { get; set; }
 
     /// <summary>
-    /// 是否打印数据库连接信息到 MiniProfiler 中
+    /// 是否打印数据库连接信息
     /// </summary>
     public bool? PrintDbConnectionInfo { get; set; }
 
@@ -63,7 +76,7 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     /// <param name="configuration"></param>
     public void PostConfigure(AppSettingsOptions options, IConfiguration configuration)
     {
-        options.InjectSpecificationDocument ??= true;
+        options.InjectSpecificationDocument ??= (AppEnvironment.IsProduction?false:true);
         options.EnabledReferenceAssemblyScan ??= false;
         options.ExternalAssemblies ??= Array.Empty<string>();
         options.PrintDbConnectionInfo ??= true;

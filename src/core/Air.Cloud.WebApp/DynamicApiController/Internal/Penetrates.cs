@@ -7,7 +7,7 @@
 // See the Mulan PSL v2 for more details.
 
 
-using Air.Cloud.Core.Standard.Dependencies;
+using Air.Cloud.Core.Dependencies;
 using Air.Cloud.WebApp.DynamicApiController.Attributes;
 
 using Microsoft.AspNetCore.Mvc;

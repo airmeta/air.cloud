@@ -7,10 +7,10 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Dependencies.Extensions;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Domains;
-using Air.Cloud.Core.Standard.Dependencies;
-using Air.Cloud.Core.Standard.Dependencies.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,7 +42,7 @@ namespace Air.Cloud.WebApp.Extensions
                 }
                 catch (Exception ex)
                 {
-                    AppStandardRealization.PrintStandard.Print(new
+                    AppStandardRealization.Print.Print(new
                     {
                         Title = "domain-errors",
                         Type = "Information",

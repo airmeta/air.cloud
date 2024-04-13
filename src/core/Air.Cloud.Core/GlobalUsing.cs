@@ -12,4 +12,4 @@
 global using Air.Cloud.Core.App;
 global using Air.Cloud.Core.Attributes;
 global using Air.Cloud.Core.Extensions;
-global using Client = Air.Cloud.Core.Plugins.Http.HttpClient;
+global using Client = Air.Cloud.Core.Plugins.Http.Plugin_HttpClient;

@@ -10,15 +10,20 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Handler;
+using Air.Cloud.Core.Plugins.Json;
 using Air.Cloud.Core.Standard.Assemblies;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.Cache.Redis;
 using Air.Cloud.Core.Standard.Container;
+using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
+using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.Jwt;
+using Air.Cloud.Core.Standard.UtilStandard;
 using Air.Cloud.Core.Standard.WebApp;
 
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.Mvc;
 
 using Newtonsoft.Json.Linq;
 
@@ -28,43 +33,53 @@ using System.Xml.Linq;
 namespace Air.Cloud.Core.Standard
 {
     /// <summary>
-    /// 约定注入实现
+    /// 系统标准实现
     /// </summary>
     public static partial class AppStandardRealization
     {
         /// <summary>
-        /// 
+        /// 内容打印标准实现
         /// </summary>
-        public static IAppPrintStandard PrintStandard => InternalRealization.PrintStandard ?? DefaultRealization.PrintStandard;
+        public static IAppPrintStandard Print => InternalRealization.Print ?? DefaultRealization.Print;
         /// <summary>
-        /// 容器约定注入
+        /// 容器标准实现
         /// </summary>
-        public static IContainerStandard ContainerStandard => InternalRealization.ContainerStandard ?? DefaultRealization.ContainerStandard;
+        public static IContainerStandard Container => InternalRealization.Container ?? DefaultRealization.Container;
         /// <summary>
-        /// web服务约定注入
+        /// 系统注入标准实现
         /// </summary>
-        public static IAppInjectStandard AppInjectStandard => InternalRealization.AppInjectStandard ?? DefaultRealization.AppInjectStandard;
+        public static IAppInjectStandard Inject => InternalRealization.Inject ?? DefaultRealization.Inject;
         /// <summary>
-        ///  全局异常处理
+        /// 全局异常标准实现
         /// </summary>
-        public static IAppDomainExceptionHandlerStandard AppDomainExceptionHandlerStandard => InternalRealization.AppDomainExceptionHandlerStandard ?? DefaultRealization.AppDomainExceptionHandlerStandard;
+        public static IAppDomainExceptionHandlerStandard DomainExceptionHandler => InternalRealization.DomainExceptionHandler ?? DefaultRealization.DomainExceptionHandler;
         /// <summary>
-        /// 类库扫描
+        /// 类库扫描标准实现
         /// </summary>
-        public static IAssemblyScanningStandard AssemblyScanningStandard => InternalRealization.AssemblyScanningStandard ?? DefaultRealization.AssemblyScanningStandard;
+        public static IAssemblyScanningStandard AssemblyScanning => InternalRealization.AssemblyScanning ?? DefaultRealization.AssemblyScanning;
         /// <summary>
-        /// JWT Handler 约定注入
+        /// JSON Web Token 标准实现
         /// </summary>
-        public static IJwtHandlerStandard JwtHandlerStandard=>InternalRealization.JwtHandlerStandard ?? DefaultRealization.JwtHandlerStandard;
-
+        public static IJwtHandlerStandard Jwt=>InternalRealization.Jwt ?? DefaultRealization.Jwt;
         /// <summary>
-        /// 缓存约定注入
+        /// 缓存标准实现
         /// </summary>
-        public static IAppCacheStandard AppCacheStandard => InternalRealization.AppCacheStandard ?? DefaultRealization.AppCacheStandard;
+        /// <remarks>
+        /// 如果无实现,则使用Redis缓存标准实现中的String模块,如果无Redis缓存标准实现,则抛出异常信息
+        /// </remarks>
+        public static IAppCacheStandard Cache => InternalRealization.Cache ?? DefaultRealization.Cache;
         /// <summary>
-        /// Redis缓存约定注入
+        /// Redis缓存标准实现
         /// </summary>
-        public static IRedisCacheStandard RedisCacheStandard => InternalRealization.RedisCacheStandard ?? DefaultRealization.RedisCacheStandard;
+        public static IRedisCacheStandard RedisCache => InternalRealization.RedisCache ?? DefaultRealization.RedisCache;
+        /// <summary>
+        /// 压缩与解压缩标准实现
+        /// </summary>
+        public static ICompressStandard Compress => InternalRealization.Compress ?? DefaultRealization.Compress;
+        /// <summary>
+        /// JSON序列化标准实现
+        /// </summary>
+        public static IJsonSerializerStandard JSON => InternalRealization.JSON ?? DefaultRealization.JSON;
         /// <summary>
         /// 设置约定实现
         /// </summary>
@@ -83,37 +98,46 @@ namespace Air.Cloud.Core.Standard
         protected static class DefaultRealization
         {
             /// <summary>
-            /// 打印约定注入
+            /// 压缩与解压缩标准实现
             /// </summary>
-            public static IAppPrintStandard PrintStandard => new DefaultAppPrintDependency();
+            public static ICompressStandard Compress => new DefaultCompressStandardDependency();
+
             /// <summary>
-            /// 容器约定注入
+            /// 内容打印标准实现
             /// </summary>
-            public static IContainerStandard ContainerStandard => null;
+            public static IAppPrintStandard Print => new DefaultAppPrintDependency();
             /// <summary>
-            /// 程序注入约定
+            /// 容器标准实现
             /// </summary>
-            public static IAppInjectStandard AppInjectStandard => new DefaultAppInjectDependency();
+            public static IContainerStandard Container => null;
             /// <summary>
-            /// 全局默认异常处理
+            /// 系统注入标准实现
             /// </summary>
-            public static IAppDomainExceptionHandlerStandard AppDomainExceptionHandlerStandard => new DefaultAppDomainExcepetionHandlerDependency();
+            public static IAppInjectStandard Inject => new DefaultAppInjectDependency();
             /// <summary>
-            /// 全局默认类库扫描实现
+            /// 全局异常标准实现
             /// </summary>
-            public static IAssemblyScanningStandard AssemblyScanningStandard => new DefaultAssemblyScanningDependency();
+            public static IAppDomainExceptionHandlerStandard DomainExceptionHandler => new DefaultAppDomainExcepetionHandlerDependency();
             /// <summary>
-            /// 默认的Jwt Handler 实现
+            /// 类库扫描标准实现
             /// </summary>
-            public static IJwtHandlerStandard JwtHandlerStandard => new DefaultJwtHandlerDependency();
+            public static IAssemblyScanningStandard AssemblyScanning => new DefaultAssemblyScanningDependency();
             /// <summary>
-            /// 缓存约定注入
+            /// JSON Web Token 标准实现
             /// </summary>
-            public static IAppCacheStandard AppCacheStandard=> throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
+            public static IJwtHandlerStandard Jwt => new DefaultJwtHandlerDependency();
             /// <summary>
-            /// Redis缓存约定注入
+            /// 缓存标准实现
             /// </summary>
-            public static IRedisCacheStandard RedisCacheStandard => throw new NotImplementedException("未引入任何关于Redis的模组或插件,如果引入,则检查你的代码是否注入该实现");
+            public static IAppCacheStandard Cache=> throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
+            /// <summary>
+            /// Redis缓存标准实现
+            /// </summary>
+            public static IRedisCacheStandard RedisCache => throw new NotImplementedException("未引入任何关于Redis的模组或插件,如果引入,则检查你的代码是否注入该实现");
+            /// <summary>
+            /// JSON序列化标准实现
+            /// </summary>
+            public static IJsonSerializerStandard JSON => new DefaultJsonSerializerStandardDependency(AppCore.GetOptions<JsonOptions>());
         }
         /// <summary>
         /// 自定义标准实现
@@ -121,37 +145,45 @@ namespace Air.Cloud.Core.Standard
         protected static class InternalRealization
         {
             /// <summary>
-            /// 打印约定注入
+            /// 压缩与解压缩标准实现
             /// </summary>
-            public static IAppPrintStandard PrintStandard = null;
+            public static ICompressStandard Compress => AppCore.GetService<ICompressStandard>();
             /// <summary>
-            /// 容器约定注入
+            /// 内容打印标准实现
             /// </summary>
-            public static IContainerStandard ContainerStandard = null;
+            public static IAppPrintStandard Print = null;
             /// <summary>
-            /// 程序注入约定
+            /// 容器标准实现
             /// </summary>
-            public static IAppInjectStandard AppInjectStandard = null;
+            public static IContainerStandard Container = null;
             /// <summary>
-            /// 全局异常处理
+            /// 系统注入标准实现
             /// </summary>
-            public static IAppDomainExceptionHandlerStandard AppDomainExceptionHandlerStandard = null;
+            public static IAppInjectStandard Inject = null;
             /// <summary>
-            /// 全局类库扫描实现
+            /// 全局异常标准实现
             /// </summary>
-            public static IAssemblyScanningStandard AssemblyScanningStandard = null;
+            public static IAppDomainExceptionHandlerStandard DomainExceptionHandler = null;
             /// <summary>
-            /// jwt handler 约定注入
+            /// 类库扫描标准实现
             /// </summary>
-            public static IJwtHandlerStandard JwtHandlerStandard = null;
+            public static IAssemblyScanningStandard AssemblyScanning = null;
             /// <summary>
-            /// 缓存约定注入
+            /// JSON Web Token 标准实现
             /// </summary>
-            public static IAppCacheStandard AppCacheStandard => AppCore.GetService<IAppCacheStandard>();
+            public static IJwtHandlerStandard Jwt = null;
             /// <summary>
-            /// Redis缓存约定注入
+            /// 缓存缓存标准实现
             /// </summary>
-            public static IRedisCacheStandard RedisCacheStandard => AppCore.GetService<IRedisCacheStandard>();
+            public static IAppCacheStandard Cache => AppCore.GetService<IAppCacheStandard>();
+            /// <summary>
+            /// Redis缓存缓存标准实现
+            /// </summary>
+            public static IRedisCacheStandard RedisCache => AppCore.GetService<IRedisCacheStandard>();
+            /// <summary>
+            /// JSON序列化标准实现
+            /// </summary>
+            public static IJsonSerializerStandard JSON => JsonConvert.GetJsonSerializer();
         }
     }
 }

@@ -23,24 +23,6 @@ namespace Air.Cloud.Core.Extensions
     [IgnoreScanning]
     public static class AppObjectExtensions
     {
-
-
-        /// <summary>
-        /// 将 IFormFile 转换成 byte[]
-        /// </summary>
-        /// <param name="formFile"></param>
-        /// <returns></returns>
-        public static byte[] ToByteArray(this IFormFile formFile)
-        {
-            var fileLength = formFile.Length;
-            using var stream = formFile.OpenReadStream();
-            var bytes = new byte[fileLength];
-
-            stream.Read(bytes, 0, (int)fileLength);
-
-            return bytes;
-        }
-
         /// <summary>
         /// 判断是否是富基元类型
         /// </summary>

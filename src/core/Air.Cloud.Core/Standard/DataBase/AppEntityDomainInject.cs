@@ -1,6 +1,6 @@
-﻿using Air.Cloud.Core.Standard.DataBase.Domains;
-using Air.Cloud.Core.Standard.Dependencies;
-using Air.Cloud.Core.Standard.Dependencies.Extensions;
+﻿using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Dependencies.Extensions;
+using Air.Cloud.Core.Standard.DataBase.Domains;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,7 +38,7 @@ namespace Air.Cloud.Core.Standard.DataBase
                 }
                 catch (Exception ex)
                 {
-                    AppStandardRealization.PrintStandard.Print(new
+                    AppStandardRealization.Print.Print(new
                     {
                         Title = "domain-errors",
                         Type = "Information",

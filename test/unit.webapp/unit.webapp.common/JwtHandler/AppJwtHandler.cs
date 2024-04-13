@@ -17,7 +17,7 @@ namespace unit.webapp.common.JwtHandler
             //如果开发环境则不检查授权
             //if (AppEnvironment.VirtualEnvironment == EnvironmentEnums.Development)
             //{
-            //    await AppStandardRealization.JwtHandlerStandard.AuthorizeHandleAsync(context); return;
+            //    await AppStandardRealization.Jwt.AuthorizeHandleAsync(context); return;
             //}
             //检查授权
             var Result = JWTEncryption.ValidateToken(context, context.GetCurrentHttpContext());
@@ -25,10 +25,10 @@ namespace unit.webapp.common.JwtHandler
             if (Result)
             {
                 //授权成功
-                await AppStandardRealization.JwtHandlerStandard.AuthorizeHandleAsync(context); return;
+                await AppStandardRealization.Jwt.AuthorizeHandleAsync(context); return;
             }
             //授权失败
-            await AppStandardRealization.JwtHandlerStandard.UnAuthorizeHandleAsync(context);
+            await AppStandardRealization.Jwt.UnAuthorizeHandleAsync(context);
         }
     }
 }

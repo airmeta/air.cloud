@@ -1,6 +1,6 @@
-﻿using Air.Cloud.Core.Standard.DataBase.Domains;
+﻿using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DataBase.Domains;
 using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.Core.Standard.Dependencies;
 
 using System.Linq.Expressions;
 

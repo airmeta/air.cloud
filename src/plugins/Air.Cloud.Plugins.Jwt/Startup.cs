@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Core.Standard;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

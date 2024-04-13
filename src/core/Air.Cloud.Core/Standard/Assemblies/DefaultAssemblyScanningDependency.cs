@@ -18,7 +18,7 @@ namespace Air.Cloud.Core.Standard.Assemblies
     /// </summary>
     public class DefaultAssemblyScanningDependency : IAssemblyScanningStandard
     {
-        public void Add(KeyValuePair<string, Action<Type,Type[]>> keyValuePair)
+        public void Add(KeyValuePair<string, Action<Type>> keyValuePair)
         {
             IAssemblyScanningStandard.Evensts.TryAdd(keyValuePair.Key,keyValuePair.Value);
         }
@@ -38,11 +38,14 @@ namespace Air.Cloud.Core.Standard.Assemblies
                             {
                                 try
                                 {
-                                    item.Value.Invoke(t, instances);
+                                    if(instances.Count(x=>x.Name== item.Key) > 0)
+                                    {
+                                        item.Value.Invoke(t);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
-                                    AppStandardRealization.PrintStandard.Print(new
+                                    AppStandardRealization.Print.Print(new
                                     {
                                         Title = "domain-errors",
                                         Type = "Information",
@@ -59,7 +62,7 @@ namespace Air.Cloud.Core.Standard.Assemblies
             }
             catch (Exception ex)
             {
-                AppStandardRealization.PrintStandard.Print(new
+                AppStandardRealization.Print.Print(new
                 {
                     Title = "domain-errors",
                     Type = "Information",

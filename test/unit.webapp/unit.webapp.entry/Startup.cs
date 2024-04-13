@@ -9,7 +9,7 @@ namespace unit.webapp.entry
         public override void ConfigureServices(IServiceCollection services)
         {
             //注入jwt
-            services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
+            //services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

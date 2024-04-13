@@ -7,8 +7,8 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.Standard.Dependencies;
 using Air.Cloud.WebApp.FriendlyException.Attributes;
 using Air.Cloud.WebApp.FriendlyException.Exceptions;
 using Air.Cloud.WebApp.FriendlyException.Extensions;

@@ -266,7 +266,7 @@ public static class DbObjectExtensions
     /// <param name="isAsync"></param>
     private static void PrintDataBaseConnectionInformation(DatabaseFacade databaseFacade, DbConnection dbConnection, bool isAsync)
     {
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "sql",
             Type = "Information",
@@ -276,7 +276,7 @@ public static class DbObjectExtensions
         if (IsDevelopment)
         {
             var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "connection",
                 Type = "Information",
@@ -294,7 +294,7 @@ public static class DbObjectExtensions
     private static void LogSqlExecuteCommand(DatabaseFacade databaseFacade, DbCommand dbCommand)
     {
         // 打印执行 SQL
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "sql",
             Type = "Information",

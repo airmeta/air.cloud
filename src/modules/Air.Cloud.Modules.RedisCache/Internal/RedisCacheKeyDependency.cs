@@ -155,7 +155,7 @@ namespace SSS.Modules.Redis
         /// <summary>
         /// 设置Key的过期时间
         /// </summary>
-        /// <param name="key">Redis key</param>
+        /// <param name="key">RedisCache key</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>
         public bool Expire(string key, TimeSpan? expiry = default)=> Redis.KeyExpire(key, expiry);
@@ -196,7 +196,7 @@ namespace SSS.Modules.Redis
         /// <summary>
         /// 设置Key的过期时间
         /// </summary>
-        /// <param name="key">Redis key</param>
+        /// <param name="key">RedisCache key</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>
         public async Task<bool> ExpireAsync(string key, TimeSpan? expiry = default) => await Redis.KeyExpireAsync(key, expiry);

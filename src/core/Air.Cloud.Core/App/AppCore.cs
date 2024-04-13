@@ -12,12 +12,12 @@
 using Air.Cloud.Core.App.Internal;
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Plugins;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.Core.Standard.Dependencies;
 using Air.Cloud.Core.Standard.Enhance;
 using Air.Cloud.Core.Standard.Modules;
 
@@ -251,8 +251,6 @@ namespace Air.Cloud.Core.App
         /// </summary>
         public static IServiceCollection InternalServices =>InternalApp.InternalServices;
 
-
-
         /// <summary>
         /// 获取请求上下文
         /// </summary>
@@ -269,6 +267,9 @@ namespace Air.Cloud.Core.App
         /// </summary>
         public static readonly ConcurrentBag<IDisposable> UnmanagedObjects;
 
+        /// <summary>
+        /// 应用程序启动类型:Host/Web
+        /// </summary>
         public static AppStartupTypeEnum AppStartType { get; set; }
         /// <summary>
         /// 解析服务提供器

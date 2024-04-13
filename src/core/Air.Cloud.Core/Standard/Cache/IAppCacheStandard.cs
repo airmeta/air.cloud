@@ -9,10 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.Dependencies;
-
-using Microsoft.Extensions.Caching.Memory;
-
 namespace Air.Cloud.Core.Standard.Cache
 {
     /// <summary>
@@ -51,61 +47,5 @@ namespace Air.Cloud.Core.Standard.Cache
         /// <param name="Key"></param>
         /// <returns></returns>
         public T GetCache<T>(string Key) where T : class, new();
-    }
-
-    public class DefaultAppCache : IAppCacheStandard,ITransient
-    {
-        private readonly IMemoryCache _memoryCache;
-        public DefaultAppCache(IMemoryCache memoryCache)
-        {
-            _memoryCache = memoryCache;
-            if (_memoryCache == null)
-            {
-                AppStandardRealization.PrintStandard.Print(new
-                {
-                    Title = "errors",
-                    Type = "Information",
-                    Content = "系统内未配置默认缓存实现",
-                    State = true
-                });
-            }
-        }
-        public string GetCache(string Key)
-        {
-            return _memoryCache.Get<string>(Key);
-        }
-
-        public T GetCache<T>(string Key) where T : class, new()
-        {
-            return _memoryCache.Get<T>(Key);
-        }
-
-        public bool SetCache(string Key, string Content, TimeSpan? timeSpan = null)
-        {
-            if (timeSpan.HasValue)
-            {
-                _memoryCache.Set(Key, Content, timeSpan.Value);
-            }
-            else
-            {
-                _memoryCache.Set(Key, Content);
-            }
-
-            return true;
-        }
-
-        public bool SetCache<T>(string Key, T t, TimeSpan? timeSpan = null) where T : class, new()
-        {
-            if (timeSpan.HasValue)
-            {
-                _memoryCache.Set(Key, t, timeSpan.Value);
-            }
-            else
-            {
-                _memoryCache.Set(Key, t);
-            }
-
-            return true;
-        }
     }
 }

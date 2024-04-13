@@ -71,7 +71,7 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
     private void PrintConnectionToMiniProfiler(DbConnection connection, ConnectionEventData eventData)
     {
         // 打印连接信息消息
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "connection",
             Type = "Information",

@@ -107,7 +107,7 @@ public class DbContextPool : IDbContextPool
             // 回滚事务
             currentTransaction.Rollback();
 
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "transaction",
                 Type = "Error",
@@ -212,7 +212,7 @@ public class DbContextPool : IDbContextPool
         ShareTransaction: ShareTransaction(DbContextTransaction.GetDbTransaction());
 
             // 打印事务实际开启信息
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "database",
                 Type = "Information",
@@ -255,7 +255,7 @@ public class DbContextPool : IDbContextPool
 
             // 提交共享事务
             DbContextTransaction?.Commit();
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "transaction",
                 Type = "Information",
@@ -269,7 +269,7 @@ public class DbContextPool : IDbContextPool
             if (DbContextTransaction?.GetDbTransaction()?.Connection != null) DbContextTransaction?.Rollback();
 
             // 打印事务回滚消息
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "transaction",
                 Type = "Error",
@@ -303,7 +303,7 @@ public class DbContextPool : IDbContextPool
         DbContextTransaction = null;
 
         // 打印事务回滚消息
-        AppStandardRealization.PrintStandard.Print(new
+        AppStandardRealization.Print.Print(new
         {
             Title = "transaction",
             Type = "Error",
@@ -328,7 +328,7 @@ public class DbContextPool : IDbContextPool
 
             conn.Close();
             // 打印数据库关闭信息
-            AppStandardRealization.PrintStandard.Print(new
+            AppStandardRealization.Print.Print(new
             {
                 Title = "sql",
                 Type = "Information",
