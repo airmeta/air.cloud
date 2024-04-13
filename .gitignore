@@ -41,3 +41,8 @@
 /test/unit.webapp.nuget/unit.webapp.repository/obj
 /test/unit.webapp.nuget/unit.webapp.service/bin
 /test/unit.webapp.nuget/unit.webapp.service/obj
+/src/extensions/Air.Cloud.Core.Extensions/bin/Debug/net6.0
+/src/extensions/Air.Cloud.Core.Extensions/obj
+/src/modules/Air.Cloud.Modules.Consul/obj
+/src/plugins/Air.Cloud.Plugins.SpecificationDocument/bin/Debug/net6.0
+/src/plugins/Air.Cloud.Plugins.SpecificationDocument/obj
