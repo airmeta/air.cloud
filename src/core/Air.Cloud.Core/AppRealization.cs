@@ -153,6 +153,7 @@ namespace Air.Cloud.Core
             ///  (暂时只在Windows 环境下进行测试)
             /// </remarks>
             public static IPIDPlugin PID => new DefaultPIDPluginDependency();
+
         }
         /// <summary>
         /// 自定义标准实现
