@@ -6,7 +6,7 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
-using Air.Cloud.Core.Standard;
+using Air.Cloud.Core;
 using Air.Cloud.DataBase.Helpers;
 using Air.Cloud.DataBase.Internal;
 
@@ -266,7 +266,7 @@ public static class DbObjectExtensions
     /// <param name="isAsync"></param>
     private static void PrintDataBaseConnectionInformation(DatabaseFacade databaseFacade, DbConnection dbConnection, bool isAsync)
     {
-        AppStandardRealization.Print.Print(new
+        AppRealization.Print.Print(new
         {
             Title = "sql",
             Type = "Information",
@@ -276,7 +276,7 @@ public static class DbObjectExtensions
         if (IsDevelopment)
         {
             var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
-            AppStandardRealization.Print.Print(new
+            AppRealization.Print.Print(new
             {
                 Title = "connection",
                 Type = "Information",
@@ -294,7 +294,7 @@ public static class DbObjectExtensions
     private static void LogSqlExecuteCommand(DatabaseFacade databaseFacade, DbCommand dbCommand)
     {
         // 打印执行 SQL
-        AppStandardRealization.Print.Print(new
+        AppRealization.Print.Print(new
         {
             Title = "sql",
             Type = "Information",

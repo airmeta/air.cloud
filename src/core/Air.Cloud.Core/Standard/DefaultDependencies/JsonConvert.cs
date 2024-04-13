@@ -9,7 +9,7 @@ using Air.Cloud.Core.Standard.JSON;
 
 using System.Text.Json;
 
-namespace Air.Cloud.Core.Plugins.Json;
+namespace Air.Cloud.Core.Standard.DefaultDependencies;
 
 /// <summary>
 /// JSON 静态帮助类

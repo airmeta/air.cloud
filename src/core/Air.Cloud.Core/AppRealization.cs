@@ -9,8 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Handler;
-using Air.Cloud.Core.Plugins.Json;
+using Air.Cloud.Core.Plugins.DefaultDependency;
+using Air.Cloud.Core.Plugins.PID;
+using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.Assemblies;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.Cache.Redis;
@@ -22,20 +23,16 @@ using Air.Cloud.Core.Standard.Jwt;
 using Air.Cloud.Core.Standard.UtilStandard;
 using Air.Cloud.Core.Standard.WebApp;
 
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 
-using Newtonsoft.Json.Linq;
-
 using System.Reflection;
-using System.Xml.Linq;
 
-namespace Air.Cloud.Core.Standard
+namespace Air.Cloud.Core
 {
     /// <summary>
-    /// 系统标准实现
+    /// 所有标准实现
     /// </summary>
-    public static partial class AppStandardRealization
+    public static partial class AppRealization
     {
         /// <summary>
         /// 内容打印标准实现
@@ -60,7 +57,7 @@ namespace Air.Cloud.Core.Standard
         /// <summary>
         /// JSON Web Token 标准实现
         /// </summary>
-        public static IJwtHandlerStandard Jwt=>InternalRealization.Jwt ?? DefaultRealization.Jwt;
+        public static IJwtHandlerStandard Jwt => InternalRealization.Jwt ?? DefaultRealization.Jwt;
         /// <summary>
         /// 缓存标准实现
         /// </summary>
@@ -81,6 +78,15 @@ namespace Air.Cloud.Core.Standard
         /// </summary>
         public static IJsonSerializerStandard JSON => InternalRealization.JSON ?? DefaultRealization.JSON;
         /// <summary>
+        /// 应用程序PID信息 
+        /// </summary>
+        /// <remarks>
+        ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
+        ///  (暂时只在Windows 环境下进行测试)
+        /// </remarks>
+        public static IPIDPlugin PID => InternalRealization.PID ?? DefaultRealization.PID;
+
+        /// <summary>
         /// 设置约定实现
         /// </summary>
         /// <typeparam name="TIStandard">约定类型</typeparam>
@@ -88,7 +94,7 @@ namespace Air.Cloud.Core.Standard
         public static void SetDependency<TIStandard>(TIStandard standard) where TIStandard : IStandard
         {
             BindingFlags flag = BindingFlags.Static;
-            FieldInfo Field = typeof(InternalRealization).GetFields(flag).FirstOrDefault(s=>s.FieldType==standard.GetType());
+            FieldInfo Field = typeof(InternalRealization).GetFields(flag).FirstOrDefault(s => s.FieldType == standard.GetType());
             Field.SetValue(null, standard);
         }
 
@@ -129,7 +135,7 @@ namespace Air.Cloud.Core.Standard
             /// <summary>
             /// 缓存标准实现
             /// </summary>
-            public static IAppCacheStandard Cache=> throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
+            public static IAppCacheStandard Cache => throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
             /// <summary>
             /// Redis缓存标准实现
             /// </summary>
@@ -138,6 +144,15 @@ namespace Air.Cloud.Core.Standard
             /// JSON序列化标准实现
             /// </summary>
             public static IJsonSerializerStandard JSON => new DefaultJsonSerializerStandardDependency(AppCore.GetOptions<JsonOptions>());
+
+            /// <summary>
+            /// 应用程序PID信息 
+            /// </summary>
+            /// <remarks>
+            ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
+            ///  (暂时只在Windows 环境下进行测试)
+            /// </remarks>
+            public static IPIDPlugin PID => new DefaultPIDPluginDependency();
         }
         /// <summary>
         /// 自定义标准实现
@@ -184,6 +199,15 @@ namespace Air.Cloud.Core.Standard
             /// JSON序列化标准实现
             /// </summary>
             public static IJsonSerializerStandard JSON => JsonConvert.GetJsonSerializer();
+
+            /// <summary>
+            /// 应用程序PID信息 
+            /// </summary>
+            /// <remarks>
+            ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
+            ///  (暂时只在Windows 环境下进行测试)
+            /// </remarks>
+            public static IPIDPlugin PID=>AppCore.GetService<IPIDPlugin>();
         }
     }
 }

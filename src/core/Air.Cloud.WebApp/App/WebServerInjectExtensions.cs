@@ -9,9 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Standard;
 using Air.Cloud.WebApp.Extensions;
 
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -33,8 +33,8 @@ namespace Air.Cloud.WebApp.App
         /// <returns></returns>
         public static WebApplication WebInjectInFile(this WebApplicationBuilder builder)
         {
-            var Configuration = AppStandardRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
-            var CommonConfiguration = AppStandardRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
+            var Configuration = AppRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
+            var CommonConfiguration = AppRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
             builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);

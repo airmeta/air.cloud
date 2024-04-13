@@ -6,10 +6,10 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Dependencies.Extensions;
-using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Domains;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -42,7 +42,7 @@ namespace Air.Cloud.WebApp.Extensions
                 }
                 catch (Exception ex)
                 {
-                    AppStandardRealization.Print.Print(new
+                    AppRealization.Print.Print(new
                     {
                         Title = "domain-errors",
                         Type = "Information",

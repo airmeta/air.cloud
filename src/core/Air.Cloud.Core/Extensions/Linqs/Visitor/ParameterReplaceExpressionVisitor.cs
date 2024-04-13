@@ -7,7 +7,7 @@
 // See the Mulan PSL v2 for more details.
 using System.Linq.Expressions;
 
-namespace Air.Cloud.Core.Plugins.Linq.Visitor
+namespace Air.Cloud.Core.Extensions.Linqs.Visitor
 {
     public class ParameterReplaceExpressionVisitor : ExpressionVisitor
     {

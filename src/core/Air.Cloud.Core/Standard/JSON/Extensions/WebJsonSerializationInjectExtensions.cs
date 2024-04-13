@@ -6,11 +6,10 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 using Air.Cloud.Core.Standard.JSON;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.Core.Plugins.Json.Extensions;
+namespace Air.Cloud.Core.Standard.JSON.Extensions;
 
 /// <summary>
 /// Json 序列化服务拓展类

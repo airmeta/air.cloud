@@ -10,8 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Air.Cloud.Core.Standard;
-
 using System.Diagnostics;
 using System.Reflection;
 
@@ -30,7 +28,7 @@ public static class Inject
     public static IServiceCollection Create(Action<ILoggingBuilder> configureLogging = default)
     {
         // 监听全局异常
-        AppDomain.CurrentDomain.UnhandledException += AppStandardRealization.DomainExceptionHandler.OnException;
+        AppDomain.CurrentDomain.UnhandledException += AppRealization.DomainExceptionHandler.OnException;
 
         // 创建配置构建器
         var configurationBuilder = new ConfigurationBuilder();

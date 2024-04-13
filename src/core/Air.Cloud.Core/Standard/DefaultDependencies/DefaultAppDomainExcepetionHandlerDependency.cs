@@ -12,7 +12,7 @@
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.Exceptions;
 
-namespace Air.Cloud.Core.Handler
+namespace Air.Cloud.Core.Standard.DefaultDependencies
 {
     [IgnoreScanning]
     public class DefaultAppDomainExcepetionHandlerDependency : IAppDomainExceptionHandlerStandard
@@ -26,7 +26,7 @@ namespace Air.Cloud.Core.Handler
         {
             var exception = (Exception)e.ExceptionObject;
             if (exception is IFriendlyExceptionStandard) return;
-            AppStandardRealization.Print.Print(new
+            AppRealization.Print.Print(new
             {
                 Title = "domain-errors",
                 Type = "Information",

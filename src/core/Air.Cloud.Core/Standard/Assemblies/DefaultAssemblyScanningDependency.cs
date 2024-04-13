@@ -45,7 +45,7 @@ namespace Air.Cloud.Core.Standard.Assemblies
                                 }
                                 catch (Exception ex)
                                 {
-                                    AppStandardRealization.Print.Print(new
+                                    AppRealization.Print.Print(new
                                     {
                                         Title = "domain-errors",
                                         Type = "Information",
@@ -62,7 +62,7 @@ namespace Air.Cloud.Core.Standard.Assemblies
             }
             catch (Exception ex)
             {
-                AppStandardRealization.Print.Print(new
+                AppRealization.Print.Print(new
                 {
                     Title = "domain-errors",
                     Type = "Information",

@@ -3,7 +3,7 @@
     /// <summary>
     /// 中华人民共和国身份证插件
     /// </summary>
-    public  class Plugin_IdCard
+    public  class Plugin_IdCard : IPlugin
     {
         /// <summary>
         /// 15位身份证号码

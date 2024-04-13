@@ -6,7 +6,7 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
-using Air.Cloud.Core.Standard;
+using Air.Cloud.Core;
 using Air.Cloud.DataBase.UnitOfWork;
 using Air.Cloud.DataBase.UnitOfWork.Attributes;
 
@@ -56,7 +56,7 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         }
 
         // 打印工作单元开始消息
-        AppStandardRealization.Print.Print(new
+        AppRealization.Print.Print(new
         {
             Title = "unitofwork",
             Type = "Information",
@@ -91,7 +91,7 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         _unitOfWork.OnCompleted(context, resultContext);
 
         // 打印工作单元开始消息
-        AppStandardRealization.Print.Print(new
+        AppRealization.Print.Print(new
         {
             Title = "unitofwork",
             Type = "Information",

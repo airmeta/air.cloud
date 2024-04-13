@@ -14,14 +14,14 @@ namespace Air.Cloud.Core.Plugins.Sensitive
     /// <summary>
     /// 人员敏感信息脱敏
     /// </summary>
-    public static class PeopleSensitivePurge
+    public class PeopleSensitivePurgePlugin:IPlugin
     {
         /// <summary>
         /// 姓名敏感处理
         /// </summary>
         /// <param name="fullName">姓名</param>
         /// <returns>脱敏后的姓名</returns>
-        public static string NamePurge(this string fullName)
+        public string Name(string fullName)
         {
             if (string.IsNullOrEmpty(fullName)) return string.Empty;
 
@@ -43,7 +43,7 @@ namespace Air.Cloud.Core.Plugins.Sensitive
         /// </summary>
         /// <param name="idCardNo">身份证号</param>
         /// <returns>脱敏后的身份证号</returns>
-        public static string CardNoPurge(this string idCardNo)
+        public string IdCard(string idCardNo)
         {
             if (string.IsNullOrEmpty(idCardNo)
                 || idCardNo.Length != 15 && idCardNo.Length != 18) return idCardNo;
@@ -51,9 +51,7 @@ namespace Air.Cloud.Core.Plugins.Sensitive
             string begin = idCardNo[..6];
             string middle = idCardNo.Substring(6, 8);
             string end = idCardNo[14..];
-
-            string card = string.Empty;
-            card = begin + "********" + end;
+            string card = begin + "********" + end;
             return card;
         }
     }

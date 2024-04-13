@@ -9,13 +9,13 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Mapster;
+using Air.Cloud.Core.Plugins.IdGenerator;
 
-using Air.Cloud.Core.Plugins.IdGenerator.Impl;
+using Mapster;
 
 using System.Security.Cryptography;
 
-namespace Air.Cloud.Core.Plugins.IdGenerator.Impl
+namespace Air.Cloud.Core.Plugins.DefaultDependency.IdGenerator
 {
     internal class UniqueGuidGenerator : IUniqueGuidGenerator
     {

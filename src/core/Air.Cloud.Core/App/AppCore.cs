@@ -13,12 +13,12 @@ using Air.Cloud.Core.App.Internal;
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Enhance;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Plugins;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.Core.Standard.Enhance;
 using Air.Cloud.Core.Standard.Modules;
 
 using Microsoft.AspNetCore.Hosting;

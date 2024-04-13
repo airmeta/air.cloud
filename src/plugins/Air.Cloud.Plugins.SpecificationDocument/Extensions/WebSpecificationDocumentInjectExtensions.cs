@@ -1,5 +1,4 @@
-﻿using Air.Cloud.Core.Standard;
-
+﻿using Air.Cloud.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -24,7 +23,7 @@ namespace Air.Cloud.Plugins.SpecificationDocument.Extensions
               .FirstOrDefault(mi => mi.Name == "OperationFilter");
             if (OperationFilterMethod != null)
             {
-                AppStandardRealization.AssemblyScanning.Add(new KeyValuePair<string, Action<Type>>(nameof(IOperationFilter), (x) =>
+                AppRealization.AssemblyScanning.Add(new KeyValuePair<string, Action<Type>>(nameof(IOperationFilter), (x) =>
                 {
                     services.AddSwaggerGen(options =>
                     {

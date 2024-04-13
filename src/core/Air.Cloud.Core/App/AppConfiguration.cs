@@ -56,10 +56,11 @@ namespace Air.Cloud.Core.App
         /// 应用程序启动地址信息
         /// </summary>
         public static IPAddress IPAddress => AppConfigurationDomain.GetLocalIPAddress();
+
         /// <summary>
         /// 应用程序PID信息
         /// </summary>
-        public static PIDOptions PID => PIDOptions.Instance;
+        public static string PID => AppRealization.PID.Get();
 
         /// <summary>
         /// 应用程序启动端口信息

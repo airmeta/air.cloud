@@ -31,9 +31,8 @@ namespace Air.Cloud.Core.Plugins.Http
     /// <summary>
     /// Http请求
     /// </summary>
-    public static class Plugin_HttpClient
+    public static class HttpClientPlugin
     {
-
         #region 常量
         /// <summary>
         /// GET 请求
@@ -53,7 +52,6 @@ namespace Air.Cloud.Core.Plugins.Http
         public const string DELETE = "DELETE";
 
         #endregion
-
         /// <summary>
         /// 发起网络请求
         /// </summary>

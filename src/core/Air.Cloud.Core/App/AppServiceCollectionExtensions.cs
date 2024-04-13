@@ -12,7 +12,6 @@
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Dependencies.Extensions;
-using Air.Cloud.Core.Standard;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -89,7 +88,7 @@ public static class AppServiceCollectionExtensions
         // 自定义服务
         configure?.Invoke(services);
         //进行最终的扫描
-        AppStandardRealization.AssemblyScanning.Scanning();
+        AppRealization.AssemblyScanning.Scanning();
         return services;
     }
 

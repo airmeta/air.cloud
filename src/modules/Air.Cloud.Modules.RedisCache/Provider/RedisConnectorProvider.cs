@@ -1,6 +1,6 @@
-﻿using Air.Cloud.Core.App;
+﻿using Air.Cloud.Core;
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.Standard;
 using Air.Cloud.Modules.RedisCache.Options;
 
 using StackExchange.Redis;
@@ -46,7 +46,7 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         private static ConnectionMultiplexer Connect()
         {
             string? ConnectionString = AppCore.GetOptions<RedisSettingsOptions>()?.ConnectionString;
-            if (ConnectionString.IsNullOrEmpty()) AppStandardRealization.Print.Print(new
+            if (ConnectionString.IsNullOrEmpty()) AppRealization.Print.Print(new
             {
                 Title = "domain-errors",
                 Type = "Error",

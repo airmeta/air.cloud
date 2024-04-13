@@ -38,7 +38,7 @@ namespace Air.Cloud.Core.Standard.DataBase
                 }
                 catch (Exception ex)
                 {
-                    AppStandardRealization.Print.Print(new
+                    AppRealization.Print.Print(new
                     {
                         Title = "domain-errors",
                         Type = "Information",

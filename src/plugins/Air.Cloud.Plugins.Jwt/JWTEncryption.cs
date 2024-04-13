@@ -6,9 +6,9 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.WebApp;
 using Air.Cloud.Plugins.Jwt.Options;
 
@@ -422,7 +422,7 @@ namespace Air.Cloud.Plugins.Jwt
                 Guids = Guid.NewGuid().ToString();
                 File.WriteAllText(Path, Guids);
             }
-            AppStandardRealization.Print.Print(new
+            AppRealization.Print.Print(new
             {
                 Title = "domain-security",
                 Type = "Information",

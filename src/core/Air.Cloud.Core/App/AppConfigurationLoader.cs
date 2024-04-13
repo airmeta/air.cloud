@@ -11,7 +11,6 @@
  */
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.Standard;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -111,8 +110,8 @@ namespace Air.Cloud.Core.App
         public static IHostBuilder WindowsInjectInFile(this IHostBuilder builder)
         {
             //加载远程配置文件
-            AppStandardRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
-            AppStandardRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
+            AppRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
+            AppRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
             builder = builder.ConfigureAppConfiguration(a =>
@@ -128,8 +127,8 @@ namespace Air.Cloud.Core.App
         /// <returns></returns>
         public static void WindowsInjectInFile()
         {
-            AppStandardRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
-            AppStandardRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
+            AppRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
+            AppRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
         }
     }
 }

@@ -28,8 +28,8 @@ namespace Air.Cloud.Modules.RedisCache.Extensions
 
         //public static void HostRedisCacheInject<TRedisCacheModuleDependency>() where TRedisCacheModuleDependency : class, IRedisCacheStandard, new()
         //{
-        //    AppStandardRealization.SetDependency<IAppCacheStandard>(new TRedisCacheModuleDependency());
-        //    AppStandardRealization.SetDependency<IRedisCacheStandard>(new TRedisCacheModuleDependency());
+        //    AppRealization.SetDependency<IAppCacheStandard>(new TRedisCacheModuleDependency());
+        //    AppRealization.SetDependency<IRedisCacheStandard>(new TRedisCacheModuleDependency());
         //}
     }
 }

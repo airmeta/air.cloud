@@ -5,16 +5,11 @@
 //             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
-using Air.Cloud.Core.Plugins.Linq.Visitor;
+using Air.Cloud.Core.Extensions.Linqs.Visitor;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Air.Cloud.Core.Plugins.Linq
+namespace Air.Cloud.Core.Extensions.Linqs
 {
     public static class LinqExpressionExtensions
     {
@@ -108,7 +103,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, bool>> And<TSource>(this Expression<Func<TSource, bool>> expression, Expression<Func<TSource, bool>> extendExpression)
         {
-            return Compose(expression, extendExpression, Expression.AndAlso);
+            return expression.Compose(extendExpression, Expression.AndAlso);
         }
 
         /// <summary>
@@ -120,7 +115,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, int, bool>> And<TSource>(this Expression<Func<TSource, int, bool>> expression, Expression<Func<TSource, int, bool>> extendExpression)
         {
-            return Compose(expression, extendExpression, Expression.AndAlso);
+            return expression.Compose(extendExpression, Expression.AndAlso);
         }
 
         /// <summary>
@@ -133,7 +128,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, bool>> AndIf<TSource>(this Expression<Func<TSource, bool>> expression, bool condition, Expression<Func<TSource, bool>> extendExpression)
         {
-            return condition ? Compose(expression,extendExpression, Expression.AndAlso) : expression;
+            return condition ? expression.Compose(extendExpression, Expression.AndAlso) : expression;
         }
 
         /// <summary>
@@ -146,7 +141,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, int, bool>> AndIf<TSource>(this Expression<Func<TSource, int, bool>> expression, bool condition, Expression<Func<TSource, int, bool>> extendExpression)
         {
-            return condition ? Compose(expression, extendExpression, Expression.AndAlso) : expression;
+            return condition ? expression.Compose(extendExpression, Expression.AndAlso) : expression;
         }
 
         /// <summary>
@@ -158,7 +153,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, bool>> Or<TSource>(this Expression<Func<TSource, bool>> expression, Expression<Func<TSource, bool>> extendExpression)
         {
-            return Compose(expression, extendExpression, Expression.OrElse);
+            return expression.Compose(extendExpression, Expression.OrElse);
         }
 
         /// <summary>
@@ -170,7 +165,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, int, bool>> Or<TSource>(this Expression<Func<TSource, int, bool>> expression, Expression<Func<TSource, int, bool>> extendExpression)
         {
-            return Compose(expression, extendExpression, Expression.OrElse);
+            return expression.Compose(extendExpression, Expression.OrElse);
         }
 
         /// <summary>
@@ -183,7 +178,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, bool>> OrIf<TSource>(this Expression<Func<TSource, bool>> expression, bool condition, Expression<Func<TSource, bool>> extendExpression)
         {
-            return condition ? Compose(expression, extendExpression, Expression.OrElse) : expression;
+            return condition ? expression.Compose(extendExpression, Expression.OrElse) : expression;
         }
 
         /// <summary>
@@ -196,7 +191,7 @@ namespace Air.Cloud.Core.Plugins.Linq
         /// <returns>新的表达式</returns>
         public static Expression<Func<TSource, int, bool>> OrIf<TSource>(this Expression<Func<TSource, int, bool>> expression, bool condition, Expression<Func<TSource, int, bool>> extendExpression)
         {
-            return condition ? Compose(expression, extendExpression, Expression.OrElse) : expression;
+            return condition ? expression.Compose(extendExpression, Expression.OrElse) : expression;
         }
 
         /// <summary>

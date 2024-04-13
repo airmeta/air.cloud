@@ -9,9 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins;
-using Air.Cloud.Core.Util;
-
 namespace Air.Cloud.Core.Plugins.Map
 {
     /// <summary>

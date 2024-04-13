@@ -9,14 +9,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.Linq;
+using Air.Cloud.Core.Extensions.IEnumerables;
+using Air.Cloud.Core.Extensions.Linqs;
 
 using System.Linq.Expressions;
 
-namespace Air.Cloud.Core.Extensions
+namespace Air.Cloud.Core.Extensions.IEnumerables
 {
     [IgnoreScanning]
-    public static  class IEnumerableExtensions
+    public static class IEnumerableExtensions
     {
         /// <summary>
         /// 根据条件成立再构建 Where 查询
@@ -98,7 +99,7 @@ namespace Air.Cloud.Core.Extensions
             {
                 if (condition) expressions.Add(expression);
             }
-            return Where(sources, expressions.ToArray());
+            return sources.Where(expressions.ToArray());
         }
 
         /// <summary>
@@ -115,7 +116,7 @@ namespace Air.Cloud.Core.Extensions
             {
                 if (condition) expressions.Add(expression);
             }
-            return Where(sources, expressions.ToArray());
+            return sources.Where(expressions.ToArray());
         }
 
         /// <summary>

@@ -9,7 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Plugins.IdGenerator.Impl
+using Air.Cloud.Core.Plugins.IdGenerator;
+
+namespace Air.Cloud.Core.Plugins.DefaultDependency.IdGenerator
 {
 
     /// <summary>

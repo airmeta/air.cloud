@@ -10,8 +10,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Air.Cloud.Core.Standard;
 using Air.Cloud.WebApp.DataValidation.Internal;
+using Air.Cloud.Core;
 
 namespace Air.Cloud.WebApp.UnifyResult.Filters;
 
@@ -63,7 +63,7 @@ public class SucceededUnifyResultFilter : IAsyncActionFilter, IOrderedFilter
             var result = unifyResult.OnValidateFailed(context, validationMetadata);
             if (result != null) actionExecutedContext.Result = result;
             // 打印完整的堆栈信息
-            AppStandardRealization.Print.Print(new
+            AppRealization.Print.Print(new
             {
                 Title = "validation",
                 Type = "Error",
