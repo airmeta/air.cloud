@@ -6,10 +6,11 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 using Air.Cloud.Core.App.Options;
-using Air.Cloud.Core.Dependencies.Internal;
+using Air.Cloud.WebApp.Dependencies.Internal;
+
 using Microsoft.Extensions.Configuration;
 
-namespace Air.Cloud.Core.Dependencies.Options;
+namespace Air.Cloud.WebApp.Dependencies.Options;
 
 /// <summary>
 /// 依赖注入配置选项

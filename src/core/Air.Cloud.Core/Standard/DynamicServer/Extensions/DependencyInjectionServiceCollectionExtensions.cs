@@ -5,12 +5,14 @@
 //             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Dependencies.Enums;
-using Air.Cloud.Core.Dependencies.Options;
-using Air.Cloud.Core.Dependencies.Providers;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Plugins.Reflection.Proxies;
+using Air.Cloud.Core.Standard.DynamicServer;
+using Air.Cloud.WebApp.Dependencies.Options;
+using Air.Cloud.WebApp.Dependencies.Providers;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -18,7 +20,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace Air.Cloud.Core.Dependencies.Extensions;
+namespace Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 /// <summary>
 /// 依赖注入拓展类
@@ -102,7 +104,7 @@ public static class DependencyInjectionServiceCollectionExtensions
             // 获取所有能注册的接口
             var canInjectInterfaces = interfaces.Where(u => !injectionAttribute.ExceptInterfaces.Contains(u)
                             && u != typeof(IPrivateDependency)
-                            && u != typeof(IDynamicApiController)
+                            && u != typeof(IDynamicService)
                             && !lifetimeInterfaces.Contains(u)
                             // && projectAssemblies.Contains(u.Assembly)
                             && (

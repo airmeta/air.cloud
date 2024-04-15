@@ -89,9 +89,9 @@ namespace Air.Cloud.Core
         /// <summary>
         /// 设置约定实现
         /// </summary>
-        /// <typeparam name="TIStandard">约定类型</typeparam>
+        /// <typeparam name="TDependency">约定类型</typeparam>
         /// <param name="standard">约定实现</param>
-        public static void SetDependency<TIStandard>(TIStandard standard) where TIStandard : IStandard
+        public static void SetDependency<TDependency>(TDependency standard) where TDependency : class
         {
             BindingFlags flag = BindingFlags.Static;
             FieldInfo Field = typeof(InternalRealization).GetFields(flag).FirstOrDefault(s => s.FieldType == standard.GetType());

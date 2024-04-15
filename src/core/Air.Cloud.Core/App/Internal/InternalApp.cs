@@ -8,7 +8,6 @@
 
 using Air.Cloud.Core.App.Filters;
 using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Standard;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

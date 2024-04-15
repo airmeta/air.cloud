@@ -9,36 +9,25 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App.Startups;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-
-using Air.Cloud.Core.App.Loader;
 namespace Air.Cloud.Core.App.Loader
 {
     /// <summary>
     /// 内置Startup 进行初始化配置
     /// </summary>
-    public class InternalStartup : IStartup
+    public class InternalStartup : AppStartup
     {
-        /// <summary>
-        /// 注入
-        /// </summary>
-        /// <param name="app"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        public void Configure(IApplicationBuilder app)
+        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //这里逐步进行逐步应用
+            
         }
-        /// <summary>
-        /// 注入
-        /// </summary>
-        /// <param name="services"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public override void ConfigureServices(IServiceCollection services)
         {
-            throw new NotImplementedException();
+
         }
     }
 }

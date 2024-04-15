@@ -11,7 +11,7 @@
  */
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Dependencies.Extensions;
+using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

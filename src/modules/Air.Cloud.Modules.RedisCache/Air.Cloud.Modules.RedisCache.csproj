@@ -3,8 +3,32 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>CS8625</NoWarn>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>AC</Authors>
+    <Company>合肥星曳数据科技有限公司</Company>
+    <Product>air.cloud</Product>
+    <Description>Air.Cloud.Core 的Redis Cache标准实现</Description>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackAsTool>False</PackAsTool>
+    <Version>1.0.0.1</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="StackExchange.Redis" Version="2.5.61" />

@@ -1,16 +1,10 @@
 ﻿using Air.Cloud.Core.Dependencies;
-using Air.Cloud.Core.Dependencies.Extensions;
 using Air.Cloud.Core.Standard.DataBase.Domains;
+using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Air.Cloud.Core.Standard.DataBase
 {

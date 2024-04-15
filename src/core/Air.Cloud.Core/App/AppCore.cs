@@ -19,6 +19,7 @@ using Air.Cloud.Core.Plugins;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
+using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.Modules;
 
 using Microsoft.AspNetCore.Hosting;
@@ -222,7 +223,7 @@ namespace Air.Cloud.Core.App
                         || instances.Contains(typeof(IModule))
                         || instances.Contains(typeof(IEnhance))
                         || instances.Contains(typeof(IStandard))
-                        || instances.Contains(typeof(IDynamicApiController))
+                        || instances.Contains(typeof(IDynamicService))
                         || instances.Contains(typeof(IPrivateEntity))
                         ) && t.IsPublic&& !t.IsDefined(typeof(IgnoreScanningAttribute), false))
                             return true;

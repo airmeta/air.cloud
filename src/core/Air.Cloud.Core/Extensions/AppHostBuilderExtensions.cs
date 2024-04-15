@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.App.Loader;
 
 namespace Air.Cloud.Core.Extensions
 {
@@ -37,7 +38,7 @@ namespace Air.Cloud.Core.Extensions
             hostBuilder.UseSetting(WebHostDefaults.HostingStartupAssembliesKey, combineAssembliesName);
 
             // 实现假的 Starup，解决泛型主机启动问题
-            hostBuilder.UseStartup<FakeStartup>();
+            hostBuilder.UseStartup<InternalStartup>();
             return hostBuilder;
         }
 

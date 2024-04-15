@@ -9,8 +9,8 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
-using Air.Cloud.Core.Dependencies.Extensions;
 using Air.Cloud.Core.Standard.DataBase.Domains;
+using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
 

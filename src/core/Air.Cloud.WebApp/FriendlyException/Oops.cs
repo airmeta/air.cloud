@@ -9,6 +9,7 @@
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.WebApp.FriendlyException.Attributes;
 using Air.Cloud.WebApp.FriendlyException.Exceptions;
 using Air.Cloud.WebApp.FriendlyException.Extensions;
@@ -308,7 +309,7 @@ public static class Oops
         var stackTrace = EnhancedStackTrace.Current();
 
         // 获取出错的堆栈信息，在 web 请求中获取控制器或动态API的方法，除外获取第一个出错的方法
-        var stackFrame = stackTrace.FirstOrDefault(u => typeof(ControllerBase).IsAssignableFrom(u.MethodInfo.DeclaringType) || typeof(IDynamicApiController).IsAssignableFrom(u.MethodInfo.DeclaringType))
+        var stackFrame = stackTrace.FirstOrDefault(u => typeof(ControllerBase).IsAssignableFrom(u.MethodInfo.DeclaringType) || typeof(IDynamicService).IsAssignableFrom(u.MethodInfo.DeclaringType))
             ?? stackTrace.FirstOrDefault(u => u.GetMethod().DeclaringType.Namespace != typeof(Oops).Namespace);
 
         // 获取出错的方法
