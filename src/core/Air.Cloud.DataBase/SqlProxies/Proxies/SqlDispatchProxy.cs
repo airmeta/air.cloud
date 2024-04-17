@@ -17,6 +17,8 @@ using Air.Cloud.DataBase.SqlProxies.Attributes;
 using Air.Cloud.DataBase.SqlProxies.Attributes.Basics;
 using Air.Cloud.DataBase.SqlProxies.Models;
 
+using System.Diagnostics.Internal;
+
 namespace Air.Cloud.DataBase.SqlProxies.Proxies;
 
 /// <summary>
