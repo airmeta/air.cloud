@@ -5,11 +5,10 @@
 //             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-using Air.Cloud.Core.Plugins.Reflection;
-using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.App.Loader;
+using Air.Cloud.Core.Plugins.Reflection;
+
+using Microsoft.AspNetCore.Hosting;
 
 namespace Air.Cloud.Core.Extensions
 {
@@ -39,19 +38,6 @@ namespace Air.Cloud.Core.Extensions
 
             // 实现假的 Starup，解决泛型主机启动问题
             hostBuilder.UseStartup<InternalStartup>();
-            return hostBuilder;
-        }
-
-        /// <summary>
-        /// 泛型主机注入
-        /// </summary>
-        /// <param name="hostBuilder">泛型主机注入构建器</param>
-        /// <param name="autoRegisterBackgroundService">是否自动注册 BackgroundService</param>
-        /// <returns>IWebHostBuilder</returns>
-        public static IHostBuilder Inject(this IHostBuilder hostBuilder, bool autoRegisterBackgroundService = true)
-        {
-            // AppCore.ConfigureApplication(hostBuilder, autoRegisterBackgroundService);
-
             return hostBuilder;
         }
     }

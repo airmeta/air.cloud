@@ -9,7 +9,8 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.Standard.WebApp;
+using Air.Cloud.Core.Standard.Account;
+using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Plugins.Jwt.Options;
 
 using Microsoft.AspNetCore.Authentication;
@@ -422,10 +423,10 @@ namespace Air.Cloud.Plugins.Jwt
                 Guids = Guid.NewGuid().ToString();
                 File.WriteAllText(Path, Guids);
             }
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "domain-security",
-                Type = "Information",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = "当前系统未设置Token签发密钥,系统已为你自动生成:" + Guids + ",该密钥存储在项目文件夹下的:jwt_keys.txt文件中",
                 State = true
             });

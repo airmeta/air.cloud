@@ -9,8 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.Exceptions;
+using Air.Cloud.Core.Standard.Print;
 
 namespace Air.Cloud.Core.Standard.DefaultDependencies
 {
@@ -26,10 +26,10 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         {
             var exception = (Exception)e.ExceptionObject;
             if (exception is IFriendlyExceptionStandard) return;
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "domain-errors",
-                Type = "Information",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = exception.Message,
                 State = true
             });

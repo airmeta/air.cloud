@@ -12,7 +12,7 @@ using Air.Cloud.WebApp.FriendlyException.Extensions.Options;
 namespace Air.Cloud.WebApp.Extensions.Options;
 
 /// <summary>
-/// Inject 服务配置选项
+/// Configuration 服务配置选项
 /// </summary>
 public sealed class InjectServiceOptions
 {

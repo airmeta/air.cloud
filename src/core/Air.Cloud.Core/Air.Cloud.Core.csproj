@@ -32,9 +32,6 @@
     <Protobuf Include="Protos\*.proto" GrpcServices="Client" Link="Protos\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Standard\WebApp\Extensions\" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\..\..\assets\logo.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

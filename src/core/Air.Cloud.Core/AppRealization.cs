@@ -12,18 +12,21 @@
 using Air.Cloud.Core.Plugins.DefaultDependency;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard;
+using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.Core.Standard.Assemblies;
+using Air.Cloud.Core.Standard.Authentication.Jwt;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Core.Standard.Configuration;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
 using Air.Cloud.Core.Standard.JSON;
-using Air.Cloud.Core.Standard.Jwt;
+using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.UtilStandard;
-using Air.Cloud.Core.Standard.WebApp;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 using System.Reflection;
 
@@ -32,12 +35,12 @@ namespace Air.Cloud.Core
     /// <summary>
     /// 所有标准实现
     /// </summary>
-    public static partial class AppRealization
+    public static class AppRealization
     {
         /// <summary>
-        /// 内容打印标准实现
+        /// 内容输出标准实现
         /// </summary>
-        public static IAppPrintStandard Print => InternalRealization.Print ?? DefaultRealization.Print;
+        public static IAppOutputStandard Output => InternalRealization.Output ?? DefaultRealization.Output;
         /// <summary>
         /// 容器标准实现
         /// </summary>
@@ -45,7 +48,7 @@ namespace Air.Cloud.Core
         /// <summary>
         /// 系统注入标准实现
         /// </summary>
-        public static IAppInjectStandard Inject => InternalRealization.Inject ?? DefaultRealization.Inject;
+        public static IAppConfigurationStandard Configuration => InternalRealization.Configuration ?? DefaultRealization.Configuration;
         /// <summary>
         /// 全局异常标准实现
         /// </summary>
@@ -85,19 +88,43 @@ namespace Air.Cloud.Core
         ///  (暂时只在Windows 环境下进行测试)
         /// </remarks>
         public static IPIDPlugin PID => InternalRealization.PID ?? DefaultRealization.PID;
-
+        /// <summary>
+        /// 系统注入标准
+        /// </summary>
+        public static IAppInjectStandard Injection=> InternalRealization.Injection ?? DefaultRealization.Injection;
         /// <summary>
         /// 设置约定实现
         /// </summary>
         /// <typeparam name="TDependency">约定类型</typeparam>
         /// <param name="standard">约定实现</param>
-        public static void SetDependency<TDependency>(TDependency standard) where TDependency : class
+        public static void SetDependency<TStandard>(TStandard standard) 
+                where TStandard :IStandard
         {
-            BindingFlags flag = BindingFlags.Static;
-            FieldInfo Field = typeof(InternalRealization).GetFields(flag).FirstOrDefault(s => s.FieldType == standard.GetType());
+            FieldInfo Field = typeof(InternalRealization).GetFields().FirstOrDefault(s => s.FieldType == typeof(TStandard));
             Field.SetValue(null, standard);
         }
 
+        static AppRealization()
+        {
+            FieldInfo[] FieldInfos = typeof(InternalRealization).GetFields().ToArray();
+            foreach (var item in FieldInfos)
+            {
+                //通过反射寻找IAppInjectStandard的实现
+                var Types = AppCore.StandardTypes.Where(s => item.FieldType.IsAssignableFrom(s) && s != item.FieldType).ToList();
+                if (Types.Count > 1)
+                {
+                    var ModulesInformation = new Dictionary<string, object>();
+                    for (int a = 1;  a<=Types.Count; a++)
+                    {
+                        ModulesInformation.Add($"模块{a}", Types[a-1]);
+                    }
+                    Output.Error(new Exception(item.FieldType.Name + "标准具有多个实现模块"));
+                }
+                if (Types.Count == 0) continue;
+                var Instance = Activator.CreateInstance(Types[0]);
+                item.SetValue(null, Instance);
+            }
+        }
         /// <summary>
         /// 默认标准实现
         /// </summary>
@@ -109,17 +136,17 @@ namespace Air.Cloud.Core
             public static ICompressStandard Compress => new DefaultCompressStandardDependency();
 
             /// <summary>
-            /// 内容打印标准实现
+            /// 内容输出标准实现
             /// </summary>
-            public static IAppPrintStandard Print => new DefaultAppPrintDependency();
+            public static IAppOutputStandard Output => new DefaultAppOutputDependency();
             /// <summary>
             /// 容器标准实现
             /// </summary>
             public static IContainerStandard Container => null;
             /// <summary>
-            /// 系统注入标准实现
+            /// 系统配置标准实现
             /// </summary>
-            public static IAppInjectStandard Inject => new DefaultAppInjectDependency();
+            public static IAppConfigurationStandard Configuration => new DefaultAppConfigurationDependency();
             /// <summary>
             /// 全局异常标准实现
             /// </summary>
@@ -154,6 +181,10 @@ namespace Air.Cloud.Core
             /// </remarks>
             public static IPIDPlugin PID => new DefaultPIDPluginDependency();
 
+            /// <summary>
+            /// 系统注入标准默认实现
+            /// </summary>
+            public static IAppInjectStandard Injection => throw new NotImplementedException("系统未实现注入标准,无法启动");
         }
         /// <summary>
         /// 自定义标准实现
@@ -165,17 +196,17 @@ namespace Air.Cloud.Core
             /// </summary>
             public static ICompressStandard Compress => AppCore.GetService<ICompressStandard>();
             /// <summary>
-            /// 内容打印标准实现
+            /// 内容输出标准实现
             /// </summary>
-            public static IAppPrintStandard Print = null;
+            public static IAppOutputStandard Output = null;
             /// <summary>
             /// 容器标准实现
             /// </summary>
             public static IContainerStandard Container = null;
             /// <summary>
-            /// 系统注入标准实现
+            /// 系统配置标准实现
             /// </summary>
-            public static IAppInjectStandard Inject = null;
+            public static IAppConfigurationStandard Configuration = null;
             /// <summary>
             /// 全局异常标准实现
             /// </summary>
@@ -209,6 +240,11 @@ namespace Air.Cloud.Core
             ///  (暂时只在Windows 环境下进行测试)
             /// </remarks>
             public static IPIDPlugin PID=>AppCore.GetService<IPIDPlugin>();
+
+            /// <summary>
+            /// 系统注入标准实现
+            /// </summary>
+            public static IAppInjectStandard Injection = null;
         }
     }
 }

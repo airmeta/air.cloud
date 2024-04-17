@@ -21,6 +21,7 @@ using Microsoft.Extensions.Options;
 
 using System.Reflection;
 using Air.Cloud.Core;
+using Air.Cloud.Core.Standard.Print;
 
 
 namespace Air.Cloud.WebApp.DataValidation.Filters;
@@ -159,10 +160,10 @@ public sealed class DataValidationFilter : IAsyncActionFilter, IOrderedFilter
             finalContext.Result = unifyResult.OnValidateFailed(context, validationMetadata);
         }
         // 打印完整的堆栈信息
-        AppRealization.Print.Print(new
+        AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "validation",
-            Type = "Error",
+            Level=AppPrintInformation.AppPrintLevel.Error,
             Content = $"Validation Failed:\r\n{validationMetadata.Message}",
             State = true
         });

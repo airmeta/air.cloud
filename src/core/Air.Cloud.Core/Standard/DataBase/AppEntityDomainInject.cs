@@ -1,6 +1,18 @@
-﻿using Air.Cloud.Core.Dependencies;
+﻿/*
+ * Copyright (c) 2024 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.DataBase.Domains;
 using Air.Cloud.Core.Standard.DynamicServer.Extensions;
+using Air.Cloud.Core.Standard.Print;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,10 +44,10 @@ namespace Air.Cloud.Core.Standard.DataBase
                 }
                 catch (Exception ex)
                 {
-                    AppRealization.Print.Print(new
+                    AppRealization.Output.Print(new AppPrintInformation
                     {
                         Title = "domain-errors",
-                        Type = "Information",
+                        Level = AppPrintInformation.AppPrintLevel.Error,
                         Content = $"注册Domain失败,异常信息:{ex.Message}",
                         State = true
                     });

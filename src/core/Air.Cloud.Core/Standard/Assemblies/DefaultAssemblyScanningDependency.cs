@@ -9,6 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.Print;
+
 using System.Runtime.Loader;
 
 namespace Air.Cloud.Core.Standard.Assemblies
@@ -45,10 +47,10 @@ namespace Air.Cloud.Core.Standard.Assemblies
                                 }
                                 catch (Exception ex)
                                 {
-                                    AppRealization.Print.Print(new
+                                    AppRealization.Output.Print(new AppPrintInformation
                                     {
                                         Title = "domain-errors",
-                                        Type = "Information",
+                                        Level = AppPrintInformation.AppPrintLevel.Error,
                                         Content = $"执行类库扫描时出现异常,异常信息:{ex.Message}"+t.Name,
                                         State = true
                                     });
@@ -62,10 +64,10 @@ namespace Air.Cloud.Core.Standard.Assemblies
             }
             catch (Exception ex)
             {
-                AppRealization.Print.Print(new
+                AppRealization.Output.Print(new AppPrintInformation
                 {
                     Title = "domain-errors",
-                    Type = "Information",
+                    Level = AppPrintInformation.AppPrintLevel.Error,
                     Content = $"执行类库扫描时出现异常,异常信息:{ex.Message}",
                     State = true
                 });

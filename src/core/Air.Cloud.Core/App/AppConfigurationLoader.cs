@@ -9,14 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Extensions;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
-
-using System.Reflection;
 
 namespace Air.Cloud.Core.App
 {
@@ -78,57 +72,6 @@ namespace Air.Cloud.Core.App
             CommonConfigChangeToken = LoadToken ? configuration.GetReloadToken() : null;
             return CommonConfigChangeToken;
         }
-        /// <summary>
-        /// 加载配置文件
-        /// </summary>
-        /// <returns></returns>
-        public static WebApplicationBuilder InjectWebApplicationBuilder(this WebApplicationBuilder builder)
-        {
-            IConfiguration config = null;
-            IChangeToken token = null;
-            Action action = new Action(() =>
-            {
-                config = new ConfigurationBuilder().SetBasePath(AppConst.ApplicationPath)
-                                                        .AddJsonFile(AppConst.DEFAULT_CONFIG_FILE, optional: true, reloadOnChange: true)
-                                                        .Build();
-                InnerConfiguration = config;
-                builder.Configuration.AddConfiguration(config);
-            });
-            action();
-            token = config.GetReloadToken();
-            token.RegisterChangeCallback(state =>
-            {
-                action();
-            }, config);
-            if (config == null) throw new Exception("加载内部配置文件" + AppConst.DEFAULT_CONFIG_FILE + "失败");
-            return builder;
-        }
-        /// <summary>
-        /// Host控制台应用程序加载本地的配置文件
-        /// </summary>
-        /// <returns></returns>
-        public static IHostBuilder WindowsInjectInFile(this IHostBuilder builder)
-        {
-            //加载远程配置文件
-            AppRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
-            AppRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
-            AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
-            AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
-            builder = builder.ConfigureAppConfiguration(a =>
-            {
-                a.AddConfiguration(Configurations);
-            });
-            builder = builder.Inject();
-            return builder;
-        }
-        /// <summary>
-        /// 非Host控制台应用程序加载本地的配置文件
-        /// </summary>
-        /// <returns></returns>
-        public static void WindowsInjectInFile()
-        {
-            AppRealization.Inject.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
-            AppRealization.Inject.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
-        }
+       
     }
 }

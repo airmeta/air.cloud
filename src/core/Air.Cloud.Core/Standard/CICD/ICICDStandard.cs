@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard;
+using Air.Cloud.Core.Standard.AppResult;
 using Air.Cloud.Core.Standard.CICD.Config;
 using Air.Cloud.Core.Standard.CICD.Model;
 

@@ -266,20 +266,20 @@ public static class DbObjectExtensions
     /// <param name="isAsync"></param>
     private static void PrintDataBaseConnectionInformation(DatabaseFacade databaseFacade, DbConnection dbConnection, bool isAsync)
     {
-        AppRealization.Print.Print(new
+        AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "sql",
-            Type = "Information",
+            Level = AppPrintInformation.AppPrintLevel.Information,
             Content = $"Open{(isAsync ? "Async" : string.Empty)},Connection Open{(isAsync ? "Async" : string.Empty)}()",
             State = true
         });
         if (IsDevelopment)
         {
             var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "connection",
-                Type = "Information",
+                Level = AppPrintInformation.AppPrintLevel.Information,
                 Content = $"[Connection Id: {connectionId}] / [Database: {dbConnection.Database}] / [Connection String: {dbConnection.ConnectionString}]",
                 State = true
             });
@@ -294,10 +294,10 @@ public static class DbObjectExtensions
     private static void LogSqlExecuteCommand(DatabaseFacade databaseFacade, DbCommand dbCommand)
     {
         // 打印执行 SQL
-        AppRealization.Print.Print(new
+        AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "sql",
-            Type = "Information",
+            Level = AppPrintInformation.AppPrintLevel.Information,
             Content = dbCommand.CommandText,
             State = true
         });

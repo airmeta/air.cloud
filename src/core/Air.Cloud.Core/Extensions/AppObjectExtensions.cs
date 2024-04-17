@@ -7,13 +7,10 @@
 // See the Mulan PSL v2 for more details.
 using Mapster;
 
-using Microsoft.AspNetCore.Http;
-
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Air.Cloud.Core.Extensions
 {

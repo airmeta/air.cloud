@@ -12,6 +12,7 @@ using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.DataBase.Domains;
 using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
+
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Runtime.Loader;
@@ -42,10 +43,10 @@ namespace Air.Cloud.WebApp.Extensions
                 }
                 catch (Exception ex)
                 {
-                    AppRealization.Print.Print(new
+                    AppRealization.Output.Print(new AppPrintInformation
                     {
                         Title = "domain-errors",
-                        Type = "Information",
+                        Level = AppPrintInformation.AppPrintLevel.Error,
                         Content = $"注册Domain失败,异常信息:{ex.Message}",
                         State = true
                     });

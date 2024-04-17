@@ -11,12 +11,7 @@
  */
 using Air.Cloud.Core.Enums;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Air.Cloud.Core.App
 {
@@ -110,7 +105,7 @@ namespace Air.Cloud.Core.App
         /// <summary>
         /// 是否为开发环境
         /// </summary>
-        public static bool IsDevelopment => VirtualEnvironment == EnvironmentEnums.Development;
+        public static bool IsDevelopment => VirtualEnvironment == EnvironmentEnums.Development||RealEnvironment==EnvironmentEnums.Development;
         /// <summary>
         /// 是否为生产环境
         /// </summary>

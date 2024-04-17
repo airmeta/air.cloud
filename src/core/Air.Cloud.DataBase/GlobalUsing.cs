@@ -12,3 +12,4 @@ global using System.Data;
 global using System.Diagnostics.Internal;
 global using System.Reflection;
 global using System.Runtime.CompilerServices;
+global using Air.Cloud.Core.Standard.Print;

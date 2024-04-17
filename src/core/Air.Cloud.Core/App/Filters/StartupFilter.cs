@@ -6,7 +6,6 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
-using Air.Cloud.Core.App.Internal;
 using Air.Cloud.Core.App.Startups;
 
 using Microsoft.AspNetCore.Builder;
@@ -35,7 +34,7 @@ public class StartupFilter : IStartupFilter
         return app =>
         {
             // 存储根服务
-            InternalApp.RootServices = app.ApplicationServices;
+            AppCore.RootServices = app.ApplicationServices;
             // 设置响应报文头信息
             app.Use(async (context, next) =>
             {

@@ -7,6 +7,7 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core;
+using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.DataBase.Extensions.DatabaseProvider;
 
 using Microsoft.EntityFrameworkCore;
@@ -107,10 +108,10 @@ public class DbContextPool : IDbContextPool
             // 回滚事务
             currentTransaction.Rollback();
 
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "transaction",
-                Type = "Error",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = $"[Connection Id: {context.ContextId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
                 State = true
             });
@@ -212,10 +213,10 @@ public class DbContextPool : IDbContextPool
         ShareTransaction: ShareTransaction(DbContextTransaction.GetDbTransaction());
 
             // 打印事务实际开启信息
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "database",
-                Type = "Information",
+                Level = AppPrintInformation.AppPrintLevel.Information,
                 Content = $"Start",
                 State = true
             });
@@ -255,10 +256,10 @@ public class DbContextPool : IDbContextPool
 
             // 提交共享事务
             DbContextTransaction?.Commit();
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "transaction",
-                Type = "Information",
+                Level = AppPrintInformation.AppPrintLevel.Information,
                 Content = $"Transaction Completed! Has {hasChangesCount} DbContext Changes.",
                 State = true
             });
@@ -269,10 +270,10 @@ public class DbContextPool : IDbContextPool
             if (DbContextTransaction?.GetDbTransaction()?.Connection != null) DbContextTransaction?.Rollback();
 
             // 打印事务回滚消息
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "transaction",
-                Type = "Error",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = "Rollback",
                 State = true
             });
@@ -303,10 +304,10 @@ public class DbContextPool : IDbContextPool
         DbContextTransaction = null;
 
         // 打印事务回滚消息
-        AppRealization.Print.Print(new
+        AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "transaction",
-            Type = "Error",
+            Level = AppPrintInformation.AppPrintLevel.Error,
             Content = "Rollback",
             State = true
         });
@@ -328,10 +329,10 @@ public class DbContextPool : IDbContextPool
 
             conn.Close();
             // 打印数据库关闭信息
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "sql",
-                Type = "Information",
+                Level = AppPrintInformation.AppPrintLevel.Information,
                 Content = "Connection Close",
                 State = true
             });

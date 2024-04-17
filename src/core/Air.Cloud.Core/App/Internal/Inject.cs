@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace Air.Cloud.Core.App.Internal;
 
 /// <summary>
-/// 跨平台 Inject
+/// 跨平台 Configuration
 /// </summary>
 public static class Inject
 {
@@ -32,10 +32,10 @@ public static class Inject
 
         // 存储配置对象
         // var configuration = InternalApp.InnerConfiguration = configurationBuilder.Build();
-        var configuration = InternalApp.Configuration;
+        var configuration = AppConfigurationLoader.Configurations;
 
         // 创建服务对象和存储服务提供器
-        var services = InternalApp.InternalServices = new ServiceCollection();
+        var services =AppCore.InternalServices = new ServiceCollection();
 
         // 添加默认控制台日志处理程序
         services.AddLogging(loggingBuilder =>

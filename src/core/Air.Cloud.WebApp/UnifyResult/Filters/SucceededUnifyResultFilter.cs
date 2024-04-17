@@ -63,10 +63,10 @@ public class SucceededUnifyResultFilter : IAsyncActionFilter, IOrderedFilter
             var result = unifyResult.OnValidateFailed(context, validationMetadata);
             if (result != null) actionExecutedContext.Result = result;
             // 打印完整的堆栈信息
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "validation",
-                Type = "Error",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = $"Validation Failed:\r\n{validationMetadata.Message}",
                 State = true
             });

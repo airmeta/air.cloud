@@ -15,3 +15,4 @@ global using Air.Cloud.WebApp.DataValidation.Attributes;
 
 global using Microsoft.AspNetCore.Builder;
 global using Microsoft.AspNetCore.Hosting;
+global using Air.Cloud.Core.Standard.Print;

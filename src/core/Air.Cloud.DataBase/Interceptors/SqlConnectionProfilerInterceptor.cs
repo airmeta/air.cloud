@@ -70,10 +70,10 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
     private void PrintConnectionToMiniProfiler(DbConnection connection, ConnectionEventData eventData)
     {
         // 打印连接信息消息
-        AppRealization.Print.Print(new
+        AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "connection",
-            Type = "Information",
+            Level = AppPrintInformation.AppPrintLevel.Information,
             Content = $"[Connection Id: {eventData.ConnectionId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
             State = true
         });

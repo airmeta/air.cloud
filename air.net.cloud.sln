@@ -33,13 +33,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.webapp.repository", "t
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.webapp.service", "test\unit.webapp\unit.webapp.service\unit.webapp.service.csproj", "{98818BD5-6F28-4AAD-9653-36EA12759E85}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Plugins.SpecificationDocument", "src\plugins\Air.Cloud.Plugins.SpecificationDocument\Air.Cloud.Plugins.SpecificationDocument.csproj", "{6A022E95-73C4-4005-96B6-AF37CC36D48E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Plugins.SpecificationDocument", "src\plugins\Air.Cloud.Plugins.SpecificationDocument\Air.Cloud.Plugins.SpecificationDocument.csproj", "{6A022E95-73C4-4005-96B6-AF37CC36D48E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Core.Extensions", "src\extensions\Air.Cloud.Core.Extensions\Air.Cloud.Core.Extensions.csproj", "{0D5DB7FF-7A70-4B04-982B-3142BDDC48F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Core.Extensions", "src\extensions\Air.Cloud.Core.Extensions\Air.Cloud.Core.Extensions.csproj", "{0D5DB7FF-7A70-4B04-982B-3142BDDC48F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Consul", "src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj", "{F73F997E-B17B-4156-9E54-52CF13835FA1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Consul", "src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj", "{F73F997E-B17B-4156-9E54-52CF13835FA1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "extensions", "extensions", "{C2F6AEE9-69D9-4DA4-A033-C720523AC50E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.HostApp", "src\core\Air.Cloud.HostApp\Air.Cloud.HostApp.csproj", "{53E326B7-2425-4AF5-A449-9E03056AF2B5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "db", "db", "{D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +107,10 @@ Global
 		{F73F997E-B17B-4156-9E54-52CF13835FA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F73F997E-B17B-4156-9E54-52CF13835FA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F73F997E-B17B-4156-9E54-52CF13835FA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53E326B7-2425-4AF5-A449-9E03056AF2B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53E326B7-2425-4AF5-A449-9E03056AF2B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53E326B7-2425-4AF5-A449-9E03056AF2B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53E326B7-2425-4AF5-A449-9E03056AF2B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,7 +118,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{05126575-EB48-4320-8D71-99BD80DFF8E9} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
 		{1EB5D27F-3A34-4F12-8FCA-8DF0ABCBCC57} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
-		{677BDD1E-EB22-4927-AA46-5508BD983633} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
+		{677BDD1E-EB22-4927-AA46-5508BD983633} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
 		{F302A20A-72BE-4592-98C7-0060F0C8D28E} = {AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}
 		{A1393067-1DAD-48E9-B119-858DC29BF987} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{C0F9B823-B7D3-4132-BD81-5E6B1C29CA57} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
@@ -122,6 +130,7 @@ Global
 		{6A022E95-73C4-4005-96B6-AF37CC36D48E} = {AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}
 		{0D5DB7FF-7A70-4B04-982B-3142BDDC48F8} = {C2F6AEE9-69D9-4DA4-A033-C720523AC50E}
 		{F73F997E-B17B-4156-9E54-52CF13835FA1} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
+		{53E326B7-2425-4AF5-A449-9E03056AF2B5} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

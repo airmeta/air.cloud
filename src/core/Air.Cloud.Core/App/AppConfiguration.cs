@@ -10,7 +10,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App.Options;
-using Air.Cloud.Core.Attributes;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;

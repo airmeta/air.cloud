@@ -1,6 +1,7 @@
 ﻿using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Modules.RedisCache.Options;
 
 using StackExchange.Redis;
@@ -46,10 +47,10 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         private static ConnectionMultiplexer Connect()
         {
             string? ConnectionString = AppCore.GetOptions<RedisSettingsOptions>()?.ConnectionString;
-            if (ConnectionString.IsNullOrEmpty()) AppRealization.Print.Print(new
+            if (ConnectionString.IsNullOrEmpty()) AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "domain-errors",
-                Type = "Error",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = "Redis配置信息缺失",
                 State = true
             });

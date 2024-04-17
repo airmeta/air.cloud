@@ -9,29 +9,24 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.App.Internal;
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Enhance;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Modules;
 using Air.Cloud.Core.Plugins;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DynamicServer;
-using Air.Cloud.Core.Standard.Modules;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyModel;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Security.Claims;
@@ -147,7 +142,7 @@ namespace Air.Cloud.Core.App
         #endregion
         #region  Config
 
-        public static IConfiguration Configuration => InternalApp.Configuration;
+        public static IConfiguration Configuration => AppConfigurationLoader.Configurations;
 
         /// <summary>
         /// 私有设置，避免重复解析
@@ -246,12 +241,11 @@ namespace Air.Cloud.Core.App
         /// <summary>
         /// 存储根服务，可能为空
         /// </summary>
-        public static IServiceProvider RootServices => InternalApp.RootServices;
+        public static IServiceProvider RootServices;
         /// <summary>
         /// 内部服务集合
         /// </summary>
-        public static IServiceCollection InternalServices =>InternalApp.InternalServices;
-
+        public static IServiceCollection InternalServices;
         /// <summary>
         /// 获取请求上下文
         /// </summary>
@@ -283,7 +277,7 @@ namespace Air.Cloud.Core.App
             if (AppStartType == AppStartupTypeEnum.WEB && RootServices != null) return RootServices;
 
             // 第一选择，判断是否是单例注册且单例服务不为空，如果是直接返回根服务提供器
-            if (RootServices != null && InternalApp.InternalServices.Where(u => u.ServiceType == (serviceType.IsGenericType ? serviceType.GetGenericTypeDefinition() : serviceType))
+            if (RootServices != null && InternalServices.Where(u => u.ServiceType == (serviceType.IsGenericType ? serviceType.GetGenericTypeDefinition() : serviceType))
                                                                     .Any(u => u.Lifetime == ServiceLifetime.Singleton)) return RootServices;
 
             // 第二选择是获取 HttpContext 对象的 RequestServices
@@ -299,7 +293,7 @@ namespace Air.Cloud.Core.App
             // 第四选择，构建新的服务对象（性能最差）
             else
             {
-                var serviceProvider = InternalApp.InternalServices.BuildServiceProvider();
+                var serviceProvider = InternalServices.BuildServiceProvider();
                 UnmanagedObjects.Add(serviceProvider);
                 return serviceProvider;
             }
@@ -398,7 +392,7 @@ namespace Air.Cloud.Core.App
         /// </summary>
         public static IEnumerable<Assembly> ExternalAssemblies;
 
-        public static void ConfigureApplication(IWebHostBuilder hostBuilder, IHostBuilder builder = null) => InternalApp.ConfigureWebApplication(hostBuilder, builder);
+
         /// <summary>
         /// 释放所有未托管的对象
         /// </summary>

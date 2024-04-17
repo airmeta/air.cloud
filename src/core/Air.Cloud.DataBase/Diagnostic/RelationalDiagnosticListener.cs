@@ -42,7 +42,7 @@ namespace Air.Cloud.DataBase.Diagnostic;
 //    /// 操作错误监听
 //    /// </summary>
 //    /// <param name="error"></param>
-//    public void OnError(Exception error)
+//    public void OnError(Error error)
 //    {
 //        Trace.WriteLine(error);
 //    }

@@ -134,19 +134,19 @@ public sealed class FriendlyExceptionFilter : IAsyncExceptionFilter
         // 打印错误文件名和行号
         if (!string.IsNullOrWhiteSpace(exceptionFileName) && exceptionFileLineNumber > 0)
         {
-            AppRealization.Print.Print(new
+            AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "errors",
-                Type = "Error",
+                Level = AppPrintInformation.AppPrintLevel.Error,
                 Content = $"{exceptionFileName}:line {exceptionFileLineNumber}",
                 State = true
             });
         }
         // 打印完整的堆栈信息
-        AppRealization.Print.Print(new
+        AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "errors",
-            Type = "Error",
+            Level = AppPrintInformation.AppPrintLevel.Error,
             Content = exception.ToString(),
             State = true
         });

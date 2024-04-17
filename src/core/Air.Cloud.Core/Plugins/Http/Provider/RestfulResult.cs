@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard;
+using Air.Cloud.Core.Standard.AppResult;
 
 namespace Air.Cloud.Core.Plugins.Http.Provider
 {

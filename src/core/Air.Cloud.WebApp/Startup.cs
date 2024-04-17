@@ -15,6 +15,8 @@ using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
 
+using Mapster;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.WebApp
@@ -39,7 +41,6 @@ namespace Air.Cloud.WebApp
 
             // 401，403 规范化结果
             app.UseUnifyResultStatusCodes();
-
             // Https 重定向
             app.UseHttpsRedirection();
 
