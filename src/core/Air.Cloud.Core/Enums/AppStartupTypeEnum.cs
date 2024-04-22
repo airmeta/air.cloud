@@ -11,6 +11,10 @@
  */
 namespace Air.Cloud.Core.Enums
 {
+    /// <summary>
+    /// <para>zh-cn: 应用程序启动类型</para>
+    /// <para>en-us: Application startup type</para>
+    /// </summary>
     public enum AppStartupTypeEnum
     {
         WEB,

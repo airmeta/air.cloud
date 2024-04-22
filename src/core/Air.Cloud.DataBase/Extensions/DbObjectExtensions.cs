@@ -259,7 +259,7 @@ public static class DbObjectExtensions
     }
 
     /// <summary>
-    /// 打印数据库连接信息到 MiniProfiler
+    /// 打印数据库连接信息
     /// </summary>
     /// <param name="databaseFacade">ADO.NET 数据库对象</param>
     /// <param name="dbConnection">数据库连接对象</param>
@@ -273,7 +273,7 @@ public static class DbObjectExtensions
             Content = $"Open{(isAsync ? "Async" : string.Empty)},Connection Open{(isAsync ? "Async" : string.Empty)}()",
             State = true
         });
-        if (IsDevelopment)
+        if (IsPrintDbConnectionInfo)
         {
             var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
             AppRealization.Output.Print(new AppPrintInformation

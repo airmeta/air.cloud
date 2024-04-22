@@ -33,6 +33,7 @@ namespace Air.Cloud.HostApp.Extensions
             AppRealization.Configuration.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
+            AppCore.AppStartType = AppStartupTypeEnum.HOST;
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 a.AddConfiguration(AppConfigurationLoader.Configurations);

@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.App.Loader;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
@@ -21,7 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.WebApp
 {
-    [AppStartup(int.MaxValue)]
+    [AppStartup(AppName ="Air.Cloud.WebApp", Order =int.MaxValue)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)

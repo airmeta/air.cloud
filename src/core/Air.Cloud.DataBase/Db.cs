@@ -25,12 +25,6 @@ public static class Db
     /// 迁移类库名称
     /// </summary>
     internal static string MigrationAssemblyName = "Air.Database.Migrations";
-
-    /// <summary>
-    /// 是否启用自定义租户类型
-    /// </summary>
-    internal static bool CustomizeMultiTenants;
-
     /// <summary>
     /// 获取非泛型仓储
     /// </summary>

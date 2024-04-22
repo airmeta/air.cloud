@@ -44,16 +44,12 @@ public static class AspNetMvcBuilderServiceCollectionExtensions
     public static IServiceCollection AddMvcFilter<TFilter>(this IServiceCollection services, Action<MvcOptions> configure = default)
         where TFilter : IFilterMetadata
     {
-        // 非 Web 环境跳过注册
-        if (AppCore.AppStartType == Core.Enums.AppStartupTypeEnum.WEB)
+        services.Configure<MvcOptions>(options =>
         {
-            services.Configure<MvcOptions>(options =>
-            {
-                options.Filters.Add<TFilter>();
-                // 其他额外配置
-                configure?.Invoke(options);
-            });
-        }
+            options.Filters.Add<TFilter>();
+            // 其他额外配置
+            configure?.Invoke(options);
+        });
         return services;
     }
 }

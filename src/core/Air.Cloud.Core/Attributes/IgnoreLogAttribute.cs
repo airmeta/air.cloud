@@ -15,13 +15,13 @@ namespace Air.Cloud.Core.Attributes
     /// <summary>
     /// 不记录审计日志
     /// </summary>
-    public class LogIgnore : Attribute
+    public class IgnoreLogAttribute : Attribute
     {
         /// <summary>
         /// 不记录审计日志
         /// </summary>
         /// <param name="propertyValue">字段中文标注</param>
-        public LogIgnore(bool? propertyValue)
+        public IgnoreLogAttribute(bool? propertyValue)
         {
             if (propertyValue.HasValue)
                 PropertyValue = propertyValue.Value;
@@ -33,7 +33,7 @@ namespace Air.Cloud.Core.Attributes
         /// <summary>
         /// 不记录审计日志
         /// </summary>
-        public LogIgnore()
+        public IgnoreLogAttribute()
         {
             PropertyValue = true;
         }

@@ -13,24 +13,54 @@ using System.Reflection;
 
 namespace Air.Cloud.Core.App.Loader
 {
+    /// <summary>
+    /// <para>zh-cn: 程序集加载树,实验性功能</para>
+    /// <para>en-us: Assembly loading tree, experimental function</para>
+    /// </summary>
+    [Obsolete("实验性功能/Experimental Function")]
     public class AssemblyTree
     {
         /// <summary>
-        /// 当前节点的程序集信息
+        /// zh-cn:当前节点的程序集信息
+        /// en-us: Current node assembly information
         /// </summary>
         public AssemblyName Assembly;
         /// <summary>
-        /// 当前节点的依赖程序集信息
+        /// zh-cn:当前节点的依赖程序集信息
+        /// en-us: Dependency assembly information of the current node
         /// </summary>
         public IList<AssemblyTree> ChildrenAssemblies;
         /// <summary>
-        /// 依赖当前节点的程序集信息
+        /// zh-cn:依赖当前节点的程序集信息
+        /// en-us: Assembly information that depends on the current node
         /// </summary>
         public IList<AssemblyTree> ParentAssemblies;
     }
 
+    /// <summary>
+    /// zh-cn: 程序集树扩展
+    /// en-us: Assembly tree extension
+    /// </summary>
+    [Obsolete("实验性功能/Experimental Function")]
     public static class AssemblyTreeExtensions
     {
+        /// <summary>
+        /// <para>zh-cn: 程序集树排序</para>
+        /// <para>en-us: Assembly tree sorting</para>
+        /// </summary>
+        /// <param name="tree">
+        /// zh-cn: 程序集树
+        /// en-us: Assembly tree
+        /// </param>
+        /// <param name="NodeDependency">
+        /// <para>zh-cn:程序集依赖程序集信息</para>
+        /// <para>en-us:assembly dependent assembly information</para>
+        /// </param>
+        /// <param name="Used">
+        /// zh-cn: 当前程序集是否已经被其他程序集引用,如果引用了则不再向下查找
+        /// en-us: Whether the current assembly has been referenced by other assemblies, if it has been referenced, it will not be searched down
+        /// </param>
+        /// <returns></returns>
         public static AssemblyTree Order(AssemblyTree tree, IDictionary<string, List<AssemblyName>> NodeDependency = null, List<AssemblyName> Used = null)
         {
             Console.WriteLine("current order Assembly information:" + tree.Assembly.Name);
@@ -66,11 +96,24 @@ namespace Air.Cloud.Core.App.Loader
             }
             return tree;
         }
+
+
         /// <summary>
-        /// 加载程序集依赖树信息
+        /// <para>zh-cn:加载程序集依赖树信息</para>
+        /// <para>en-us:Load assembly dependency tree information</para>
         /// </summary>
-        /// <param name="assembly">父程序集信息</param>
-        /// <returns></returns>
+        /// <param name="assembly">
+        /// <para>zh-cn:父级程序集信息</para>
+        /// <para>en-us:Parent assembly information</para>
+        /// </param>
+        /// <param name="processedAssemblies">
+        /// <para>zh-cn:已处理的程序集</para>
+        /// <para>en-us:Processed assembly</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:程序集依赖树</para>
+        /// <para>en-us:Assembly dependency tree</para>
+        /// </returns>
         public static AssemblyTree LoadTree(AssemblyName assembly, HashSet<string> processedAssemblies = null)
         {
             processedAssemblies ??= new HashSet<string>();
@@ -94,40 +137,24 @@ namespace Air.Cloud.Core.App.Loader
             tree.ParentAssemblies = new List<AssemblyTree>();
             return tree;
         }
-
+        /// <summary>
+        /// zh-cn: 调整树的顺序
+        /// en-us: Adjust the order of the tree
+        /// </summary>
+        /// <param name="tree">
+        /// <para>zh-cn:待调整</para>
+        /// <para>en-us:To be adjusted</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:调整结果</para>
+        /// <para>en-us:Adjustment result</para>
+        /// </returns>
         public static AssemblyTree OrderTree(this AssemblyTree tree)
         {
-            //这个tree 就已经是依赖过的程序集信息
-            //数据处理流程解释:
-            //开始向下遍历检查 检查该程序集的依赖项是否被其他类库依赖
-            //这里最子节点一定是Air.Cloud.Core类库
-            //也就是说 所有的模组,增强,插件都是依赖于Air.Cloud.Core
-            //这个时候 可以剔除掉非模组,增强,插件,用户业务的程序集,然后进行倒转过来
-            //取到的结果 都是直接依赖或者间接依赖Air.Cloud.Core的程序集 
-            //这个时候的依赖可能还是多条重复的线  这个时候 需要对树进行节点优化 保证顺序 平级从左到右分别调用
-            /*          1
-             *       2    a
-             *     a  b  3  4
-             *     
-             */
             IDictionary<string, List<AssemblyName>> NodeDependency = new Dictionary<string, List<AssemblyName>>();
             List<AssemblyName> UsedDenpendency = new List<AssemblyName>();
             tree = Order(tree, NodeDependency, UsedDenpendency);
             return tree;
-        }
-
-        public static AssemblyTree Reverse(this AssemblyTree tree)
-        {
-            var AssemblyOrder = new List<AssemblyName>();
-            //第一个没有再被依赖了 即使有依赖也解除依赖
-            tree.ParentAssemblies = new List<AssemblyTree>();
-            //加载主应用程序(保证用户的配置为第一位)
-            AssemblyOrder.Add(tree.Assembly);
-            //加载依赖应用程序 要排除根类库
-            var BaseAssembly = Assembly.GetExecutingAssembly();
-            //倒转后的tree
-            var ReverseTree = new AssemblyTree();
-            return ReverseTree;
         }
     }
 }

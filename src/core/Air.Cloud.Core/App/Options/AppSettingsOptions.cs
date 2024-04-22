@@ -15,13 +15,6 @@ namespace Air.Cloud.Core.App.Options;
 [ConfigurationInfo("AppSettings")]
 public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions>
 {
-    #region 该文件夹存放在根目录下 可以将相关插件类库的发布dll等放在该文件夹下,框架会自动加载并应用该类库信息
-    /// <summary>
-    /// 插件Dll文件夹
-    /// </summary>
-    public const string PLUGINS_DIR = "plugins";
-    #endregion
-
     /// <summary>
     /// <para>zh-cn: 是否启用引用程序集扫描</para>
     /// <para>en-us: Whether to enable reference assembly scanning</para>
@@ -55,12 +48,6 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     public bool? InjectSpecificationDocument { get; set; }
 
     /// <summary>
-    /// 外部程序集
-    /// </summary>
-    /// <remarks>扫描 dll 文件，如果是单文件发布，需拷贝放在根目录下</remarks>
-    public string[] ExternalAssemblies { get; set; }
-
-    /// <summary>
     /// 是否打印数据库连接信息
     /// </summary>
     public bool? PrintDbConnectionInfo { get; set; }
@@ -78,9 +65,8 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     {
         options.InjectSpecificationDocument ??= (AppEnvironment.IsProduction?false:true);
         options.EnabledReferenceAssemblyScan ??= false;
-        options.ExternalAssemblies ??= Array.Empty<string>();
-        options.PrintDbConnectionInfo ??= true;
-        options.OutputOriginalSqlExecuteLog ??= true;
+        options.PrintDbConnectionInfo ??= (AppEnvironment.IsProduction ? false : true);
+        options.OutputOriginalSqlExecuteLog ??= (AppEnvironment.IsProduction ? false : true);
         options.SupportPackageNamePrefixs ??= Array.Empty<string>();
     }
 }

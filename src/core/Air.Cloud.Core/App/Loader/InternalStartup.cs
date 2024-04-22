@@ -17,7 +17,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Air.Cloud.Core.App.Loader
 {
     /// <summary>
-    /// 内置Startup 进行初始化配置
+    /// <para>zh-cn: 内置Startup,防止出现未配置启动项导致失败的情况</para>
+    /// <para>en-us: Built-in Startup to prevent failure due to unconfigured startup items</para>
     /// </summary>
     public class InternalStartup : AppStartup
     {
