@@ -13,6 +13,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace Air.Cloud.Core.Standard.Configuration
 {
+    /// <summary>
+    /// 配置文件标准
+    /// </summary>
     public interface IAppConfigurationStandard : IStandard
     {
         public IConfiguration LoadConfiguration(string ConfigurationName, bool IsCommonConfiguration);

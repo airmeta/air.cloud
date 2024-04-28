@@ -12,6 +12,9 @@
 
 namespace Air.Cloud.Core.Standard.Exceptions
 {
+    /// <summary>
+    /// 应用程序全局异常处理标准
+    /// </summary>
     public interface IAppDomainExceptionHandlerStandard
     {
         /// <summary>

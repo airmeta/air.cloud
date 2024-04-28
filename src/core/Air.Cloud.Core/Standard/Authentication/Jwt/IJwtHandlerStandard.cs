@@ -12,6 +12,9 @@
 using Microsoft.AspNetCore.Authorization;
 namespace Air.Cloud.Core.Standard.Authentication.Jwt
 {
+    /// <summary>
+    /// JWT身份认证标准
+    /// </summary>
     public interface IJwtHandlerStandard:IAuthenticationStandard
     {
         /// <summary>

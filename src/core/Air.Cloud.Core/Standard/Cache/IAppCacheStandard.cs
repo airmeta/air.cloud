@@ -12,7 +12,7 @@
 namespace Air.Cloud.Core.Standard.Cache
 {
     /// <summary>
-    /// 缓存约定
+    /// 缓存标准
     /// </summary>
     public interface IAppCacheStandard : IStandard
     {

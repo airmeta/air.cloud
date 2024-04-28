@@ -16,7 +16,7 @@ using System.Diagnostics;
 namespace Air.Cloud.Core.Standard.Print
 {
     /// <summary>
-    /// 程序输出标准
+    /// 应用程序输出标准
     /// </summary>
     public interface IAppOutputStandard : IStandard
     {

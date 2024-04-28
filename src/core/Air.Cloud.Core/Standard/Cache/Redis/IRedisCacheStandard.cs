@@ -12,6 +12,9 @@
 
 namespace Air.Cloud.Core.Standard.Cache.Redis
 {
+    /// <summary>
+    /// Redis缓存标准
+    /// </summary>
     public  interface IRedisCacheStandard:IAppCacheStandard
     {
         /// <summary>

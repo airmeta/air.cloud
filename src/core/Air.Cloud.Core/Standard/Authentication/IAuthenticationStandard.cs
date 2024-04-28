@@ -12,7 +12,7 @@
 namespace Air.Cloud.Core.Standard.Authentication
 {
     /// <summary>
-    /// 授权约定 
+    /// 身份认证标准
     /// </summary>
     public interface IAuthenticationStandard : IStandard
     {
