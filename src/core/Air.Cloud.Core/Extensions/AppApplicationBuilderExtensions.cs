@@ -72,6 +72,7 @@ namespace Air.Cloud.Core.Extensions
                     });
                 }
             }
+            AppConfiguration.StartListenChangeReloadFunction();
             var optionsConfigure = services.AddOptions<TOptions>()
                   .Bind(optionsConfiguration, options =>
                   {

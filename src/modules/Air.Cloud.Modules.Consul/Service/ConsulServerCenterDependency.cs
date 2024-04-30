@@ -14,7 +14,7 @@ namespace Air.Cloud.Modules.Consul.Service
 
         static ConsulServerCenterDependency()
         {
-            var serviceOptions = AppCore.Configuration.GetObjectConfig<ConsulServiceOptions>();
+            var serviceOptions = AppCore.Configuration.GetConfig<ConsulServiceOptions>();
             ConsulClient = new ConsulClient(configuration =>
             {
                 //服务注册的地址，集群中任意一个地址

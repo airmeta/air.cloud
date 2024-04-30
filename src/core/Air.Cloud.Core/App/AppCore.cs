@@ -33,23 +33,31 @@ using System.Security.Claims;
 
 namespace Air.Cloud.Core.App
 {
+    /// <summary>
+    /// <para>zh-cn:应用程序核心</para>
+    /// <para>en-us:Application core</para>
+    /// </summary>
     [IgnoreScanning]
     public static partial class AppCore
     {
         /// <summary>
-        /// 模块
+        /// <para>zh-cn:模块关键词</para>
+        /// <para>en-us:Module keyword</para>
         /// </summary>
         public const string ASSEMBLY_MODULES_KEY = "Modules";
         /// <summary>
-        /// 插件
+        /// <para>zh-cn:插件关键词</para>
+        /// <para>en-us:Plugin keyword</para>
         /// </summary>
         public const string ASSEMBLY_PLUGINS_KEY = "Plugins";
         /// <summary>
-        /// 增强
+        /// <para>zh-cn:增强关键词</para>
+        /// <para>en-us:Enhance keyword</para>
         /// </summary>
-        public const string ASSEMBLY_ENHANCE_KEY = "Enhance";
+        public const string ASSEMBLY_ENHANCE_KEY = "Enhances";
         /// <summary>
-        /// 核心库的AssemblyName
+        /// <para>zh-cn:核心程序集名称</para>
+        /// <para>en-us:Core assembly name</para>
         /// </summary>
         public static AssemblyName CoreAssemblyName = typeof(AppCore).Assembly.GetName();
         static AppCore()

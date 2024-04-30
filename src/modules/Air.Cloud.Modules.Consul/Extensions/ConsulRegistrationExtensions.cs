@@ -27,7 +27,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
         /// <returns></returns>
         public static IApplicationBuilder UseConsul(this IApplicationBuilder app, Assembly assembly = null)
         {
-            var serviceOptions =AppCore.Configuration.GetObjectConfig<ConsulServiceOptions>();
+            var serviceOptions =AppCore.Configuration.GetConfig<ConsulServiceOptions>();
             //开发环境剔除此参数
             if (AppEnvironment.IsDevelopment) return app;
             AppRuntimeOptions? info = AppCore.GetOptions<AppRuntimeOptions>();

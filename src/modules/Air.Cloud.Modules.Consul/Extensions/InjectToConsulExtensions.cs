@@ -31,7 +31,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
             if (Config.Item2 != null)
             {
-                AppConfigurationLoader.SetCommonConfiguration(Config.Item2);
+                AppConfigurationLoader.SetPublicConfiguration(Config.Item2);
                 builder.Configuration.AddConfiguration(Config.Item2);
             }
             AppConfigurationLoader.SetExternalConfiguration(Config.Item1);
@@ -65,7 +65,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 if (Config.Item2 != null)
                 {
                     a.AddConfiguration(Config.Item2);
-                    AppConfigurationLoader.SetCommonConfiguration(Config.Item2);
+                    AppConfigurationLoader.SetPublicConfiguration(Config.Item2);
                 }
                 a.AddConfiguration(Config.Item1);
                 AppConfigurationLoader.SetExternalConfiguration(Config.Item1);

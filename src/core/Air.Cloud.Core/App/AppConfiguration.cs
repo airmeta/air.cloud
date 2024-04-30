@@ -22,17 +22,24 @@ using System.Reflection;
 namespace Air.Cloud.Core.App
 {
     /// <summary>
-    /// 应用程序配置信息
+    /// <para>zh-cn:应用程序配置信息</para>
+    /// <para>en-us:Application configuration information</para>
     /// </summary>
     /// <remarks>
-    /// 包含:应用程序配置信息、应用程序启动地址信息、应用程序PID信息、应用程序启动端口信息
+    /// <para>zh-cn:包含:应用程序配置信息、应用程序启动地址信息、应用程序PID信息、应用程序启动端口信息</para>
+    /// <para>en-us:Contains: application configuration information, application startup address information, application PID information, application startup port information</para>
     /// </remarks>
     public static class AppConfiguration
     {
-        internal class AppConfigurationDomain
+        /// <summary>
+        /// <para>zh-cn:应用程序主机信息获取</para>
+        /// <para>en-us:Application host information acquisition</para>
+        /// </summary>
+        internal class AppHostInformation
         {
             /// <summary>
-            /// 获取系统所在机器的IP地址
+            /// <para>zh-cn:获取本地IP地址</para>
+            /// <para>en-us:Get local IP address</para>
             /// </summary>
             /// <returns></returns>
             public static IPAddress GetLocalIPAddress()
@@ -48,33 +55,48 @@ namespace Air.Cloud.Core.App
         }
 
         /// <summary>
-        /// 应用程序配置信息
+        /// <para>zh-cn:应用程序配置信息</para>
+        /// <para>en-us:Application configuration information</para>
         /// </summary>
         public static IConfiguration Configuration => AppCore.Configuration;
         /// <summary>
-        /// 应用程序启动地址信息
+        /// <para>zh-cn:应用程序启动IP地址信息</para>
+        /// <para>en-us:Application startup Ip address information</para>
         /// </summary>
-        public static IPAddress IPAddress => AppConfigurationDomain.GetLocalIPAddress();
+        public static IPAddress IPAddress => AppHostInformation.GetLocalIPAddress();
 
         /// <summary>
-        /// 应用程序PID信息
+        /// <para>zh-cn:应用程序PID信息</para>
+        /// <para>en-us:Application PID information</para>
         /// </summary>
         public static string PID => AppRealization.PID.Get();
 
         /// <summary>
-        /// 应用程序启动端口信息
+        /// <para>zh-cn:应用程序启动端口信息</para>
+        /// <para>en-us:Application startup port information</para>
         /// </summary>
         /// <remarks>
-        ///  -1表示未知端口
+        ///  <para>zh-cn: -1表示未知端口,一般该参数由模块去宿主机中获取并赋值</para>
+        ///  <para>en-us: -1 indicates an unknown port, generally this parameter is obtained and assigned by the module to the host</para>
         /// </remarks>
         public static int Port => -1;
 
         /// <summary>
-        /// 获取配置
+        /// <para>zh-cn:获取配置信息</para>
+        /// <para>en-us:Get configuration information</para>
         /// </summary>
-        /// <typeparam name="TOptions">强类型选项类</typeparam>
-        /// <param name="path">配置中对应的Key</param>
-        /// <param name="loadPostConfigure"></param>
+        /// <typeparam name="TOptions">
+        /// <para>zh-cn:强类型选项类</para>
+        /// <para>en-us:Strongly typed option class</para>
+        /// </typeparam>
+        /// <param name="path">
+        /// <para>zh-cn:配置路径</para>
+        /// <para>en-us:Configuration path</para>
+        /// </param>
+        /// <param name="loadPostConfigure">
+        ///  <para>zh-cn:是否加载后期配置</para>
+        ///  <para>en-us:Whether to load post configuration</para>
+        /// </param>
         /// <returns>TOptions</returns>
         public static TOptions GetConfig<TOptions>(string path, bool loadPostConfigure = false)
         {
@@ -92,46 +114,41 @@ namespace Air.Cloud.Core.App
                         postConfigure.Invoke(options, new object[] { options, Configuration });
                     }
                 }
-
                 return options;
             }
             catch (NullReferenceException ex)
             {
-
-                throw new Exception("配置文件配置节缺失", ex);
-            }
-
-        }
-
-
-        /// <summary>
-        /// 获取配置文件 单个配置
-        /// </summary>
-        /// <param name="configName"></param>
-        /// <returns></returns>
-        public static string GetConfig(this IConfiguration configuration, string configName = null)
-        {
-            return configuration.GetSection(configName).Get<string>();
-        }
-        /// <summary>
-        /// 获取配置文件 单个配置
-        /// </summary>
-        /// <param name="configName"></param>
-        /// <returns></returns>
-        public static string GetConfig<T>(this IConfiguration configuration, string configName = null)
-        {
-            ConfigurationInfoAttribute s = typeof(T).GetCustomAttribute<ConfigurationInfoAttribute>(false);
-            if (string.IsNullOrEmpty(configName))
+                throw new Exception("未能加载到"+ path + "配置信息",ex);
+            }catch(Exception ex)
             {
-                configName = s?.ConfigurationName;
+                AppRealization.Output.Print(new AppPrintInformation
+                {
+                    State = true,
+                    AdditionalParams = new Dictionary<string, object>()
+                    {
+                        { ex.Message,ex}
+                    },
+                    Content = "加载应用程序选项时出现异常",
+                    Level = AppPrintInformation.AppPrintLevel.Error,
+                    Title = ex.Message,
+                });
+                throw;
             }
-            return configuration.GetSection(configName).Get<string>();
+
         }
+
         /// <summary>
-        /// 获取配置文件 多个配置
+        /// <para>zh-cn:获取多个配置信息</para>
+        /// <para>en-us:Get multiple configuration information</para>
         /// </summary>
-        /// <param name="configName"></param>
-        /// <returns></returns>
+        /// <param name="configName">
+        /// <para>zh-cn:配置名称</para>
+        /// <para>en-us:Configuration name</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:多个配置信息</para>
+        /// <para>en-us:multiple Configuration information</para>
+        /// </returns>
         public static T[] GetConfigs<T>(this IConfiguration configuration, string configName = null)
         {
             ConfigurationInfoAttribute s = typeof(T).GetCustomAttribute<ConfigurationInfoAttribute>(false);
@@ -142,11 +159,18 @@ namespace Air.Cloud.Core.App
             return configuration.GetSection(configName).Get<T[]>();
         }
         /// <summary>
-        /// 获取配置文件 单个配置
+        /// <para>zh-cn:获取单个配置信息</para>
+        /// <para>en-us:Get single configuration information</para>
         /// </summary>
-        /// <param name="configName">配置名称</param>
-        /// <returns></returns>
-        public static T GetObjectConfig<T>(this IConfiguration configuration, string configName = null) where T : class, new()
+        /// <param name="configName">
+        /// <para>zh-cn:配置名称</para>
+        /// <para>en-us:Configuration name</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:配置信息</para>
+        /// <para>en-us:Configuration information</para>
+        /// </returns>
+        public static T GetConfig<T>(this IConfiguration configuration, string configName = null) where T : class, new()
         {
             ConfigurationInfoAttribute s = typeof(T).GetCustomAttribute<ConfigurationInfoAttribute>(false);
             if (string.IsNullOrEmpty(configName))
@@ -156,19 +180,38 @@ namespace Air.Cloud.Core.App
             return configuration.GetSection(configName).Get<T>();
         }
 
-
+        /// <summary>
+        /// <para>zh-cn:应用程序配置监听器</para>
+        /// <para>en-us:Application configuration listener</para>
+        /// </summary>
         internal static class AppConfigurationObServer
         {
+            /// <summary>
+            /// <para>zh-cn:需要监听的配置</para>
+            /// <para>en-us:Configuration to listen to</para>
+            /// </summary>
             internal static ConcurrentDictionary<string, Action> Actions = new ConcurrentDictionary<string, Action>();
 
-            public static void TryAdd(KeyValuePair<string, Action> ac)
+            /// <summary>
+            /// <para>zh-cn:尝试添加配置信息监听动作</para>
+            /// <para>en-us:Try to add configuration information listening action</para>
+            /// </summary>
+            /// <param name="ac">
+            /// <para>zh-cn:配置信息,监听到配置变化的动作 </para>
+            /// <para>en-us:Configuration information, action when configuration changes</para>
+            /// </param>
+            public static void TryAddListen(KeyValuePair<string, Action> ac)
             {
                 Actions.TryAdd(ac.Key, ac.Value);
             }
-            static AppConfigurationObServer(){
+            /// <summary>
+            /// <para>zh-cn:开始监听</para>
+            /// <para>en-us:Start listening</para>
+            /// </summary>
+            public static void StartListen()
+            {
                 ChangeToken.OnChange(Configuration.GetReloadToken, () =>
                 {
-                    //轮番调用
                     foreach (var item in Actions)
                     {
                         item.Value.Invoke();
@@ -176,9 +219,24 @@ namespace Air.Cloud.Core.App
                 });
             }
         }
+
+        /// <summary>
+        /// <para>zh-cn:添加配置变化重新加载函数</para>
+        /// <para>en-us:Add configuration change reload function</para>
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <param name="Action"></param>
         public  static void AddChangeReloadFunction(string Key,Action Action)
         {
-            AppConfigurationObServer.TryAdd(new KeyValuePair<string, Action>(Key,Action));
+            AppConfigurationObServer.TryAddListen(new KeyValuePair<string, Action>(Key,Action));
+        }
+        /// <summary>
+        /// <para>zh-cn:开始监听配置变化</para>
+        /// <para>en-us:Start listening for configuration changes</para>
+        /// </summary>
+        public static void StartListenChangeReloadFunction()
+        {
+            AppConfigurationObServer.StartListen();
         }
     }
 }

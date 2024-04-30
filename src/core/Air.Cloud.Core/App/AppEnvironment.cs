@@ -15,6 +15,10 @@ using System.Diagnostics;
 
 namespace Air.Cloud.Core.App
 {
+    /// <summary>
+    /// <para>zh-cn:应用程序环境</para>
+    /// <para>en-us:Application environment</para>
+    /// </summary>
     public static class AppEnvironment
     {
         /// <summary>

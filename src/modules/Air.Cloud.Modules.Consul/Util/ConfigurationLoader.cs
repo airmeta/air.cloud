@@ -33,7 +33,7 @@ namespace Air.Cloud.Modules.Consul.Util
             string CommonConfigFileRoute = null;
             if (string.IsNullOrEmpty(RemoteUrl))
             {
-                var ServiceOptions = AppCore.Configuration.GetObjectConfig<ConsulServiceOptions>();
+                var ServiceOptions = AppCore.Configuration.GetConfig<ConsulServiceOptions>();
                 if (ServiceOptions == null) throw new FileNotFoundException("未找到配置文件appsettings.json或配置文件中不包含服务注册必须项");
                 RemoteUrl = ServiceOptions.ConsulAddress;
                 EnableCommonConfig = ServiceOptions.EnableCommonConfig;

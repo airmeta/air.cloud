@@ -13,15 +13,23 @@ using Microsoft.Extensions.Logging;
 namespace Air.Cloud.Core.App.Internal;
 
 /// <summary>
-/// 跨平台 Configuration
+/// <para>zh-cn:注入</para>
+/// <para>en-us:Injection</para>
 /// </summary>
 public static class Inject
 {
     /// <summary>
-    /// 创建初始服务集合
+    /// <para>zh-cn:创建初始服务集合</para>
+    /// <para>en-us:Create initial service collection</para>
     /// </summary>
-    /// <param name="configureLogging">配置日志</param>
-    /// <returns></returns>
+    /// <param name="configureLogging">
+    /// <para>zh-cn:日志构建器</para>
+    /// <para>en-us:Logging builder</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:返回服务集合</para>
+    /// <para>en-us:Return service collection</para>
+    /// </returns>
     public static IServiceCollection Create(Action<ILoggingBuilder> configureLogging = default)
     {
         // 监听全局异常
@@ -30,8 +38,6 @@ public static class Inject
         // 创建配置构建器
         var configurationBuilder = new ConfigurationBuilder();
 
-        // 存储配置对象
-        // var configuration = InternalApp.InnerConfiguration = configurationBuilder.Build();
         var configuration = AppConfigurationLoader.Configurations;
 
         // 创建服务对象和存储服务提供器

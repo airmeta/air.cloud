@@ -14,81 +14,95 @@ using Air.Cloud.Core.Standard.Container.Model;
 
 namespace Air.Cloud.Core.App
 {
+    /// <summary>
+    /// <para>zh-cn: 应用程序常量</para>
+    /// <para>en-us: Application constants</para>
+    /// </summary>
     public static class AppConst
     {
         /// <summary>
-        /// 启动时加载的主配置文件
+        /// <para>zh-cn: 默认配置文件</para>
+        /// <para>en-us: Default configuration file</para>
         /// </summary>
         public const string DEFAULT_CONFIG_FILE = "appsettings.json";
         /// <summary>
-        /// 实际加载的配置文件名
+        /// <para>zh-cn: 环境配置文件</para>
+        /// <para>en-us: Environment configuration file</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn: 根据当前环境变量动态加载配置文件</para>
+        /// <para>en-us: Dynamically load configuration files based on current environment variables</para>
+        /// </remarks>
         public const string ENVIRONMENT_CONFIG_FILE = "appsettings.{0}.json";
         /// <summary>
-        /// 环境标识
+        /// <para>zh-cn: 手动指定环境配置Key</para>
+        /// <para>en-us: Environment configuration key  </para>
         /// </summary>
         public const string ENVIRONMENT = "Environment";
         /// <summary>
-        /// 当前配置的环境(如果为空就应用程序自己启动时分析)
-        /// </summary>
-        public static string Current_Config_Environment = string.Empty;
-        /// <summary>
-        /// 当前应用程序启动配置文件全名称
+        /// <para>zh-cn: 系统环境配置文件全名称</para>
+        /// <para>en-us: System environment configuration file full name</para>
         /// </summary>
         public static string SystemEnvironmentConfigFileFullName => string.Format(ENVIRONMENT_CONFIG_FILE, AppEnvironment.VirtualEnvironment);
         /// <summary>
-        /// 当前应用程序启动配置文件全名称
+        /// <para>zh-cn:全局公共配置文件全名称</para>
+        /// <para>en-us: Global common configuration file full name</para>
         /// </summary>
         public static string CommonEnvironmentConfigFileFullName => string.Format(ENVIRONMENT_CONFIG_FILE, $"Common.{AppEnvironment.RealEnvironment}");
         /// <summary>
-        /// 默认IP地址
+        /// <para>zh-cn: 默认IP地址</para>
+        /// <para>en-us: Default IP address</para>
         /// </summary>
-        public const string DEFAULT_IP_HOST = "127.0.0.1";
+        public const string DEFAULT_IP_ADDRESS = "127.0.0.1";
         /// <summary>
-        /// Docker环境标识
+        /// <para>zh-cn:Docker环境变量</para>
+        /// <para>en-us:Docker environment variables</para>
         /// </summary>
-
         public const string DOCKER_ENVIRONMENT_VARIABLE = "DOTNET_RUNNING_IN_CONTAINER";
         /// <summary>
-        /// 测试环境判断标识
+        /// <para>zh-cn:测试环境关键字</para>
+        /// <para>en-us:Test environment keyword</para>
         /// </summary>
         public const string ENVIRONMENT_TEST_KEY = "test";
         /// <summary>
-        /// 程序启动地址
+        /// <para>zh-cn:程序启动地址</para>
+        /// <para>en-us:Program startup address</para>
         /// </summary>
         public static string ApplicationPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
         /// <summary>
-        /// 程序插件地址
+        /// <para>zh-cn:程序插件地址</para>
+        /// <para>en-us:Program plugin address</para>
         /// </summary>
         public static string AppPluginsPath = string.Format("{0}/plugins", ApplicationPath);
         /// <summary>
-        /// 程序启动名称
+        /// <para>zh-cn:程序名称</para>
+        /// <para>en-us:Program name</para>
         /// </summary>
         public static string ApplicationName = string.Empty;
-
         /// <summary>
-        /// 当前程序运行信息
+        /// <para>zh-cn:当前程序运行信息</para>
+        /// <para>en-us:Current program running information</para>
         /// </summary>
         public static IContainerRuntimeInformation RunningHostInfo = null;
-
         /// <summary>
-        /// 当前程序运行环境
+        /// <para>zh-cn:当前程序运行环境</para>
+        /// <para>en-us:Current program running environment</para>
         /// </summary>
         public static EnvironmentContainersEnum? EnvironmentContainers = default;
         /// <summary>
-        /// 当前应用程序启动模式 
+        /// <para>zh-cn:当前应用程序启动模式</para> 
+        /// <para>en-us:Current application startup mode</para>
         /// </summary>
         public static EnvironmentEnums? EnvironmentStatus = default;
         /// <summary>
-        /// 是否Debugger模式
+        /// <para>zh-cn:当前应用程序是否为调试模式</para>
+        /// <para>en-us:Whether the current application is in debug mode</para>
         /// </summary>
         public static bool IsDebugger = false;
         /// <summary>
-        /// 当前应用程序配置文件加载方式
+        /// <para>zh-cn:当前应用程序配置文件加载方式</para>
+        /// <para>en-us:Current application configuration file loading method</para>
         /// </summary>
-        /// <remarks>
-        /// 文件/配置中心
-        /// </remarks>
         public static LoadConfigurationTypeEnum LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
     }
 }

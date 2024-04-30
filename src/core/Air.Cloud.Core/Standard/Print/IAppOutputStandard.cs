@@ -96,6 +96,10 @@ namespace Air.Cloud.Core.Standard.Print
         public void Print(AppPrintInformation Content)
         {
             Console.WriteLine(JsonConvert.SerializeObject(Content));
+            if (Content.Level == AppPrintInformation.AppPrintLevel.Error)
+            {
+                throw new Exception(Content.Content,Content.AdditionalParams.FirstOrDefault()?.Value);
+            }
         }
 
         public void Print<T>(T Content) where T : AppPrintInformation, new()
