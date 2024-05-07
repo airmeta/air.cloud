@@ -27,8 +27,8 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
                 config = new ConfigurationBuilder().SetBasePath(AppConst.ApplicationPath)
                                                           .AddJsonFile(ConfigurationName, optional: true, reloadOnChange: true)
                                                           .Build();
-                if (IsCommonConfiguration) token = AppConfigurationLoader.SetCommonConfiguration(config, true);
-                else token = AppConfigurationLoader.SetExternalConfiguration(config, true);
+                if (IsCommonConfiguration) token = AppConfigurationLoader.SetPublicConfiguration(config);
+                else token = AppConfigurationLoader.SetExternalConfiguration(config);
             });
             action();
             if (config == null) throw new Exception("加载外部配置文件" + ConfigurationName + "失败");

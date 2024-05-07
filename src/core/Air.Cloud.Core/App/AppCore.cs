@@ -59,7 +59,7 @@ namespace Air.Cloud.Core.App
         /// <para>zh-cn:核心程序集名称</para>
         /// <para>en-us:Core assembly name</para>
         /// </summary>
-        public static AssemblyName CoreAssemblyName = typeof(AppCore).Assembly.GetName();
+        static readonly AssemblyName CoreAssemblyName = typeof(AppCore).Assembly.GetName();
         static AppCore()
         {
             // 加载程序集
@@ -97,59 +97,61 @@ namespace Air.Cloud.Core.App
         /// <summary>
         /// 所有的模组
         /// </summary>
-        public static IList<Type> ModuleTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IModule))).ToList();
+        public static IEnumerable<Type> ModuleTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IModule))).ToList();
 
         /// <summary>
         /// 所有的插件
         /// </summary>
-        public static IList<Type> PluginTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IPlugin))).ToList();
+        public static IEnumerable<Type> PluginTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IPlugin))).ToList();
 
         /// <summary>
         /// 所有的增强实现
         /// </summary>
-        public static IList<Type> EnhanceTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IEnhance))).ToList();
+        public static IEnumerable<Type> EnhanceTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IEnhance))).ToList();
 
         /// <summary>
         /// 所有的项目启动项
         /// </summary>
-        public static IList<Type> StartTypes => CrucialTypes.Where(s => s.BaseType==typeof(AppStartup)).ToList();
+        public static IEnumerable<Type> StartTypes => CrucialTypes.Where(s => s.BaseType==typeof(AppStartup)).ToList();
 
         /// <summary>
         /// 所有的约定类型
         /// </summary>
-        public static IList<Type> StandardTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IStandard))).ToList();
+        public static IEnumerable<Type> StandardTypes => CrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IStandard))).ToList();
         /// <summary>
         /// 数据库实体类引用
         /// </summary>
         /// <remarks>
-        /// 在没有试用数据库模块的情况下 该属性为空集合
+        /// 在没有使用数据库模块的情况下 该属性为空集合
         /// </remarks>
-        public static  IList<Type> EntityTypes=>CrucialTypes.Where(t => t.GetInterfaces().Contains(typeof(IPrivateEntity))&& t.IsClass && !t.IsAbstract && !t.IsGenericType && !t.IsInterface).ToList();
+        public static IEnumerable<Type> EntityTypes=>CrucialTypes.Where(t => t.GetInterfaces().Contains(typeof(IPrivateEntity))&& t.IsClass && !t.IsAbstract && !t.IsGenericType && !t.IsInterface).ToList();
         #endregion
         #region Assemblies
         /// <summary>
         /// 所有的模组
         /// </summary>
-        public static IList<AssemblyName> Modules;
+        public static IEnumerable<AssemblyName> Modules;
         /// <summary>
         /// 所有的插件
         /// </summary>
-        public static IList<AssemblyName> Plugins;
+        public static IEnumerable<AssemblyName> Plugins;
         /// <summary>
         /// 所有的增强实现
         /// </summary>
-        public static IList<AssemblyName> Enhances;
+        public static IEnumerable<AssemblyName> Enhances;
         /// <summary>
         /// 关键类库 核心库,模组,插件,增强实现
         /// </summary>
-        public static IList<AssemblyName> CrucialAssemblies;
+        public static IEnumerable<AssemblyName> CrucialAssemblies;
         /// <summary>
         /// 所有应用程序集信息
         /// </summary>
         public static IEnumerable<AssemblyName> Assemblies;
         #endregion
         #region  Config
-
+        /// <summary>
+        /// 应用程序配置信息
+        /// </summary>
         public static IConfiguration Configuration => AppConfigurationLoader.Configurations;
 
         /// <summary>
@@ -260,12 +262,6 @@ namespace Air.Cloud.Core.App
         public static HttpContext HttpContext => RootServices?.GetService<IHttpContextAccessor>()?.HttpContext;
 
         /// <summary>
-        /// 获取请求上下文用户
-        /// </summary>
-        /// <remarks>只有授权访问的页面或接口才存在值，否则为 null</remarks>
-        public static ClaimsPrincipal User => HttpContext?.User;
-
-        /// <summary>
         /// 未托管的对象集合
         /// </summary>
         public static readonly ConcurrentBag<IDisposable> UnmanagedObjects;
@@ -274,11 +270,30 @@ namespace Air.Cloud.Core.App
         /// 应用程序启动类型:Host/Web
         /// </summary>
         public static AppStartupTypeEnum AppStartType { get; set; }
+
         /// <summary>
-        /// 解析服务提供器
+        /// 应用所有启动类
         /// </summary>
-        /// <param name="serviceType"></param>
-        /// <returns></returns>
+        public static ConcurrentBag<AppStartup> AppStartups;
+
+        /// <summary>
+        /// 外部程序集
+        /// </summary>
+        public static IEnumerable<Assembly> ExternalAssemblies;
+
+
+        /// <summary>
+        /// <para>zh-cn:获取服务提供器</para>
+        /// <para>en-us:Get service provider</para>
+        /// </summary>
+        /// <param name="serviceType">
+        /// <para>zh-cn:服务类型</para>
+        /// <para>en-us:Service type</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:返回服务提供器</para>
+        /// <para>en-us:Return service provider</para>
+        /// </returns>
         public static IServiceProvider GetServiceProvider(Type serviceType)
         {
             // 处理控制台应用程序
@@ -308,11 +323,21 @@ namespace Air.Cloud.Core.App
         }
 
         /// <summary>
-        /// 获取请求生存周期的服务
+        /// <para>zh-cn:获取请求生存周期的服务</para>
+        /// <para>en-us:Get request survival cycle service</para>
         /// </summary>
-        /// <typeparam name="TService"></typeparam>
-        /// <param name="serviceProvider"></param>
-        /// <returns></returns>
+        /// <typeparam name="TService">
+        /// <para>zh-cn:服务类型</para>
+        /// <para>en-us:Service type</para>
+        /// </typeparam>
+        /// <param name="serviceProvider">
+        /// <para>zh-cn:服务提供器</para>
+        /// <para>en-us:Service provider</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:返回服务</para>
+        /// <para>en-us:Return service</para>
+        /// </returns>
         public static TService GetService<TService>(IServiceProvider serviceProvider = default)
             where TService : class
         {
@@ -320,11 +345,21 @@ namespace Air.Cloud.Core.App
         }
 
         /// <summary>
-        /// 获取请求生存周期的服务
+        /// <para>zh-cn:获取请求生存周期的服务</para>
+        /// <para>en-us:Get request survival cycle service</para>
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="serviceProvider"></param>
-        /// <returns></returns>
+        /// <param name="serviceProvider">
+        /// <para>zh-cn:服务提供器</para>
+        /// <para>en-us:Service provider</para>
+        /// </param>
+        /// <param name="type">
+        /// <para>zh-cn:服务类型</para>
+        /// <para>en-us:Service type</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:返回服务</para>
+        /// <para>en-us:Return service</para>
+        /// </returns>
         public static object GetService(Type type, IServiceProvider serviceProvider = default)
         {
             return (serviceProvider ?? GetServiceProvider(type)).GetService(type);
@@ -390,17 +425,7 @@ namespace Air.Cloud.Core.App
             // 这里不能从根服务解析，因为是 Scoped 作用域
             return GetService<IOptionsSnapshot<TOptions>>(serviceProvider)?.Value;
         }
-        /// <summary>
-        /// 应用所有启动配置对象
-        /// </summary>
-        public static ConcurrentBag<AppStartup> AppStartups;
-
-        /// <summary>
-        /// 外部程序集
-        /// </summary>
-        public static IEnumerable<Assembly> ExternalAssemblies;
-
-
+       
         /// <summary>
         /// 释放所有未托管的对象
         /// </summary>

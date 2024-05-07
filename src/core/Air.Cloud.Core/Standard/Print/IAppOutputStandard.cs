@@ -98,7 +98,7 @@ namespace Air.Cloud.Core.Standard.Print
             Console.WriteLine(JsonConvert.SerializeObject(Content));
             if (Content.Level == AppPrintInformation.AppPrintLevel.Error)
             {
-                throw new Exception(Content.Content,Content.AdditionalParams.FirstOrDefault()?.Value);
+                throw new Exception(Content.Content);
             }
         }
 

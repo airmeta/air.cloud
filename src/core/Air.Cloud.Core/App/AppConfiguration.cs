@@ -49,7 +49,7 @@ namespace Air.Cloud.Core.App
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork) return ip;
                 }
-                return IPAddress.Parse(AppConst.DEFAULT_IP_HOST);
+                return IPAddress.Parse(AppConst.DEFAULT_IP_ADDRESS);
             }
 
         }
