@@ -9,20 +9,20 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.Taxin.Client;
+using Air.Cloud.Core.App;
+using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Server;
 using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin;
 using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Modules.Taxin.Server;
+using Air.Cloud.Modules.Taxin.Store;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
-using static System.Net.Mime.MediaTypeNames;
-
-namespace Air.Cloud.Core.Standard.Taxin.Extensions
+namespace Air.Cloud.Modules.Taxin.Extensions
 {
 
     /// <summary>
@@ -40,8 +40,9 @@ namespace Air.Cloud.Core.Standard.Taxin.Extensions
         /// <returns></returns>
         public static IServiceCollection AddTaxinServer<TTaxinServerDependency>(this IServiceCollection services) where TTaxinServerDependency : class, ITaxinServerStandard, new()
         {
-            services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
             services.AddSingleton<ITaxinStoreStandard, DefaultTaxinStoreDependency>();
+            services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
+            services.AddHostedService<TaxinServerBackgroundService>();
             ITaxinServerStandard client = new TTaxinServerDependency();
             client.OnLineAsync();
             return services;
@@ -53,10 +54,11 @@ namespace Air.Cloud.Core.Standard.Taxin.Extensions
         /// <typeparam name="TTaxinServerDependency"></typeparam>
         /// <param name="services"></param>
         /// <returns></returns>
-        public static IServiceCollection AddTaxinServer<TTaxinServerDependency,TTaxinStoreDependency>(this IServiceCollection services) where TTaxinServerDependency : class, ITaxinServerStandard, new() where TTaxinStoreDependency : class, ITaxinStoreStandard, new()
+        public static IServiceCollection AddTaxinServer<TTaxinServerDependency, TTaxinStoreDependency>(this IServiceCollection services) where TTaxinServerDependency : class, ITaxinServerStandard, new() where TTaxinStoreDependency : class, ITaxinStoreStandard, new()
         {
-            services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
             services.AddSingleton<ITaxinStoreStandard, TTaxinStoreDependency>();
+            services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
+            services.AddHostedService<TaxinServerBackgroundService>();
             ITaxinServerStandard client = new TTaxinServerDependency();
             client.OnLineAsync();
             return services;
@@ -64,12 +66,12 @@ namespace Air.Cloud.Core.Standard.Taxin.Extensions
 
         public static IApplicationBuilder UseTaxinServer<TTaxinServerDependency>(this IApplicationBuilder app) where TTaxinServerDependency : class, ITaxinServerStandard, new()
         {
-            TaxinOptions Options=AppCore.GetOptions<TaxinOptions>();
+            TaxinOptions Options = AppCore.GetOptions<TaxinOptions>();
             ITaxinServerStandard taxinServer = new TTaxinServerDependency();
             app.Map(new PathString(Options.PullRoute), application =>
             {
                 //拉取数据请求
-                application.Use(next=>
+                application.Use(next =>
                 {
                     return async (context) =>
                     {

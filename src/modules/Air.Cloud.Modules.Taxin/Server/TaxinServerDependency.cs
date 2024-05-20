@@ -12,12 +12,12 @@
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Plugins.Http;
 using Air.Cloud.Core;
-using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Result;
 using Air.Cloud.Core.Standard.Taxin.Server;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 using Air.Cloud.Modules.Taxin.Model;
-using Air.Cloud.Core.Standard.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Core.Standard.Taxin;
 
 namespace Air.Cloud.Modules.Taxin.Server
 {
@@ -27,21 +27,14 @@ namespace Air.Cloud.Modules.Taxin.Server
     /// </summary>
     public  class TaxinServerDependency : ITaxinServerStandard
     {
-        public ITaxinStoreStandard ITaxinStoreStandard { get; set; } = null;
-        public TaxinServerDependency()
-        {
-
-        }
-        public TaxinServerDependency(ITaxinStoreStandard taxinStore = null)
-        {
-            this.ITaxinStoreStandard = taxinStore;
-        }
+        public ITaxinStoreStandard ITaxinStoreStandard =>AppCore.GetService<ITaxinStoreStandard>();
         public Task<TaxinActionResult> CheckAsync(string CheckTag)
         {
+            ITaxinStoreStandard.CheckTag = ITaxinStoreStandard.CheckTag ?? Guid.NewGuid().ToString();
             return Task.FromResult(new TaxinActionResult()
             {
                 IsSuccess = true,
-                IsChange = ITaxinStoreStandard.CheckTag==CheckTag,
+                IsChange = !(ITaxinStoreStandard.CheckTag==CheckTag),
                 Message="ok",
                 NewTag= ITaxinStoreStandard.CheckTag,
                 OldTag=CheckTag
@@ -88,10 +81,14 @@ namespace Air.Cloud.Modules.Taxin.Server
             {
                 var Packages = ITaxinStoreStandard.Packages[package.UniqueKey].Where(s => s.InstancePId != package.InstancePId).ToList();
                 Packages.Add(package);
-                ITaxinStoreStandard.Packages.Add(package.UniqueKey, Packages);
+                ITaxinStoreStandard.Packages[package.UniqueKey]=Packages;
                 string NewTag = Guid.NewGuid().ToString();
                 string OldTag = ITaxinStoreStandard.CheckTag;
                 ITaxinStoreStandard.CheckTag = NewTag;
+            }
+            else
+            {
+                ITaxinStoreStandard.Packages.Add(package.UniqueKey, new List<TaxinRouteDataPackage>() { package});
             }
 
             return Task.FromResult(ITaxinStoreStandard.Packages.Values.AsEnumerable());
@@ -119,9 +116,9 @@ namespace Air.Cloud.Modules.Taxin.Server
 
         public async Task OnLineAsync()
         {
-            TaxinTools.Scanning();
-            //加载存储的数据
             await this.ITaxinStoreStandard.GetStoreAsync();
+            var current=TaxinTools.Scanning();
+            await this.ReciveAsync(current);
         }
 
     }

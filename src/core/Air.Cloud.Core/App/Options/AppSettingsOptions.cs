@@ -62,7 +62,7 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     /// <para>zh-cn:版本信息</para>
     /// <para>en-us:Version information</para>
     /// </summary>
-    public string Version { get; set; }
+    public string Version { get; set; } = "1.0.0.0";
     /// <summary>
     /// <para>zh-cn:序列化后的版本信息</para>
     /// <para>en-us:Serialize version information</para>

@@ -24,7 +24,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Air.Cloud.Core.Standard.JSON.Extensions;
 namespace Air.Cloud.WebApp
 {
-    [AppStartup(AppName ="Air.Cloud.WebApp", Order =10000)]
+    [AppStartup(AppName ="Air.Cloud.WebApp", Order =0)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)

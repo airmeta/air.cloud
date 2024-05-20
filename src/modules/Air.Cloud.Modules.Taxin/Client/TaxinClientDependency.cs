@@ -11,23 +11,15 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Plugins.Http;
-using Air.Cloud.Core.Plugins.Security.MD5;
-using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.Taxin;
-using Air.Cloud.Core.Standard.Taxin.Attributes;
 using Air.Cloud.Core.Standard.Taxin.Client;
-using Air.Cloud.Core.Standard.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Extensions;
 using Air.Cloud.Core.Standard.Taxin.Result;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 using Air.Cloud.Modules.Taxin.Model;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
-
 using System.Data;
-using System.Reflection;
 
 namespace Air.Cloud.Modules.Taxin.Client
 {
@@ -39,9 +31,9 @@ namespace Air.Cloud.Modules.Taxin.Client
         }
         public async  Task OnLineAsync()
         {
-            TaxinTools.Scanning();
             //加载存储的数据
             await this.ITaxinStoreStandard.GetStoreAsync();
+            TaxinTools.Scanning();
         }
         public async Task OffLineAsync()
         {
@@ -103,7 +95,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             }
             await this.ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
         }
-        public Task CheckAsync()
+        public async Task CheckAsync()
         {
             //检查
             TaxinOptions options = AppCore.GetOptions<TaxinOptions>();
@@ -116,10 +108,9 @@ namespace Air.Cloud.Modules.Taxin.Client
                     //标志已经被修改
                     ITaxinStoreStandard.CheckTag = Result.NewTag;
                     //拉取新数据
-                    PullAsync();
+                    await PullAsync();
                 }
             }
-            return Task.CompletedTask;
         }
 
 

@@ -9,15 +9,16 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Modules.Taxin.Model;
 
-namespace Air.Cloud.Core.Standard.Taxin.Extensions
+namespace Air.Cloud.Modules.Taxin.Extensions
 {
     /// <summary>
     ///  <para>zh-cn:Taxin 存储 扩展方法</para>
     ///  <para>en-us:Taxin store extensions</para>
     /// </summary>
-    public static  class TaxinStoreExtensions
+    public static class TaxinStoreExtensions
     {
         /// <summary>
         /// <para>zh-cn:设置存储</para>
@@ -48,7 +49,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Extensions
         /// </param>
         public static async Task<IDictionary<string, IEnumerable<TaxinRouteDataPackage>>> GetStoreAsync(this ITaxinStoreStandard taxinStore)
         {
-            IDictionary<string, IEnumerable<TaxinRouteDataPackage>> pairs= await  taxinStore.GetPersistenceAsync();
+            IDictionary<string, IEnumerable<TaxinRouteDataPackage>> pairs = await taxinStore.GetPersistenceAsync();
             ITaxinStoreStandard.Packages = pairs;
             return ITaxinStoreStandard.Packages;
         }

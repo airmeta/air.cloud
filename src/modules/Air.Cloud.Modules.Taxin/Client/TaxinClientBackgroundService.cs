@@ -10,13 +10,20 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
+using Air.Cloud.Core.App;
+using Air.Cloud.Core.Standard.Print;
+using Air.Cloud.Core.Standard.Taxin.Client;
+using Air.Cloud.Modules.Taxin;
+
 using Microsoft.Extensions.Hosting;
 
-namespace Air.Cloud.Core.Standard.Taxin.Client
+namespace Air.Cloud.Modules.Taxin.Client
 {
     public class TaxinClientBackgroundService : BackgroundService
     {
-        public readonly ITaxinClientStandard TaxinClient;
+        private readonly ITaxinClientStandard TaxinClient;
+        private static TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
         public TaxinClientBackgroundService(ITaxinClientStandard taxinClientStandard = null)
         {
             TaxinClient = taxinClientStandard;
@@ -41,14 +48,12 @@ namespace Air.Cloud.Core.Standard.Taxin.Client
                     {
                         //先推送
                         await TaxinClient.CheckAsync();
-                        await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+                        await Task.Delay(TimeSpan.FromSeconds(Options.CheckRate), stoppingToken);
                     }
                     catch (OperationCanceledException) { }
                 }
             }, stoppingToken);
         }
-
-
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
             AppRealization.Output.Print(new AppPrintInformation()

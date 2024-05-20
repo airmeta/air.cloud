@@ -21,28 +21,50 @@ using System.Reflection;
 
 namespace Air.Cloud.Core.Standard.Taxin.Tools
 {
+    /// <summary>
+    /// <para>zh-cn:Taxin 工具</para>
+    /// <para>en-us:Taxin tools</para>
+    /// </summary>
     public static  class TaxinTools
     {
-        public static void Scanning()
+        /// <summary>
+        /// <para>zh-cn:扫描类库信息</para>
+        /// <para>en-us:Scanning assembly service information</para>
+        /// </summary>
+        /// <returns>
+        /// <para>zh-cn:服务信息</para>
+        /// <para>en-us:Taxin route data package</para>
+        /// </returns>
+        public static TaxinRouteDataPackage Scanning()
         {
-            //扫描动态服务
-            var DynamicService = AppCore.CrucialTypes.Where(s => typeof(IDynamicService).IsInstanceOfType(s));
-            //数据包信息
-            var Package = new TaxinRouteDataPackage()
+            try
             {
-                InstancePId = AppRealization.PID.Get(),
-                InstanceName = Assembly.GetExecutingAssembly().GetName().Name,
-                InstanceVersion = AppCore.Settings.VersionSerialize,
-                CreateDataTime = DateTime.Now,
-                UniqueKey = MD5Encryption.GetMd5By32($"{Assembly.GetExecutingAssembly().GetName().Name}_{AppCore.Settings.Version.ToString()}")
-            };
-            //开始收集数据包
-            foreach (var item in DynamicService)
-            {
-                var Routes = GetTaxinRouteInformation(item);
-                Package.Routes.AddRange(Routes);
+                //扫描动态服务
+                var DynamicService = AppCore.CrucialTypes.Where(s => typeof(IDynamicService).IsInstanceOfType(s));
+                //数据包信息
+                var Package = new TaxinRouteDataPackage()
+                {
+                    InstancePId = AppRealization.PID.Get(),
+                    InstanceName = Assembly.GetExecutingAssembly().GetName().Name,
+                    InstanceVersion = AppCore.Settings.VersionSerialize,
+                    CreateDataTime = DateTime.Now,
+                    UniqueKey = MD5Encryption.GetMd5By32($"{Assembly.GetExecutingAssembly().GetName().Name}_{AppCore.Settings.Version.ToString()}")
+                };
+                //开始收集数据包
+                foreach (var item in DynamicService)
+                {
+                    var Routes = GetTaxinRouteInformation(item);
+                    Package.Routes.AddRange(Routes);
+                }
+                ITaxinStoreStandard.Current = Package;
+                return Package;
             }
-            ITaxinStoreStandard.Current = Package;
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+           
         }
         /// <summary>
         /// <para>zh-cn:扫描Taxin路由信息</para>

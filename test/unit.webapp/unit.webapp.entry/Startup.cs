@@ -12,16 +12,19 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Modules.Taxin.Server;
 
 using unit.webapp.common.Filters;
+using Air.Cloud.Core.Standard.Taxin.Server;
+using Air.Cloud.Modules.Taxin.Extensions;
 namespace unit.webapp.entry
 {
-    [AppStartup(Order = 100000)]
+    [AppStartup(Order = 12000)]
     public class Startup :AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            //services.AddTaxinServer<TaxinServerDependency>();
+            services.AddTaxinServer<TaxinServerDependency>();
             //注入
             services.AddControllers(a =>
             {
@@ -30,7 +33,7 @@ namespace unit.webapp.entry
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //app.UseTaxinServer<TaxinServerDependency>();
+            app.UseTaxinServer<TaxinServerDependency>();
             app.Use(next => context =>
             {
                 context.Request.EnableBuffering();//启动倒带方式

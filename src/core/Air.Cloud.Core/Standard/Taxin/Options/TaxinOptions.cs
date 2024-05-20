@@ -38,7 +38,7 @@ namespace Air.Cloud.Modules.Taxin
         /// <para>zh-cn:检查频率</para>
         /// <para>en-us:CheckAsync Rate</para>
         /// </summary>
-        public int? CheckRate { get; set; }
+        public int CheckRate { get; set; } = 5;
 
         /// <summary>
         /// <para>zh-cn:检查路由地址</para>
@@ -99,7 +99,6 @@ namespace Air.Cloud.Modules.Taxin
         /// <param name="configuration">配置</param>
         public void PostConfigure(TaxinOptions options, IConfiguration configuration)
         {
-            options.CheckRate ??= 30;
             options.ServerAddress ??= AppCore.Settings.GateWayAddress ;
         }
     }

@@ -9,12 +9,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.Taxin.Store;
+using Air.Cloud.Modules.Taxin.Client;
+using Air.Cloud.Modules.Taxin.Store;
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.Core.Standard.Taxin.Extensions
+namespace Air.Cloud.Modules.Taxin.Extensions
 {
     /// <summary>
     /// <para>zh-cn:Taxin 客户端扩展方法</para>
@@ -41,6 +44,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Extensions
         {
             services.AddSingleton<ITaxinClientStandard, TTaxinClientDependency>();
             services.AddSingleton<ITaxinStoreStandard, DefaultTaxinStoreDependency>();
+            services.AddHostedService<TaxinClientBackgroundService>();
             ITaxinClientStandard client = new TTaxinClientDependency();
             client.OnLineAsync();
             return services;
@@ -65,10 +69,13 @@ namespace Air.Cloud.Core.Standard.Taxin.Extensions
         /// <para>zh-cn:服务集合</para>
         /// <para>en-us: Services collection</para>
         /// </returns>
-        public static IServiceCollection AddTaxinClient<TTaxinClientDependency,TTaxinStoreDependency>(this IServiceCollection services) where TTaxinClientDependency : class, ITaxinClientStandard, new() where TTaxinStoreDependency:class,ITaxinStoreStandard,new()
+        public static IServiceCollection AddTaxinClient<TTaxinClientDependency, TTaxinStoreDependency>(this IServiceCollection services) 
+            where TTaxinClientDependency : class, ITaxinClientStandard, new() 
+            where TTaxinStoreDependency : class, ITaxinStoreStandard, new()
         {
             services.AddSingleton<ITaxinClientStandard, TTaxinClientDependency>();
             services.AddSingleton<ITaxinStoreStandard, TTaxinStoreDependency>();
+            services.AddHostedService<TaxinClientBackgroundService>();
             ITaxinClientStandard client = new TTaxinClientDependency();
             client.OnLineAsync();
             return services;
