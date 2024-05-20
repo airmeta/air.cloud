@@ -62,7 +62,7 @@ namespace Air.Cloud.Core.Plugins.Http
         /// <param name="Headers">请求头</param>
         /// <param name="ContentType">数据类型</param>
         /// <returns></returns>
-        public static T Do<T>(string HttpClientMethodConst, string Url, string ObjectData, IDictionary<string, string> Headers = null, HttpContentTypeEnum ContentType = HttpContentTypeEnum.JSON, TimeSpan? Timeout = null) where T : class, new()
+        public static T Do<T>(string Url, string HttpClientMethodConst, string ObjectData, IDictionary<string, string> Headers = null, HttpContentTypeEnum ContentType = HttpContentTypeEnum.JSON, TimeSpan? Timeout = null) where T : class, new()
         {
             switch (HttpClientMethodConst)
             {

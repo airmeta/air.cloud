@@ -284,7 +284,7 @@ namespace Air.Cloud.Core.App
 
         /// <summary>
         /// <para>zh-cn:获取服务提供器</para>
-        /// <para>en-us:Get service provider</para>
+        /// <para>en-us:GetAsync service provider</para>
         /// </summary>
         /// <param name="serviceType">
         /// <para>zh-cn:服务类型</para>
@@ -324,7 +324,7 @@ namespace Air.Cloud.Core.App
 
         /// <summary>
         /// <para>zh-cn:获取请求生存周期的服务</para>
-        /// <para>en-us:Get request survival cycle service</para>
+        /// <para>en-us:GetAsync request survival cycle service</para>
         /// </summary>
         /// <typeparam name="TService">
         /// <para>zh-cn:服务类型</para>
@@ -346,7 +346,7 @@ namespace Air.Cloud.Core.App
 
         /// <summary>
         /// <para>zh-cn:获取请求生存周期的服务</para>
-        /// <para>en-us:Get request survival cycle service</para>
+        /// <para>en-us:GetAsync request survival cycle service</para>
         /// </summary>
         /// <param name="serviceProvider">
         /// <para>zh-cn:服务提供器</para>

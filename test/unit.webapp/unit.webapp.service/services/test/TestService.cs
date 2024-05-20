@@ -1,4 +1,16 @@
-﻿using Air.Cloud.Core;
+﻿
+/*
+ * Copyright (c) 2024 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.Core;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.Cache.Redis;
 using Air.Cloud.Core.Standard.DynamicServer;
@@ -31,7 +43,6 @@ namespace unit.webapp.service.services.test
         {
             return Domain.Search(s => s.UserId == "a09cdb089b7f48498090d1f7f11c0e7b");
         }
-
         [HttpGet("redis")]
         [AllowAnonymous]
         public object RedisCacheTest()
@@ -61,5 +72,18 @@ namespace unit.webapp.service.services.test
 
             return "";
         }
+
+        #region 测试服务
+        [HttpPost("TESTSSS")]
+        public object Send(Testss ss)
+        {
+            return ss;
+        }
+        #endregion
+    }
+    public class Testss
+    {
+        public int MyProperty { get; set; }
+        public string Mo { get; set; }
     }
 }

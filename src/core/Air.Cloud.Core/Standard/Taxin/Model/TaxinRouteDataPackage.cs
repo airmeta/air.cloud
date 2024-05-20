@@ -35,7 +35,7 @@ namespace Air.Cloud.Modules.Taxin.Model
         /// <para>zh-cn:实例版本</para>
         /// <para>en-us:Instance version</para>
         /// </summary>
-        public string InstanceVersion { get; set; }
+        public Version InstanceVersion { get; set; }
         /// <summary>
         /// <para>zh-cn:唯一编码</para>
         /// <para>en-us:UniqueKey</para>

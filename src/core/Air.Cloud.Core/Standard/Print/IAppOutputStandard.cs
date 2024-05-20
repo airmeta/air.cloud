@@ -55,7 +55,7 @@ namespace Air.Cloud.Core.Standard.Print
         /// <summary>
         /// 类型信息: Information,Warning,Error 
         /// </summary>
-        public AppPrintLevel Level { get; set; }
+        public AppPrintLevel Level { get; set; } = AppPrintLevel.Information;
         /// <summary>
         /// 内容
         /// </summary>
@@ -63,13 +63,13 @@ namespace Air.Cloud.Core.Standard.Print
         /// <summary>
         /// 状态
         /// </summary>
-        public bool State { get; set; }
+        public bool State { get; set; } = true;
 
         /// <summary>
         /// zh-cn: 附加参数
         /// en-us: Additional parameters
         /// </summary>
-        public Dictionary<string,object> AdditionalParams { get; set; }
+        public Dictionary<string, object> AdditionalParams { get; set; } = null;
     }
     /// <summary>
     /// 默认的输出标准实现

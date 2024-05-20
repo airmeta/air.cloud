@@ -9,6 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.Taxin.Result;
+using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin.Model;
 
 namespace Air.Cloud.Core.Standard.Taxin.Server
@@ -17,7 +19,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Server
     /// <para>zh-cn:Taxin服务端标准</para>
     /// <para>en-us:Taxin server standard</para>
     /// </summary>
-    public interface ITaxinServerStandard
+    public interface ITaxinServerStandard: ITaxinStandard
     {
         /// <summary>
         /// <para>zh-cn:接收路由数据包</para>
@@ -27,24 +29,34 @@ namespace Air.Cloud.Core.Standard.Taxin.Server
         /// <para>zh-cn:返回标识信息,供客户端存储</para>
         /// <para>en-us:Return the identification information for the client to store</para>
         /// </returns>
-        public string Recive(TaxinRouteDataPackage package);
+        public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> ReciveAsync(TaxinRouteDataPackage package);
         /// <summary>
-        /// <para>zh-cn:检查路由数据包</para>
-        /// <para>en-us:Check route data package</para>
-        /// </summary>
-        /// <returns>
-        /// <para>zh-cn:产生变化的数据包</para>
-        /// <para>en-us:Changed data package</para>
-        /// </returns>
-        public IList<TaxinRouteDataPackage> Check();
-        /// <summary>
-        /// <para>zh-cn:拉取路由数据包</para>
+        /// <para>zh-cn:派发路由数据包</para>
         /// <para>en-us:Pull route data package</para>
         /// </summary>
         /// <returns>
         /// <para>zh-cn:路由数据包</para>
         /// <para>en-us:Route data package</para>
         /// </returns>
-        public IList<TaxinRouteDataPackage> Pull();
+        public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> DispatchAsync();
+        /// <summary>
+        /// <para>zh-cn:检查路由数据包</para>
+        /// <para>en-us:Check route data package</para>
+        /// </summary>
+        /// <returns>
+        /// <para>zh-cn:Taxin 动作结果</para>
+        /// <para>en-us:Taxin action result</para>
+        /// </returns>
+        public Task<TaxinActionResult> CheckAsync(string CheckTag);
+        /// <summary>
+        /// <para>zh-cn:客户端下线</para>
+        /// <para>en-us:The client goes offline</para>
+        /// </summary>
+        /// <returns>
+        /// <para>zh-cn:Taxin 动作结果</para>
+        /// <para>en-us:Taxin action result</para>
+        /// </returns>
+        public Task<TaxinActionResult> ClienOffLineAsync(TaxinRouteDataPackage package);
+
     }
 }

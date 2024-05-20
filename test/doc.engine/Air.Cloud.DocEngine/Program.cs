@@ -35,7 +35,7 @@ foreach (var type in alltypes)
         file.Close();
         file.Dispose();
         //File.Copy(FilePath+".md", FilePath+"_"+Guid.NewGuid().ToString()+ ".md");
-        //File.Delete(FilePath + ".md");
+        //File.DeleteAsync(FilePath + ".md");
     }
     List<string> Contents = new List<string>();
     var typeComment = xmlCommentHelper.GetTypeComment(type);

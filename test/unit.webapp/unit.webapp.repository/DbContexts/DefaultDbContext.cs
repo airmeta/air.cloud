@@ -1,13 +1,21 @@
-﻿using Air.Cloud.DataBase.Contexts;
+﻿
+/*
+ * Copyright (c) 2024 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.DataBase.Contexts;
 using Air.Cloud.DataBase.Contexts.Attributes;
 using Air.Cloud.DataBase.Internal;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 
 namespace unit.webapp.repository.DbContexts
 {

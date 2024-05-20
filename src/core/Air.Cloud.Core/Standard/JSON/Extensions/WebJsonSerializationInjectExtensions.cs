@@ -9,8 +9,8 @@ using Air.Cloud.Core.Standard.JSON;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.Core.Standard.JSON.Extensions;
-
+namespace Air.Cloud.Core.Standard.JSON.Extensions
+{
 /// <summary>
 /// Json 序列化服务拓展类
 /// </summary>
@@ -47,4 +47,6 @@ public static class WebJsonSerializationInjectExtensions
 
         return services;
     }
+}
+
 }

@@ -39,7 +39,7 @@ namespace Air.Cloud.Core.App
         {
             /// <summary>
             /// <para>zh-cn:获取本地IP地址</para>
-            /// <para>en-us:Get local IP address</para>
+            /// <para>en-us:GetAsync local IP address</para>
             /// </summary>
             /// <returns></returns>
             public static IPAddress GetLocalIPAddress()
@@ -83,7 +83,7 @@ namespace Air.Cloud.Core.App
 
         /// <summary>
         /// <para>zh-cn:获取配置信息</para>
-        /// <para>en-us:Get configuration information</para>
+        /// <para>en-us:GetAsync configuration information</para>
         /// </summary>
         /// <typeparam name="TOptions">
         /// <para>zh-cn:强类型选项类</para>
@@ -139,7 +139,7 @@ namespace Air.Cloud.Core.App
 
         /// <summary>
         /// <para>zh-cn:获取多个配置信息</para>
-        /// <para>en-us:Get multiple configuration information</para>
+        /// <para>en-us:GetAsync multiple configuration information</para>
         /// </summary>
         /// <param name="configName">
         /// <para>zh-cn:配置名称</para>
@@ -160,7 +160,7 @@ namespace Air.Cloud.Core.App
         }
         /// <summary>
         /// <para>zh-cn:获取单个配置信息</para>
-        /// <para>en-us:Get single configuration information</para>
+        /// <para>en-us:GetAsync single configuration information</para>
         /// </summary>
         /// <param name="configName">
         /// <para>zh-cn:配置名称</para>

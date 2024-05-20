@@ -22,6 +22,7 @@ using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
 using Air.Cloud.Core.Standard.JSON;
+using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.UtilStandard;
 
@@ -92,6 +93,11 @@ namespace Air.Cloud.Core
         /// 系统注入标准
         /// </summary>
         public static IAppInjectStandard Injection=> InternalRealization.Injection ?? DefaultRealization.Injection;
+        /// <summary>
+        /// <para>zh-cn:键值对存储中心标准</para>
+        /// <para>en-us:Key-Value store center</para>
+        /// </summary>
+        public static IKVCenterStandard KVCenter => InternalRealization.KVCenter ?? DefaultRealization.KVCenter;
         /// <summary>
         /// 设置约定实现
         /// </summary>
@@ -184,7 +190,12 @@ namespace Air.Cloud.Core
             /// <summary>
             /// 系统注入标准默认实现
             /// </summary>
-            public static IAppInjectStandard Injection => throw new NotImplementedException("系统未实现注入标准,无法启动");
+            public static IAppInjectStandard Injection => throw new NotImplementedException("系统未实现注入标准");
+            /// <summary>
+            /// <para>zh-cn:键值对存储中心标准</para>
+            /// <para>en-us:Key-Value store center</para>
+            /// </summary>
+            public static IKVCenterStandard KVCenter => throw new NotImplementedException("系统未实现KV中心标准");
         }
         /// <summary>
         /// 自定义标准实现
@@ -230,7 +241,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// JSON序列化标准实现
             /// </summary>
-            public static IJsonSerializerStandard JSON => JsonConvert.GetJsonSerializer();
+            public static IJsonSerializerStandard JSON => AppCore.GetService<IJsonSerializerStandard>();
 
             /// <summary>
             /// 应用程序PID信息 
@@ -245,6 +256,12 @@ namespace Air.Cloud.Core
             /// 系统注入标准实现
             /// </summary>
             public static IAppInjectStandard Injection = null;
+
+            /// <summary>
+            /// <para>zh-cn:键值对存储中心标准</para>
+            /// <para>en-us:Key-Value store center</para>
+            /// </summary>
+            public static IKVCenterStandard KVCenter = null;
         }
     }
 }

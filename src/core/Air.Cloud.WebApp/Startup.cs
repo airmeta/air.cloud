@@ -12,17 +12,19 @@
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Loader;
 using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
 
 using Mapster;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-
+using Air.Cloud.Core.Standard.JSON.Extensions;
 namespace Air.Cloud.WebApp
 {
-    [AppStartup(AppName ="Air.Cloud.WebApp", Order =int.MaxValue)]
+    [AppStartup(AppName ="Air.Cloud.WebApp", Order =10000)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
@@ -39,7 +41,6 @@ namespace Air.Cloud.WebApp
         {
             // 配置错误页
             if (AppEnvironment.IsDevelopment) app.UseDeveloperExceptionPage();
-
             // 401，403 规范化结果
             app.UseUnifyResultStatusCodes();
             // Https 重定向

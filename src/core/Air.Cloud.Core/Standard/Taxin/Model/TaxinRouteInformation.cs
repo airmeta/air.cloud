@@ -11,6 +11,8 @@
  */
 using Air.Cloud.Core.Plugins.Security.MD5;
 
+using System.Reflection;
+
 namespace Air.Cloud.Modules.Taxin.Model
 {
     /// <summary>
@@ -62,33 +64,6 @@ namespace Air.Cloud.Modules.Taxin.Model
         /// <para>zh-cn:参数</para>
         /// <para>en-us:Parameters</para>
         /// </summary>
-        public List<TaxinRouteParameter> Parameters { get; set; }
-    }
-    /// <summary>
-    /// <para>zh-cn:传输路由参数</para>
-    /// <para>en-us:TaxinRouteParameter</para>
-    /// </summary>
-    public class TaxinRouteParameter
-    {
-        /// <summary>
-        /// <para>zh-cn:参数名</para>
-        /// <para>en-us:Parameter name</para>
-        /// </summary>
-        public string Name { get; set; }
-        /// <summary>
-        /// <para>zh-cn:参数类型</para>
-        /// <para>en-us:Parameter type</para>
-        /// </summary>
-        public string ParameterType { get; set; }
-        /// <summary>
-        /// <para>zh-cn:默认值</para>
-        /// <para>en-us:Default value</para>
-        /// </summary>
-        public object? DefaultValue { get; set; }
-        /// <summary>
-        /// <para>zh-cn:参数位置</para>
-        /// <para>en-us:Parameter position</para>
-        /// </summary>
-        public int Position { get; set; }
+        public List<ParameterInfo> Parameters { get; set; }
     }
 }

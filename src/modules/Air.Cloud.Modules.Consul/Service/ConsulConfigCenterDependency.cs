@@ -23,7 +23,7 @@ namespace Air.Cloud.Modules.Consul.Service
     public class ConsulConfigCenterDependency : IKVCenterStandard
     {
         public static ConsulClient ConsulClient => ConsulServerCenterDependency.ConsulClient;
-        public async Task<IList<T>> Query<T>() where T : class, new()
+        public async Task<IList<T>> QueryAsync<T>() where T : class, new()
         {
             var Result = await ConsulClient.KV.List(string.Empty);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)
@@ -44,7 +44,7 @@ namespace Air.Cloud.Modules.Consul.Service
                 return new List<T>();
             }
         }
-        public async Task<bool> AddOrUpdate(string Key, string Value)
+        public async Task<bool> AddOrUpdateAsync(string Key, string Value)
         {
             var Result = await ConsulClient.KV.Get(Key);
             if (Result.Response != null)
@@ -62,7 +62,7 @@ namespace Air.Cloud.Modules.Consul.Service
                 return EditResult.StatusCode == System.Net.HttpStatusCode.OK;
             }
         }
-        public async Task<bool> Delete(string Key)
+        public async Task<bool> DeleteAsync(string Key)
         {
             var queryResult = await ConsulClient.KV.Get(Key);
             var response = queryResult.Response;
@@ -74,7 +74,7 @@ namespace Air.Cloud.Modules.Consul.Service
             return Result != null && Result.StatusCode == System.Net.HttpStatusCode.OK;
         }
 
-        public async Task<T> Get<T>(string Key) where T : class, new()
+        public async Task<T> GetAsync<T>(string Key) where T : class, new()
         {
             var Result = await ConsulClient.KV.Get(Key);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)

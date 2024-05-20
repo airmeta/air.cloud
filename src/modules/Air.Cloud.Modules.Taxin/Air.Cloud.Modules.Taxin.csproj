@@ -10,9 +10,4 @@
     <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Events\" />
-    <Folder Include="Model\" />
-  </ItemGroup>
-
 </Project>

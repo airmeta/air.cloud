@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin.Model;
 
 namespace Air.Cloud.Core.Standard.Taxin.Client
@@ -17,17 +18,13 @@ namespace Air.Cloud.Core.Standard.Taxin.Client
     /// <para>zh-cn:Taxin客户端标准</para>
     /// <para>en-us:Taxin client standard</para>
     /// </summary>
-    public interface ITaxinClientStandard
+    public interface ITaxinClientStandard: ITaxinStandard
     {
         /// <summary>
         /// <para>zh-cn:推送数据包</para>
         /// <para>en-us:Push data package</para>
         /// </summary>
-        /// <param name="package">
-        /// <para>zh-cn:数据包</para>
-        /// <para>en-us:Data package</para>
-        /// </param>
-        public void Push(TaxinRouteDataPackage package);
+        public Task PushAsync();
         /// <summary>
         /// <para>zh-cn:拉取数据包</para>
         /// <para>en-us:Pull data package</para>
@@ -36,11 +33,12 @@ namespace Air.Cloud.Core.Standard.Taxin.Client
         /// <para>zh-cn:数据包</para>
         /// <para>en-us:Data package</para>
         /// </returns>
-        public TaxinRouteDataPackage Pull();
+        public Task PullAsync();
         /// <summary>
-        /// <para>zh-cn:初始化</para>
-        /// <para>en-us:init</para>
+        /// <para>zh-cn:远程检查是否最新</para>
+        /// <para>en-us:Remotely check if it's up to date</para>
         /// </summary>
-        public void Init();
+        /// <returns></returns>
+        public Task CheckAsync();
     }
 }
