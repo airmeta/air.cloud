@@ -26,8 +26,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="8.0.0" />
     <PackageReference Include="System.Net.Primitives" Version="4.3.1" />
     <Protobuf Include="Protos\*.proto" GrpcServices="Client" Link="Protos\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Remove="Plugins\Http\HttpClientPlugin.cs" />
-    <Compile Remove="Plugins\Http\HttpContentTypes.cs" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>

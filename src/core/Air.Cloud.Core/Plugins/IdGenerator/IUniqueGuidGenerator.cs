@@ -1,5 +1,4 @@
-﻿
-/*
+﻿/*
  * Copyright (c) 2024 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,8 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins;
-
 namespace Air.Cloud.Core.Plugins.IdGenerator
 {
     /// <summary>
