@@ -6,8 +6,14 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 using Air.Cloud.Core.Standard.JSON;
+using Air.Cloud.Core.Standard.JSON.Converters;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+
+using System;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 namespace Air.Cloud.Core.Standard.JSON.Extensions
 {
@@ -37,9 +43,9 @@ public static class WebJsonSerializationInjectExtensions
     /// <param name="services"></param>
     /// <param name="configure"></param>
     /// <returns></returns>
-    public static IServiceCollection AddJsonOptions(this IServiceCollection services, Action<JsonOptions> configure)
+    public static IServiceCollection AddJsonOptions(this IServiceCollection services, Action<JsonOptions> configure=null)
     {
-        // 手动添加配置
+            // 手动添加配置
         services.Configure<JsonOptions>(options =>
         {
             configure?.Invoke(options);

@@ -49,7 +49,7 @@ namespace Air.Cloud.Modules.Taxin.Model
         /// <para>zh-cn:路由信息</para>
         /// <para>en-us:Route information</para>
         /// </summary>
-        public List<TaxinRouteInformation> Routes { get; set; }
+        public List<TaxinRouteInformation> Routes { get; set; } = new List<TaxinRouteInformation>();
         /// <summary>
         /// <para>zh-cn:数据创建的时间</para>
         /// <para></para>

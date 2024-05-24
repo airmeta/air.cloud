@@ -188,11 +188,4 @@ public abstract class PrivateEntityBase<TKey> : IPrivateEntity
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public virtual TKey Id { get; set; }
-
-    /// <summary>
-    /// 租户Id
-    /// </summary>
-    [Newtonsoft.Json.JsonIgnore]
-    [System.Text.Json.Serialization.JsonIgnore]
-    public virtual Guid? TenantId { get; set; }
 }

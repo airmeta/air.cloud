@@ -37,24 +37,28 @@ namespace Air.Cloud.Modules.Taxin.Server
                 Title = "The Taxin service is being launched",
                 Content = "The Taxin service is being launched"
             });
-            await Task.Factory.StartNew(async () =>
+            await TaxinServer.OnLineAsync();
+            if (Options.Persistence)
             {
-                while (!stoppingToken.IsCancellationRequested)
+                await Task.Factory.StartNew(async () =>
                 {
                     AppRealization.Output.Print(new AppPrintInformation()
                     {
                         Title = "The Taxin service is successfully launched",
                         Content = "Start loading the instance state and transferring it"
                     });
-                    try
+                    while (!stoppingToken.IsCancellationRequested)
                     {
-                        //整理数据(该方法暂时未定义 后续需要增加一个数据整理方法)
-                        await StoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
-                        await Task.Delay(TimeSpan.FromSeconds(Options.CheckRate), stoppingToken);
+                        try
+                        {
+                            //整理数据(该方法暂时未定义 后续需要增加一个数据整理方法)
+                            await StoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                            await Task.Delay(TimeSpan.FromSeconds(Options.PersistenceRate), stoppingToken);
+                        }
+                        catch (OperationCanceledException) { }
                     }
-                    catch (OperationCanceledException) { }
-                }
-            }, stoppingToken);
+                }, stoppingToken);
+            }
         }
         public override async Task StopAsync(CancellationToken cancellationToken)
         {

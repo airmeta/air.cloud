@@ -9,49 +9,44 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using System.Net.Http.Headers;
+using System.Text;
+
 namespace Air.Cloud.Core.Plugins.Http.Extensions
 {
     public static class HttpClientExtensions
     {
         /// <summary>
-        /// 8KB
+        /// <para>zh-cn:设置请求头信息</para>
+        /// <para>en-us:Set request header</para>
         /// </summary>
-        private static int BufferSize = 1024 * 1024;
-        public static async Task<byte[]> GetByteArrayProgressAsync(this System.Net.Http.HttpClient client, string requestUri)
+        /// <param name="client"></param>
+        /// <param name="Headers"></param>
+        /// <returns></returns>
+        public static HttpClient SetHeaders(this HttpClient client,IDictionary<string,string> Headers)
         {
-            if (client == null) throw new ArgumentNullException(nameof(client));
-
-            using (var responseMessage = await client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
+            if (Headers != null)
             {
-                responseMessage.EnsureSuccessStatusCode();
-                var content = responseMessage.Content;
-                if (content == null)
-                {
-                    return Array.Empty<byte>();
-                }
-                var headers = content.Headers;
-                var contentLength = headers.ContentLength;
-                var downloadProgress = new HttpDownloadProgress();
-                if (contentLength.HasValue)
-                {
-                    downloadProgress.TotalBytesToReceive = (ulong)contentLength.Value;
-                    //每份大小
-                    BufferSize = (int)(downloadProgress.TotalBytesToReceive / 10000);
-                }
-                using (var responseStream = await content.ReadAsStreamAsync().ConfigureAwait(false))
-                {
-                    var buffer = new byte[BufferSize];
-                    int bytesRead;
-                    var bytes = new List<byte>();
-                    while ((bytesRead = await responseStream.ReadAsync(buffer, 0, BufferSize).ConfigureAwait(false)) > 0)
-                    {
-                        bytes.AddRange(buffer.Take(bytesRead));
-                        downloadProgress.BytesReceived += (ulong)bytesRead;
-                        var current = bytes.Count / BufferSize;
-                    }
-                    return bytes.ToArray();
-                }
+                foreach (var item in Headers) client.DefaultRequestHeaders.Add(item.Key, item.Value);
             }
+            return client;
         }
+        public static HttpContent SetBody(this HttpClient client,object Body,string ContentType= "application/json")
+        {
+            string Data;
+            if (Body.GetType() == typeof(string) || Body.GetType() == typeof(string))
+            {
+                Data = Body.ToString();
+            }
+            else
+            {
+                Data = AppRealization.JSON.Serialize(Body);
+            }
+            HttpContent Content = new StringContent(Data ?? string.Empty, Encoding.UTF8);
+            Content.Headers.ContentType = new MediaTypeHeaderValue(ContentType);
+            return Content;
+        }
+        
+
     }
 }

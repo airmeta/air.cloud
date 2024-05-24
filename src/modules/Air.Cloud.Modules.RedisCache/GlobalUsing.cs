@@ -9,9 +9,4 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Plugins.Http.Result
-{
-    public interface IHttpResultBase
-    {
-    }
-}
+global using Air.Cloud.Core;

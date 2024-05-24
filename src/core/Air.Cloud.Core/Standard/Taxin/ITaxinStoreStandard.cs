@@ -37,6 +37,11 @@ namespace Air.Cloud.Core.Standard.Taxin
         public static TaxinRouteDataPackage Current { get; set; }
 
         /// <summary>
+        /// <para>zh-cn:路由表信息</para>
+        /// <para>en-us:route data</para>
+        /// </summary>
+        public static IDictionary<string, IDictionary<Version, TaxinRouteInformation>> Routes { get; set; } = new Dictionary<string, IDictionary<Version, TaxinRouteInformation>>();
+        /// <summary>
         /// <para>zh-cn:检查标记</para>
         /// <para>en-us:CheckTag</para>
         /// </summary>
@@ -44,7 +49,13 @@ namespace Air.Cloud.Core.Standard.Taxin
         /// <para>zh-cn:在执行检查当前数据是否过时时,服务端会返回一个特定的Guid字符串,可使用该字符串与客户端字符串进行比较以确认当前数据是否过时</para>
         /// <para>en-us:When performing a check to see if the current data is out of date, the server returns a specific Guid string that can be compared with the client string to confirm whether the current data is out of date</para>
         /// </remarks>
-        public static  string CheckTag { get; set; }
+        public static  string CheckTag { get; set; }=Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// <para>zh-cn:是否服务端</para>
+        /// <para>en-us:Is Taxin server</para>
+        /// </summary>
+        public static bool IsTaxinServer = false;
         /// <summary>
         /// <para>zh-cn:持久化数据存储</para>
         /// <para>en-us: Persistent data storage </para>

@@ -45,8 +45,6 @@ namespace Air.Cloud.Modules.Taxin.Extensions
             services.AddSingleton<ITaxinClientStandard, TTaxinClientDependency>();
             services.AddSingleton<ITaxinStoreStandard, DefaultTaxinStoreDependency>();
             services.AddHostedService<TaxinClientBackgroundService>();
-            ITaxinClientStandard client = new TTaxinClientDependency();
-            client.OnLineAsync();
             return services;
         }
         /// <summary>

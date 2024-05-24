@@ -11,9 +11,11 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.Taxin.Server;
 using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin;
+using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Model;
 using Air.Cloud.Modules.Taxin.Server;
 using Air.Cloud.Modules.Taxin.Store;
@@ -33,37 +35,116 @@ namespace Air.Cloud.Modules.Taxin.Extensions
     {
 
         /// <summary>
-        /// TaxinServer注入
+        /// <para>zh-cn:Taxin服务端注入</para>
+        /// <para>en-us:Taxin server injection</para>
         /// </summary>
-        /// <typeparam name="TTaxinServerDependency"></typeparam>
-        /// <param name="services"></param>
-        /// <returns></returns>
-        public static IServiceCollection AddTaxinServer<TTaxinServerDependency>(this IServiceCollection services) where TTaxinServerDependency : class, ITaxinServerStandard, new()
+        /// <typeparam name="TTaxinServerDependency">
+        /// <para>zh-cn:Taxin 服务端实现类</para>
+        /// <para>en-us:Taxin server implementation type</para>
+        /// </typeparam>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </returns>
+        public static IServiceCollection AddTaxinServer<TTaxinServerDependency>(this IServiceCollection services) 
+            where TTaxinServerDependency : class, ITaxinServerStandard, new()
         {
             services.AddSingleton<ITaxinStoreStandard, DefaultTaxinStoreDependency>();
             services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
             services.AddHostedService<TaxinServerBackgroundService>();
-            ITaxinServerStandard client = new TTaxinServerDependency();
-            client.OnLineAsync();
+            ITaxinStoreStandard.IsTaxinServer = true;
             return services;
         }
 
+
         /// <summary>
-        /// TaxinServer注入
+        /// <para>zh-cn:Taxin服务端注入</para>
+        /// <para>en-us:Taxin server injection</para>
         /// </summary>
-        /// <typeparam name="TTaxinServerDependency"></typeparam>
-        /// <param name="services"></param>
-        /// <returns></returns>
-        public static IServiceCollection AddTaxinServer<TTaxinServerDependency, TTaxinStoreDependency>(this IServiceCollection services) where TTaxinServerDependency : class, ITaxinServerStandard, new() where TTaxinStoreDependency : class, ITaxinStoreStandard, new()
+        /// <typeparam name="TTaxinServerDependency">
+        /// <para>zh-cn:Taxin 服务端实现类</para>
+        /// <para>en-us:Taxin server implementation type</para>
+        /// </typeparam>
+        /// <typeparam name="TTaxinClientDependency">
+        /// <para>zh-cn:Taxin 客户端实现类</para>
+        /// <para>en-us:Taxin client implementation type</para>
+        /// </typeparam>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </returns>
+        public static IServiceCollection AddTaxinServer<TTaxinServerDependency, TTaxinClientDependency>(this IServiceCollection services)
+            where TTaxinServerDependency : class, ITaxinServerStandard, new()
+            where TTaxinClientDependency : class, ITaxinClientStandard, new()
+        {
+            services.AddSingleton<ITaxinStoreStandard, DefaultTaxinStoreDependency>();
+            services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
+            services.AddSingleton<ITaxinClientStandard, TTaxinClientDependency>();
+            services.AddHostedService<TaxinServerBackgroundService>();
+            ITaxinStoreStandard.IsTaxinServer = true;
+            return services;
+        }
+        /// <summary>
+        /// <para>zh-cn:Taxin服务端注入</para>
+        /// <para>en-us:Taxin server injection</para>
+        /// </summary>
+        /// <typeparam name="TTaxinServerDependency">
+        /// <para>zh-cn:Taxin 服务端实现类</para>
+        /// <para>en-us:Taxin server implementation type</para>
+        /// </typeparam>
+        /// <typeparam name="TTaxinClientDependency">
+        /// <para>zh-cn:Taxin 客户端实现类</para>
+        /// <para>en-us:Taxin client implementation type</para>
+        /// </typeparam>
+        /// <typeparam name="TTaxinStoreDependency">
+        /// <para>zh-cn:Taxin 存储实现类</para>
+        /// <para>en-us:Taxin storage implementation type</para>
+        /// </typeparam>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </returns>
+        public static IServiceCollection AddTaxinServer<TTaxinServerDependency, TTaxinClientDependency, TTaxinStoreDependency>(this IServiceCollection services) 
+            where TTaxinServerDependency : class, ITaxinServerStandard, new() 
+            where TTaxinStoreDependency : class, ITaxinStoreStandard, new()
+            where TTaxinClientDependency : class, ITaxinClientStandard, new()
+            
         {
             services.AddSingleton<ITaxinStoreStandard, TTaxinStoreDependency>();
             services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
+            services.AddSingleton<ITaxinClientStandard, TTaxinClientDependency>();
             services.AddHostedService<TaxinServerBackgroundService>();
-            ITaxinServerStandard client = new TTaxinServerDependency();
-            client.OnLineAsync();
+            ITaxinStoreStandard.IsTaxinServer = true;
             return services;
         }
-
+        /// <summary>
+        /// <para>zh-cn:配置拦截Taxin请求</para>
+        /// <para>en-us:</para>
+        /// </summary>
+        /// <typeparam name="TTaxinServerDependency">
+        /// <para>zh-cn:Taxin 服务端实现类</para>
+        /// <para>en-us:Taxin server implementation type</para>
+        /// </typeparam>
+        /// <param name="app">
+        ///  <para>zh-cn:配置应用程序请求管道类</para>
+        ///  <para>en-us:Defines a class that provides the mechanisms to configure an application's request pipeline.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:配置应用程序请求管道</para>
+        /// <para>en-us:Defines a class that provides the mechanisms to configure an application's request pipeline.</para>
+        /// </returns>
         public static IApplicationBuilder UseTaxinServer<TTaxinServerDependency>(this IApplicationBuilder app) where TTaxinServerDependency : class, ITaxinServerStandard, new()
         {
             TaxinOptions Options = AppCore.GetOptions<TaxinOptions>();
@@ -108,13 +189,12 @@ namespace Air.Cloud.Modules.Taxin.Extensions
                         }
                         catch (Exception)
                         {
-
                             await context.Response.WriteAsJsonAsync(Array.Empty<string>());
                         }
                     };
                 });
             });
-            app.Map(new PathString(Options.PushRoute), application =>
+            app.Map(new PathString(Options.OffLineRoute), application =>
             {
                 //推送数据请求
                 application.Use(next =>

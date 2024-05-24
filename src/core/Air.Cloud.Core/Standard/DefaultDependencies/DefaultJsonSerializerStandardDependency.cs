@@ -10,11 +10,17 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.JSON;
+using Air.Cloud.Core.Standard.JSON.Converters;
+
+using Mapster;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Options;
 
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Air.Cloud.Core.Standard.DefaultDependencies
 {
@@ -39,7 +45,11 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         /// <param name="options"></param>
         public DefaultJsonSerializerStandardDependency(JsonOptions options)
         {
-            _jsonOptions = options;
+            //
+            var optionss = options.Adapt<JsonOptions>();
+            optionss.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+            optionss.JsonSerializerOptions.Converters.Add(new ExceptionJsonConverter<Exception>());
+            _jsonOptions = optionss;
         }
         /// <summary>
         /// 序列化对象
@@ -70,7 +80,9 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         /// <returns></returns>
         public object GetSerializerOptions()
         {
-            return _jsonOptions?.JsonSerializerOptions;
+            //_jsonOptions?.JsonSerializerOptions.Converters.Add(new ExceptionJsonConverter<Exception>());
+            var options = _jsonOptions?.JsonSerializerOptions;
+            return options;
         }
     }
 }

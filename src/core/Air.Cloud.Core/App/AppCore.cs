@@ -160,8 +160,13 @@ namespace Air.Cloud.Core.App
         internal static AppSettingsOptions InternalSettings;
 
         /// <summary>
-        /// 应用全局配置
-        /// </summary>
+        /// <para>zh-cn:应用全局配置</para>
+        /// <para>en-us:Application global settings</para>
+        /// </summary> 
+        /// <remarks>
+        /// <para>zh-cn:如果在依赖注入的方法ConfigureServices中使用该配置时需要确认该配置是否注入成功</para>
+        /// <para>en-us:If you use this configuration in the dependency injection method ConfigureServices, you need to confirm whether the configuration is successfully injected.</para>
+        /// </remarks>
         public static AppSettingsOptions Settings => InternalSettings ??= AppConfiguration.GetConfig<AppSettingsOptions>("AppSettings", true);
 
         #endregion
@@ -179,7 +184,6 @@ namespace Air.Cloud.Core.App
             internal static IEnumerable<AssemblyName> GetAssemblies()
             {
                 // 排除数据库迁移程序集 这里可以换成内存动态生成一个Database.Migrations程序集
-
                 var ExcludeAssemblyNames = new string[] { "Database.Migrations" };
                 IEnumerable<AssemblyName> scanAssemblies  = DependencyContext.Default.RuntimeLibraries
                  .Where(u =>

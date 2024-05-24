@@ -9,10 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Newtonsoft.Json;
-
-using System;
-using System.Diagnostics;
 namespace Air.Cloud.Core.Standard.Print
 {
     /// <summary>
@@ -82,7 +78,7 @@ namespace Air.Cloud.Core.Standard.Print
 
         public void Error(Exception exception,Dictionary<string, object> pairs=default)
         {
-            Console.WriteLine(JsonConvert.SerializeObject(new AppPrintInformation()
+            Console.WriteLine(AppRealization.JSON.Serialize(new AppPrintInformation()
             {
                 Title = "Error",
                 State = true,
@@ -95,7 +91,7 @@ namespace Air.Cloud.Core.Standard.Print
         
         public void Print(AppPrintInformation Content)
         {
-            Console.WriteLine(JsonConvert.SerializeObject(Content));
+            Console.WriteLine(AppRealization.JSON.Serialize(Content));
             if (Content.Level == AppPrintInformation.AppPrintLevel.Error)
             {
                 throw new Exception(Content.Content);
@@ -104,7 +100,7 @@ namespace Air.Cloud.Core.Standard.Print
 
         public void Print<T>(T Content) where T : AppPrintInformation, new()
         {
-            Console.WriteLine(JsonConvert.SerializeObject(Content));
+            Console.WriteLine(AppRealization.JSON.Serialize(Content));
         }
     }
 }

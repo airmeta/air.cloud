@@ -11,6 +11,8 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.App;
+using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Standard.Authentication.Jwt;
 using Air.Cloud.Plugins.Jwt;
 
@@ -23,10 +25,10 @@ namespace unit.webapp.common.JwtHandler
         public async Task HandleAsync(AuthorizationHandlerContext context)
         {
             //如果开发环境则不检查授权
-            //if (AppEnvironment.VirtualEnvironment == EnvironmentEnums.Development)
-            //{
-            //    await AppRealization.Jwt.AuthorizeHandleAsync(context); return;
-            //}
+            if (AppEnvironment.VirtualEnvironment == EnvironmentEnums.Development)
+            {
+                await AppRealization.Jwt.AuthorizeHandleAsync(context); return;
+            }
             //检查授权
             var Result = JWTEncryption.ValidateToken(context, context.GetCurrentHttpContext());
 

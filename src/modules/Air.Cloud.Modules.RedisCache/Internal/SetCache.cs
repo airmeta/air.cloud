@@ -63,7 +63,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public bool Contains<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return Redis.SetContains(key, jValue);
         }
 
@@ -76,7 +76,7 @@ namespace SSS.Modules.Redis.Service
         public T Random<T>(string key)
         {
             var rValue = Redis.SetRandomMember(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace SSS.Modules.Redis.Service
         {
 
             var rValue = Redis.SetPop(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
 
@@ -217,7 +217,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<bool> ContainsAsync<T>(string key, T value)
         {
-            string jValue = RedisCacheProvider.ConvertJson(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return await Redis.SetContainsAsync(key, jValue);
         }
 
@@ -230,7 +230,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> RandomAsync<T>(string key)
         {
             var rValue = await Redis.SetRandomMemberAsync(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> PopAsync<T>(string key)
         {
             var rValue = await Redis.SetPopAsync(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
 

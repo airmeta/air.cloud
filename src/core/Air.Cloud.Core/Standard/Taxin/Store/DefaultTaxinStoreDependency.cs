@@ -132,7 +132,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
                     break;
             }
             ITaxinStoreStandard.Packages = Packages;
-            GetPersistenceHandler(this, new TaxinStoreEventArgs()
+            SetPersistenceHandler(this, new TaxinStoreEventArgs()
             {
                 Packages = ITaxinStoreStandard.Packages
             });

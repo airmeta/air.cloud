@@ -12,6 +12,8 @@
 using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Modules.Taxin.Model;
 
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Air.Cloud.Modules.Taxin.Extensions
 {
     /// <summary>
@@ -52,6 +54,29 @@ namespace Air.Cloud.Modules.Taxin.Extensions
             IDictionary<string, IEnumerable<TaxinRouteDataPackage>> pairs = await taxinStore.GetPersistenceAsync();
             ITaxinStoreStandard.Packages = pairs;
             return ITaxinStoreStandard.Packages;
+        }
+
+        /// <summary>
+        /// <para>zh-cn:Taxin 存储注入</para>
+        /// <para>en-us:Taxin storage injection</para>
+        /// </summary>
+        /// <typeparam name="TTaxinStoreDependency">
+        /// <para>zh-cn:Taxin 存储实现类</para>
+        /// <para>en-us:Taxin storage implementation type</para>
+        /// </typeparam>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:服务集合</para>
+        /// <para>en-us: Services collection</para>
+        /// </returns>
+        public static IServiceCollection AddTaxinStore<TTaxinStoreDependency>(this IServiceCollection services)
+            where TTaxinStoreDependency : class, ITaxinStoreStandard, new()
+        {
+            services.AddSingleton<ITaxinStoreStandard, TTaxinStoreDependency>();
+            return services;
         }
     }
 }

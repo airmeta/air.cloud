@@ -31,5 +31,14 @@ namespace Air.Cloud.Core.Standard.Taxin.Attributes
         /// <para>en-us:This parameter indicates which version is allowed to initiate the call, and when the client passes this information to the server, the server will version the interface</para>
         /// </remarks>
         public Version VersionCalls { get; set; } = AppCore.Settings.VersionSerialize;
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public TaxinServiceAttribute(string serviceName, string versionCalls=null)
+        {
+            ServiceName = serviceName;
+            if (!versionCalls.IsNullOrEmpty())
+                VersionCalls = Version.Parse(versionCalls);
+        }
     }
 }

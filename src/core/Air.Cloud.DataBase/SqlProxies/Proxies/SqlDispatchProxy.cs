@@ -17,8 +17,6 @@ using Air.Cloud.DataBase.SqlProxies.Attributes;
 using Air.Cloud.DataBase.SqlProxies.Attributes.Basics;
 using Air.Cloud.DataBase.SqlProxies.Models;
 
-using System.Diagnostics.Internal;
-
 namespace Air.Cloud.DataBase.SqlProxies.Proxies;
 
 /// <summary>
@@ -124,37 +122,6 @@ public class SqlDispatchProxy : AspectDispatchProxy, IDispatchProxy
             var (rowEffects, _) = database.ExecuteNonQuery(sql, parameterModel, commandType);
             return rowEffects;
         }
-        // 处理 元组类型 返回值
-        else if (returnType.IsValueTuple())
-        {
-            var (dataSet, _) = database.DataAdapterFill(sql, parameterModel, commandType);
-            var result = dataSet.ToValueTuple(returnType);
-
-            var tupleResult = (ITuple)result;
-            var genericArguments = returnType.GetGenericArguments();
-
-            // 查找 ValueTuple.Create<T1...TN> 静态方法
-            var createTupleMethod = typeof(ValueTuple).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .First(u => u.Name == "Create" && u.GetGenericArguments().Length == tupleResult.Length);
-
-            // 创建 ValueTuple.Create 参数
-            var args = new object[tupleResult.Length];
-            for (var i = 0; i < tupleResult.Length; i++)
-            {
-                // 处理单个值的情况
-                if (!typeof(IEnumerable).IsAssignableFrom(genericArguments[i]))
-                {
-                    args[i] = ((IEnumerable)tupleResult[i])?.Cast<object>()?.FirstOrDefault();
-                    continue;
-                }
-
-                args[i] = tupleResult[i];
-            }
-
-            // 调用 ValueTuple.Create<T1..TN> 静态方法
-            var tupleObject = createTupleMethod.MakeGenericMethod(genericArguments).Invoke(null, args);
-            return tupleObject;
-        }
         // 处理 基元类型 返回值
         else if (returnType.IsRichPrimitive())
         {
@@ -234,37 +201,6 @@ public class SqlDispatchProxy : AspectDispatchProxy, IDispatchProxy
         {
             var (dataSet, _) = await database.DataAdapterFillAsync(sql, parameterModel, commandType);
             return (T)(dataSet as object);
-        }
-        // 处理 元组类型 返回值
-        else if (returnType.IsValueTuple())
-        {
-            var (dataSet, _) = await database.DataAdapterFillAsync(sql, parameterModel, commandType);
-            var result = dataSet.ToValueTuple(returnType);
-
-            var tupleResult = (ITuple)result;
-            var genericArguments = returnType.GetGenericArguments();
-
-            // 查找 ValueTuple.Create<T1...TN> 静态方法
-            var createTupleMethod = typeof(ValueTuple).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .First(u => u.Name == "Create" && u.GetGenericArguments().Length == tupleResult.Length);
-
-            // 创建 ValueTuple.Create 参数
-            var args = new object[tupleResult.Length];
-            for (var i = 0; i < tupleResult.Length; i++)
-            {
-                // 处理单个值的情况
-                if (!typeof(IEnumerable).IsAssignableFrom(genericArguments[i]))
-                {
-                    args[i] = ((IEnumerable)tupleResult[i])?.Cast<object>()?.FirstOrDefault();
-                    continue;
-                }
-
-                args[i] = tupleResult[i];
-            }
-
-            // 调用 ValueTuple.Create<T1..TN> 静态方法
-            var tupleObject = createTupleMethod.MakeGenericMethod(genericArguments).Invoke(null, args);
-            return (T)tupleObject;
         }
         // 处理 基元类型 返回值
         else if (returnType.IsRichPrimitive())

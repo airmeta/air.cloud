@@ -14,6 +14,8 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.Cache.Redis;
 using Air.Cloud.Core.Standard.DynamicServer;
+using Air.Cloud.Core.Standard.Taxin.Attributes;
+using Air.Cloud.Core.Standard.Taxin.Client;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,17 +27,35 @@ namespace unit.webapp.service.services.test
     [Route("api")]
     public class TestService : IDynamicService, ITransient
     {
-        public ITestDomain Domain;
-        public TestService(ITestDomain testDomain)
+        private readonly ITestDomain Domain;
+        private readonly ITaxinClientStandard Client;
+        public TestService(ITestDomain testDomain,ITaxinClientStandard taxin)
         {
             Domain = testDomain;
+            Client=taxin;
         }
 
+        [HttpGet("test1")]
+        [AllowAnonymous]
+        public async Task<object> Test()
+        {
+            try
+            {
+                var data = await Client.SendAsync<object>("taxin.service.test");
+                return new { name = "132", data = data };
+            }
+            catch (Exception ex)
+            {
+                return new { name = "132", data = ex.Message };
+            }
+           
+        }
         [HttpGet("test")]
         [AllowAnonymous]
-        public object Test()
+        [TaxinService("taxin.service.test")]
+        public object TaxinServiceTest()
         {
-            return new { name = "132" };
+            return new { name = "TaxinServiceTest" };
         }
 
         [HttpGet("search")]

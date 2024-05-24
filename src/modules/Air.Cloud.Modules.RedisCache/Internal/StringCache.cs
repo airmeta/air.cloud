@@ -52,7 +52,7 @@ namespace SSS.Modules.Redis.Service
         /// <param name="value">对象实体</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>
-        public bool Set<T>(string key, T value, TimeSpan? expiry = default) => Redis.StringSet(key, RedisCacheProvider.ConvertJson(value), expiry);
+        public bool Set<T>(string key, T value, TimeSpan? expiry = default) => Redis.StringSet(key, AppRealization.JSON.Serialize(value), expiry);
         /// <summary>
         /// 获取多个key的value值
         /// </summary>
@@ -93,7 +93,7 @@ namespace SSS.Modules.Redis.Service
         /// <param name="obj">对象实体</param>
         /// <param name="expiry">过期时间</param>
         /// <returns></returns>
-        public async Task<bool> SetAsync<T>(string key, T obj, TimeSpan? expiry = default) => await SetAsync(key, RedisCacheProvider.ConvertJson(obj) ?? string.Empty, expiry);
+        public async Task<bool> SetAsync<T>(string key, T obj, TimeSpan? expiry = default) => await SetAsync(key, AppRealization.JSON.Serialize(obj) ?? string.Empty, expiry);
 
         /// <summary>
         /// 异步方法 获取多个key的value值
@@ -111,7 +111,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<List<T>> GetAsync<T>(params string[] keys) => RedisCacheProvider.ConvetList<T>(await Redis.StringGetAsync(RedisCacheProvider.ConvertRedisKeys(keys)));
 
         public string Get(string Key) => Redis.StringGet(Key);
-        public T Get<T>(string Key) => RedisCacheProvider.ConvertObj<T>(Redis.StringGet(Key));
+        public T Get<T>(string Key) => AppRealization.JSON.Deserialize<T>(Redis.StringGet(Key));
         #endregion
     }
 }

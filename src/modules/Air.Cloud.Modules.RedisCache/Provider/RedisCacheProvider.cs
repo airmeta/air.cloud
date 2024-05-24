@@ -9,9 +9,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Newtonsoft.Json;
+using Air.Cloud.Core;
 
 using StackExchange.Redis;
+
+using System.Xml;
 
 namespace Air.Cloud.Modules.RedisCache.Provider
 {
@@ -25,8 +27,7 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         /// <returns></returns>
         public static string? ConvertJson<T>(T value)
         {
-            string? result = value is string ? value.ToString() :
-                JsonConvert.SerializeObject(value, Formatting.None);
+            string? result = value is string ? value.ToString() :AppRealization.JSON.Serialize(value);
             return result;
         }
 
@@ -38,7 +39,7 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         /// <returns></returns>
         public static T ConvertObj<T>(RedisValue value)
         {
-            return value.IsNullOrEmpty ? default : JsonConvert.DeserializeObject<T>(value);
+            return value.IsNullOrEmpty ? default : AppRealization.JSON.Deserialize<T>(value);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
-﻿/*
- * Copyright (c) 2024 星曳数据
+
+/*
+ * Copyright (c) 2024 ��ҷ����
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,18 +10,10 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Plugins.Http.Request
-{
-    /// <summary>
-    /// 请求数据
-    /// </summary>
-    public interface IHttpRequest
-    {
+using Air.Cloud.WebApp.App;
 
-        /// <summary>
-        /// 请求Id
-        /// </summary>
-        public string RequestId { get; set; }
+var builder = WebApplication.CreateBuilder(args);
 
-    }
-}
+var app = builder.WebInjectInFile();
+
+app.Run();

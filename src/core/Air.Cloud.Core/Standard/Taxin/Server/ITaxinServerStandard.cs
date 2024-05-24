@@ -10,7 +10,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.Taxin.Result;
-using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin.Model;
 
 namespace Air.Cloud.Core.Standard.Taxin.Server

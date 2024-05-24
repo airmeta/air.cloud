@@ -9,7 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Standard.Taxin.Store
+using System.Reflection;
+
+namespace Air.Cloud.Core.Standard.Taxin
 {
     /// <summary>
     /// <para>zh-cn:Taxin 基础标准</para>
@@ -28,5 +30,6 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
         /// </summary>
         /// <returns></returns>
         public Task OffLineAsync();
+
     }
 }

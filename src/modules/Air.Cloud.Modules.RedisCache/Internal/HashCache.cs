@@ -14,6 +14,7 @@ using Air.Cloud.Modules.RedisCache.Provider;
 using StackExchange.Redis;
 using Air.Cloud.Core.Standard.Cache.Redis;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Air.Cloud.Core;
 
 namespace SSS.Modules.Redis.Service
 {
@@ -56,7 +57,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public bool Set<T>(string key, string dataKey, T t)
         {
-            string? json = RedisCacheProvider.ConvertJson(t);
+            string? json = AppRealization.JSON.Serialize(t);
             return Redis.HashSet(key, dataKey, json);
         }
 
@@ -82,7 +83,7 @@ namespace SSS.Modules.Redis.Service
         public T Get<T>(string key, string dataKey)
         {
             string value = Redis.HashGet(key, dataKey);
-            return RedisCacheProvider.ConvertObj<T>(value);
+            return AppRealization.JSON.Deserialize<T>(value);
         }
 
         /// <summary>
@@ -108,7 +109,7 @@ namespace SSS.Modules.Redis.Service
             Dictionary<string, T> dic = new Dictionary<string, T>();
             foreach (var item in query)
             {
-                dic.Add(item.Name, RedisCacheProvider.ConvertObj<T>(item.Value));
+                dic.Add(item.Name, AppRealization.JSON.Deserialize<T>(item.Value));
             }
             return dic;
         }
@@ -138,7 +139,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<bool> SetAsync<T>(string key, string dataKey, T t)
         {
-            string json = RedisCacheProvider.ConvertJson(t);
+            string json = AppRealization.JSON.Serialize(t);
             return await Redis.HashSetAsync(key, dataKey, json);
         }
 
@@ -164,7 +165,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> GetAsync<T>(string key, string dataKey)
         {
             string value = await Redis.HashGetAsync(key, dataKey);
-            return RedisCacheProvider.ConvertObj<T>(value);
+            return AppRealization.JSON.Deserialize<T>(value);
         }
 
         /// <summary>
@@ -190,7 +191,7 @@ namespace SSS.Modules.Redis.Service
             Dictionary<string, T> dic = new Dictionary<string, T>();
             foreach (var item in query)
             {
-                dic.Add(item.Name, RedisCacheProvider.ConvertObj<T>(item.Value));
+                dic.Add(item.Name, AppRealization.JSON.Deserialize<T>(item.Value));
             }
             return dic;
         }

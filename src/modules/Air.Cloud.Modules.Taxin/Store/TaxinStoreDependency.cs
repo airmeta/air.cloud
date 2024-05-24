@@ -20,11 +20,12 @@ using Air.Cloud.Modules.Taxin.Model;
 namespace Air.Cloud.Modules.Taxin.Store
 {
     public class TaxinStoreDependency : ITaxinStoreStandard
-    {   /// <summary>
-        /// <para>zh-cn:Taxin 配置选项</para>
-        /// <para>en-us:Taxin options </para>
-        /// </summary>
-        public TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
+    {     
+        /// <summary>
+           /// <para>zh-cn:Taxin 配置选项</para>
+           /// <para>en-us:Taxin options </para>
+           /// </summary>
+        private TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
         /// <summary>
         /// <para>zh-cn:无参构造函数</para>
         /// <para>en-us:No parameter constructor</para>

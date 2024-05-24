@@ -12,19 +12,23 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Core.Standard.JSON.Extensions;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Server;
+
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 using unit.webapp.common.Filters;
-using Air.Cloud.Core.Standard.JSON.Extensions;
-namespace unit.webapp.entry
+namespace unit.taxinserver.entry
 {
     [AppStartup(Order = 12000)]
-    public class Startup :AppStartup
+    public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinClient<TaxinClientDependency>();
+            services.AddTaxinServer<TaxinServerDependency, TaxinClientDependency>();
             //注入
             services.AddControllers(a =>
             {
@@ -33,7 +37,7 @@ namespace unit.webapp.entry
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-           
+            app.UseTaxinServer<TaxinServerDependency>();
         }
     }
 }

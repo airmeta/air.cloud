@@ -49,7 +49,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docengine", "docengine", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DocEngine", "test\doc.engine\Air.Cloud.DocEngine\Air.Cloud.DocEngine.csproj", "{8A8959E0-660A-430D-81EA-2BBC72044349}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Taxin", "src\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj", "{82B4203D-733F-47D6-A24A-6E1FC694668E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Taxin", "src\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj", "{82B4203D-733F-47D6-A24A-6E1FC694668E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit.taxinserver.entry", "test\unit.taxin\unit.taxinserver.entry\unit.taxinserver.entry.csproj", "{86E8E256-0D60-42A8-9F47-6897E32DFA6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "taxin", "taxin", "{5C3611D9-2EB3-4471-94AD-4E452079B09E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit.taxinclient.entry", "test\unit.taxin\unit.taxinclient.entry\unit.taxinclient.entry.csproj", "{9828467F-38D0-414D-8BD5-6ECF3D17810A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -125,6 +131,14 @@ Global
 		{82B4203D-733F-47D6-A24A-6E1FC694668E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82B4203D-733F-47D6-A24A-6E1FC694668E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82B4203D-733F-47D6-A24A-6E1FC694668E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86E8E256-0D60-42A8-9F47-6897E32DFA6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86E8E256-0D60-42A8-9F47-6897E32DFA6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86E8E256-0D60-42A8-9F47-6897E32DFA6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86E8E256-0D60-42A8-9F47-6897E32DFA6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -148,6 +162,9 @@ Global
 		{6E25F8D1-C9D0-4933-918C-CD6E39C45ACA} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 		{8A8959E0-660A-430D-81EA-2BBC72044349} = {6E25F8D1-C9D0-4933-918C-CD6E39C45ACA}
 		{82B4203D-733F-47D6-A24A-6E1FC694668E} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
+		{86E8E256-0D60-42A8-9F47-6897E32DFA6D} = {5C3611D9-2EB3-4471-94AD-4E452079B09E}
+		{5C3611D9-2EB3-4471-94AD-4E452079B09E} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
+		{9828467F-38D0-414D-8BD5-6ECF3D17810A} = {5C3611D9-2EB3-4471-94AD-4E452079B09E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

@@ -35,18 +35,22 @@ namespace Air.Cloud.Modules.Taxin.Client
                 Title = "The Taxin service is being launched",
                 Content = "The Taxin service is being launched"
             });
+            //client online
+            await TaxinClient.OnLineAsync();
+            AppRealization.Output.Print(new AppPrintInformation()
+            {
+                Title = "The Taxin client is successfully launched",
+                Content = "Start loading the instance state and transferring it"
+            });
+            //push current client data
+            await TaxinClient.PushAsync();
             await Task.Factory.StartNew(async () =>
             {
                 while (!stoppingToken.IsCancellationRequested)
                 {
-                    AppRealization.Output.Print(new AppPrintInformation()
-                    {
-                        Title = "The Taxin service is successfully launched",
-                        Content = "Start loading the instance state and transferring it"
-                    });
                     try
                     {
-                        //先推送
+                        //client check
                         await TaxinClient.CheckAsync();
                         await Task.Delay(TimeSpan.FromSeconds(Options.CheckRate), stoppingToken);
                     }
@@ -61,7 +65,14 @@ namespace Air.Cloud.Modules.Taxin.Client
                 Title = "The Taxin service is stopped",
                 Content = "The Taxin service is stopped"
             });
-            await Task.CompletedTask;
+            try
+            {
+                await TaxinClient.OffLineAsync();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

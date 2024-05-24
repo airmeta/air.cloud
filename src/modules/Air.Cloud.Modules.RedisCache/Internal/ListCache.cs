@@ -38,7 +38,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long LeftPush<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListLeftPush(key, jValue);
         }
 
@@ -64,7 +64,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long RightPush<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListRightPush(key, jValue);
         }
 
@@ -90,7 +90,7 @@ namespace SSS.Modules.Redis.Service
         public T LeftPop<T>(string key)
         {
             var rValue = Redis.ListLeftPop(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace SSS.Modules.Redis.Service
         public T RightPop<T>(string key)
         {
             var rValue = Redis.ListRightPop(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace SSS.Modules.Redis.Service
         public T RightPopLeftPush<T>(string key, string destination)
         {
             var rValue = Redis.ListRightPopLeftPush(key, destination);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -128,8 +128,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long InsertAfter<T>(string key, T pivot, T value)
         {
-            string? pValue = RedisCacheProvider.ConvertJson(pivot);
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? pValue = AppRealization.JSON.Serialize(pivot);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListInsertAfter(key, pValue, jValue);
         }
 
@@ -143,8 +143,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long InsertBefore<T>(string key, T pivot, T value)
         {
-            string? pValue = RedisCacheProvider.ConvertJson(pivot);
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? pValue = AppRealization.JSON.Serialize(pivot);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListInsertBefore(key, pValue, jValue);
         }
 
@@ -170,7 +170,7 @@ namespace SSS.Modules.Redis.Service
         public T GetByIndex<T>(string key, long index)
         {
             var rValue = Redis.ListGetByIndex(key, index);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long Remove<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListRemove(key, jValue);
         }
         #endregion
@@ -207,7 +207,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> LeftPushAsync<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListLeftPushAsync(key, jValue);
         }
 
@@ -233,7 +233,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> RightPushAsync<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListRightPushAsync(key, jValue);
         }
 
@@ -259,7 +259,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> LeftPopAsync<T>(string key)
         {
             var rValue = await Redis.ListLeftPopAsync(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -271,7 +271,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> RightPopAsync<T>(string key)
         {
             var rValue = await Redis.ListRightPopAsync(key);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> RightPopLeftPushAsync<T>(string key, string destination)
         {
             var rValue = await Redis.ListRightPopLeftPushAsync(key, destination);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -297,8 +297,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> InsertAfterAsync<T>(string key, T pivot, T value)
         {
-            string? pValue = RedisCacheProvider.ConvertJson(pivot);
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? pValue = AppRealization.JSON.Serialize(pivot);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListInsertAfterAsync(key, pValue, jValue);
         }
 
@@ -312,8 +312,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> InsertBeforeAsync<T>(string key, T pivot, T value)
         {
-            string? pValue = RedisCacheProvider.ConvertJson(pivot);
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? pValue = AppRealization.JSON.Serialize(pivot);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListInsertBeforeAsync(key, pValue, jValue);
         }
 
@@ -339,7 +339,7 @@ namespace SSS.Modules.Redis.Service
         public async Task<T> GetByIndexAsync<T>(string key, long index)
         {
             var rValue = await Redis.ListGetByIndexAsync(key, index);
-            return RedisCacheProvider.ConvertObj<T>(rValue);
+            return AppRealization.JSON.Deserialize<T>(rValue);
         }
 
         /// <summary>
@@ -361,7 +361,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> RemoveAsync<T>(string key, T value)
         {
-            string? jValue = RedisCacheProvider.ConvertJson(value);
+            string? jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListRemoveAsync(key, jValue);
         }
         #endregion

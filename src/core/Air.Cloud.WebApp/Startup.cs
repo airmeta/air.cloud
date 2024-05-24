@@ -10,18 +10,14 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.App.Loader;
 using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
-
-using Mapster;
+using Air.Cloud.WebApp.UnifyResult.Providers;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Air.Cloud.Core.Standard.JSON.Extensions;
 namespace Air.Cloud.WebApp
 {
     [AppStartup(AppName ="Air.Cloud.WebApp", Order =0)]
@@ -29,18 +25,25 @@ namespace Air.Cloud.WebApp
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            //HttpClientFactory
+            services.AddHttpClient();
             // 配置跨域
             services.AddCorsAccessor();
             //领域注册
             services.AddEntityDomainInject();
             // 控制器和规范化结果
-            services.AddControllers().AddInjectWithUnifyResult();
+            services.AddControllers().AddInjectWithUnifyResult<RESTfulResultProvider>();
 
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // 配置错误页
             if (AppEnvironment.IsDevelopment) app.UseDeveloperExceptionPage();
+            app.Use(next => context =>
+            {
+                context.Request.EnableBuffering();//启动倒带方式
+                return next(context);
+            });
             // 401，403 规范化结果
             app.UseUnifyResultStatusCodes();
             // Https 重定向

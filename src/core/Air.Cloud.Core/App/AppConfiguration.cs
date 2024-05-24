@@ -98,10 +98,17 @@ namespace Air.Cloud.Core.App
         ///  <para>en-us:Whether to load post configuration</para>
         /// </param>
         /// <returns>TOptions</returns>
-        public static TOptions GetConfig<TOptions>(string path, bool loadPostConfigure = false)
+        public static TOptions GetConfig<TOptions>(string path=null, bool loadPostConfigure = false)
         {
             try
             {
+                if (path.IsNullOrEmpty())
+                {
+                    ConfigurationInfoAttribute s = typeof(TOptions).GetCustomAttribute<ConfigurationInfoAttribute>(false);
+                    if(s==null) throw new ArgumentNullException("未能查询到"+nameof(TOptions)+"得配置");
+                    path = s.ConfigurationName;
+                }
+
                 var options = Configuration.GetSection(path).Get<TOptions>();
 
                 // 加载默认选项配置

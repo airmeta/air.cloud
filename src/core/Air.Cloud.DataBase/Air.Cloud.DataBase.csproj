@@ -17,6 +17,8 @@
     <Version>1.0.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
+
+    <PackageReference Include="UAParser" Version="3.1.47" />
     <None Include="..\..\..\assets\logo.png" Link="logo.png">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>

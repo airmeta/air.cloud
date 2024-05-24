@@ -20,15 +20,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ben.Demystifier" Version="0.4.1" />
+    <PackageReference Include="XC.RSAUtil" Version="1.3.6" />
     <PackageReference Include="BouncyCastle.NetCore" Version="2.2.1" />
     <PackageReference Include="Mapster" Version="7.3.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="8.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="XC.RSAUtil" Version="1.3.6" />
-    <PackageReference Include="UAParser" Version="3.1.47" />
     <PackageReference Include="System.Net.Primitives" Version="4.3.1" />
     <Protobuf Include="Protos\*.proto" GrpcServices="Client" Link="Protos\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Remove="Plugins\Http\HttpClientPlugin.cs" />
+    <Compile Remove="Plugins\Http\HttpContentTypes.cs" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>

@@ -118,7 +118,8 @@ namespace Air.Cloud.Modules.Taxin.Server
         {
             await this.ITaxinStoreStandard.GetStoreAsync();
             var current=TaxinTools.Scanning();
-            await this.ReciveAsync(current);
+            var AllRoutes= await this.ReciveAsync(current);
+            await TaxinTools.SetPackages(AllRoutes);
         }
 
     }

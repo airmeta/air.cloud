@@ -9,15 +9,13 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.Http.Result;
-
 namespace Air.Cloud.Core.Standard.Taxin.Result
 {
     /// <summary>
     /// <para>zh-cn:Taxin 动作结果</para>
     /// <para>en-us:Taxin action result</para>
     /// </summary>
-    public class TaxinActionResult: IHttpResultBase
+    public class TaxinActionResult
     {
         /// <summary>
         /// <para>zh-cn:是否请求成功</para>
