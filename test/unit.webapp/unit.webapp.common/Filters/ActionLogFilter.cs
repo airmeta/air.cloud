@@ -53,7 +53,6 @@ namespace unit.webapp.common.Filters
                     {
                         requstBody = await sr.ReadToEndAsync();
                     }
-                    request.Body.Seek(0, SeekOrigin.Begin);
                 }
             }
             else

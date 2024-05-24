@@ -1,5 +1,4 @@
-﻿
-/*
+﻿/*
  * Copyright (c) 2024 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,21 +9,17 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Microsoft.Extensions.Logging;
+using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DynamicServer;
 
-using Org.BouncyCastle.Bcpg;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Air.Cloud.Core.Standard.JinYiWei
+namespace unit.webapp.service.services.DataBaseModuleTest
 {
-    public  interface ITraceLogOutputStandard
+    public  interface IDataBaseQueryService : IDynamicService, ITransient
     {
-
-        public Task AddLog(LoggerMessage loggerMessage);
+        /// <summary>
+        /// 查询数据测试
+        /// </summary>
+        /// <returns></returns>
+        object Query();
     }
 }
