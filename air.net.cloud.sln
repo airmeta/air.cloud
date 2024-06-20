@@ -57,11 +57,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "taxin", "taxin", "{5C3611D9
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.taxinclient.entry", "test\unit.taxin\unit.taxinclient.entry\unit.taxinclient.entry.csproj", "{9828467F-38D0-414D-8BD5-6ECF3D17810A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.SkyWalking", "src\modules\Air.Cloud.Modules.SkyWalking\Air.Cloud.Modules.SkyWalking.csproj", "{98E42521-CFBC-44E1-A4FF-697F12E66A5F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.SkyWalking", "src\modules\Air.Cloud.Modules.SkyWalking\Air.Cloud.Modules.SkyWalking.csproj", "{98E42521-CFBC-44E1-A4FF-697F12E66A5F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "skywalking", "skywalking", "{BB9F97B6-D61E-425A-8F50-741BB870AD82}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit.skywlking.entry", "test\unit.skywlking.entry\unit.skywlking.entry.csproj", "{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.skywlking.entry", "test\unit.skywlking.entry\unit.skywlking.entry.csproj", "{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Ocelot", "src\modules\Air.Cloud.Modules.Ocelot\Air.Cloud.Modules.Ocelot.csproj", "{CEB68D0D-800F-4A44-A05D-82D7401ED125}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -153,6 +155,10 @@ Global
 		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CEB68D0D-800F-4A44-A05D-82D7401ED125}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEB68D0D-800F-4A44-A05D-82D7401ED125}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEB68D0D-800F-4A44-A05D-82D7401ED125}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEB68D0D-800F-4A44-A05D-82D7401ED125}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -182,6 +188,7 @@ Global
 		{98E42521-CFBC-44E1-A4FF-697F12E66A5F} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{BB9F97B6-D61E-425A-8F50-741BB870AD82} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B} = {BB9F97B6-D61E-425A-8F50-741BB870AD82}
+		{CEB68D0D-800F-4A44-A05D-82D7401ED125} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}
