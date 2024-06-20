@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.RedisCache\Air.Cloud.Modules.RedisCache.csproj" />
-    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.SkyWalking\Air.Cloud.Modules.SkyWalking.csproj" />
     <ProjectReference Include="..\..\..\src\plugins\Air.Cloud.Plugins.Jwt\Air.Cloud.Plugins.Jwt.csproj" />
     <ProjectReference Include="..\..\..\src\plugins\Air.Cloud.Plugins.SpecificationDocument\Air.Cloud.Plugins.SpecificationDocument.csproj" />
   </ItemGroup>

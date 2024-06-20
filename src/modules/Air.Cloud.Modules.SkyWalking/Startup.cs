@@ -28,7 +28,7 @@ using SkyApm.Utilities.DependencyInjection;
 
 namespace Air.Cloud.Modules.SkyWalking
 {
-    [AppStartup(AppName="SkyWalking的TraceLog实现",Order =1500)]
+    [AppStartup(AppName="SkyWalking的TraceLog实现")]
     public  class Startup : AppStartup
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -40,6 +40,7 @@ namespace Air.Cloud.Modules.SkyWalking
 
         public override void ConfigureServices(IServiceCollection services)
         {
+            services.AddSkyWalkingOptions() ;
             services.AddSkyAPM(ext => ext.AddAspNetCoreHosting());
             services.AddSkyApmExtensions();
             services.AddTransient<ITraceLogStandard, TraceLogDependency>();

@@ -252,7 +252,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// JSON序列化标准实现
             /// </summary>
-            public static IJsonSerializerStandard JSON => AppCore.GetService<IJsonSerializerStandard>();
+            public static IJsonSerializerStandard JSON => AppCore.GetService<IJsonSerializerStandard>()??null;
 
             /// <summary>
             /// 应用程序PID信息 

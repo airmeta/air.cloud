@@ -17,7 +17,7 @@ namespace Air.Cloud.Modules.SkyWalking.Options
     /// <para>zh-cn:SkyWalking 配置选项</para>
     /// <para>en-us:SkyWalking options</para>
     /// </summary>
-    [ConfigurationInfo("SkyWalkingOptions")]
+    [ConfigurationInfo("SkyWalkingSettings")]
     public class SkyApmOptions
     {
         /// <summary>
@@ -29,7 +29,7 @@ namespace Air.Cloud.Modules.SkyWalking.Options
         /// <para>zh-cn:命名空间</para>
         /// <para>en-us:namespace</para>
         /// </summary>
-        public string Namespace { get; set; } = "11";
+        public string Namespace { get; set; } = "";
         /// <summary>
         /// <para>zh-cn:头部版本信息</para>
         /// <para>en-us:Header versions</para>

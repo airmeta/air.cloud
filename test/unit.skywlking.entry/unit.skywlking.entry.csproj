@@ -14,10 +14,4 @@
     <ProjectReference Include="..\unit.webapp\unit.webapp.service\unit.webapp.service.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Update="skyapm.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
 </Project>

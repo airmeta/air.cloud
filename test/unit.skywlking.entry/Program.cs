@@ -11,6 +11,7 @@
  * acknowledged.
  */
 using Air.Cloud.WebApp.App;
+using Air.Cloud.Modules.SkyWalking.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.WebInjectInFile();

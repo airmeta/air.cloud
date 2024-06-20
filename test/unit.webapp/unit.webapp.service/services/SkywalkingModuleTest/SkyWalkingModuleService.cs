@@ -11,17 +11,11 @@
  * acknowledged.
  */
 
-using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.JinYiWei;
 using Air.Cloud.Core.Standard.Taxin.Client;
 
 using Microsoft.AspNetCore.Mvc;
-
-using Serilog.Context;
-
-using SkyApm.Tracing;
-using SkyApm.Tracing.Segments;
 
 using unit.webapp.model.Dto;
 

@@ -10,19 +10,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 
 namespace Air.Cloud.Modules.SkyWalking.Extensions
 {
     public static  class SkyWalkingModuleExtensions
     {
-
-        public static IServiceCollection  AddSkyWalking(this IServiceCollection services)
+        public static IServiceCollection AddSkyWalkingOptions(this IServiceCollection services)
         {
             string ConfigFilePath = $"{AppConst.ApplicationPath}{SkyApmConst.SKYWALKING_CONFIG_NAME}";
-            var Options = AppRealization.JSON.Deserialize<SkyApmOptions>(File.ReadAllText(ConfigFilePath));
+            var Options = AppConfiguration.GetConfig<SkyApmOptions>();
             Options.ServiceName = AppConst.ApplicationInstanceName;
             if (File.Exists(ConfigFilePath)) File.Delete(ConfigFilePath);
-            File.WriteAllText(ConfigFilePath, AppRealization.JSON.Serialize(Options));
+            File.WriteAllText(ConfigFilePath, AppRealization.JSON.Serialize(new
+            {
+                SkyWalking=Options
+            }));
             return services;
         }
     }
