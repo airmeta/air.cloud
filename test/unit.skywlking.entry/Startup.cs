@@ -10,25 +10,30 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.JSON.Extensions;
+using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Modules.SkyWalking.Const;
+using Air.Cloud.Modules.SkyWalking.Dependency;
+using Air.Cloud.Modules.SkyWalking.Extensions;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
-using Air.Cloud.Modules.Taxin.Server;
 
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
+using SkyApm.AspNetCore.Diagnostics;
+
+
+using SkyApm.Utilities.DependencyInjection;
 
 using unit.webapp.common.Filters;
-namespace unit.taxinserver.entry
+namespace unit.skywlking.entry
 {
-    [AppStartup]
+    [AppStartup(Order = 500)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinServer<TaxinServerDependency, TaxinClientDependency>();
+            services.AddTaxinClient<TaxinClientDependency>();
             //注入
             services.AddControllers(a =>
             {
@@ -37,7 +42,7 @@ namespace unit.taxinserver.entry
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseTaxinServer<TaxinServerDependency>();
+          
         }
     }
 }

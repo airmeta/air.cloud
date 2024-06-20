@@ -24,7 +24,7 @@ namespace unit.webapp.service.services.TaxinModuleTest
     public  class TaxinConnectService: ITaxinConnectService
     {
         private readonly ITaxinClientStandard Client;
-        public TaxinConnectService(ITaxinClientStandard taxinClient)
+        public TaxinConnectService(ITaxinClientStandard taxinClient=null)
         {
             this.Client = taxinClient;
         }

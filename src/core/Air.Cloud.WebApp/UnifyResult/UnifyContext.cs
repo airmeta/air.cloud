@@ -38,7 +38,7 @@ public static class UnifyContext
     /// <summary>
     /// 是否启用规范化结果
     /// </summary>
-    internal static bool EnabledUnifyHandler = false;
+    internal static bool EnabledUnifyHandler = true;
 
     /// <summary>
     /// 规范化结果类型

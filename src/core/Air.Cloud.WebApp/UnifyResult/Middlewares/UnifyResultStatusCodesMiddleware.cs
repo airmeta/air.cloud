@@ -41,15 +41,16 @@ public class UnifyResultStatusCodesMiddleware
     /// <returns></returns>
     public async Task InvokeAsync(HttpContext context)
     {
-        await _next(context);
 
-        // 只有请求错误（短路状态码）才支持规范化处理
-        if (context.Response.StatusCode < 400 || context.Response.StatusCode == 404) return;
+            await _next(context);
+            // 只有请求错误（短路状态码）才支持规范化处理
+            if (context.Response.StatusCode < 400 || context.Response.StatusCode == 404) return;
 
-        // 处理规范化结果
-        if (!UnifyContext.CheckStatusCodeNonUnify(context, out var unifyResult))
-        {
-            await unifyResult.OnResponseStatusCodes(context, context.Response.StatusCode, context.RequestServices.GetService<IOptions<UnifyResultSettingsOptions>>()?.Value);
-        }
+            // 处理规范化结果
+            if (!UnifyContext.CheckStatusCodeNonUnify(context, out var unifyResult))
+            {
+                await unifyResult.OnResponseStatusCodes(context, context.Response.StatusCode, context.RequestServices.GetService<IOptions<UnifyResultSettingsOptions>>()?.Value);
+            }
+       
     }
 }

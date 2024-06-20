@@ -21,9 +21,11 @@ using Air.Cloud.Core.Standard.Configuration;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
+using Air.Cloud.Core.Standard.JinYiWei;
 using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Print;
+using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.UtilStandard;
 
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +38,7 @@ namespace Air.Cloud.Core
     /// <summary>
     /// 所有标准实现
     /// </summary>
-    public static class AppRealization
+    public class AppRealization
     {
         /// <summary>
         /// 内容输出标准实现
@@ -98,6 +100,11 @@ namespace Air.Cloud.Core
         /// <para>en-us:Key-Value store center</para>
         /// </summary>
         public static IKVCenterStandard KVCenter => InternalRealization.KVCenter ?? DefaultRealization.KVCenter;
+        /// <summary>
+        /// <para>zh-cn:日志追踪实现</para>
+        /// <para>en-us:Log tracking  dependency</para>
+        /// </summary>
+        public static ITraceLogStandard Log=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
         /// <summary>
         /// 设置约定实现
         /// </summary>
@@ -182,8 +189,7 @@ namespace Air.Cloud.Core
             /// 应用程序PID信息 
             /// </summary>
             /// <remarks>
-            ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
-            ///  (暂时只在Windows 环境下进行测试)
+            ///  这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一
             /// </remarks>
             public static IPIDPlugin PID => new DefaultPIDPluginDependency();
 
@@ -196,6 +202,11 @@ namespace Air.Cloud.Core
             /// <para>en-us:Key-Value store center</para>
             /// </summary>
             public static IKVCenterStandard KVCenter => throw new NotImplementedException("系统未实现KV中心标准");
+            /// <summary>
+            /// <para>zh-cn:默认日志追踪</para>
+            /// <para>en-us:Default log tracking </para>
+            /// </summary>
+            public static ITraceLogStandard TraceLog => new DefaultTraceLogDependency();
         }
         /// <summary>
         /// 自定义标准实现
@@ -250,7 +261,7 @@ namespace Air.Cloud.Core
             ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
             ///  (暂时只在Windows 环境下进行测试)
             /// </remarks>
-            public static IPIDPlugin PID=>AppCore.GetService<IPIDPlugin>();
+            public static IPIDPlugin PID=null;
 
             /// <summary>
             /// 系统注入标准实现
@@ -262,6 +273,11 @@ namespace Air.Cloud.Core
             /// <para>en-us:Key-Value store center</para>
             /// </summary>
             public static IKVCenterStandard KVCenter = null;
+            /// <summary>
+            /// <para>zh-cn:日志追踪</para>
+            /// <para>en-us:Log tracking </para>
+            /// </summary>
+            public static ITraceLogStandard TraceLog => AppCore.GetService<ITraceLogStandard>();
         }
     }
 }

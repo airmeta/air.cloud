@@ -13,8 +13,9 @@
         "DebugTarget": ""
       },
       {
-        "Name": "test\\unit.webapp\\unit.webapp.entry\\unit.webapp.entry.csproj",
-        "Action": "Start"
+        "Name": "test\\unit.skywlking.entry\\unit.skywlking.entry.csproj",
+        "Action": "Start",
+        "DebugTarget": ""
       }
     ]
   }

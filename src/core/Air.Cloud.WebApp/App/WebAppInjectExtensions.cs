@@ -34,9 +34,11 @@ namespace Air.Cloud.WebApp.App
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
             AppCore.AppStartType = AppStartupTypeEnum.WEB;
+            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
             builder = AppRealization.Injection.Inject(builder);
             var app = builder.Build();
+           
             return app;
         }
 

@@ -13,6 +13,7 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
+using Air.Cloud.WebApp.FriendlyException.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Providers;
 
@@ -25,6 +26,7 @@ namespace Air.Cloud.WebApp
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            services.AddFriendlyException();
             //HttpClientFactory
             services.AddHttpClient();
             // 配置跨域

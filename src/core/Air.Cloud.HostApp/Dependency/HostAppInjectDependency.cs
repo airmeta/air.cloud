@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.HostApp.Event;
@@ -74,6 +75,8 @@ namespace Air.Cloud.HostApp.Dependency
         {
             // 自动装载配置
             ConfigureHostAppConfiguration(builder);
+            // 监听全局异常
+            AppDomain.CurrentDomain.UnhandledException += AppRealization.DomainExceptionHandler.OnException;
 
             // 自动注入 AddApplication() 服务
             builder.ConfigureServices((hostContext, services) =>

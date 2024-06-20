@@ -79,6 +79,16 @@ namespace Air.Cloud.Core.App
         /// <para>en-us:Program name</para>
         /// </summary>
         public static string ApplicationName = string.Empty;
+
+        /// <summary>
+        /// <para>zh-cn:程序实例名称</para>
+        /// <para>en-us:Application instance name</para>
+        /// </summary>
+        /// <remarks>
+        ///  <para>zh-cn: 由ApplicationName和PID拼接而成</para>
+        ///  <para>en-us: Concatenated by ApplicationName and PID</para>
+        /// </remarks>
+        public static string ApplicationInstanceName =string.Empty;
         /// <summary>
         /// <para>zh-cn:当前程序运行信息</para>
         /// <para>en-us:Current program running information</para>

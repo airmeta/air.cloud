@@ -31,7 +31,7 @@ namespace Air.Cloud.Core.Attributes
         /// <remarks>
         /// 实验性功能,暂未启用
         /// </remarks>
-        public string AppVersion { get; set; } = "v1.00.00.000";
+        public string AppVersion { get; set; } = "1.0.0.0";
         /// <summary>
         /// 应用程序路由地址
         /// </summary>
@@ -46,7 +46,7 @@ namespace Air.Cloud.Core.Attributes
         /// <summary>
         /// 数值越大越先执行该Startup
         /// </summary>
-        public int Order { get; set; } = 0;
+        public int Order { get; set; } = 1000;
 
         public AppStartupAttribute()
         {

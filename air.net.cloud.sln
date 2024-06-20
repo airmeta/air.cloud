@@ -51,11 +51,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DocEngine", "test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Taxin", "src\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj", "{82B4203D-733F-47D6-A24A-6E1FC694668E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit.taxinserver.entry", "test\unit.taxin\unit.taxinserver.entry\unit.taxinserver.entry.csproj", "{86E8E256-0D60-42A8-9F47-6897E32DFA6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.taxinserver.entry", "test\unit.taxin\unit.taxinserver.entry\unit.taxinserver.entry.csproj", "{86E8E256-0D60-42A8-9F47-6897E32DFA6D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "taxin", "taxin", "{5C3611D9-2EB3-4471-94AD-4E452079B09E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit.taxinclient.entry", "test\unit.taxin\unit.taxinclient.entry\unit.taxinclient.entry.csproj", "{9828467F-38D0-414D-8BD5-6ECF3D17810A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.taxinclient.entry", "test\unit.taxin\unit.taxinclient.entry\unit.taxinclient.entry.csproj", "{9828467F-38D0-414D-8BD5-6ECF3D17810A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.SkyWalking", "src\modules\Air.Cloud.Modules.SkyWalking\Air.Cloud.Modules.SkyWalking.csproj", "{98E42521-CFBC-44E1-A4FF-697F12E66A5F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "skywalking", "skywalking", "{BB9F97B6-D61E-425A-8F50-741BB870AD82}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit.skywlking.entry", "test\unit.skywlking.entry\unit.skywlking.entry.csproj", "{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -139,6 +145,14 @@ Global
 		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9828467F-38D0-414D-8BD5-6ECF3D17810A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98E42521-CFBC-44E1-A4FF-697F12E66A5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98E42521-CFBC-44E1-A4FF-697F12E66A5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98E42521-CFBC-44E1-A4FF-697F12E66A5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98E42521-CFBC-44E1-A4FF-697F12E66A5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -165,6 +179,9 @@ Global
 		{86E8E256-0D60-42A8-9F47-6897E32DFA6D} = {5C3611D9-2EB3-4471-94AD-4E452079B09E}
 		{5C3611D9-2EB3-4471-94AD-4E452079B09E} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 		{9828467F-38D0-414D-8BD5-6ECF3D17810A} = {5C3611D9-2EB3-4471-94AD-4E452079B09E}
+		{98E42521-CFBC-44E1-A4FF-697F12E66A5F} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
+		{BB9F97B6-D61E-425A-8F50-741BB870AD82} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
+		{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B} = {BB9F97B6-D61E-425A-8F50-741BB870AD82}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

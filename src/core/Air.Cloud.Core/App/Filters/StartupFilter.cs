@@ -39,8 +39,7 @@ public class StartupFilter : IStartupFilter
     {
         return app =>
         {
-            // 存储根服务
-            AppCore.RootServices = app.ApplicationServices;
+          
             // 设置响应报文头信息
             app.Use(async (context, next) =>
             {
@@ -55,6 +54,8 @@ public class StartupFilter : IStartupFilter
 
             // 配置所有 Starup Configure
             UseStartups(app);
+            // 存储根服务
+            AppCore.RootServices = app.ApplicationServices;
             // 调用启动层的 Startup
             next(app);
         };

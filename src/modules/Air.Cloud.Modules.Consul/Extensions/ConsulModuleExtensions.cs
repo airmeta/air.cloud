@@ -35,10 +35,11 @@ namespace Air.Cloud.Modules.Consul.Extensions
         /// </remarks>
         /// <param name="builder">WebApplication构建器</param>
         /// <returns></returns>
-        public static WebApplication WebInjectInCon1sul(this WebApplicationBuilder builder)
+        public static WebApplication WebInjectInConsul(this WebApplicationBuilder builder)
         {
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
+            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             //加载远程配置文件
             var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
             if (Config.Item2 != null)
@@ -71,6 +72,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             //加载远程配置文件
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
+            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
             builder = builder.ConfigureAppConfiguration(a =>
             {

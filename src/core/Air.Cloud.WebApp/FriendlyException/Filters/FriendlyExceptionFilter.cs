@@ -105,11 +105,9 @@ public sealed class FriendlyExceptionFilter : IAsyncExceptionFilter
         {
             // 判断是否支持 MVC 规范化处理
             if (!UnifyContext.CheckSupportMvcController(context.HttpContext, actionDescriptor, out _)) return;
-
             // 执行规范化异常处理
             context.Result = unifyResult.OnException(context, exceptionMetadata);
         }
-
         // 打印错误消息
         PrintError(context.Exception);
     }
