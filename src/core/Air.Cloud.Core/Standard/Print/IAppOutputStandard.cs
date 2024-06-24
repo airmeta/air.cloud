@@ -34,14 +34,42 @@ namespace Air.Cloud.Core.Standard.Print
         /// <param name="pairs">附加参数</param>
         public void Error(Exception exception, Dictionary<string, object> pairs = default);
     }
+    /// <summary>
+    /// <para>zh-cn:输出打印信息</para>
+    /// <para>en-us:Output message content</para>
+    /// </summary>
     public class AppPrintInformation
     {
+        /// <summary>
+        /// <para>zh-cn:输出打印等级</para>
+        /// <para>en-us:Output message level</para>
+        /// </summary>
         public enum AppPrintLevel
         {
+            /// <summary>
+            /// <para>zh-cn:普通消息</para>
+            /// <para>en-us:Information</para>
+            /// </summary>
             Information,
+            /// <summary>
+            /// <para>zh-cn:警告消息</para>
+            /// <para>en-us:Warning</para>
+            /// </summary>
             Warning,
+            /// <summary>
+            /// <para>zh-cn:错误消息</para>
+            /// <para>en-us:Error</para>
+            /// </summary>
             Error,
+            /// <summary>
+            /// <para>zh-cn:调试消息</para>
+            /// <para>en-us:Debug</para>
+            /// </summary>
             Debug,
+            /// <summary>
+            /// <para>zh-cn:追踪消息</para>
+            /// <para>en-us:Trace</para>
+            /// </summary>
             Trace
         }
         /// <summary>
@@ -73,9 +101,7 @@ namespace Air.Cloud.Core.Standard.Print
     [IgnoreScanning]
     public class DefaultAppOutputDependency : IAppOutputStandard
     {
-
-        public DefaultAppOutputDependency() { }
-
+        /// <inheritdoc/>
         public void Error(Exception exception,Dictionary<string, object> pairs=default)
         {
             Console.WriteLine(AppRealization.JSON.Serialize(new AppPrintInformation()
@@ -88,7 +114,7 @@ namespace Air.Cloud.Core.Standard.Print
             }));
             throw exception;
         }
-        
+        /// <inheritdoc/>
         public void Print(AppPrintInformation Content)
         {
             Console.WriteLine(AppRealization.JSON.Serialize(Content));
@@ -97,7 +123,7 @@ namespace Air.Cloud.Core.Standard.Print
             //    throw new Exception(Content.Content);
             //}
         }
-
+        /// <inheritdoc/>
         public void Print<T>(T Content) where T : AppPrintInformation, new()
         {
             Console.WriteLine(AppRealization.JSON.Serialize(Content));

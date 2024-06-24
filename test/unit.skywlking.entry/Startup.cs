@@ -10,20 +10,10 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.JinYiWei;
-using Air.Cloud.Modules.SkyWalking.Const;
-using Air.Cloud.Modules.SkyWalking.Dependency;
-using Air.Cloud.Modules.SkyWalking.Extensions;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
-
-using SkyApm.AspNetCore.Diagnostics;
-
-
-using SkyApm.Utilities.DependencyInjection;
 
 using unit.webapp.common.Filters;
 namespace unit.skywlking.entry

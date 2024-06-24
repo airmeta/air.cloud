@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Ocelot" Version="23.3.3" />
+  </ItemGroup>
+
 </Project>
