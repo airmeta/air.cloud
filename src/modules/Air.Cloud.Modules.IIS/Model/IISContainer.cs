@@ -1,16 +1,23 @@
-﻿using Air.Cloud.Core.Standard.Container.Model;
-using Air.Cloud.Core.Standard.Container;
+﻿/*
+ * Copyright (c) 2024 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Standard.Container;
+using Air.Cloud.Core.Standard.Container.Model;
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
 using Newtonsoft.Json;
+
+using System.Collections.Concurrent;
+using System.Net;
+using System.Runtime.InteropServices;
 
 namespace Air.Cloud.Modules.IIS.Model
 {
