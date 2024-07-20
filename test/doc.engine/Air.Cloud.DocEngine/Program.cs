@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Plugins.Reflection.Internal;
 using Air.Cloud.DocEngine.XmlDocHelper;
 
 using System;
@@ -34,6 +35,7 @@ string[] ig = new string[]
              "Equals",
              "GetHashCode"
        };
+Dictionary<string,string> strings = new Dictionary<string, string>();
 foreach (var type in alltypes)
 {
     string RoutePath = type.FullName.Replace("." + type.Name, "").Replace(".", "\\");
@@ -104,22 +106,46 @@ foreach (var type in alltypes)
         var methodComment = xmlCommentHelper.GetMethodComment(method);
         var dict = xmlCommentHelper.GetParameterComments(method);
         Contents.Add($"####  {method.Name}");
-        Contents.Add($"* 描述:解析服务提供器");
-        Contents.Add($"* MethodType:"+(method.IsStatic?"静态方法":method.IsAsync()?"异步方法":""));
-        Contents.Add($"* Return:[IServiceProvider] (https://learn.microsoft.com/zh-cn/dotnet/api/system.iserviceprovider?view=net-6.0)");
-        Contents.Add($"* 参数:");
-        string[] Arr = dict.Keys.ToArray();
-        for (int i = 0; i < Arr.Count(); i++)
+        Contents.Add($"* 方法描述:<br> {methodComment.Replace("<br>", "").Replace("\r\n", "<br>")}");
+        Contents.Add($"* 方法类型:"+(method.IsStatic?"静态方法":method.IsAsync()?"异步方法":"普通方法"));
+        if (method.ReturnType.IsGenericType)
         {
-            string Key = Arr[i];
-            string Value = dict[Key];
-            Contents.Add($"  * 参数{i+1}:");
-            Contents.Add($"     * 名称: {Key}");
-            Contents.Add($"     * 类型: ------");
-            Contents.Add($"     * 描述:<br> {Value.Replace("<br>", "").Replace("\r\n", "<br>")}");
+            string c = method.ReturnType.GetGenericArguments()[0].Name;
+            Contents.Add($"* 响应类型: {method.ReturnType.Name.Replace("`1", "").Replace("1", "")}<{c}>");
+        }
+        else
+        {
+            Contents.Add($"* 响应类型:<br> {method.ReturnType.Name} <br> ({method.ReturnType.FullName?.Split(",")[0]})");
+        }
+        Contents.Add($"* 方法参数:");
+        ParameterInfo[] methodParameterInfos = method.GetParameters();
+        string[] Arr = dict.Keys.ToArray();
+        Contents.Add($"| Name      | Type | Description|");
+        Contents.Add("| ----------- | ----------- |-----------|");
+        for (int i = 0; i < methodParameterInfos.Count(); i++)
+        {
+            ParameterInfo? para = methodParameterInfos[i];
+            if (para == null|| para.Name==null) continue;
+            string? Value = dict[para.Name];
+            string TypeStr = string.Empty;
+            if (para.ParameterType.IsGenericType)
+            {
+                string c = para.ParameterType.GetGenericArguments()[0].Name;
+                TypeStr=$"{para.ParameterType.Name.Replace("`1", "").Replace("1","")}<{c}>";
+            }
+            else
+            {
+                TypeStr = $"{para.ParameterType.Name}";
+            }
+            Contents.Add($"| {para.Name} | {TypeStr} |<br> {Value.Replace("<br>", "").Replace("\r\n", "<br>")}|");
         }
     }
     File.WriteAllLines(FilePath + ".md", Contents);
-
+    string Url = FilePath.Replace(BasePath, "").Replace("\\", "/").ToLower().Replace(type.Name.Replace("`1", "").ToLower(), type.Name.Replace("`1", "")).Replace("/air/cloud/", "/air.cloud/");
+    if (!strings.ContainsKey(Url))
+    {
+        strings.Add(Url, $"* [{type.Name.Replace("`1", "")}.cs]({Url}.md)");
+    }
 }
+File.AppendAllLines(BasePath + "/" + "Slide.md", strings.OrderBy(s=>s.Key).Select(s=>s.Value).ToList());
 Console.WriteLine("====================================");

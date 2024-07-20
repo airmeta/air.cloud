@@ -10,7 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.Taxin.Events;
-using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin.Model;
 
 namespace Air.Cloud.Core.Standard.Taxin
 {

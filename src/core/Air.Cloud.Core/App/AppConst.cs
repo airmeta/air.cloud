@@ -93,7 +93,7 @@ namespace Air.Cloud.Core.App
         /// <para>zh-cn:当前程序运行信息</para>
         /// <para>en-us:Current program running information</para>
         /// </summary>
-        public static IContainerRuntimeInformation RunningHostInfo = null;
+        public static IContainerInstance RunningHostInfo = null;
         /// <summary>
         /// <para>zh-cn:当前程序运行环境</para>
         /// <para>en-us:Current program running environment</para>

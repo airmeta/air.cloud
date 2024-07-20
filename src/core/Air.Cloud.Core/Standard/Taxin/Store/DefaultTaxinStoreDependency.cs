@@ -11,8 +11,9 @@
  */
 using Air.Cloud.Core.Standard.Taxin.Events;
 using Air.Cloud.Core.Standard.Taxin.Tools;
-using Air.Cloud.Modules.Taxin;
-using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin.Server;
 
 namespace Air.Cloud.Core.Standard.Taxin.Store
 {
@@ -99,13 +100,13 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
             Dictionary<string, IEnumerable<TaxinRouteDataPackage>> data = new Dictionary<string, IEnumerable<TaxinRouteDataPackage>>();
             switch (Options.PersistenceMethod)
             {
-                case Cloud.Modules.Taxin.Server.PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Folder:
                     data=(Dictionary<string, IEnumerable<TaxinRouteDataPackage>>)TaxinStoreTools.FolderGet();
                     break;
-                case Cloud.Modules.Taxin.Server.PersistenceMethodEnum.Cache:
+                case PersistenceMethodEnum.Cache:
                     data=AppRealization.Cache.GetCache<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(Options.PersistenceKey);
                     break;
-                case Cloud.Modules.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                case PersistenceMethodEnum.KVCenter:
                     data = await AppRealization.KVCenter.GetAsync<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(Options.PersistenceKey);
                     break;
             }
@@ -121,13 +122,13 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
         {
             switch (Options.PersistenceMethod)
             {
-                case Cloud.Modules.Taxin.Server.PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Folder:
                     TaxinStoreTools.FolderSet(Packages);
                     break;
-                case Cloud.Modules.Taxin.Server.PersistenceMethodEnum.Cache:
+                case PersistenceMethodEnum.Cache:
                     AppRealization.Cache.SetCache(Options.PersistenceKey,AppRealization.JSON.Serialize(Packages));
                     break;
-                case Cloud.Modules.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                case PersistenceMethodEnum.KVCenter:
                     await AppRealization.KVCenter.AddOrUpdateAsync(Options.PersistenceKey, AppRealization.JSON.Serialize(Packages));
                     break;
             }

@@ -10,22 +10,24 @@
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>Air.Cloud.Core 的扩展类库 扩展了一些常见类型的方法 提供更多的支持</Description>
+    <Description>[Alpha]Air.Cloud.Core 的扩展类库 扩展了一些常见类型的方法 提供更多的支持</Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>1.0.0.2</Version>
+  <Version>1.0.0.3</Version>
   </PropertyGroup>
-  <ItemGroup>
+ <ItemGroup>
     <None Include="..\..\..\assets\logo.png" Link="logo.png">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
+      
     </None>
     <None Include="..\..\..\LICENSE" Link="LICENSE">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
+      
     </None>
   </ItemGroup>
 

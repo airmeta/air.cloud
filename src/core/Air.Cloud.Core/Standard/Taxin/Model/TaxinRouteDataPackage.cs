@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Modules.Taxin.Model
+namespace Air.Cloud.Core.Standard.Taxin.Model
 {
     /// <summary>
     /// <para>zh-cn:传输路由数据包</para>

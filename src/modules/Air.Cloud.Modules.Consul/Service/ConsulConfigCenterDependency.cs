@@ -20,9 +20,18 @@ using System.Text;
 
 namespace Air.Cloud.Modules.Consul.Service
 {
+    /// <summary>
+    /// <para>zh-cn: Consul 配置中心标准实现</para>
+    /// <para>en-us: Consul config center dependency</para>
+    /// </summary>
     public class ConsulConfigCenterDependency : IKVCenterStandard
     {
+        /// <summary>
+        /// <para>zh-cn:Consul 客户端链接</para>
+        /// <para>en-us:Consul client</para>
+        /// </summary>
         public static ConsulClient ConsulClient => ConsulServerCenterDependency.ConsulClient;
+        /// <inheritdoc/>
         public async Task<IList<T>> QueryAsync<T>() where T : class, new()
         {
             var Result = await ConsulClient.KV.List(string.Empty);
@@ -44,6 +53,7 @@ namespace Air.Cloud.Modules.Consul.Service
                 return new List<T>();
             }
         }
+        /// <inheritdoc/>
         public async Task<bool> AddOrUpdateAsync(string Key, string Value)
         {
             var Result = await ConsulClient.KV.Get(Key);
@@ -62,6 +72,7 @@ namespace Air.Cloud.Modules.Consul.Service
                 return EditResult.StatusCode == System.Net.HttpStatusCode.OK;
             }
         }
+        /// <inheritdoc/>
         public async Task<bool> DeleteAsync(string Key)
         {
             var queryResult = await ConsulClient.KV.Get(Key);
@@ -73,7 +84,7 @@ namespace Air.Cloud.Modules.Consul.Service
             }
             return Result != null && Result.StatusCode == System.Net.HttpStatusCode.OK;
         }
-
+        /// <inheritdoc/>
         public async Task<T> GetAsync<T>(string Key) where T : class, new()
         {
             var Result = await ConsulClient.KV.Get(Key);

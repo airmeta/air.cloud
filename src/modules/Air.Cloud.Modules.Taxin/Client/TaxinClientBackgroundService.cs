@@ -13,8 +13,8 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.Print;
+using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
-using Air.Cloud.Modules.Taxin;
 
 using Microsoft.Extensions.Hosting;
 

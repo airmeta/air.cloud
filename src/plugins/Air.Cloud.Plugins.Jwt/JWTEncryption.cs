@@ -162,7 +162,7 @@ namespace Air.Cloud.Plugins.Jwt
         public static bool ValidateToken(AuthorizationHandlerContext context, DefaultHttpContext httpContext, long? expiredTime = null, int refreshTokenExpiredTime = 43200, string tokenPrefix = "Bearer ", long clockSkew = 5)
         {
             // 如果验证有效，则跳过刷新
-            if (context.User.Identity.IsAuthenticated) return true;
+            if ((context?.User?.Identity?.IsAuthenticated)??false) return true;
 
             // 判断是否含有匿名特性
             if (httpContext.GetEndpoint()?.Metadata?.GetMetadata<AllowAnonymousAttribute>() != null) return true;

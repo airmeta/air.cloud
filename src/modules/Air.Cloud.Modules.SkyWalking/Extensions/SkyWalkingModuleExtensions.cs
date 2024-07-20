@@ -21,6 +21,11 @@ namespace Air.Cloud.Modules.SkyWalking.Extensions
 {
     public static  class SkyWalkingModuleExtensions
     {
+        /// <summary>
+        /// <para>zh-cn:添加SkyWalking 中间件支持</para>
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
         public static IServiceCollection AddSkyWalkingOptions(this IServiceCollection services)
         {
             string ConfigFilePath = $"{AppConst.ApplicationPath}{SkyApmConst.SKYWALKING_CONFIG_NAME}";

@@ -10,14 +10,12 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Plugins.Http;
-using Air.Cloud.Core;
+using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Taxin.Model;
 using Air.Cloud.Core.Standard.Taxin.Result;
 using Air.Cloud.Core.Standard.Taxin.Server;
 using Air.Cloud.Core.Standard.Taxin.Tools;
-using Air.Cloud.Modules.Taxin.Model;
 using Air.Cloud.Modules.Taxin.Extensions;
-using Air.Cloud.Core.Standard.Taxin;
 
 namespace Air.Cloud.Modules.Taxin.Server
 {
@@ -27,7 +25,12 @@ namespace Air.Cloud.Modules.Taxin.Server
     /// </summary>
     public  class TaxinServerDependency : ITaxinServerStandard
     {
+        /// <summary>
+        /// <para>zh-cn:Taxin 存储标准实现</para>
+        /// <para>en-us:Taxin store standard dependency</para>
+        /// </summary>
         public ITaxinStoreStandard ITaxinStoreStandard =>AppCore.GetService<ITaxinStoreStandard>();
+        /// <inheritdoc/>
         public Task<TaxinActionResult> CheckAsync(string CheckTag)
         {
             ITaxinStoreStandard.CheckTag = ITaxinStoreStandard.CheckTag ?? Guid.NewGuid().ToString();
@@ -40,7 +43,7 @@ namespace Air.Cloud.Modules.Taxin.Server
                 OldTag=CheckTag
             });
         }
-
+        /// <inheritdoc/>
         public Task<TaxinActionResult> ClienOffLineAsync(TaxinRouteDataPackage package)
         {
             if (ITaxinStoreStandard.Packages.Keys.Contains(package.UniqueKey))
@@ -69,13 +72,13 @@ namespace Air.Cloud.Modules.Taxin.Server
                 OldTag = ITaxinStoreStandard.CheckTag
             });
         }
-
+        /// <inheritdoc/>
         public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> DispatchAsync()
         {
             return Task.FromResult(ITaxinStoreStandard.Packages.Values.AsEnumerable());
         }
-
-        public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> ReciveAsync(TaxinRouteDataPackage package)
+        /// <inheritdoc/>
+        public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> ReceiveAsync(TaxinRouteDataPackage package)
         {
             if (ITaxinStoreStandard.Packages.Keys.Contains(package.UniqueKey))
             {
@@ -94,7 +97,7 @@ namespace Air.Cloud.Modules.Taxin.Server
             return Task.FromResult(ITaxinStoreStandard.Packages.Values.AsEnumerable());
 
         }
-
+        /// <inheritdoc/>
         public async Task OffLineAsync()
         {
             //停机前进行数据的存储
@@ -113,12 +116,12 @@ namespace Air.Cloud.Modules.Taxin.Server
              */
             await this.ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
         }
-
+        /// <inheritdoc/>
         public async Task OnLineAsync()
         {
             await this.ITaxinStoreStandard.GetStoreAsync();
             var current=TaxinTools.Scanning();
-            var AllRoutes= await this.ReciveAsync(current);
+            var AllRoutes= await this.ReceiveAsync(current);
             await TaxinTools.SetPackages(AllRoutes);
         }
 

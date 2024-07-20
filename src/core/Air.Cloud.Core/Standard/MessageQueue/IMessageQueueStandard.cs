@@ -49,8 +49,6 @@ namespace Air.Cloud.Core.Standard.MessageQueue
         /// <summary>
         /// 主题配置操作
         /// </summary>
-        /// <param name="Operator">主题配置操作</param>
-        /// <returns></returns>
         public ITopicConfigProvider Operator { get; set; }
     }
 }

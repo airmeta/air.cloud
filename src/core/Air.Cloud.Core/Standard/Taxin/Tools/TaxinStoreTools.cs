@@ -9,8 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Modules.Taxin;
-using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Taxin.Model;
 
 namespace Air.Cloud.Core.Standard.Taxin.Tools
 {

@@ -11,23 +11,38 @@
  */
 using Air.Cloud.Core.Standard.Container.Model;
 
+using System.Collections.Concurrent;
+
 namespace Air.Cloud.Core.Standard.Container
 {
     /// <summary>
-    /// 容器约定
+    /// <para>zh-cn:容器约定</para>
+    /// <para>en-us:Container standard</para>
     /// </summary>
-    public interface IContainerStandard
+    /// <remarks>
+    /// <para>zh-cn:当前容器标准截至24年只包含查询,启动与停止三个功能 后续功能将在后续版本中上线,如果你有相关需求,可以接续相关开发</para>
+    /// <para>en-us:As of 2024, the current container standard only includes three functions: query, start and stop. Subsequent functions will be launched in subsequent versions. If you have relevant needs, you can continue related development. We welcome you to join</para>
+    /// </remarks>
+    public interface IContainerStandard 
     {
         /// <summary>
-        /// 获取程序集运行信息
+        /// 查询容器
         /// </summary>
         /// <returns></returns>
-        public IContainerRuntimeInformation GetRuntimeInformation();
+        public Task<ConcurrentBag<TContainerInstance>> QueryAsync<TContainerInstance>() where TContainerInstance : IContainerInstance, new();
+
         /// <summary>
-        /// 泛型实现
+        /// 启动容器
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
         /// <returns></returns>
-        public TResult GetRuntimeInformation<TResult>() where TResult : IContainerRuntimeInformation, new();
+        public Task<TContainerInstance> StartAsync<TContainerInstance>(TContainerInstance Information) where TContainerInstance : IContainerInstance, new();
+
+        /// <summary>
+        /// 停止容器
+        /// </summary>
+        /// <param name="Information"></param>
+        /// <returns></returns>
+        public Task<TContainerInstance> StopAsync<TContainerInstance>(TContainerInstance Information) where TContainerInstance : IContainerInstance, new();
+
     }
 }

@@ -12,7 +12,7 @@
 using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.Taxin.Attributes;
-using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin.Model;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;

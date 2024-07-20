@@ -41,5 +41,5 @@ Air.Cloud使用[MPL 2.0](https://github.com/AccessCross/air.cloud?tab=MPL-2.0-1-
 ---
 ## 贡献人员
 
-1. AccrossClient
-2. 合肥星曳数据科技有限公司
+1. 合肥星曳数据科技有限公司
+2. 安徽三实软件科技有限公司

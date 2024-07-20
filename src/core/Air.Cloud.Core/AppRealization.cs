@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.DefaultDependency;
+using Air.Cloud.Core.Plugins.DefaultDependencies;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.AppInject;
@@ -24,12 +24,9 @@ using Air.Cloud.Core.Standard.Exceptions;
 using Air.Cloud.Core.Standard.JinYiWei;
 using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.KVCenter;
-using Air.Cloud.Core.Standard.Print;
-using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.UtilStandard;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 using System.Reflection;
 
@@ -155,7 +152,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// 容器标准实现
             /// </summary>
-            public static IContainerStandard Container => null;
+            public static IContainerStandard Container => throw new NotImplementedException("未查询到容器标准的实现");
             /// <summary>
             /// 系统配置标准实现
             /// </summary>
@@ -224,7 +221,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// 容器标准实现
             /// </summary>
-            public static IContainerStandard Container = null;
+            public static IContainerStandard Container => AppCore.GetService<IContainerStandard>();
             /// <summary>
             /// 系统配置标准实现
             /// </summary>
