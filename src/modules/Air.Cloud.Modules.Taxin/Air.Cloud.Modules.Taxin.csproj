@@ -10,13 +10,13 @@
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>[Alpha]名字取自他心通,提供多模块之间的远程调用功能</Description>
+    <Description>[Alpha]取自 他心通 ,提供多模块之间的远程调用功能</Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-  <Version>1.0.0.3</Version>
+  <Version>1.0.1.1</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
