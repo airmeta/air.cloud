@@ -15,7 +15,7 @@ namespace Air.Cloud.WebApp.UnifyResult.Internal;
 /// </summary>
 /// <typeparam name="T"></typeparam>
 [IgnoreScanning]
-public class RESTfulResult<T> : IRESTfulResultStandard<T> where T : class, new()
+public class RESTfulResult<T> : IRESTfulResultStandard<T> where T : class
 {
     /// <summary>
     /// 状态码
@@ -46,4 +46,8 @@ public class RESTfulResult<T> : IRESTfulResultStandard<T> where T : class, new()
     /// 时间戳
     /// </summary>
     public long Timestamp { get; set; }
+    /// <summary>
+    /// 提示内容
+    /// </summary>
+    public string Message { get; set; }
 }
