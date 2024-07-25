@@ -24,6 +24,7 @@ using Air.Cloud.Core.Standard.Exceptions;
 using Air.Cloud.Core.Standard.JinYiWei;
 using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.KVCenter;
+using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.UtilStandard;
 
 using Microsoft.AspNetCore.Mvc;
@@ -102,6 +103,13 @@ namespace Air.Cloud.Core
         /// <para>en-us:Log tracking  dependency</para>
         /// </summary>
         public static ITraceLogStandard Log=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
+
+        /// <summary>
+        /// <para>zh-cn:队列实现</para>
+        /// <para>en-us:queue dependency</para>
+        /// </summary>
+        public static IMessageQueueStandard Queue=> InternalRealization.Queue ?? DefaultRealization.Queue;
+
         /// <summary>
         /// 设置约定实现
         /// </summary>
@@ -204,6 +212,11 @@ namespace Air.Cloud.Core
             /// <para>en-us:Default log tracking </para>
             /// </summary>
             public static ITraceLogStandard TraceLog => new DefaultTraceLogDependency();
+            /// <summary>
+            /// <para>zh-cn:默认队列实现</para>
+            /// <para>en-us:Default queue dependency</para>
+            /// </summary>
+            public static IMessageQueueStandard Queue => throw new NotImplementedException("系统未实现队列标准");
         }
         /// <summary>
         /// 自定义标准实现
@@ -275,6 +288,12 @@ namespace Air.Cloud.Core
             /// <para>en-us:Log tracking </para>
             /// </summary>
             public static ITraceLogStandard TraceLog => AppCore.GetService<ITraceLogStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:队列实现</para>
+            /// <para>en-us:queue dependency</para>
+            /// </summary>
+            public static IMessageQueueStandard Queue => AppCore.GetService<IMessageQueueStandard>();
         }
     }
 }

@@ -11,16 +11,23 @@
  */
 using Air.Cloud.Core.Standard.MessageQueue.Config;
 
-using Air.Cloud.Core.Standard.MessageQueue.Provider;
+using Confluent.Kafka;
 
-namespace Air.Cloud.Core.Standard.MessageQueue.Model
+namespace Air.Cloud.Modules.Kafka.Model
 {
-    public interface ITopicInfo
+    /// <summary>
+    /// 消费配置类
+    /// </summary>
+    public class ConsumerConfigModel:ITopicSubscribeConfig<ConsumerConfig>
     {
+        /// <summary>
+        /// 消费配置
+        /// </summary>
+        public ConsumerConfig Config { get; set; }
+
+        /// <summary>
+        /// topic名称
+        /// </summary>
         public string TopicName { get; set; }
-        public string TopicArn { get; set; }
-        public string BootStrapServer { get; set; }
-        public string TopicStatus { get; set; }
-        public ITopicConfig TopicConfig { get; set; }
     }
 }

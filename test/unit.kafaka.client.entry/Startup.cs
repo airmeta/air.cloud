@@ -11,25 +11,34 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Modules.Taxin.Client;
-using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Core.Standard.MessageQueue;
+using Air.Cloud.Modules.Kafka.Model;
 
-using unit.webapp.common.Filters;
+using Confluent.Kafka;
 namespace unit.skywlking.entry
 {
-    [AppStartup(Order = 500)]
+    [AppStartup(Order = int.MinValue)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-
+           
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-          
-            AppRealization.que
+            ProducerConfigModel producerConfigModel = new ProducerConfigModel();
+            producerConfigModel.TopicName = "fcj_workflow_audit_test";
+            AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
+            {
+                Content = "123123"
+            });
         }
+    }
+    public class Contents 
+    {
+        public string Content { get ; set ; }
     }
 }

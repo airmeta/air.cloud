@@ -16,9 +16,10 @@ namespace Air.Cloud.Core.Standard.MessageQueue.Config
     /// <summary>
     /// 主题订阅配置
     /// </summary>
-    public interface ITopicSubscribeConfig
+    public interface ITopicSubscribeConfig<TTopicSubscribeConfig> where TTopicSubscribeConfig:class
     {
-        public ITopicInfo Topic { get; set; }
+        public TTopicSubscribeConfig Config { get; set; }
+        public string TopicName { get; set; }
     }
 
 }

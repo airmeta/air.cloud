@@ -16,8 +16,9 @@ namespace Air.Cloud.Core.Standard.MessageQueue.Config
     /// <summary>
     /// 主题发布配置
     /// </summary>
-    public interface ITopicPublishConfig
+    public interface ITopicPublishConfig<TConfig> where TConfig:class
     {
-        public ITopicInfo Topic { get; set; }
+        public TConfig Config { get; set; }
+        public string TopicName { get; set; }
     }
 }

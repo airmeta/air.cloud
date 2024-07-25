@@ -1,17 +1,11 @@
 ﻿using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Modules.RedisCache.Dependencies;
-using Air.Cloud.Modules.RedisCache.Extensions;
-using Air.Cloud.Modules.RedisCache.Options;
+using Air.Cloud.Modules.Kafka.Config;
+using Air.Cloud.Modules.Kafka.Extensions;
+using Air.Cloud.Modules.Kafka.Helper;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Air.Cloud.Modules.RedisCache
 {
@@ -25,12 +19,12 @@ namespace Air.Cloud.Modules.RedisCache
 
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddOptions<RedisSettingsOptions>()
-               .BindConfiguration("RedisSettings")
+            services.AddOptions<KafkaSettingsOptions>()
+               .BindConfiguration("KafkaSettings")
                .ValidateDataAnnotations()
                .PostConfigure(options =>
                {});
-            services.AddRedisCacheService<RedisCacheDependency>();
+            services.AddKafkaService();
         }
     }
 }

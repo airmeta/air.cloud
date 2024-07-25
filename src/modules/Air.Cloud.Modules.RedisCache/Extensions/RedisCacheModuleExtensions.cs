@@ -18,17 +18,12 @@ namespace Air.Cloud.Modules.RedisCache.Extensions
 {
     public static class RedisCacheModuleExtensions
     {
-        public static IServiceCollection WebRedisCacheInject<TRedisCacheModuleDependency>(this IServiceCollection services) where TRedisCacheModuleDependency : class, IRedisCacheStandard, new()
+        public static IServiceCollection AddRedisCacheService<TRedisCacheModuleDependency>(this IServiceCollection services) where TRedisCacheModuleDependency : class, IRedisCacheStandard, new()
         {
             services.AddSingleton<IAppCacheStandard, TRedisCacheModuleDependency>();
             services.AddSingleton<IRedisCacheStandard, TRedisCacheModuleDependency>();
             return services;
         }
 
-        //public static void HostRedisCacheInject<TRedisCacheModuleDependency>() where TRedisCacheModuleDependency : class, IRedisCacheStandard, new()
-        //{
-        //    AppRealization.SetDependency<IAppCacheStandard>(new TRedisCacheModuleDependency());
-        //    AppRealization.SetDependency<IRedisCacheStandard>(new TRedisCacheModuleDependency());
-        //}
     }
 }
