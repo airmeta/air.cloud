@@ -73,9 +73,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{A3F79E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.docker.entry", "test\unit.docker.entry\unit.docker.entry.csproj", "{D11A647C-15DE-412D-AE96-915F0EBE2E9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Kafka", "src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj", "{320EDEA2-D18F-44EE-846D-78354CC87317}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Kafka", "src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj", "{320EDEA2-D18F-44EE-846D-78354CC87317}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.IIS", "src\modules\Air.Cloud.Modules.IIS\Air.Cloud.Modules.IIS.csproj", "{CE045DCF-7C0B-4F38-B51E-F3B88C43DFE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.IIS", "src\modules\Air.Cloud.Modules.IIS\Air.Cloud.Modules.IIS.csproj", "{CE045DCF-7C0B-4F38-B51E-F3B88C43DFE6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Container", "Container", "{8C6B2A53-3EAD-410A-AA38-C91C878DD236}"
 	ProjectSection(SolutionItems) = preProject
