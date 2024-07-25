@@ -66,6 +66,10 @@ public sealed class JWTSettingsOptions
     public string Algorithm { get; set; } = SecurityAlgorithms.HmacSha256;
 
     /// <summary>
+    /// 是否使用刷新Token刷新AccessToken
+    /// </summary>
+    public bool IsRefreshAccessToken { get; set; } = false;
+    /// <summary>
     /// Token 名称
     /// </summary>
     public string AuthorizationKey { get; set; } = "Authorization";

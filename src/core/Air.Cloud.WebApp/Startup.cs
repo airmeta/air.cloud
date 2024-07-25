@@ -34,7 +34,7 @@ namespace Air.Cloud.WebApp
             //领域注册
             services.AddEntityDomainInject();
             // 控制器和规范化结果
-            services.AddControllers().AddInjectWithUnifyResult<RESTfulResultProvider>();
+            services.AddControllers();
 
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

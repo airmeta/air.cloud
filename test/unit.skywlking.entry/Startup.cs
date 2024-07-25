@@ -29,7 +29,7 @@ namespace unit.skywlking.entry
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
           
-            AppRealization.que
+           
         }
     }
 }
