@@ -17,14 +17,17 @@ using Air.Cloud.Modules.Taxin.Extensions;
 
 using unit.webapp.common.Filters;
 using Air.Cloud.Core.Standard.JSON.Extensions;
+using Air.Cloud.Plugins.Jwt.Extensions;
+using unit.webapp.common.JwtHandler;
 namespace unit.webapp.entry
 {
-    [AppStartup(Order = 12000)]
+    [AppStartup(Order = int.MinValue)]
     public class Startup :AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinClient<TaxinClientDependency>();
+            //services.AddTaxinClient<TaxinClientDependency>();
+            services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             //注入
             services.AddControllers(a =>
             {

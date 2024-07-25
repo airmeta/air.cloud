@@ -30,7 +30,7 @@ namespace Air.Cloud.Modules.RedisCache
                .ValidateDataAnnotations()
                .PostConfigure(options =>
                {});
-            services.WebRedisCacheInject<RedisCacheDependency>();
+            services.AddRedisCacheService<RedisCacheDependency>();
         }
     }
 }

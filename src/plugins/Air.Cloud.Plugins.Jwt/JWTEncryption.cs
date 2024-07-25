@@ -23,6 +23,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -169,51 +170,70 @@ namespace Air.Cloud.Plugins.Jwt
             #region  验证Token
             var expiredToken = GetJwtBearerToken(httpContext, JWTSettingsOptions.AuthorizationKey, tokenPrefix: tokenPrefix);
             if (expiredToken.IsNullOrEmpty()) return false;
+            var refreshToken = GetJwtBearerToken(httpContext, JWTSettingsOptions.RefreshAuthorizationKey, tokenPrefix: tokenPrefix);
+            if (refreshToken.IsNullOrEmpty()) return false;
+            //验证Token是否有效
             var (_isValid, _, _) = Validate(expiredToken);
-            if (_isValid)
+            // 判断刷新Token 是否过期
+            var (isValid, refreshTokenObj, _) = Validate(refreshToken);
+            //如果Token有效则直接设置用户信息并返回
+            if (_isValid&& isValid)
             {
-                #region  验证刷新Token
-                var refreshToken = GetJwtBearerToken(httpContext, JWTSettingsOptions.RefreshAuthorizationKey, tokenPrefix: tokenPrefix);
-                if (!refreshToken.IsNullOrEmpty())
-                {
-                    // 判断刷新Token 是否过期
-                    var (isValid, refreshTokenObj, _) = Validate(refreshToken);
-                    if (!isValid) return true;
-                    #endregion
-                    #region 刷新Token
-                    // 交换新的 Token
-                    var accessToken = Exchange(expiredToken, refreshToken, refreshTokenObj, expiredTime, clockSkew);
-                    if (string.IsNullOrWhiteSpace(accessToken)) return false;
-
-                    // 读取新的 Token Clamis
-                    var claims = ReadJwtToken(accessToken)?.Claims;
-                    if (claims == null) return false;
-
-                    // 创建身份信息
-                    var claimIdentity = new ClaimsIdentity("AuthenticationTypes.Federation");
-                    claimIdentity.AddClaims(claims);
-                    var claimsPrincipal = new ClaimsPrincipal(claimIdentity);
-
-                    // 设置 HttpContext.User 并登录
-                    httpContext.User = claimsPrincipal;
-                    httpContext.SignInAsync(claimsPrincipal);
-
-                    // 返回新的 Token
-                    httpContext.Response.Headers[JWTSettingsOptions.AuthorizationKey] = accessToken;
-                    // 返回新的 刷新Token
-                    httpContext.Response.Headers[JWTSettingsOptions.RefreshAuthorizationKey] = GenerateRefreshToken(accessToken, refreshTokenExpiredTime);
-
-                    // 处理 axios 问题
-                    httpContext.Response.Headers.TryGetValue("Access-Control-Expose-Headers", out var acehs);
-                    httpContext.Response.Headers["Access-Control-Expose-Headers"] = string.Join(',', StringValues.Concat(acehs, new StringValues(new[] { JWTSettingsOptions.AuthorizationKey, JWTSettingsOptions.RefreshAuthorizationKey })).Distinct());
-
-                }
-                #endregion
+                expiredToken=RefreshUserToken(expiredToken,refreshToken,refreshTokenObj,expiredTime,clockSkew);
+                return SetUserCliams(expiredToken, httpContext, refreshTokenExpiredTime);
             }
             #endregion
-
             return false;
         }
+        /// <summary>
+        /// 刷新Token信息
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <param name="refreshToken"></param>
+        /// <param name="webToken"></param>
+        /// <param name="expiredTime"></param>
+        /// <param name="clockSkew"></param>
+        /// <returns></returns>
+        private static string RefreshUserToken(string accessToken,string refreshToken, JsonWebToken webToken=null, long? expiredTime = null, long clockSkew = 5)
+        {
+            if (!JWTSettingsOptions.IsRefreshAccessToken) return accessToken;
+            #region 刷新Token
+            // 交换新的 Token
+            accessToken = Exchange(accessToken, refreshToken, webToken, expiredTime, clockSkew);
+            if (string.IsNullOrWhiteSpace(accessToken)) return string.Empty;
+            return accessToken;
+            #endregion
+        }
+        /// <summary>
+        /// 设置身份信息
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <param name="httpContext"></param>
+        /// <param name="refreshTokenExpiredTime"></param>
+        /// <returns></returns>
+        private static bool SetUserCliams(string accessToken,DefaultHttpContext httpContext, int refreshTokenExpiredTime = 43200)
+        {
+            // 创建身份信息
+            // 读取新的 Token Clamis
+            var claims = ReadJwtToken(accessToken)?.Claims;
+            if (claims == null) return false;
+            var claimIdentity = new ClaimsIdentity("AuthenticationTypes.Federation");
+            claimIdentity.AddClaims(claims);
+            var claimsPrincipal = new ClaimsPrincipal(claimIdentity);
+            // 设置 HttpContext.User 并登录
+            httpContext.User = claimsPrincipal;
+            httpContext.SignInAsync(claimsPrincipal);
+            // 返回新的 Token
+            httpContext.Response.Headers[JWTSettingsOptions.AuthorizationKey] = accessToken;
+            // 返回新的 刷新Token
+            httpContext.Response.Headers[JWTSettingsOptions.RefreshAuthorizationKey] = GenerateRefreshToken(accessToken, refreshTokenExpiredTime);
+
+            // 处理 axios 问题
+            httpContext.Response.Headers.TryGetValue("Access-Control-Expose-Headers", out var acehs);
+            httpContext.Response.Headers["Access-Control-Expose-Headers"] = string.Join(',', StringValues.Concat(acehs, new StringValues(new[] { JWTSettingsOptions.AuthorizationKey, JWTSettingsOptions.RefreshAuthorizationKey })).Distinct());
+            return true;
+        }
+       
 
         /// <summary>
         /// 验证 Token
@@ -265,7 +285,6 @@ namespace Air.Cloud.Plugins.Jwt
                 token = null;
                 return false;
             }
-
             // 验证token
             var (IsValid, Token, _) = Validate(accessToken);
             token = IsValid ? Token : null;

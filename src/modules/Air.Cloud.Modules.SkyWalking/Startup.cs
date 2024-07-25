@@ -40,7 +40,7 @@ namespace Air.Cloud.Modules.SkyWalking
 
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddSkyWalkingOptions() ;
+            services.AddSkyWalkingService() ;
             services.AddSkyAPM(ext => ext.AddAspNetCoreHosting());
             services.AddSkyApmExtensions();
             services.AddTransient<ITraceLogStandard, TraceLogDependency>();

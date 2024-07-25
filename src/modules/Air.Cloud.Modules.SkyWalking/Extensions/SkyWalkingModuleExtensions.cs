@@ -26,7 +26,7 @@ namespace Air.Cloud.Modules.SkyWalking.Extensions
         /// </summary>
         /// <param name="services"></param>
         /// <returns></returns>
-        public static IServiceCollection AddSkyWalkingOptions(this IServiceCollection services)
+        public static IServiceCollection AddSkyWalkingService(this IServiceCollection services)
         {
             string ConfigFilePath = $"{AppConst.ApplicationPath}{SkyApmConst.SKYWALKING_CONFIG_NAME}";
             var Options = AppConfiguration.GetConfig<SkyApmOptions>();
