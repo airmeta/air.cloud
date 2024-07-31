@@ -36,8 +36,7 @@ namespace unit.skywlking.entry
             //    Content = "123123"
             //});
             ConsumerConfigModel producerConfigModel = new ConsumerConfigModel();
-            producerConfigModel.TopicName = "fcj_workflow_audit_test";
-            Console.WriteLine(producerConfigModel.TopicName);
+            producerConfigModel.TopicName = "fcj_workflow_audit_dev";
             string GroupId=AppEnvironment.IsDevelopment? Guid.NewGuid().ToString() : AppConst.ApplicationName;
             AppRealization.Queue.Subscribe<ConsumerConfig, object>(producerConfigModel, (s) =>
             {

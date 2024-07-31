@@ -11,6 +11,9 @@
  * acknowledged.
  */
 
+using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DynamicServer;
+
 using Microsoft.AspNetCore.Mvc;
 
 using unit.webapp.model.Dto;
@@ -18,7 +21,7 @@ using unit.webapp.model.Dto;
 namespace unit.webapp.service.services.ActionLogFilterTestService
 {
     [Route("api")]
-    public  class ActionLogFilterTestService : IActionLogFilterTestService
+    public  class ActionLogFilterTestService : IDynamicService, ITransient, IActionLogFilterTestService
     {
         [HttpPost("logfilter/test")]
         public object Test(TestSDto dto)

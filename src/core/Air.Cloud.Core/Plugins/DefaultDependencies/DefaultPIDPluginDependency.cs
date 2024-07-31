@@ -20,6 +20,8 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
     /// </summary>
     public class DefaultPIDPluginDependency : IPIDPlugin
     {
+        private static Object locker = new Object();
+        private  static string SPID=null;
         /// <summary>
         /// 写入PID
         /// </summary>
@@ -28,6 +30,7 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
         /// </remarks>
         public string Set(string PID = null)
         {
+            //此处放置同步执行的代码
             if (!File.Exists(IPIDPlugin.StartPath))
             {
                 File.Create(IPIDPlugin.StartPath).Close();
@@ -38,6 +41,7 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
                 file.Write(PID);
                 file.Close();
             }
+            DefaultPIDPluginDependency.SPID = PID;
             return PID;
         }
 
@@ -47,12 +51,17 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
         /// <returns>PID</returns>
         public string Get()
         {
-            if (File.Exists(IPIDPlugin.StartPath))
+            lock (locker)
             {
-                File.Delete(IPIDPlugin.StartPath);
+                if (SPID.IsNullOrEmpty())
+                {
+                    return Set();
+                }
+                else
+                {
+                    return SPID;
+                }
             }
-            string PID = Set();
-            return PID;
         }
     }
 }

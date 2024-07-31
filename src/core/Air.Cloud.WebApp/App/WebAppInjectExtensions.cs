@@ -13,6 +13,7 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Standard.AppInject;
+using Air.Cloud.WebApp.Dependency;
 
 using Microsoft.Extensions.Configuration;
 
@@ -36,6 +37,7 @@ namespace Air.Cloud.WebApp.App
             AppCore.AppStartType = AppStartupTypeEnum.WEB;
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
+            AppRealization.SetDependency<IAppInjectStandard>(new WebAppInjectDependency());
             builder = AppRealization.Injection.Inject(builder);
             var app = builder.Build();
            

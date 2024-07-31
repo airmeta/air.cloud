@@ -33,6 +33,7 @@ namespace Air.Cloud.Modules.Consul.Resolver
         /// 例如: xxx.xxx.Entry 这里获取的就是 xxx.xxx
         /// </remarks>
         /// <param name="DefaultServiceName">默认服务名称(配置文件中的配置项)</param>
+        /// <param name="assembly">启动类库</param>
         /// <returns>服务名称</returns>
         public static string GetCurrentProjectConsulServiceName(this IApplicationBuilder app, string DefaultServiceName = null, Assembly assembly = null)
         {
@@ -43,6 +44,7 @@ namespace Air.Cloud.Modules.Consul.Resolver
         /// 获取当前程序在Consul中的服务名 忽略Entry
         /// </summary>
         /// <param name="DefaultServiceName">默认服务名称(配置文件中的配置项)</param>
+        /// <param name="assembly">启动类库名称</param>
         /// <returns>服务名称</returns>
         public static string GetCurrentProjectConsulServiceNameInReslover(string DefaultServiceName = null, Assembly assembly = null)
         {

@@ -4,11 +4,18 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>False</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
-    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj" />
     <ProjectReference Include="..\unit.webapp.common\unit.webapp.common.csproj" />
     <ProjectReference Include="..\unit.webapp.service\unit.webapp.service.csproj" />
   </ItemGroup>

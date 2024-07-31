@@ -12,6 +12,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.Modules.Consul.Model;
 using Air.Cloud.Modules.Consul.Resolver;
 using Air.Cloud.Modules.Consul.Service;
@@ -25,6 +26,14 @@ using Microsoft.Extensions.Hosting;
 using System.Reflection;
 namespace Air.Cloud.Modules.Consul.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:Consul 模块扩展</para>
+    /// <para>en-us:Consul module extensions</para>
+    /// </summary>
+    /// <remarks>
+    ///  <para>zh-cn:不支持控制台模式使用该类库的扩展方法</para>
+    ///  <para>en-us:Extension methods using this class library in console mode are not supported.</para>
+    /// </remarks>
     public static class ConsulModuleExtensions
     {
         /// <summary>
@@ -39,7 +48,6 @@ namespace Air.Cloud.Modules.Consul.Extensions
         {
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
-            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             //加载远程配置文件
             var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
             if (Config.Item2 != null)
@@ -47,24 +55,25 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 AppConfigurationLoader.SetPublicConfiguration(Config.Item2);
                 builder.Configuration.AddConfiguration(Config.Item2);
             }
+            var InjectionType = AppCore.StandardTypes.Where(s=>s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
+            Assembly assembly = Assembly.GetAssembly(InjectionType);
+            IAppInjectStandard appInject= assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
+            AppRealization.SetDependency(appInject);
             AppConfigurationLoader.SetExternalConfiguration(Config.Item1);
             builder.Configuration.AddConfiguration(Config.Item1);
             builder = AppRealization.Injection.Inject(builder);
             //使用健康检查
             builder.Services.AddConulService();
+            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             var app = builder.Build();
             //添加Consul支持
             app.UseConsul(Assembly.GetCallingAssembly());
             return app;
         }
 
-
         /// <summary>
-        /// 从远程加载配置文件并注册当前服务到Consul
+        /// 从远程加载配置文件
         /// </summary>
-        /// <remarks>
-        /// 是否注册到Consul 依赖于appsettings.json 里面的EnableConsul
-        /// </remarks>
         /// <param name="builder">WebApplication构建器</param>
         /// <returns></returns>
         public static IHostBuilder HostInjectInConsul(this IHostBuilder builder)
@@ -74,6 +83,10 @@ namespace Air.Cloud.Modules.Consul.Extensions
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
+            var InjectionType = AppCore.StandardTypes.Where(s => s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
+            Assembly assembly = Assembly.GetAssembly(InjectionType);
+            IAppInjectStandard appInject = assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
+            AppRealization.SetDependency(appInject);
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 if (Config.Item2 != null)
@@ -87,8 +100,10 @@ namespace Air.Cloud.Modules.Consul.Extensions
             builder = AppRealization.Injection.Inject(builder,true);
             return builder;
         }
+
         /// <summary>
-        /// 接入注册中心
+        ///  <para>zh-cn:接入注册中心</para>
+        ///  <para>en-us:Use consul</para>
         /// </summary>
         /// <param name="app"></param>
         /// <param name="assembly"></param>
@@ -147,6 +162,11 @@ namespace Air.Cloud.Modules.Consul.Extensions
             return app;
         }
 
+        /// <summary>
+        /// <para>zh-cn:注册Consul服务</para>
+        /// <para>en-us:Add conul service</para>
+        /// </summary>
+        /// <param name="services"></param>
         private static void AddConulService(this IServiceCollection services)
         {
             //开发环境剔除此参数

@@ -16,7 +16,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>1.0.1.1</Version>
+    <Version>1.0.1.3</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -48,7 +48,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
-    <ProjectReference Include="..\..\core\Air.Cloud.HostApp\Air.Cloud.HostApp.csproj" />
-    <ProjectReference Include="..\..\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
   </ItemGroup>
 </Project>

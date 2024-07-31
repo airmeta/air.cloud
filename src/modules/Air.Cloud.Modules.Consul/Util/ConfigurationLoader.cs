@@ -44,7 +44,7 @@ namespace Air.Cloud.Modules.Consul.Util
             string CommonConfigFileRoute = null;
             if (string.IsNullOrEmpty(RemoteUrl))
             {
-                var ServiceOptions = AppCore.Configuration.GetConfig<ConsulServiceOptions>();
+                var ServiceOptions = AppConfigurationLoader.InnerConfiguration.GetConfig<ConsulServiceOptions>();
                 if (ServiceOptions == null) throw new FileNotFoundException("未找到配置文件appsettings.json或配置文件中不包含服务注册必须项");
                 RemoteUrl = ServiceOptions.ConsulAddress;
                 EnableCommonConfig = ServiceOptions.EnableCommonConfig;
@@ -66,7 +66,7 @@ namespace Air.Cloud.Modules.Consul.Util
             if (!EnableCommonConfig) return (config, null);
 
             //加载公共配置文件
-            string CommonConfigurationInConsulKVPath = $"{CommonConfigFileRoute}/{AppConst.SystemEnvironmentConfigFileFullName}";
+            string CommonConfigurationInConsulKVPath = $"{CommonConfigFileRoute}/{AppConst.CommonEnvironmentConfigFileFullName}";
             var CommonConfig = new ConfigurationBuilder().AddConsul($"{CommonConfigurationInConsulKVPath}",
                                        options =>
                                        {
