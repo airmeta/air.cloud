@@ -13,6 +13,7 @@
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Plugins.Jwt.Extensions;
+using Air.Cloud.WebApp.Extensions;
 
 using unit.webapp.common.Filters;
 using unit.webapp.common.JwtHandler;
@@ -29,7 +30,7 @@ namespace unit.webapp.entry
             services.AddControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
-            });
+            }).AddInjectWithUnifyResult();
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

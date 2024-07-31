@@ -10,7 +10,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App;
 using Air.Cloud.WebApp.App;
+using Air.Cloud.WebApp.DataValidation.Attributes;
 
 var builder = WebApplication.CreateBuilder(args);
 

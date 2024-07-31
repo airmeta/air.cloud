@@ -244,7 +244,7 @@ public static class DataValidator
     private static IEnumerable<Type> GetValidationTypes()
     {
         // 扫描所有公开的枚举且贴有 [ValidationType] 特性
-        var validationTypes = AppCore.EffectiveTypes.Where(u => u.IsDefined(typeof(ValidationTypeAttribute), true) && u.IsEnum);
+        var validationTypes = AppCore.CrucialTypes.Where(u => u.IsDefined(typeof(ValidationTypeAttribute), true) && u.IsEnum);
         return validationTypes;
     }
 

@@ -17,6 +17,7 @@ namespace Air.Cloud.WebApp.DataValidation.Enums;
 /// 验证类型
 /// </summary>
 [ValidationType]
+[NeedScanningAttribute]
 public enum ValidationTypes
 {
     /// <summary>
