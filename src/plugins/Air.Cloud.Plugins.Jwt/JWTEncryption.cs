@@ -211,7 +211,7 @@ namespace Air.Cloud.Plugins.Jwt
         /// <param name="httpContext"></param>
         /// <param name="refreshTokenExpiredTime"></param>
         /// <returns></returns>
-        private static bool SetUserCliams(string accessToken,DefaultHttpContext httpContext, int refreshTokenExpiredTime = 43200)
+        public static bool SetUserCliams(string accessToken,DefaultHttpContext httpContext, int refreshTokenExpiredTime = 43200)
         {
             // 创建身份信息
             // 读取新的 Token Clamis

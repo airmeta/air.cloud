@@ -15,6 +15,7 @@ namespace Air.Cloud.Core.App
     /// <summary>
     /// 应用程序运行参数
     /// </summary>
+    [ConfigurationInfo("AppRuntimeOptions")]
     public  class AppRuntimeOptions
     {
         /// <summary>

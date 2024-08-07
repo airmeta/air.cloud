@@ -13,9 +13,10 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Standard.AppInject;
+using Air.Cloud.Modules.Consul.Dependencies;
 using Air.Cloud.Modules.Consul.Model;
-using Air.Cloud.Modules.Consul.Resolver;
 using Air.Cloud.Modules.Consul.Service;
+using Air.Cloud.Modules.Consul.Standard;
 using Air.Cloud.Modules.Consul.Util;
 
 using Microsoft.AspNetCore.Builder;
@@ -43,50 +44,126 @@ namespace Air.Cloud.Modules.Consul.Extensions
         /// 是否注册到Consul 依赖于appsettings.json 里面的EnableConsul
         /// </remarks>
         /// <param name="builder">WebApplication构建器</param>
+        /// <param name="action">
+        /// <para>zh-cn:自定义构建行为</para>
+        /// <para>en-us:Configure action</para>
+        /// </param>
         /// <returns></returns>
-        public static WebApplication WebInjectInConsul(this WebApplicationBuilder builder)
+        public static WebApplication WebInjectInConsul(this WebApplicationBuilder builder, Action<ConsulServiceOptions> action = null)
         {
-            AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
-            AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
+            return WebInjectInConsul<DefaultConsulServiceOptionsConfigureDependency>(builder,action);
+        }
+        /// <summary>
+        /// 从远程加载配置文件并注册当前服务到Consul
+        /// </summary>
+        /// <remarks>
+        /// 是否注册到Consul 依赖于appsettings.json 里面的EnableConsul
+        /// </remarks>
+        /// <param name="builder">WebApplication构建器</param>
+        /// <param name="action">
+        /// <para>zh-cn:自定义构建行为</para>
+        /// <para>en-us:Configure action</para>
+        /// </param>
+        /// <typeparam name="TConsulServiceOptionsConfigureDependency">
+        ///  <para>zh-cn:Consul配置构建器</para>
+        ///   <para>en-us: Consul options configure</para>
+        /// </typeparam>
+        /// <returns></returns>
+        public static WebApplication WebInjectInConsul<TConsulServiceOptionsConfigureDependency>(this WebApplicationBuilder builder, Action<ConsulServiceOptions> action = null)
+            where TConsulServiceOptionsConfigureDependency:class,IConsulServiceOptionsConfigureStandard,new()
+        {
+            InitAppInject();
+            ConsulServiceOptions consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
             //加载远程配置文件
-            var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
+            var Config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
             if (Config.Item2 != null)
             {
                 AppConfigurationLoader.SetPublicConfiguration(Config.Item2);
                 builder.Configuration.AddConfiguration(Config.Item2);
             }
-            var InjectionType = AppCore.StandardTypes.Where(s=>s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
-            Assembly assembly = Assembly.GetAssembly(InjectionType);
-            IAppInjectStandard appInject= assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
-            AppRealization.SetDependency(appInject);
             AppConfigurationLoader.SetExternalConfiguration(Config.Item1);
             builder.Configuration.AddConfiguration(Config.Item1);
+
             builder = AppRealization.Injection.Inject(builder);
-            //使用健康检查
+            //注册Consul服务
             builder.Services.AddConulService();
-            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             var app = builder.Build();
             //添加Consul支持
-            app.UseConsul(Assembly.GetCallingAssembly());
+            app.UseConsul(consulServiceOptions);
             return app;
         }
 
         /// <summary>
+        /// <para>zh-cn:读取Consul服务配置</para>
+        /// <para>en-us:Get consul service options</para>
+        /// </summary>
+        /// <typeparam name="TConsulServiceOptionsConfigureDependency">
+        ///  <para>zh-cn:Consul配置构建器</para>
+        ///   <para>en-us: Consul options configure</para>
+        /// </typeparam>
+        /// <param name="action">
+        /// <para>zh-cn:自定义构建行为</para>
+        /// <para>en-us:Configure action</para>
+        /// </param>
+        /// <returns>
+        ///  <para>zh-cn:服务配置</para>
+        ///  <para>en-us:Consul service options</para>
+        /// </returns>
+        private static ConsulServiceOptions GetConsulService<TConsulServiceOptionsConfigureDependency>(Action<ConsulServiceOptions> action = null)
+            where TConsulServiceOptionsConfigureDependency : class, IConsulServiceOptionsConfigureStandard, new()
+        {
+            var serviceOptions = AppConfigurationLoader.InnerConfiguration.GetConfig<ConsulServiceOptions>();
+            TConsulServiceOptionsConfigureDependency OptionsConfigure = new TConsulServiceOptionsConfigureDependency();
+            serviceOptions = OptionsConfigure?.Configure(serviceOptions, action) ?? serviceOptions;
+            return serviceOptions;
+
+        }
+
+        /// <summary>
+        ///  <para>zh-cn:初始化注入</para>
+        ///  <para>en-us:Init app inject</para>
+        /// </summary>
+        private static void InitAppInject() {
+            #region  初始化注入
+                var InjectionType = AppCore.StandardTypes.Where(s => s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
+                Assembly assembly = Assembly.GetAssembly(InjectionType);
+                IAppInjectStandard appInject = assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
+                AppRealization.SetDependency(appInject);
+            #endregion
+            AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
+            AppConst.ApplicationName = Assembly.GetEntryAssembly().GetName().Name;
+            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
+        }
+        /// <summary>
         /// 从远程加载配置文件
         /// </summary>
         /// <param name="builder">WebApplication构建器</param>
+        /// <param name="action">
+        /// <para>zh-cn:自定义构建行为</para>
+        /// <para>en-us:Configure action</para>
+        /// </param>
         /// <returns></returns>
-        public static IHostBuilder HostInjectInConsul(this IHostBuilder builder)
+        public static IHostBuilder HostInjectInConsul(this IHostBuilder builder, Action<ConsulServiceOptions> action = null)
         {
-            //加载远程配置文件
-            AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
-            AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
-            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
-            var Config = new ConfigurationLoader(Assembly.GetCallingAssembly()).LoadRemoteConfiguration();
-            var InjectionType = AppCore.StandardTypes.Where(s => s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
-            Assembly assembly = Assembly.GetAssembly(InjectionType);
-            IAppInjectStandard appInject = assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
-            AppRealization.SetDependency(appInject);
+            return HostInjectInConsul<DefaultConsulServiceOptionsConfigureDependency>(builder, action);
+        }
+        /// <summary>
+        /// 从远程加载配置文件
+        /// </summary>
+        /// <param name="builder">WebApplication构建器</param>
+        /// <param name="action">
+        /// <para>zh-cn:自定义构建行为</para>
+        /// <para>en-us:Configure action</para>
+        /// </param>
+        /// <returns></returns>
+        public static IHostBuilder HostInjectInConsul<TConsulServiceOptionsConfigureDependency>(this IHostBuilder builder, Action<ConsulServiceOptions> action = null)
+             where TConsulServiceOptionsConfigureDependency : class, IConsulServiceOptionsConfigureStandard, new()
+        {
+            InitAppInject();
+            ConsulServiceOptions consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
+
+            var Config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
+
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 if (Config.Item2 != null)
@@ -97,34 +174,31 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 a.AddConfiguration(Config.Item1);
                 AppConfigurationLoader.SetExternalConfiguration(Config.Item1);
             });
-            builder = AppRealization.Injection.Inject(builder,true);
+            builder = AppRealization.Injection.Inject(builder, true);
             return builder;
         }
-
         /// <summary>
         ///  <para>zh-cn:接入注册中心</para>
         ///  <para>en-us:Use consul</para>
         /// </summary>
-        /// <param name="app"></param>
-        /// <param name="assembly"></param>
+        /// <param name="app">
+        ///     application builder
+        /// </param>
+        /// <param name="serviceOptions">
+        /// <para>zh-cn:服务注册配置</para>
+        /// <para>en-us:Service options</para>
+        /// </param>
         /// <remarks>
         /// IIS模式目前只需要一个注册中心地址即可,当前服务地址信息为即时发现
         /// Docker模式目前需要配置注册中心地址以及当前服务的地址信息
         /// </remarks>
         /// <returns></returns>
-        private static IApplicationBuilder UseConsul(this IApplicationBuilder app, Assembly assembly = null)
+        private static IApplicationBuilder UseConsul(
+                    this IApplicationBuilder app,
+                    ConsulServiceOptions serviceOptions)
         {
-            var serviceOptions = AppCore.Configuration.GetConfig<ConsulServiceOptions>();
             //开发环境剔除此参数
             if (AppEnvironment.IsDevelopment) return app;
-            AppRuntimeOptions? info = AppCore.GetOptions<AppRuntimeOptions>();
-            serviceOptions = ConsulServiceOptions.GetConsulServiceOptions(info, serviceOptions);
-            #region 初始化一些参数 如果可以自动获取 将忽略配置文件
-            // 服务ID为当前应用程序唯一标识
-            serviceOptions.ServiceId = serviceOptions.ServiceId ?? AppRealization.PID.Get();
-            //获取当前程序的注册名
-            serviceOptions.ServiceName = app.GetCurrentProjectConsulServiceName(serviceOptions.ServiceName, assembly);
-            #endregion
             var ConsulHelpers = new ConsulOperatorHelper(serviceOptions.ConsulAddress);
             var result = ConsulHelpers.InitConsulRegistration(serviceOptions);
             if (!result.Item1) return app;
@@ -135,10 +209,10 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 ServiceAddress = serviceOptions.ServiceAddress,
                 ServiceName = serviceOptions.ServiceName,
                 ServiceKey = serviceOptions.ServiceId,
-                HealthCheckTimeStep = new TimeSpan(0, 0, 10),
-                HealthCheckRoute = serviceOptions.HealthCheck,
-                Timeout = new TimeSpan(0, 0, 5),
-                DeregisterCriticalServiceAfter = new TimeSpan(0, 1, 0)
+                HealthCheckTimeStep = new TimeSpan(0, 0, serviceOptions.HealthCheckTimeStep),
+                HealthCheckRoute = serviceOptions.HealthCheckRoute,
+                Timeout = new TimeSpan(0, 0, serviceOptions.ConnectTimeout),
+                DeregisterCriticalServiceAfter = new TimeSpan(0, 0, serviceOptions.DeregisterCriticalServiceAfter)
             }).Result;
             // 获取主机生命周期管理接口
             var lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
@@ -153,12 +227,12 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 //开始进行初次健康检查
                 using (HttpClient client = new HttpClient())
                 {
-                    Uri uris = new Uri(new Uri(serviceOptions.ServiceAddress), serviceOptions.HealthCheck);
+                    Uri uris = new Uri(new Uri(serviceOptions.ServiceAddress), serviceOptions.HealthCheckRoute);
                     _ = client.GetAsync(uris).Result;
                 }
             });
             #endregion
-            app.UseHealthChecks(serviceOptions.HealthCheck);
+            app.UseHealthChecks(serviceOptions.HealthCheckRoute);
             return app;
         }
 
