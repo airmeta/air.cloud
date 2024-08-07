@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.DefaultDependency;
+using Air.Cloud.Core.Plugins.DefaultDependencies;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.AppInject;
@@ -24,12 +24,10 @@ using Air.Cloud.Core.Standard.Exceptions;
 using Air.Cloud.Core.Standard.JinYiWei;
 using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.KVCenter;
-using Air.Cloud.Core.Standard.Print;
-using Air.Cloud.Core.Standard.Taxin.Client;
+using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.UtilStandard;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 using System.Reflection;
 
@@ -105,6 +103,13 @@ namespace Air.Cloud.Core
         /// <para>en-us:Log tracking  dependency</para>
         /// </summary>
         public static ITraceLogStandard Log=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
+
+        /// <summary>
+        /// <para>zh-cn:队列实现</para>
+        /// <para>en-us:queue dependency</para>
+        /// </summary>
+        public static IMessageQueueStandard Queue=> InternalRealization.Queue ?? DefaultRealization.Queue;
+
         /// <summary>
         /// 设置约定实现
         /// </summary>
@@ -155,7 +160,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// 容器标准实现
             /// </summary>
-            public static IContainerStandard Container => null;
+            public static IContainerStandard Container => throw new NotImplementedException("未查询到容器标准的实现");
             /// <summary>
             /// 系统配置标准实现
             /// </summary>
@@ -207,6 +212,11 @@ namespace Air.Cloud.Core
             /// <para>en-us:Default log tracking </para>
             /// </summary>
             public static ITraceLogStandard TraceLog => new DefaultTraceLogDependency();
+            /// <summary>
+            /// <para>zh-cn:默认队列实现</para>
+            /// <para>en-us:Default queue dependency</para>
+            /// </summary>
+            public static IMessageQueueStandard Queue => throw new NotImplementedException("系统未实现队列标准");
         }
         /// <summary>
         /// 自定义标准实现
@@ -224,7 +234,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// 容器标准实现
             /// </summary>
-            public static IContainerStandard Container = null;
+            public static IContainerStandard Container => AppCore.GetService<IContainerStandard>();
             /// <summary>
             /// 系统配置标准实现
             /// </summary>
@@ -278,6 +288,12 @@ namespace Air.Cloud.Core
             /// <para>en-us:Log tracking </para>
             /// </summary>
             public static ITraceLogStandard TraceLog => AppCore.GetService<ITraceLogStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:队列实现</para>
+            /// <para>en-us:queue dependency</para>
+            /// </summary>
+            public static IMessageQueueStandard Queue => AppCore.GetService<IMessageQueueStandard>();
         }
     }
 }

@@ -16,6 +16,10 @@ namespace Air.Cloud.Core.Standard.MessageQueue
     /// </summary>
     public interface IMessageContentStandard
     {
-        public byte[] Content { get; set; }
+        /// <summary>
+        /// <para>zh-cn: 消息内容</para>
+        /// <para>en-us: Message content</para>
+        /// </summary>
+        public string Content { get; set; }
     }
 }

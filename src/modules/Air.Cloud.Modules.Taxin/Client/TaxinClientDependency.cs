@@ -14,15 +14,12 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.Plugins.Http.Extensions;
 using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
+using Air.Cloud.Core.Standard.Taxin.Model;
 using Air.Cloud.Core.Standard.Taxin.Result;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 using Air.Cloud.Modules.Taxin.Extensions;
-using Air.Cloud.Modules.Taxin.Model;
 
-using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
-using System.Net.Http.Json;
 
 namespace Air.Cloud.Modules.Taxin.Client
 {

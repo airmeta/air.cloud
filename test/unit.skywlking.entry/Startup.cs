@@ -10,6 +10,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Modules.Taxin.Client;
@@ -23,16 +24,12 @@ namespace unit.skywlking.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinClient<TaxinClientDependency>();
-            //注入
-            services.AddControllers(a =>
-            {
-                a.Filters.Add<ActionLogFilter>();
-            });
+
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
           
+           
         }
     }
 }

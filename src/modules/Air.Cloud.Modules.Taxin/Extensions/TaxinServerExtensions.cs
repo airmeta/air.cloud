@@ -12,13 +12,10 @@
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
+using Air.Cloud.Core.Standard.Taxin.Model;
 using Air.Cloud.Core.Standard.Taxin.Server;
 using Air.Cloud.Core.Standard.Taxin.Store;
-using Air.Cloud.Modules.Taxin;
-using Air.Cloud.Modules.Taxin.Client;
-using Air.Cloud.Modules.Taxin.Model;
 using Air.Cloud.Modules.Taxin.Server;
-using Air.Cloud.Modules.Taxin.Store;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -184,7 +181,7 @@ namespace Air.Cloud.Modules.Taxin.Extensions
                         try
                         {
                             var package = await context.Request.ReadFromJsonAsync<TaxinRouteDataPackage>();
-                            var result = await taxinServer.ReciveAsync(package);
+                            var result = await taxinServer.ReceiveAsync(package);
                             await context.Response.WriteAsJsonAsync(result);
                         }
                         catch (Exception)

@@ -236,6 +236,8 @@ namespace Air.Cloud.Core.App
                         || instances.Contains(typeof(IPrivateEntity))
                         ) && t.IsPublic&& !t.IsDefined(typeof(IgnoreScanningAttribute), false))
                             return true;
+                        if (t.IsDefined(typeof(NeedScanningAttribute)))
+                            return true;
                         if (t.BaseType == typeof(AppStartup))
                             return true;
                         return false;

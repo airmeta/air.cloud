@@ -11,7 +11,7 @@
  */
 namespace Air.Cloud.Core.Standard.AppResult
 {
-    public interface IRESTfulResultStandard<T> : IStandard where T : class, new()
+    public interface IRESTfulResultStandard<T> : IStandard where T : class
     {
         /// <summary>
         /// 状态码
@@ -42,6 +42,11 @@ namespace Air.Cloud.Core.Standard.AppResult
         /// 时间戳
         /// </summary>
         public long Timestamp { get; set; }
+
+        /// <summary>
+        /// 提示内容
+        /// </summary>
+        public string Message { get; set; }
 
     }
 

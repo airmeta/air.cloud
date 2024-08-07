@@ -20,7 +20,6 @@ namespace Air.Cloud.Core.Standard.MessageQueue.Model
         public string TopicName { get; set; }
         public string TopicArn { get; set; }
         public string BootStrapServer { get; set; }
-
         public string TopicStatus { get; set; }
         public ITopicConfig TopicConfig { get; set; }
     }

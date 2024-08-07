@@ -3,30 +3,32 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>合肥星曳数据科技有限公司</Company>
     <Authors>AC</Authors>
     <Product>air.cloud</Product>
     <Description>
-      Air.Cloud.HostApp 为控制台应用程序基础类库,使用该类库可以创建具有Air.Cloud系列支持的类库
+      [Alpha]Air.Cloud.HostApp 为控制台应用程序基础类库,使用该类库可以创建具有Air.Cloud系列支持的类库
     </Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>1.0.0.2</Version>
+  <Version>1.0.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\..\..\assets\logo.png" Link="logo.png">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
+      
     </None>
     <None Include="..\..\..\LICENSE" Link="LICENSE">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
+      
     </None>
   </ItemGroup>
 

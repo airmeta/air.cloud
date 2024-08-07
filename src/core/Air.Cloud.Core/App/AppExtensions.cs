@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.DefaultDependency.IdGenerator;
+using Air.Cloud.Core.Plugins.DefaultDependencies.IdGenerator;
 using Air.Cloud.Core.Plugins.IdGenerator;
 
 using Mapster;

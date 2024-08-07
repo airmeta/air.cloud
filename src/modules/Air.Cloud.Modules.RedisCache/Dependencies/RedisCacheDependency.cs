@@ -40,7 +40,10 @@ namespace Air.Cloud.Modules.RedisCache.Dependencies
         {
             return new RedisCacheDependency(DataBaseIndex);
         }
-
+        public object GetDatabase() 
+        {
+            return this.Redis;
+        }
         public IHashCache Hash => new HashCache(Redis);
 
         public IStringCache String => new StringCache(Redis);

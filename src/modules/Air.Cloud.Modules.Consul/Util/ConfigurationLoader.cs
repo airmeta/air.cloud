@@ -11,11 +11,8 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Modules.Consul.Model;
-using Air.Cloud.Modules.Consul.Resolver;
 
 using Microsoft.Extensions.Configuration;
-
-using System.Reflection;
 
 using Winton.Extensions.Configuration.Consul;
 
@@ -24,55 +21,38 @@ namespace Air.Cloud.Modules.Consul.Util
     /// <summary>
     ///配置文件加载器
     /// </summary>
-    public class ConfigurationLoader : IConfigurationLoader
+    public static class ConfigurationLoader 
     {
-        public Assembly CallAssembly = null;
         /// <summary>
-        /// 配置文件加载器
+        /// <para>zh-cn:加载配置文件</para>
+        /// <para>en-us:load remote configuration</para>
         /// </summary>
-        /// <param name="assembly">启动项目程序集</param>
-        public ConfigurationLoader(Assembly assembly = null)
+        /// <param name="ServiceOptions"></param>
+        /// <returns>
+        /// item1: this service configuration
+        /// item2: common configuration
+        /// </returns>
+        public static (IConfiguration, IConfiguration) LoadRemoteConfiguration(ConsulServiceOptions ServiceOptions)
         {
-            CallAssembly = assembly;
-        }
-        public (IConfiguration, IConfiguration) LoadRemoteConfiguration(string RemoteUrl = null, string key = null, string FileName = null)
-        {
-            if (CallAssembly == null) CallAssembly = Assembly.GetCallingAssembly();
-            //是否启用公共配置文件 默认启用
-            bool EnableCommonConfig = true;
-            //公共配置文件路由地址
-            string CommonConfigFileRoute = null;
-            if (string.IsNullOrEmpty(RemoteUrl))
-            {
-                var ServiceOptions = AppCore.Configuration.GetConfig<ConsulServiceOptions>();
-                if (ServiceOptions == null) throw new FileNotFoundException("未找到配置文件appsettings.json或配置文件中不包含服务注册必须项");
-                RemoteUrl = ServiceOptions.ConsulAddress;
-                EnableCommonConfig = ServiceOptions.EnableCommonConfig;
-                CommonConfigFileRoute = ServiceOptions.CommonConfigFileRoute;
-            }
-            //配置中心文件夹路径
-            string ConfigurationInConsulKVPath = string.IsNullOrEmpty(key) ? ProjectDataResolver.GetCurrentProjectConsulServiceNameInReslover(key, CallAssembly).Replace(".Test", "").Replace(".", "/") : key.Replace(".", "/");
-            //配置中心文件名称
-            string SystemApplicationEnvoriment = string.IsNullOrEmpty(FileName) ? AppConst.SystemEnvironmentConfigFileFullName : FileName;
             //加载配置文件 
-            var config = new ConfigurationBuilder().AddConsul($"{ConfigurationInConsulKVPath}/{SystemApplicationEnvoriment}",
+            var config = new ConfigurationBuilder().AddConsul($"{ServiceOptions.ServiceName.Replace(".", "/")}/{AppConst.SystemEnvironmentConfigFileFullName}",
                         options =>
                         {
                             options.Optional = true;
                             options.ReloadOnChange = true;
-                            options.ConsulConfigurationOptions = cco => { cco.Address = new Uri(RemoteUrl); };
+                            options.ConsulConfigurationOptions = cco => { cco.Address = new Uri(ServiceOptions.ConsulAddress); };
                         }).Build();
             //不加载公共配置文件 直接返回
-            if (!EnableCommonConfig) return (config, null);
+            if (!ServiceOptions.EnableCommonConfig) return (config, null);
 
             //加载公共配置文件
-            string CommonConfigurationInConsulKVPath = $"{CommonConfigFileRoute}/{AppConst.SystemEnvironmentConfigFileFullName}";
+            string CommonConfigurationInConsulKVPath = $"{ServiceOptions.CommonConfigFileRoute}/{AppConst.CommonEnvironmentConfigFileFullName}";
             var CommonConfig = new ConfigurationBuilder().AddConsul($"{CommonConfigurationInConsulKVPath}",
                                        options =>
                                        {
                                            options.Optional = true;
                                            options.ReloadOnChange = true;
-                                           options.ConsulConfigurationOptions = cco => { cco.Address = new Uri(RemoteUrl); };
+                                           options.ConsulConfigurationOptions = cco => { cco.Address = new Uri(ServiceOptions.ConsulAddress); };
                                        }).Build();
             return (config, CommonConfig);
         }

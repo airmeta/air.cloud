@@ -16,7 +16,7 @@ using Air.Cloud.Core.Standard.CICD.Model;
 namespace Air.Cloud.Core.Standard.CICD
 {
     /// <summary>
-    /// 容器约定
+    /// CICD约定
     /// </summary>
     /// <remarks>
     /// 包含 安装、启动、停止、卸载、升级、回滚、配置、状态 方法

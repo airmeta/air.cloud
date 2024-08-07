@@ -10,7 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.Taxin;
-using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin.Model;
 
 using Microsoft.Extensions.DependencyInjection;
 

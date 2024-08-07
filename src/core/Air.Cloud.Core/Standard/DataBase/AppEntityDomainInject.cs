@@ -20,12 +20,22 @@ using System.Runtime.Loader;
 
 namespace Air.Cloud.Core.Standard.DataBase
 {
+    /// <summary>
+    /// <para>zh-cn: 注册实体领域</para>
+    /// <para>en-us: Inject app entity domain</para>
+    /// </summary>
     public static  class AppEntityDomainInject
     {
+        /// <summary>
+        /// <para>zh-cn:注册实体领域</para>
+        /// <para>en-us: Inject app entity domain</para>
+        /// </summary>
+        /// <param name="services">
+        /// 服务集合
+        /// </param>
         public static void AddEntityDomainInject(this IServiceCollection services)
         {
             var lifetimes = new[] { typeof(ITransient), typeof(IScoped), typeof(ISingleton) };
-            //扫描所有的类
             foreach (var item in AppCore.Assemblies.ToList())
             {
                 try

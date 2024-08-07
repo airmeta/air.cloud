@@ -14,6 +14,10 @@ using Air.Cloud.Modules.Consul.Model;
 
 using Consul;
 
+using Microsoft.CSharp.RuntimeBinder;
+
+using System.Net;
+
 namespace Air.Cloud.Modules.Consul.Service
 {
     public class ConsulOperatorHelper
@@ -74,18 +78,17 @@ namespace Air.Cloud.Modules.Consul.Service
             }
             if (!CheckSuccess)
             {
-                Console.WriteLine("=====在启动时检测到当前启动地址与Consul中的某个节点冲突,无法启动!");
-                Console.WriteLine("=====请修改Consul.json 中的 ServiceAddress节点");
-                return new Tuple<bool, ConsulServiceOptions>(false, null);
+                AppRealization.Output.Error(new HttpListenerException(1219,"当前目录下的应用程序IP地址已被使用"));
             }
             #endregion
 
-            #region 2.检测当前ID 是否在集群里面冲突 冲突(指的是当前ID绑定了其他端口的项目 并且那个项目正在使用) 冲突的话 重新生成一个
+            #region 2.检测当前ID 是否在集群里面冲突 冲突(指的是当前ID绑定了其他端口的项目 并且那个项目正在使用)
             if (serviceUrls.Count(s => s.Service.ID == serviceOptions.ServiceId) > 0)
             {
                 var ServicesInfo = serviceUrls.FirstOrDefault(s => s.Service.ID == serviceOptions.ServiceId);
                 //判断是否为自己重启 重启不更换PID
-                if (!(serviceOptions.ServiceAddress.Contains(ServicesInfo.Address) || ServicesInfo.Address.Contains(serviceOptions.ServiceAddress)))
+                if (!(serviceOptions.ServiceAddress.Contains(ServicesInfo.Address) 
+                    || ServicesInfo.Address.Contains(serviceOptions.ServiceAddress)))
                 {
                     //表示ID冲突 需要重新生成
                     //出现这个情况是因为 该项目文件是在已注册的服务环境复制出来的 需要进行更换

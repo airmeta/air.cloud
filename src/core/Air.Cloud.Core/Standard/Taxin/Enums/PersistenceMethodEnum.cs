@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Modules.Taxin.Server
+namespace Air.Cloud.Core.Standard.Taxin.Server
 {
     /// <summary>
     /// <para>zh-cn:服务端数据持久化方式</para>

@@ -18,6 +18,11 @@ namespace Air.Cloud.Core.Standard.Cache.Redis
     public  interface IRedisCacheStandard:IAppCacheStandard
     {
         /// <summary>
+        /// zh-cn: 获取数据库
+        /// en-us: Get database
+        /// </summary>
+        public object GetDatabase();
+        /// <summary>
         /// 更换数据库
         /// </summary>
         /// <param name="DataBaseIndex"></param>

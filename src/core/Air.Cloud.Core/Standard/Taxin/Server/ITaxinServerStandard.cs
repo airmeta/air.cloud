@@ -10,7 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.Taxin.Result;
-using Air.Cloud.Modules.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin.Model;
 
 namespace Air.Cloud.Core.Standard.Taxin.Server
 {
@@ -22,13 +22,13 @@ namespace Air.Cloud.Core.Standard.Taxin.Server
     {
         /// <summary>
         /// <para>zh-cn:接收路由数据包</para>
-        /// <para>en-us:Recive route data package</para>
+        /// <para>en-us:Receive route data package</para>
         /// </summary>
         /// <returns>
         /// <para>zh-cn:返回标识信息,供客户端存储</para>
         /// <para>en-us:Return the identification information for the client to store</para>
         /// </returns>
-        public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> ReciveAsync(TaxinRouteDataPackage package);
+        public Task<IEnumerable<IEnumerable<TaxinRouteDataPackage>>> ReceiveAsync(TaxinRouteDataPackage package);
         /// <summary>
         /// <para>zh-cn:派发路由数据包</para>
         /// <para>en-us:Pull route data package</para>

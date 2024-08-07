@@ -13,9 +13,12 @@
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Standard.JSON.Extensions;
+using Air.Cloud.DataBase.Filters;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
 using Air.Cloud.Modules.Taxin.Server;
+using Air.Cloud.WebApp.Extensions;
+using Air.Cloud.WebApp.UnifyResult.Extensions;
 
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -23,7 +26,7 @@ using System.Text.Unicode;
 using unit.webapp.common.Filters;
 namespace unit.taxinserver.entry
 {
-    [AppStartup]
+    [AppStartup(500)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
@@ -33,7 +36,8 @@ namespace unit.taxinserver.entry
             services.AddControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
-            });
+                a.Filters.Add<AutoSaveChangesFilter>();
+            }).AddInjectWithUnifyResult();
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

@@ -13,7 +13,7 @@ using Air.Cloud.Core.Plugins.Security.MD5;
 
 using System.Reflection;
 
-namespace Air.Cloud.Modules.Taxin.Model
+namespace Air.Cloud.Core.Standard.Taxin.Model
 {
     /// <summary>
     /// <para>zh-cn:传输路由信息</para>

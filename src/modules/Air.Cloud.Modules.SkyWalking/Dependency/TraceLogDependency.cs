@@ -21,10 +21,15 @@ using SkyApm.Tracing.Segments;
 
 namespace Air.Cloud.Modules.SkyWalking.Dependency
 {
+    /// <summary>
+    /// <para>zh-cn:追踪日志标准写入实现</para>
+    /// <para>en-us:Trace log standard dependency</para>
+    /// </summary>
     public class TraceLogDependency : ITraceLogStandard
     {
         private IEntrySegmentContextAccessor _segContext => AppCore.GetService<IEntrySegmentContextAccessor>();
-
+        
+        /// <inheritdoc/>
         public void Write(string logContent,KeyValuePair<string,string>? Tag=null)
         {
             _segContext.Context.Span.AddLog(LogEvent.Message(logContent));
@@ -37,7 +42,7 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
                 _segContext.Context.Span.AddTag("event", "event");
             }
         }
-
+        /// <inheritdoc/>
         public void Write(object logContent, KeyValuePair<string, string>? Tag = null)
         {
             var logContentString = AppRealization.JSON.Serialize(logContent);

@@ -96,17 +96,17 @@ public class DbContextPool : IDbContextPool
 
             // 当前事务
             dynamic context = s as DbContext;
+            if(context==null) return;
             var database = context.Database as DatabaseFacade;
             var currentTransaction = database?.CurrentTransaction;
 
             // 只有事务不等于空且支持自动回滚
             if (!(currentTransaction != null && context.FailedAutoRollback == true)) return;
-
+            if (database == null) return;
             // 获取数据库连接信息
             var connection = database.GetDbConnection();
-
             // 回滚事务
-            currentTransaction.Rollback();
+            currentTransaction?.Rollback();
 
             AppRealization.Output.Print(new AppPrintInformation
             {

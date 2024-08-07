@@ -18,7 +18,7 @@ namespace Air.Cloud.DataBase.Filters;
 /// <summary>
 /// 自动调用 SaveChanges 拦截器
 /// </summary>
-internal sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
+public  sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
 {
     /// <summary>
     /// 过滤器排序

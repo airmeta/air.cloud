@@ -20,16 +20,32 @@ using Microsoft.Extensions.Hosting;
 
 namespace Air.Cloud.Modules.Taxin.Server
 {
+    /// <summary>
+    /// <para>zh-cn:Taxin服务端后台服务</para>
+    /// <para>en-us:Taxin server-side backend services </para>
+    /// </summary>
     public class TaxinServerBackgroundService : BackgroundService
     {
         private readonly ITaxinServerStandard TaxinServer;
         private readonly ITaxinStoreStandard StoreStandard;
         private static TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
+        /// <summary>
+        /// <para>zh-en:构造服务端后台服务</para>
+        /// <para>en-us:Construct server-side backend services</para>
+        /// </summary>
+        /// <param name="TaxinServer"></param>
+        /// <param name="StoreStandard"></param>
         public TaxinServerBackgroundService(ITaxinServerStandard TaxinServer, ITaxinStoreStandard StoreStandard)
         {
             this.TaxinServer = TaxinServer;
             this.StoreStandard = StoreStandard;
         }
+        /// <summary>
+        /// <para>zh-cn:执行内容</para>
+        /// <para>en-us:Execute</para>
+        /// </summary>
+        /// <param name="stoppingToken"></param>
+        /// <returns></returns>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             AppRealization.Output.Print(new AppPrintInformation()
