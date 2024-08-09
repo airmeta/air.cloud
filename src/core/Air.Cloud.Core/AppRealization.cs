@@ -188,7 +188,7 @@ namespace Air.Cloud.Core
             /// <summary>
             /// JSON序列化标准实现
             /// </summary>
-            public static IJsonSerializerStandard JSON => new DefaultJsonSerializerStandardDependency(AppCore.GetOptions<JsonOptions>());
+            public static IJsonSerializerStandard JSON => new DefaultJsonSerializerStandardDependency();
 
             /// <summary>
             /// 应用程序PID信息 
