@@ -20,6 +20,9 @@ using Air.Cloud.Modules.Taxin.Server;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
 
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json;
+
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
@@ -37,7 +40,13 @@ namespace unit.taxinserver.entry
             {
                 a.Filters.Add<ActionLogFilter>();
                 a.Filters.Add<AutoSaveChangesFilter>();
-            }).AddInjectWithUnifyResult();
+            }).AddInjectWithUnifyResult().AddNewtonsoftJson(s =>
+            {
+                //全局设置json 序列化enum int 转string
+                s.SerializerSettings.Converters.Add(new IsoDateTimeConverter()
+                { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" });
+                s.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            });
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

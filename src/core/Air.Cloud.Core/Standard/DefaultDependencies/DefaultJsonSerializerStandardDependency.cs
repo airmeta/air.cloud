@@ -10,56 +10,41 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.JSON;
-using Air.Cloud.Core.Standard.JSON.Converters;
-
-using Mapster;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Rewrite;
-using Microsoft.Extensions.Options;
 
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
+using Newtonsoft.Json;
 
 namespace Air.Cloud.Core.Standard.DefaultDependencies
 {
+    /// <summary>
+    /// <para>zh-cn:默认JSON序列化实现 引用了Newtonsoft.Json</para>
+    /// <para>en-us:Default json serializer dependency</para>
+    /// </summary>
     public class DefaultJsonSerializerStandardDependency : IJsonSerializerStandard
     {
         /// <summary>
-        /// 获取 JSON 配置选项
+        /// <para>zh-cn:配置项</para>
+        /// <para>en-us:JsonSerializerSettings</para>
         /// </summary>
-        private readonly JsonOptions _jsonOptions;
+        private static JsonSerializerSettings JsonSerializerSettings;
 
         /// <summary>
-        /// 构造函数
+        /// 初始化配置
         /// </summary>
-        /// <param name="options"></param>
-        public DefaultJsonSerializerStandardDependency(IOptions<JsonOptions> options)
+        public DefaultJsonSerializerStandardDependency()
         {
-            _jsonOptions = options.Value;
-        }
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="options"></param>
-        public DefaultJsonSerializerStandardDependency(JsonOptions options)
-        {
-            //
-            var optionss = options.Adapt<JsonOptions>();
-            optionss.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
-            optionss.JsonSerializerOptions.Converters.Add(new ExceptionJsonConverter<Exception>());
-            _jsonOptions = optionss;
+            var s = AppCore.GetOptions<MvcNewtonsoftJsonOptions>();
+            JsonSerializerSettings = (s?.SerializerSettings)??new JsonSerializerSettings();
         }
         /// <summary>
         /// 序列化对象
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="jsonSerializerOptions"></param>
         /// <returns></returns>
-        public string Serialize(object value, JsonSerializerOptions jsonSerializerOptions = null)
+        public string Serialize(object value)
         {
-            return JsonSerializer.Serialize(value, (jsonSerializerOptions ?? GetSerializerOptions()) as JsonSerializerOptions);
+            return JsonConvert.SerializeObject(value,JsonSerializerSettings);
         }
 
         /// <summary>
@@ -67,22 +52,10 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="json"></param>
-        /// <param name="jsonSerializerOptions"></param>
         /// <returns></returns>
-        public T Deserialize<T>(string json, JsonSerializerOptions jsonSerializerOptions = null)
+        public T Deserialize<T>(string json)
         {
-            return JsonSerializer.Deserialize<T>(json, (jsonSerializerOptions ?? GetSerializerOptions()) as JsonSerializerOptions);
-        }
-
-        /// <summary>
-        /// 返回读取全局配置的 JSON 选项
-        /// </summary>
-        /// <returns></returns>
-        public object GetSerializerOptions()
-        {
-            //_jsonOptions?.JsonSerializerOptions.Converters.Add(new ExceptionJsonConverter<Exception>());
-            var options = _jsonOptions?.JsonSerializerOptions;
-            return options;
+            return JsonConvert.DeserializeObject<T>(json, JsonSerializerSettings);
         }
     }
 }

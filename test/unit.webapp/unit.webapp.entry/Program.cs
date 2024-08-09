@@ -16,6 +16,6 @@ using Air.Cloud.WebApp.DataValidation.Attributes;
 using Air.Cloud.Modules.Consul.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.WebInjectInConsul();
+var app = builder.WebInjectInFile();
 
 app.Run();
