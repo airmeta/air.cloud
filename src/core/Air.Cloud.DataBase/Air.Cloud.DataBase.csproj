@@ -14,7 +14,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-  <Version>1.0.1.2</Version>
+    <Version>1.0.2.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\..\assets\logo.png" Link="logo.png">
