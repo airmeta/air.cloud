@@ -1,3 +1,2 @@
-[readme.en-us](https://github.com/AccessCross/air.cloud/blob/main/Readme.en-us.md)
-<br/>
-[readme.zh-cn](https://github.com/AccessCross/air.cloud/blob/main/README.zh-cn.md)
+
+让你能够快速搭建微服务架构,像搭积木一样简单 [文档(还在写,抽空写)](http://airmeta.org.cn)
