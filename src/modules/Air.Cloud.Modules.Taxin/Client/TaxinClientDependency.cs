@@ -34,16 +34,22 @@ namespace Air.Cloud.Modules.Taxin.Client
         /// <para>en-us:Taxin options </para>
         /// </summary>
         private TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
+        /// <summary>
+        /// <para>zh-cn:构造函数</para>
+        /// <para>en-us:Constractor  method</para>
+        /// </summary>
         public TaxinClientDependency()
         {
             this.Headers.Add("client", AppRealization.PID.Get());
         }
+        /// <inheritdoc/>
         public async Task OnLineAsync()
         {
             //加载存储的数据
             await this.ITaxinStoreStandard.GetStoreAsync();
             TaxinTools.Scanning();
         }
+        /// <inheritdoc/>
         public async Task OffLineAsync()
         {
             try
@@ -81,6 +87,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 });
             }
         }
+        /// <inheritdoc/>
         public async Task PullAsync()
         {
             using (var client = HttpClientFactory.CreateClient())
@@ -95,7 +102,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
             }
         }
-
+        /// <inheritdoc/>
         public async Task PushAsync()
         {
             try
@@ -124,6 +131,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 });
             }
         }
+        /// <inheritdoc/>
         public async Task CheckAsync()
         {
             using (var client = HttpClientFactory.CreateClient())
@@ -161,7 +169,7 @@ namespace Air.Cloud.Modules.Taxin.Client
 
             }
         }
-     
+        /// <inheritdoc/>
         public async Task<TResult> SendAsync<TResult>(string Route, object Data=null,Tuple<Version,Version> Version=null) where TResult : class
         {
             var Routes=ITaxinStoreStandard.Routes[Route];

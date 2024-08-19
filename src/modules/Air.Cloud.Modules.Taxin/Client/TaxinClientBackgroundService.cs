@@ -20,14 +20,23 @@ using Microsoft.Extensions.Hosting;
 
 namespace Air.Cloud.Modules.Taxin.Client
 {
+    /// <summary>
+    /// <para>zh-cn:Taxin客户端后台服务</para>
+    /// <para>en-us:Taxin client background service</para>
+    /// </summary>
     public class TaxinClientBackgroundService : BackgroundService
     {
         private readonly ITaxinClientStandard TaxinClient;
         private static TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
+        /// <summary>
+        /// <para>zh-cn:构造函数</para>
+        /// <para>en-us:Constractor  method</para>
+        /// </summary>
         public TaxinClientBackgroundService(ITaxinClientStandard taxinClientStandard = null)
         {
             TaxinClient = taxinClientStandard;
         }
+        /// <inheritdoc/>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             AppRealization.Output.Print(new AppPrintInformation()
@@ -58,6 +67,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 }
             }, stoppingToken);
         }
+        /// <inheritdoc/>
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
             AppRealization.Output.Print(new AppPrintInformation()

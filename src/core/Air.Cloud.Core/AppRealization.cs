@@ -17,6 +17,7 @@ using Air.Cloud.Core.Standard.Assemblies;
 using Air.Cloud.Core.Standard.Authentication.Jwt;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Core.Standard.ClairvoyanceStandard;
 using Air.Cloud.Core.Standard.Configuration;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.DefaultDependencies;
@@ -102,7 +103,7 @@ namespace Air.Cloud.Core
         /// <para>zh-cn:日志追踪实现</para>
         /// <para>en-us:Log tracking  dependency</para>
         /// </summary>
-        public static ITraceLogStandard Log=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
+        public static ITraceLogStandard TraceLog=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
 
         /// <summary>
         /// <para>zh-cn:队列实现</para>
@@ -110,6 +111,11 @@ namespace Air.Cloud.Core
         /// </summary>
         public static IMessageQueueStandard Queue=> InternalRealization.Queue ?? DefaultRealization.Queue;
 
+        /// <summary>
+        /// <para>zh-cn:通信实现</para>
+        /// <para>en-us:Clairvoyance dependency</para>
+        /// </summary>
+        public static IClairvoyanceClientStandard Clairvoyance => InternalRealization.Clairvoyance ?? DefaultRealization.Clairvoyance;
         /// <summary>
         /// 设置约定实现
         /// </summary>
@@ -217,6 +223,12 @@ namespace Air.Cloud.Core
             /// <para>en-us:Default queue dependency</para>
             /// </summary>
             public static IMessageQueueStandard Queue => throw new NotImplementedException("系统未实现队列标准");
+
+            /// <summary>
+            /// <para>zh-cn:通信实现</para>
+            /// <para>en-us:Clairvoyance dependency</para>
+            /// </summary>
+            public static IClairvoyanceClientStandard Clairvoyance => throw new NotImplementedException("系统未实现通信标准");
         }
         /// <summary>
         /// 自定义标准实现
@@ -294,6 +306,12 @@ namespace Air.Cloud.Core
             /// <para>en-us:queue dependency</para>
             /// </summary>
             public static IMessageQueueStandard Queue => AppCore.GetService<IMessageQueueStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:通信实现</para>
+            /// <para>en-us:Clairvoyance dependency</para>
+            /// </summary>
+            public static IClairvoyanceClientStandard Clairvoyance => AppCore.GetService<IClairvoyanceClientStandard>();
         }
     }
 }

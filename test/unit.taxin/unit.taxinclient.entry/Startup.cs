@@ -12,14 +12,12 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.JSON.Extensions;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
 
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
-
+using unit.taxinclient.entry;
 using unit.webapp.common.Filters;
+using Air.Cloud.Modules.Clairvoyance.Extensions;
 namespace unit.webapp.entry
 {
     [AppStartup(Order = 12000)]
@@ -27,6 +25,12 @@ namespace unit.webapp.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            //客户端
+            services.WebInjectClairvoyanceClient(x =>
+            {
+                
+            });
+            services.AddHostedService<TestService>();
             services.AddTaxinClient<TaxinClientDependency>();
             //注入
             services.AddControllers(a =>

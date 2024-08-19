@@ -6,9 +6,18 @@ using System.Threading.Tasks;
 
 namespace Air.Cloud.Core.Enums
 {
-    public  class AppStateEnum
+    /// <summary>
+    /// 应用程序状态
+    /// </summary>
+    public  enum AppStateEnum
     {
-
-
+        /// <summary>
+        /// 在线
+        /// </summary>
+        Online,
+        /// <summary>
+        /// 离线
+        /// </summary>
+        UnderLine
     }
 }

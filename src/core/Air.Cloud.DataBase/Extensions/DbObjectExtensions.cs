@@ -280,7 +280,7 @@ public static class DbObjectExtensions
             {
                 Title = "connection",
                 Level = AppPrintInformation.AppPrintLevel.Information,
-                Content = $"[Connection Id: {connectionId}] / [Database: {dbConnection.Database}] / [Connection String: {dbConnection.ConnectionString}]",
+                Content = $"[Connection GroupId: {connectionId}] / [Database: {dbConnection.Database}] / [Connection String: {dbConnection.ConnectionString}]",
                 State = true
             });
         }

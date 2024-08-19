@@ -11,11 +11,6 @@
         "Name": "test\\unit.taxin\\unit.taxinclient.entry\\unit.taxinclient.entry.csproj",
         "Action": "Start",
         "DebugTarget": ""
-      },
-      {
-        "Name": "test\\unit.skywlking.entry\\unit.skywlking.entry.csproj",
-        "Action": "Start",
-        "DebugTarget": ""
       }
     ]
   }

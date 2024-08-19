@@ -422,7 +422,7 @@ public static class SpecificationDocumentBuilder
         // 生成安全定义
         foreach (var securityDefinition in _specificationDocumentSettings.SecurityDefinitions)
         {
-            // Id 必须定义
+            // GroupId 必须定义
             if (string.IsNullOrWhiteSpace(securityDefinition.Id)) continue;
 
             // 添加安全定义

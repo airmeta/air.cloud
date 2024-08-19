@@ -12,21 +12,21 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.JSON.Extensions;
 using Air.Cloud.DataBase.Filters;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
 using Air.Cloud.Modules.Taxin.Server;
 using Air.Cloud.WebApp.Extensions;
-using Air.Cloud.WebApp.UnifyResult.Extensions;
 
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
-
+using System.Text;
+using Air.Cloud.Modules.Clairvoyance.Extensions;
 using unit.webapp.common.Filters;
+using unit.taxinclient.entry;
+using Air.Cloud.Modules.Clairvoyance.Dependencies;
+using System.Net.Sockets;
 namespace unit.taxinserver.entry
 {
     [AppStartup(500)]
@@ -34,6 +34,13 @@ namespace unit.taxinserver.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            //客户端
+            services.WebInjectClairvoyanceServer(s =>
+            {
+                
+            });
+            //services.AddHostedService<TestService>();
+           
             services.AddTaxinServer<TaxinServerDependency, TaxinClientDependency>();
             //注入
             services.AddControllers(a =>

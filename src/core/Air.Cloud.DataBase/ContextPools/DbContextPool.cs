@@ -112,7 +112,7 @@ public class DbContextPool : IDbContextPool
             {
                 Title = "transaction",
                 Level = AppPrintInformation.AppPrintLevel.Error,
-                Content = $"[Connection Id: {context.ContextId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
+                Content = $"[Connection GroupId: {context.ContextId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
                 State = true
             });
         };

@@ -74,7 +74,7 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
         {
             Title = "connection",
             Level = AppPrintInformation.AppPrintLevel.Information,
-            Content = $"[Connection Id: {eventData.ConnectionId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
+            Content = $"[Connection GroupId: {eventData.ConnectionId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
             State = true
         });
     }

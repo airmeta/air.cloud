@@ -13,7 +13,6 @@ using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin.Client;
-using Air.Cloud.Modules.Taxin.Store;
 
 using Microsoft.Extensions.DependencyInjection;
 
