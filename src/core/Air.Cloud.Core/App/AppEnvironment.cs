@@ -40,6 +40,7 @@ namespace Air.Cloud.Core.App
                     throw new Exception("无法指定环境标识为Common，请更换环境标识");
                 if (!string.IsNullOrEmpty(ConfigEnovriment))
                 {
+                    AppConst.EnvironmentKey= ConfigEnovriment;
                     var Result = Enum.TryParse(ConfigEnovriment, out EnvironmentEnums env);
                     if (Result) AppConst.EnvironmentStatus = env;
                     if (!AppConst.EnvironmentStatus.HasValue) AppConst.EnvironmentStatus = EnvironmentEnums.Other;
@@ -94,7 +95,11 @@ namespace Air.Cloud.Core.App
                 if (AppConst.EnvironmentStatus.HasValue && AppConst.EnvironmentStatus != EnvironmentEnums.Other) return AppConst.EnvironmentStatus.Value;
                 string ConfigEnovriment = AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
                 if (!string.IsNullOrEmpty(ConfigEnovriment) && ConfigEnovriment.ToUpper() == "COMMON") throw new Exception("无法指定环境标识为Common，请更换环境标识");
-                if (!string.IsNullOrEmpty(ConfigEnovriment)) return ConfigEnovriment;
+                if (!string.IsNullOrEmpty(ConfigEnovriment))
+                {
+                    AppConst.EnvironmentKey = ConfigEnovriment;
+                    return ConfigEnovriment;
+                }
                 return AppEnvironment.RealEnvironment;
             }
         }

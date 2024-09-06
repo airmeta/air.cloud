@@ -51,6 +51,7 @@ namespace Air.Cloud.Modules.Consul.Dependencies
             {
                 //如果是其他环境，则追加环境名称
                 string EnvironmentKey=  AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
+                AppConst.EnvironmentKey = EnvironmentKey;
                 ProjectName = $"{ProjectName}.{EnvironmentKey}";
             }
             return (IsIgnoreServiceNameKey && (!IgnoreKey.IsNullOrEmpty()))? ProjectName.Replace(IgnoreKey,string.Empty):ProjectName;

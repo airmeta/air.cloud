@@ -75,7 +75,7 @@ namespace Air.Cloud.Modules.Consul.Model
 
         #region 连接配置(ConnectConfig)
         /// <summary>
-        /// <para>zh-cn:注册超时时间</para>
+        /// <para>zh-cn:注册超时时间 (秒)</para>
         /// <para>en-us:</para>
         /// </summary>
         public int ConnectTimeout { get; set; } = 5;

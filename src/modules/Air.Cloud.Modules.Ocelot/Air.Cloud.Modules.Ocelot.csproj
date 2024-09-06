@@ -10,4 +10,9 @@
     <PackageReference Include="Ocelot" Version="23.3.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <ProjectReference Include="..\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
+  </ItemGroup>
+
 </Project>
