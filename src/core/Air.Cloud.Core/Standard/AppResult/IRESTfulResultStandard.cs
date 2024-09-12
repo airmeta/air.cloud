@@ -11,7 +11,11 @@
  */
 namespace Air.Cloud.Core.Standard.AppResult
 {
-    public interface IRESTfulResultStandard<T> : IStandard where T : class
+    /// <summary>
+    /// REST风格结果集
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IRESTfulResultStandard<T> : IStandard
     {
         /// <summary>
         /// 状态码

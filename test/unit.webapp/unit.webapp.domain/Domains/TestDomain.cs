@@ -37,11 +37,11 @@ namespace unit.webapp.domain.Domains
             await _repository.DeleteAsync(entity);
         }
 
-        public async Task<Test> Insert(Test entity)
+        public async Task<bool> Insert(Test entity)
         {
             appCache.SetCache("123","456");
             var result = await _repository.InsertAsync(entity);
-            return result.Entity;
+            return false;
         }
 
         public IEnumerable<IEntity> Search(Expression<Func<Test, bool>>? filter)

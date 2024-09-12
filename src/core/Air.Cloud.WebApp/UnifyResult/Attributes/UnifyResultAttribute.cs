@@ -55,11 +55,14 @@ public class UnifyResultAttribute : ProducesResponseTypeAttribute
     {
         if (type != null)
         {
-            if (!type.HasImplementedRawGeneric(UnifyContext.RESTfulResultType))
+            if (type.HasImplementedRawGeneric(UnifyContext.RESTfulResultType))
             {
                 Type = UnifyContext.RESTfulResultType.MakeGenericType(type);
             }
-            else Type = default;
+            else
+            {
+                Type = default;
+            }
         }
     }
 }

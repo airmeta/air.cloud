@@ -18,7 +18,7 @@ namespace unit.webapp.service.services.RedisModuleTest
 {
     public  interface IRedisModuleService:IDynamicService, ITransient
     {
-        object RedisCacheTest();
+        bool RedisCacheTest();
 
     }
 }

@@ -11,6 +11,7 @@
  * acknowledged.
  */
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using unit.webapp.model.Domains;
@@ -25,7 +26,7 @@ namespace unit.webapp.service.services.DataBaseModuleTest
         {
             Domain = domain;
         }
-        [Route("query")]
+        [Route("query"),AllowAnonymous]
         public object Query()
         {
             return Domain.Search(s => s.UserId == "a09cdb089b7f48498090d1f7f11c0e7b");

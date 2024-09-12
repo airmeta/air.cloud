@@ -24,7 +24,7 @@ namespace unit.webapp.service.services.RedisModuleTest
     {
         [HttpGet("redis")]
         [AllowAnonymous]
-        public object RedisCacheTest()
+        public bool RedisCacheTest()
         {
             IRedisCacheStandard redis = AppRealization.RedisCache;
             redis.Key.Fulsh();
@@ -49,7 +49,7 @@ namespace unit.webapp.service.services.RedisModuleTest
 
             string? Value5 = redis.Set.Elements<string>("Set123").FirstOrDefault();
 
-            return "";
+            return true;
         }
     }
 }
