@@ -38,7 +38,7 @@ namespace Air.Cloud.Modules.Kafka.Helper
             {
                 var Config = new ProducerConfig()
                 {
-                    BootstrapServers = KafkaClusterOptions.ClusterAddress
+                    BootstrapServers = KafkaClusterOptions.ClusterAddress,
                 } as TTopicPublishConfig;
                 if (Config == null)
                 {

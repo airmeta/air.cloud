@@ -14,8 +14,9 @@ using Air.Cloud.Core.App;
 using Air.Cloud.WebApp.App;
 using Air.Cloud.WebApp.DataValidation.Attributes;
 using Air.Cloud.Modules.Consul.Extensions;
+using Air.Cloud.Core.Plugins.Security.AES;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.WebInjectInFile();
-
 app.Run();
