@@ -45,7 +45,6 @@ namespace Air.Cloud.Modules.Quartz.Job
             await scheduler.ScheduleJob(jobDetail, trigger);
             //6、开启调度器
             await scheduler.Start();
-            Console.WriteLine("运行成功：" + taskName);
             return await Task.FromResult(true);
         }
         /// <summary>
@@ -62,13 +61,13 @@ namespace Air.Cloud.Modules.Quartz.Job
                 .ToList().FirstOrDefault();
             if (jobKeys == null)
             {
-                MessageBox.Show($"未找到任务:{taskName}");
+                Console.WriteLine($"未找到任务:{taskName}");
             }
             var triggers = await scheduler.GetTriggersOfJob(jobKeys);
             ITrigger trigger = triggers?.Where(x => x.JobKey.Name == taskName).FirstOrDefault();
             if (trigger == null)
             {
-                MessageBox.Show($"未找到触发器:{taskName}");
+                Console.WriteLine($"未找到触发器:{taskName}");
             }
             await scheduler.PauseTrigger(trigger.Key);
             await scheduler.UnscheduleJob(trigger.Key);// 移除触发器

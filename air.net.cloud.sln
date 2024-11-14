@@ -88,9 +88,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "kafka", "kafka", "{8D432D20
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.kafaka.server.entry", "test\unit.kafaka.server.entry\unit.kafaka.server.entry.csproj", "{7FB78061-B66A-458E-9F8F-3FB4357AF40F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.DataBase.FreeSql", "src\db\Air.Cloud.DataBase.FreeSql\Air.Cloud.DataBase.FreeSql.csproj", "{0B1633AD-795D-4E6D-94E8-AF7B871BEEDB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DataBase.FreeSql", "src\db\Air.Cloud.DataBase.FreeSql\Air.Cloud.DataBase.FreeSql.csproj", "{0B1633AD-795D-4E6D-94E8-AF7B871BEEDB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Quartz", "src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj", "{EE1F9847-64D9-4B42-93CE-65D33C118A12}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Quartz", "src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj", "{EE1F9847-64D9-4B42-93CE-65D33C118A12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

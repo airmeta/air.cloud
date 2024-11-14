@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj" />
     <ProjectReference Include="..\unit.webapp.common\unit.webapp.common.csproj" />
     <ProjectReference Include="..\unit.webapp.service\unit.webapp.service.csproj" />
   </ItemGroup>

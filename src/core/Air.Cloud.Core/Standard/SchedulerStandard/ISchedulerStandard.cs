@@ -56,7 +56,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
         public CancellationToken CancellationToken { get; set; }
 
         /// <summary>
-        /// <para>zh-cn:调度名称</para>
+        /// <para>zh-cn:调度状态</para>
         /// <para>en-us:Name</para>
         /// </summary>
         public SchedulerStatusEnum SchedulerStatus { get; set; }    

@@ -12,6 +12,7 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Modules.Quartz.BackgroundServices;
 using Air.Cloud.Plugins.Jwt.Extensions;
 using Air.Cloud.WebApp.Extensions;
 
@@ -26,6 +27,7 @@ namespace unit.webapp.entry
         {
             //services.AddTaxinClient<TaxinClientDependency>();
             services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
+            services.AddHostedService<DisptachBackgroundService>();
             //注入
             services.AddControllers(a =>
             {

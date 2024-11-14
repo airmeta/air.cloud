@@ -4,7 +4,6 @@ using Air.Cloud.Modules.Quartz.Job;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Air.Cloud.Modules.Quartz.BackgroundServices
 {
@@ -19,11 +18,18 @@ namespace Air.Cloud.Modules.Quartz.BackgroundServices
         }
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            List<ISchedulerStandard> servicelist = new();
+            AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+            {
+                State = true,
+                AdditionalParams = null,
+                Content = "定时任务开始挂载",
+                Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Title = "App:Dispatch"
+            });
             using (var scope = _provider.CreateScope())
             {
                 // 解析你的作用域服务
-                var service = scope.ServiceProvider.GetService<ISchedulerStandard>();
+                IEnumerable<ISchedulerStandard> servicelist = scope.ServiceProvider.GetServices<ISchedulerStandard>();
                 foreach (var item in servicelist)
                 {
                     //自动恢复任务机制a
@@ -59,14 +65,46 @@ namespace Air.Cloud.Modules.Quartz.BackgroundServices
                 }
             }
         }
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async  Task StopAsync(CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
-        }
-
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            throw new NotImplementedException();
+            using (var scope = _provider.CreateScope())
+            {
+                // 解析你的作用域服务
+                IEnumerable<ISchedulerStandard> servicelist = scope.ServiceProvider.GetServices<ISchedulerStandard>();
+                foreach (var item in servicelist)
+                {
+                    //自动恢复任务机制a
+                    try
+                    {
+                        var result = await _quartzJob.CloseAsync(item);
+                        if (result)
+                        {
+                            AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                            {
+                                State = true,
+                                AdditionalParams = null,
+                                Content = "定时任务取消挂载成功",
+                                Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                                Title = "App:Dispatch"
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                        {
+                            State = true,
+                            AdditionalParams = new Dictionary<string, object>()
+                            {
+                                {"error",ex }
+                            },
+                            Content = "定时任务取消挂载失败",
+                            Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error,
+                            Title = "App:Dispatch"
+                        });
+                    }
+                }
+            }
         }
     }
 }
