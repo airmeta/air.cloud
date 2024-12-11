@@ -86,7 +86,7 @@ namespace Air.Cloud.Modules.SkyWalking.Options
         public string Level { get; set; } = "Information";
         /// <summary>
         /// <para>zh-cn:日志文件地址</para>
-        /// <para>en-us:Log file path</para>
+        /// <para>en-us:TraceLog file path</para>
         /// </summary>
         public string FilePath { get; set; } = "logs/skyapm-{Date}.log";
     }

@@ -39,7 +39,7 @@ namespace Air.Cloud.WebApp.App
             builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
             AppRealization.SetDependency<IAppInjectStandard>(new WebAppInjectDependency());
             builder = AppRealization.Injection.Inject(builder);
-            var app = builder.Build();
+           var app = builder.Build();
            
             return app;
         }

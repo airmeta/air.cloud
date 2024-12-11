@@ -11,7 +11,7 @@
  */
 using Air.Cloud.Core.Dependencies;
 
-namespace Air.Cloud.Core.Standard.JinYiWei
+namespace Air.Cloud.Core.Standard.TraceLog
 {
     /// <summary>
     /// <para>zh-cn:日志追踪</para> 
@@ -25,7 +25,7 @@ namespace Air.Cloud.Core.Standard.JinYiWei
         /// </summary>
         /// <param name="logContent">
         /// <para>zh-cn:日志信息</para>
-        /// <para>en-us:Log content</para>
+        /// <para>en-us:TraceLog content</para>
         /// </param>
         /// <param name="Tag">
         /// <para>zh-cn:标签信息</para>
@@ -38,7 +38,7 @@ namespace Air.Cloud.Core.Standard.JinYiWei
         /// </summary>
         /// <param name="logContent">
         /// <para>zh-cn:日志信息</para>
-        /// <para>en-us:Log content</para>
+        /// <para>en-us:TraceLog content</para>
         /// </param>
         /// <param name="Tag">
         /// <para>zh-cn:标签信息</para>

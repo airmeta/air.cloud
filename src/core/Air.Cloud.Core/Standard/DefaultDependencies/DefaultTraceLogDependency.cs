@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 
 namespace Air.Cloud.Core.Standard.DefaultDependencies
 {

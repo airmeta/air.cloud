@@ -12,7 +12,7 @@
  */
 
 using Air.Cloud.Core.Standard.DynamicServer;
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.Taxin.Client;
 
 using Microsoft.AspNetCore.Mvc;

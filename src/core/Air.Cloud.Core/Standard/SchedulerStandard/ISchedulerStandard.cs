@@ -1,4 +1,15 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿/*
+ * Copyright (c) 2024 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Microsoft.Extensions.Hosting;
 
 namespace Air.Cloud.Core.Standard.SchedulerStandard
 {
@@ -8,6 +19,11 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
     /// </summary>
     public enum SchedulerStatusEnum
     {
+        /// <summary>
+        /// <para>zh-cn:已创建</para>
+        /// <para>en-us:Created</para>
+        /// </summary>
+        Created = 0,
         /// <summary>
         /// <para>zh-cn:已挂载</para>
         /// <para>en-us:Mounted</para>
@@ -29,25 +45,8 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
     /// <para>zh-cn:调度标准</para>
     /// <para>en-us:Scheduler standard</para>
     /// </summary>
-    public interface ISchedulerStandard
+    public interface ISchedulerStandard<TSchedulerOptions> where TSchedulerOptions:class,ISchedulerStandardOptions
     {
-        /// <summary>
-        /// <para>zh-cn:调度名称</para>
-        /// <para>en-us:Name</para>
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// <para>zh-cn:调度描述</para>
-        /// <para>en-us:Description</para>
-        /// </summary>
-        public string  Description { get; set; }
-
-        /// <summary>
-        /// <para>zh-cn:调度编号</para>
-        /// <para>en-us:Id</para>
-        /// </summary>
-        public string Id { get; set; }
 
         /// <summary>
         /// <para>zh-cn:令牌</para>
@@ -59,21 +58,13 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
         /// <para>zh-cn:调度状态</para>
         /// <para>en-us:Name</para>
         /// </summary>
-        public SchedulerStatusEnum SchedulerStatus { get; set; }    
-
+        public SchedulerStatusEnum SchedulerStatus { get; set; }
         /// <summary>
-        /// <para>zh-cn:调度规则</para>
-        /// <para>en-us:</para>
+        /// <para>zh-cn:调度配置选项</para>
+        /// <para>en-us:Scheduler options</para>
         /// </summary>
-        public string CronExpression { get; set; }
 
-        /// <summary>
-        /// <para>zh-cn:设置循环调度规则</para>
-        /// <para>en-us:Set a round-robin scheduling rule</para>
-        /// </summary>
-        /// <param name="expression"></param>
-        /// <returns></returns>
-        public bool SetExpression(string expression);
+        public TSchedulerOptions Options { get; set; }
 
         /// <summary>
         /// This method is called when the <see cref="IHostedService"/> starts. The implementation should return a task that represents

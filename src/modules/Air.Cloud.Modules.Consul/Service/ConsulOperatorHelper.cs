@@ -14,8 +14,6 @@ using Air.Cloud.Modules.Consul.Model;
 
 using Consul;
 
-using Microsoft.CSharp.RuntimeBinder;
-
 using System.Net;
 
 namespace Air.Cloud.Modules.Consul.Service
@@ -35,25 +33,6 @@ namespace Air.Cloud.Modules.Consul.Service
         {
             return ConsulClient;
         }
-        public void QueryAllServices()
-        {
-            var services = ConsulClient.Catalog.Services().Result.Response;
-            Console.WriteLine("Services:");
-            foreach (var service in services)
-            {
-                Console.WriteLine($"- {service.Key}");
-            }
-        }
-        public void QueryAllNodes()
-        {
-            var nodes = ConsulClient.Catalog.Nodes().Result.Response;
-            Console.WriteLine("Nodes:");
-            foreach (var node in nodes)
-            {
-                Console.WriteLine($"- {node.Name}");
-            }
-        }
-
         public Tuple<bool, ConsulServiceOptions> InitConsulRegistration(ConsulServiceOptions serviceOptions)
         {
             #region  检查Consul服务集群

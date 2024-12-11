@@ -13,7 +13,7 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Modules.SkyWalking.Const;
 using Air.Cloud.Modules.SkyWalking.Dependency;
 using Air.Cloud.Modules.SkyWalking.Extensions;

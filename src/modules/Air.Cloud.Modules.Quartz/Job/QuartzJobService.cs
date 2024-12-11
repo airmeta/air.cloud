@@ -1,7 +1,22 @@
-﻿using Air.Cloud.Core.Standard.SchedulerStandard;
-
+﻿/*
+ * Copyright (c) 2024 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.Core;
+using Air.Cloud.Core.Standard.SchedulerStandard;
+using Air.Cloud.Modules.Quartz.Extensions;
+using Air.Cloud.Modules.Quartz.Internal;
+using Air.Cloud.Modules.Quartz.Options;
 using Quartz;
 using Quartz.Impl.Matchers;
+using Quartz.Spi;
 
 namespace Air.Cloud.Modules.Quartz.Job
 {
@@ -11,8 +26,8 @@ namespace Air.Cloud.Modules.Quartz.Job
     public class QuartzJobService
     {
         private readonly ISchedulerFactory _schedulerFactory;
-        private readonly ResultfulApiJobFactory _resultfulApiJobFactory;
-        public QuartzJobService(ISchedulerFactory schedulerFactory, ResultfulApiJobFactory resultfulApiJobFactory)
+        private readonly IJobFactory _resultfulApiJobFactory;
+        public QuartzJobService(ISchedulerFactory schedulerFactory, IJobFactory resultfulApiJobFactory)
         {
             _schedulerFactory = schedulerFactory;
             _resultfulApiJobFactory = resultfulApiJobFactory;
@@ -22,29 +37,31 @@ namespace Air.Cloud.Modules.Quartz.Job
         /// </summary>
         /// <param name="tasks"></param>
         /// <returns></returns>
-        public async Task<bool> RunAsync(ISchedulerStandard tasks)
+        public async Task<bool> RunAsync(ISchedulerStandard<QuartzSchedulerStandardOptions> tasks)
         {
             //1、通过调度工厂获得调度器
             var scheduler = await _schedulerFactory.GetScheduler();
-            var taskName = $"{tasks.Id}>{tasks.Name}";
+            //6、开启调度器
+            await scheduler.Start();
             //2、创建一个触发器
             var trigger = TriggerBuilder.Create()
-                .WithIdentity(taskName, taskName)
+                .WithIdentity(tasks.Options.Name, tasks.Options.GroupName)
                 .StartNow()
-                .WithDescription(tasks.Description)
-                .WithCronSchedule(tasks.CronExpression)
-                .Build();
+                .WithDescription(tasks.Options.Description)
+                .WithCronSchedule(tasks.Options.CronExpression)
+                .Build(); 
             //3、创建任务
-            var jobDetail = JobBuilder.Create<InternalJob>()
-                            .WithIdentity(taskName, taskName)
-                            .UsingJobData("TasksId", tasks.Id.ToString())
+            var jobDetail =  JobBuilder.Create<InternalJob>()
+                             .WithIdentity(tasks.Options.Name, tasks.Options.GroupName)
+                            .UsingJobData("TasksId", tasks.Options.Id.ToString())
                             .Build();
+            tasks.SchedulerStatus= SchedulerStatusEnum.Mounted;
+            ISchedulerStandardFactory<QuartzSchedulerStandardOptions>.SchedulerPool.Set(tasks);
             //4、写入 Job 实例工厂 解决 Job 中取 ioc 对象
             scheduler.JobFactory = _resultfulApiJobFactory;
             //5、将触发器和任务器绑定到调度器中
             await scheduler.ScheduleJob(jobDetail, trigger);
-            //6、开启调度器
-            await scheduler.Start();
+            await scheduler.ResumeTrigger(trigger.Key);
             return await Task.FromResult(true);
         }
         /// <summary>
@@ -52,27 +69,15 @@ namespace Air.Cloud.Modules.Quartz.Job
         /// </summary>
         /// <param name="tasks"></param>
         /// <returns></returns>
-        public async Task<bool> CloseAsync(ISchedulerStandard tasks)
+        public async Task<bool> CloseAsync(ISchedulerStandard<QuartzSchedulerStandardOptions> tasks)
         {
             IScheduler scheduler = await _schedulerFactory.GetScheduler();
-            var taskName = $"{tasks.Id}>{tasks.Name}";
-            var jobKeys = (await scheduler
-                .GetJobKeys(GroupMatcher<JobKey>.GroupEquals(taskName)))
-                .ToList().FirstOrDefault();
-            if (jobKeys == null)
-            {
-                Console.WriteLine($"未找到任务:{taskName}");
-            }
-            var triggers = await scheduler.GetTriggersOfJob(jobKeys);
-            ITrigger trigger = triggers?.Where(x => x.JobKey.Name == taskName).FirstOrDefault();
-            if (trigger == null)
-            {
-                Console.WriteLine($"未找到触发器:{taskName}");
-            }
+            ITrigger? trigger=await tasks.GetTrigger(scheduler);
             await scheduler.PauseTrigger(trigger.Key);
             await scheduler.UnscheduleJob(trigger.Key);// 移除触发器
             await scheduler.DeleteJob(trigger.JobKey);
             return await Task.FromResult(true);
         }
+
     }
 }

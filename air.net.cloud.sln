@@ -92,6 +92,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DataBase.FreeSql"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Quartz", "src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj", "{EE1F9847-64D9-4B42-93CE-65D33C118A12}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "quartz", "quartz", "{4E81084E-EA1C-4564-965E-F7C28F5A662A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -259,6 +261,7 @@ Global
 		{7FB78061-B66A-458E-9F8F-3FB4357AF40F} = {8D432D20-DBF4-4327-B1E8-6F0661BF535B}
 		{0B1633AD-795D-4E6D-94E8-AF7B871BEEDB} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
 		{EE1F9847-64D9-4B42-93CE-65D33C118A12} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
+		{4E81084E-EA1C-4564-965E-F7C28F5A662A} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

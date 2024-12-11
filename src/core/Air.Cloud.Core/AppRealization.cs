@@ -21,7 +21,7 @@ using Air.Cloud.Core.Standard.Configuration;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.MessageQueue;
@@ -100,9 +100,9 @@ namespace Air.Cloud.Core
         public static IKVCenterStandard KVCenter => InternalRealization.KVCenter ?? DefaultRealization.KVCenter;
         /// <summary>
         /// <para>zh-cn:日志追踪实现</para>
-        /// <para>en-us:Log tracking  dependency</para>
+        /// <para>en-us:TraceLog tracking  dependency</para>
         /// </summary>
-        public static ITraceLogStandard Log=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
+        public static ITraceLogStandard TraceLog=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
 
         /// <summary>
         /// <para>zh-cn:队列实现</para>
@@ -285,7 +285,7 @@ namespace Air.Cloud.Core
             public static IKVCenterStandard KVCenter = null;
             /// <summary>
             /// <para>zh-cn:日志追踪</para>
-            /// <para>en-us:Log tracking </para>
+            /// <para>en-us:TraceLog tracking </para>
             /// </summary>
             public static ITraceLogStandard TraceLog => AppCore.GetService<ITraceLogStandard>();
 

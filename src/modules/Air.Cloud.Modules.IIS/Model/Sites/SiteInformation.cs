@@ -65,7 +65,7 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
         public SchemaInformation Schema { get; set; }
         /// <summary>
         /// <para>zh-cn:日志文件配置</para>
-        /// <para>en-us:Log file configuration</para>
+        /// <para>en-us:TraceLog file configuration</para>
         /// </summary>
         public LogFileInformation LogFile { get; set; }
         /// <summary>
@@ -109,7 +109,7 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     {
         /// <summary>
         /// <para>zh-cn:日志存放文件夹</para>
-        /// <para>en-us:Log directory</para>
+        /// <para>en-us:TraceLog directory</para>
         /// </summary>
         public string Directory { get; set; }
         /// <summary>

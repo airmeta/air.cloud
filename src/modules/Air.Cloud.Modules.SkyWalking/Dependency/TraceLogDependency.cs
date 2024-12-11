@@ -12,7 +12,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Mvc;
