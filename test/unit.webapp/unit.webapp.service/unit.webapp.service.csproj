@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
     <ProjectReference Include="..\unit.webapp.domain\unit.webapp.domain.csproj" />
     <ProjectReference Include="..\unit.webapp.model\unit.webapp.model.csproj" />
   </ItemGroup>

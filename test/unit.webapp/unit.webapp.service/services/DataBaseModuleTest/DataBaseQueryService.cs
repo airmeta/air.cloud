@@ -11,6 +11,10 @@
  * acknowledged.
  */
 
+using Air.Cloud.Core.Standard.KVCenter;
+using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Modules.Consul.Model;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,14 +26,30 @@ namespace unit.webapp.service.services.DataBaseModuleTest
     public class DataBaseQueryService : IDataBaseQueryService
     {
         private readonly ITestDomain Domain;
-        public DataBaseQueryService(ITestDomain domain)
+        private readonly IServerCenterStandard serverCenterStandard;
+        private readonly IKVCenterStandard kVCenterStandard;
+        public DataBaseQueryService(ITestDomain domain, IServerCenterStandard serverCenterStandard, IKVCenterStandard kVCenterStandard)
         {
             Domain = domain;
+            this.serverCenterStandard = serverCenterStandard;
+            this.kVCenterStandard = kVCenterStandard;
         }
-        [Route("query"),AllowAnonymous]
+        [HttpGet("query"),AllowAnonymous]
         public object Query()
         {
             return Domain.Search(s => s.UserId == "a09cdb089b7f48498090d1f7f11c0e7b");
+        }
+        [HttpGet("server"), AllowAnonymous]
+        public async Task<object> Sq()
+        {
+            var Result = (await serverCenterStandard.Query<ConsulServerCenterServiceInformation>()).OrderBy(s => s.ServiceName).ToList();
+            return Result;
+        }
+        [HttpGet("kvs"), AllowAnonymous]
+        public async Task<object> Sq1()
+        {
+            var Result = (await kVCenterStandard.QueryAsync<ConsulKvCenterServiceInformation>()).OrderBy(s => s.Value).ToList();
+            return Result;
         }
     }
 }

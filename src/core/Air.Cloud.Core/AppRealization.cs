@@ -30,6 +30,7 @@ using Air.Cloud.Core.Standard.UtilStandard;
 using Microsoft.AspNetCore.Mvc;
 
 using System.Reflection;
+using Air.Cloud.Core.Standard.ServerCenter;
 
 namespace Air.Cloud.Core
 {
@@ -98,6 +99,11 @@ namespace Air.Cloud.Core
         /// <para>en-us:Key-Value store center</para>
         /// </summary>
         public static IKVCenterStandard KVCenter => InternalRealization.KVCenter ?? DefaultRealization.KVCenter;
+        /// <summary>
+        /// <para>zh-cn:服务管理中心标准</para>
+        /// <para>en-us:Server store center</para>
+        /// </summary>
+        public static IServerCenterStandard ServerCenter => InternalRealization.ServerCenter ?? DefaultRealization.ServerCenter;
         /// <summary>
         /// <para>zh-cn:日志追踪实现</para>
         /// <para>en-us:TraceLog tracking  dependency</para>
@@ -206,7 +212,14 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:键值对存储中心标准</para>
             /// <para>en-us:Key-Value store center</para>
             /// </summary>
-            public static IKVCenterStandard KVCenter => throw new NotImplementedException("系统未实现KV中心标准");
+            public static IKVCenterStandard KVCenter => throw new NotImplementedException("系统未实现键值对管理标准");
+
+            /// <summary>
+            /// <para>zh-cn:服务管理中心标准</para>
+            /// <para>en-us:Server store center</para>
+            /// </summary>
+            public static IServerCenterStandard ServerCenter => throw new NotImplementedException("系统未实现服务管理标准");
+
             /// <summary>
             /// <para>zh-cn:默认日志追踪</para>
             /// <para>en-us:Default log tracking </para>
@@ -282,7 +295,14 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:键值对存储中心标准</para>
             /// <para>en-us:Key-Value store center</para>
             /// </summary>
-            public static IKVCenterStandard KVCenter = null;
+            public static IKVCenterStandard KVCenter => AppCore.GetService<IKVCenterStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:服务管理中心标准</para>
+            /// <para>en-us:Server store center</para>
+            /// </summary>
+            public static IServerCenterStandard ServerCenter => AppCore.GetService<IServerCenterStandard>();
+
             /// <summary>
             /// <para>zh-cn:日志追踪</para>
             /// <para>en-us:TraceLog tracking </para>

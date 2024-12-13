@@ -9,19 +9,39 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Modules.Consul.Extensions;
 
 namespace Air.Cloud.Modules.Consul.Model
 {
-    public class ConsulConfigCenterServiceInformation 
+    /// <summary>
+    /// Consul Key-Value Center Service Information
+    /// </summary>
+    public class ConsulKvCenterServiceInformation:IKVCenterServiceOptions
     {
+        /// <inheritdoc/>
         public string Key { get; set; }
+        /// <inheritdoc/>
         public string Value { get; set; }
+        /// <summary>
+        /// Consul create index 
+        /// </summary>
         public ulong CreateIndex { get; set; }
-
+        /// <summary>
+        /// Flags
+        /// </summary>
         public ulong Flags { get; set; }
+        /// <summary>
+        /// Consul lock index
+        /// </summary>
         public ulong LockIndex { get; set; }
+        /// <summary>
+        /// Consul modify index
+        /// </summary>
         public ulong ModifyIndex { get; set; }
+        /// <summary>
+        /// Session
+        /// </summary>
         public string Session { get; set; }
     }
 }

@@ -21,13 +21,20 @@ namespace Air.Cloud.Core.Plugins.Security.AES;
 /// </summary>
 public class AESEncryption : IPlugin
 {
+    /// <summary>
+    /// AES Key配置节
+    /// </summary>
     public const string AES_KEY = "AppSecurity:AESCertInfo:Key";
+    /// <summary>
+    /// AES向量配置节
+    /// </summary>
     public const string AES_IV = "AppSecurity:AESCertInfo:Iv";
     /// <summary>
     /// 加密
     /// </summary>
-    /// <param name="text">加密文本</param>
-    /// <param name="skey">密钥</param>
+    /// <param name="Text">加密文本</param>
+    /// <param name="Key">密钥</param>
+    /// <param name="Iv">向量</param>
     /// <returns></returns>
     public static string Encrypt(string Text, string Key = null, string Iv = null)
     {
@@ -56,8 +63,8 @@ public class AESEncryption : IPlugin
     /// <summary>
     /// 解密
     /// </summary>
-    /// <param name="hash">加密后字符串</param>
-    /// <param name="skey">密钥</param>
+    /// <param name="Hash">加密后字符串</param>
+    /// <param name="Key">密钥</param>
     /// <returns></returns>
     public static string Decrypt(string Hash, string Key = null, string Iv = null)
     {

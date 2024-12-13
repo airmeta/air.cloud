@@ -12,6 +12,9 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Core.Standard.KVCenter;
+using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Modules.Consul.Service;
 using Air.Cloud.Plugins.Jwt.Extensions;
 using Air.Cloud.WebApp.Extensions;
 
@@ -26,6 +29,8 @@ namespace unit.webapp.entry
         {
             //services.AddTaxinClient<TaxinClientDependency>();
             services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
+            services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
+            services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();
 
             //注入
             services.AddControllers(a =>

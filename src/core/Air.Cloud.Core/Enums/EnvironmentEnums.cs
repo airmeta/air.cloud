@@ -16,9 +16,21 @@ namespace Air.Cloud.Core.Enums
     /// </summary>
     public enum EnvironmentEnums
     {
+        /// <summary>
+        /// Development
+        /// </summary>
         Development,
+        /// <summary>
+        /// 
+        /// </summary>
         Production,
+        /// <summary>
+        /// Test
+        /// </summary>
         Test,
+        /// <summary>
+        /// Other
+        /// </summary>
         Other
     }
 }

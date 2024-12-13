@@ -14,6 +14,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace Air.Cloud.Core.Standard.Authentication.Jwt
 {
+    /// <summary>
+    /// <para>zh-cn:默认的Jwt处理依赖</para>
+    /// <para>en-us:DefaultJwtHandlerDependency</para>
+    /// </summary>
     public class DefaultJwtHandlerDependency : IJwtHandlerStandard
     {
         /// <summary>
@@ -72,9 +76,10 @@ namespace Air.Cloud.Core.Standard.Authentication.Jwt
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public async Task UnAuthorizeHandleAsync(AuthorizationHandlerContext context)
+        public Task UnAuthorizeHandleAsync(AuthorizationHandlerContext context)
         {
             context.Fail();
+            return Task.CompletedTask;
         }
     }
 }

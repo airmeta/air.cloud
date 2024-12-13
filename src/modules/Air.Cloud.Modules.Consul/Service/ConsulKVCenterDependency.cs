@@ -24,7 +24,7 @@ namespace Air.Cloud.Modules.Consul.Service
     /// <para>zh-cn: Consul 配置中心标准实现</para>
     /// <para>en-us: Consul config center dependency</para>
     /// </summary>
-    public class ConsulConfigCenterDependency : IKVCenterStandard
+    public class ConsulKVCenterDependency : IKVCenterStandard
     {
         /// <summary>
         /// <para>zh-cn:Consul 客户端链接</para>
@@ -37,7 +37,7 @@ namespace Air.Cloud.Modules.Consul.Service
             var Result = await ConsulClient.KV.List(string.Empty);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                return (IList<T>)Result.Response.Select(s => new ConsulConfigCenterServiceInformation
+                return (IList<T>)Result.Response.Select(s => new ConsulKvCenterServiceInformation
                 {
                     Key = s.Key,
                     Value = s.Value == null ? string.Empty : Encoding.UTF8.GetString(s.Value),
@@ -90,7 +90,7 @@ namespace Air.Cloud.Modules.Consul.Service
             var Result = await ConsulClient.KV.Get(Key);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                var data = new ConsulConfigCenterServiceInformation()
+                var data = new ConsulKvCenterServiceInformation()
                 {
                     Key = Result.Response.Key,
                     Value = Result.Response.Value == null ? string.Empty : Encoding.UTF8.GetString(Result.Response.Value),

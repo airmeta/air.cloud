@@ -9,13 +9,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Dependencies;
+
 namespace Air.Cloud.Core.Standard.KVCenter
 {
     /// <summary>
     /// <para>en-us: Key-Value storage center standard</para>
     /// <para>zh-cn: 键值存储中心标准</para>
     /// </summary>
-    public interface IKVCenterStandard
+    public interface IKVCenterStandard: IStandard, ITransient
     {
         /// <summary>
         /// <para>zh-cn: 查询KV存储</para>

@@ -16,8 +16,17 @@ namespace Air.Cloud.Core.Enums
     /// </summary>
     public enum EnvironmentContainersEnum
     {
+        /// <summary>
+        /// DOCKER
+        /// </summary>
         DOCKER,
+        /// <summary>
+        /// IIS
+        /// </summary>
         IIS,
+        /// <summary>
+        /// OTHER
+        /// </summary>
         OTHER
     }
 }

@@ -10,12 +10,14 @@
  * acknowledged.
  */
 
+using Air.Cloud.Core.Dependencies;
+
 namespace Air.Cloud.Core.Standard.ServerCenter
 {
     /// <summary>
     /// 服务中心标准
     /// </summary>
-    public  interface IServerCenterStandard
+    public  interface IServerCenterStandard:IStandard,ITransient
     {
         /// <summary>
         /// 查询服务信息

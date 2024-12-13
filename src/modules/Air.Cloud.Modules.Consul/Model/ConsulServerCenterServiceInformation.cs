@@ -9,16 +9,26 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.ServerCenter;
+
 namespace Air.Cloud.Modules.Consul.Model
 {
-    public class ConsulServerCenterServiceInformation 
+    public class ConsulServerCenterServiceInformation : IServerCenterServiceOptions
     {
+        /// <inheritdoc/>
         public string ServiceAddress { get; set; }
+        /// <inheritdoc/>
         public string ServiceName { get; set; }
+        /// <inheritdoc/>
         public string ServiceKey { get; set; }
+        /// <inheritdoc/>
         public string[] ServiceValues { get; set; }
-
+        /// <summary>
+        /// <para>zh-cn:服务详细信息</para>
+        /// <para>en-us:Server details</para>
+        /// </summary>
         public IList<object> ServerDetails { get; set; }
+
     }
 
     public class ServerDetailInformation
