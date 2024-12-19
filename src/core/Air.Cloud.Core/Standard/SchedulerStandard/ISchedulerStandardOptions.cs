@@ -9,6 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
+
 namespace Air.Cloud.Core.Standard.SchedulerStandard
 {
     /// <summary>
@@ -43,6 +45,16 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
         /// <para>en-us:Group name</para>
         /// </summary>
         public string GroupName { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:根据配置的特性来生成配置项</para>
+        /// <para>en-us:Set property by SchedulerInformationAttribute</para>
+        /// </summary>
+        /// <param name="schedulerInformationAttribute">
+        /// <para>zh-cn:配置特性</para>
+        /// <para>en-us:Attribute</para>
+        /// </param>
+        public void Setter(SchedulerInformationAttribute schedulerInformationAttribute);
 
     }
 }

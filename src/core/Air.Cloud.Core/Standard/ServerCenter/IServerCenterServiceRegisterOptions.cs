@@ -12,14 +12,20 @@
 
 namespace Air.Cloud.Core.Standard.ServerCenter
 {
-    public  interface IServerCenterServiceRegisterOptions
+    /// <summary>
+    /// <para>zh-cn:服务注册配置</para>
+    /// <para>en-us:Server register options</para>
+    /// </summary>
+    public interface IServerCenterServiceRegisterOptions
     {
         /// <summary>
-        /// 服务地址 
+        /// <para>zh-cn:服务地址</para>
+        /// <para>en-us:Service address</para>
         /// </summary>
         public string ServiceAddress { get; set; }
         /// <summary>
-        /// 服务名称
+        /// <para>zh-cn:服务名称</para>
+        /// <para>en-us:Service name</para>
         /// </summary>
         public string ServiceName { get; set; }
         /// <summary>

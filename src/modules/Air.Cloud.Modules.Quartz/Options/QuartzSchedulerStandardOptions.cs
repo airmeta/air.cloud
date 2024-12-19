@@ -21,7 +21,7 @@ namespace Air.Cloud.Modules.Quartz.Options
         public string Description { get; set; }
         public string CronExpression { get; set; }
         public string GroupName { get; set; }
-
+        public QuartzSchedulerStandardOptions() { }
         public QuartzSchedulerStandardOptions(string id, string name, string description, string cronExpression)
         {
             Id = id;
@@ -37,6 +37,21 @@ namespace Air.Cloud.Modules.Quartz.Options
         /// 调度配置信息
         /// </param>
         public QuartzSchedulerStandardOptions(SchedulerInformationAttribute attribute)
+        {
+            Id = attribute.Id;
+            Name = attribute.Name;
+            Description = attribute.Description;
+            CronExpression = attribute.CronExpression;
+            GroupName = attribute.GroupName;
+        }
+        /// <summary>
+        /// <para>zh-cn:使用SchedulerInformationAttribute初始化</para>
+        /// <para>en-us:Initialize using SchedulerInformationAttribute</para>
+        /// </summary>
+        /// <param name="attribute">
+        /// 调度配置信息
+        /// </param>
+        public void Setter(SchedulerInformationAttribute attribute)
         {
             Id = attribute.Id;
             Name = attribute.Name;

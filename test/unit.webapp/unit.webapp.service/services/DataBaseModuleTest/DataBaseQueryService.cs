@@ -42,7 +42,7 @@ namespace unit.webapp.service.services.DataBaseModuleTest
         [HttpGet("server"), AllowAnonymous]
         public async Task<object> Sq()
         {
-            var Result = (await serverCenterStandard.Query<ConsulServerCenterServiceInformation>()).OrderBy(s => s.ServiceName).ToList();
+            var Result = (await serverCenterStandard.QueryAsync<ConsulServerCenterServiceOptions>()).OrderBy(s => s.ServiceName).ToList();
             return Result;
         }
         [HttpGet("kvs"), AllowAnonymous]

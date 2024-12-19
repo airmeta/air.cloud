@@ -32,15 +32,15 @@ namespace Air.Cloud.Modules.Consul.Service
                 configuration.Address = new Uri(serviceOptions.ConsulAddress);
             });
         }
-
-        public async Task<IList<T>> Query<T>() where T : IServerCenterServiceOptions, new()
+        /// <inheritdoc/>
+        public async Task<IList<T>> QueryAsync<T>() where T : IServerCenterServiceOptions, new()
         {
             var services = await ConsulClient.Catalog.Services();
             if (services.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 return (IList<T>)services.Response.Select(s =>
                 {
-                    return new ConsulServerCenterServiceInformation()
+                    return new ConsulServerCenterServiceOptions()
                     {
                         ServiceKey = s.Key,
                         ServiceName = s.Key.ToString(),
@@ -50,8 +50,8 @@ namespace Air.Cloud.Modules.Consul.Service
             }
             return new List<T>();
         }
-
-        public async Task<object> Get(string Key)
+        /// <inheritdoc/>
+        public async Task<object> GetAsync(string Key)
         {
             var services = await ConsulClient.Catalog.Service(Key);
             return new
@@ -61,7 +61,7 @@ namespace Air.Cloud.Modules.Consul.Service
                 services.LastContact,
                 services.LastIndex,
                 services.RequestTime,
-                ServerDetails = services.Response.Select(s => new ServerDetailInformation
+                ServerDetails = services.Response.Select(s => new ServerDetailOptions
                 {
                     ServicePort = s.ServicePort,
                     ServiceID = s.ServiceID,
@@ -77,7 +77,7 @@ namespace Air.Cloud.Modules.Consul.Service
             };
         }
         /// <inheritdoc/>
-        public async Task<bool> Register<T>(T serverCenterServiceInformation) where T : class, IServerCenterServiceRegisterOptions, new()
+        public async Task<bool> RegisterAsync<T>(T serverCenterServiceInformation) where T : class, IServerCenterServiceRegisterOptions, new()
         {
             #region  注册服务
             //组装请求信息
@@ -109,7 +109,7 @@ namespace Air.Cloud.Modules.Consul.Service
             #endregion
             return true;
         }
-
+        /// <inheritdoc/>
         public async Task<bool> Unregister(string ServiceId)
         {
             await ConsulClient.Agent.ServiceDeregister(ServiceId);

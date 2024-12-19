@@ -12,12 +12,18 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.SchedulerStandard;
+using Air.Cloud.Core.Standard.SchedulerStandard.Extensions;
+using Air.Cloud.Modules.Quartz.Factory;
 using Air.Cloud.Modules.Quartz.Job;
 using Air.Cloud.Modules.Quartz.Options;
 
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 using Quartz;
+using Quartz.AspNetCore;
+using Quartz.Impl;
 using Quartz.Impl.Matchers;
 
 namespace Air.Cloud.Modules.Quartz.Extensions
@@ -32,7 +38,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
         /// <param name="_provider"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static  async Task StartAsync(this QuartzJobService _quartzJob, IServiceProvider _provider)
+        public static  async Task StartAsync<TSchedulerOption>(this QuartzJobService<TSchedulerOption> _quartzJob, IServiceProvider _provider) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
             AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
             {
@@ -43,7 +49,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                 Title = "air.cloud.scheduler"
             });
             // 解析你的作用域服务
-            IEnumerable<ISchedulerStandard<QuartzSchedulerStandardOptions>> servicelist = _provider.GetServices<ISchedulerStandard<QuartzSchedulerStandardOptions>>();
+            IEnumerable<ISchedulerStandard<TSchedulerOption>> servicelist = _provider.GetServices<ISchedulerStandard<TSchedulerOption>>();
             foreach (var item in servicelist)
             {
                 //自动恢复任务机制a
@@ -86,12 +92,12 @@ namespace Air.Cloud.Modules.Quartz.Extensions
         /// <param name="_provider"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static  async Task StopAsync(this QuartzJobService _quartzJob, IServiceProvider _provider)
+        public static  async Task StopAsync<TSchedulerOption>(this QuartzJobService<TSchedulerOption> _quartzJob, IServiceProvider _provider) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
             using (var scope = _provider.CreateScope())
             {
                 // 解析你的作用域服务
-                IEnumerable<ISchedulerStandard<QuartzSchedulerStandardOptions>> servicelist = scope.ServiceProvider.GetServices<ISchedulerStandard<QuartzSchedulerStandardOptions>>();
+                IEnumerable<ISchedulerStandard<TSchedulerOption>> servicelist = scope.ServiceProvider.GetServices<ISchedulerStandard<TSchedulerOption>>();
                 foreach (var item in servicelist)
                 {
                     //自动恢复任务机制a
@@ -128,7 +134,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             }
         }
 
-        public static async Task<IScheduler> GetScheduler(this ISchedulerStandard<QuartzSchedulerStandardOptions> schedulerStandard,string Scheduler=null)
+        public static async Task<IScheduler> GetScheduler<TSchedulerOption>(this ISchedulerStandard<TSchedulerOption> schedulerStandard,string Scheduler=null) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
             ISchedulerFactory schedulerFactory = AppCore.GetService<ISchedulerFactory>();
             return  string.IsNullOrEmpty(Scheduler) ? await schedulerFactory.GetScheduler() : await schedulerFactory.GetScheduler(Scheduler);
@@ -147,11 +153,11 @@ namespace Air.Cloud.Modules.Quartz.Extensions
         /// <para>en-us:Scheduler</para>
         /// </param>
         /// <returns></returns>
-        public static async Task<ITrigger> GetTrigger(
-            this ISchedulerStandard<QuartzSchedulerStandardOptions> schedulerStandard,
-            IScheduler scheduler=null)
+        public static async Task<ITrigger> GetTrigger<TSchedulerOption>(
+            this ISchedulerStandard<TSchedulerOption> schedulerStandard,
+            IScheduler scheduler=null) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
-            if (scheduler == null) scheduler = await schedulerStandard.GetScheduler();
+            if (scheduler == null) scheduler = await schedulerStandard.GetScheduler<TSchedulerOption>();
 
             var jobKeys = (await scheduler.GetJobKeys(GroupMatcher<JobKey>.GroupEquals(schedulerStandard.Options.GroupName))).ToList().FirstOrDefault();
             if (jobKeys == null)
@@ -181,6 +187,72 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                 return null;
             }
             return trigger;
+        }
+
+        /// <summary>
+        /// <para>zh-cn:引入Air.Cloud.Modules.Quartz模块</para>
+        /// <para>en-us:Use QuartzServices</para>
+        /// </summary>
+        /// <param name="app"></param>
+        /// <typeparam name="TSchedulerOption"></typeparam>
+        /// <returns></returns>
+        public static void UseQuartzServices<TSchedulerOption>(this IApplicationBuilder app) where TSchedulerOption : class, ISchedulerStandardOptions, new()
+        {
+            // 获取主机生命周期管理接口
+            var lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
+            // 应用程序终止时，注销服务
+            lifetime.ApplicationStopping.Register(() =>
+            {
+                var QuartJobService = AppCore.GetService<QuartzJobService<TSchedulerOption>>();
+                var ServiceProvider = AppCore.GetService<IServiceProvider>();
+                QuartJobService.StopAsync<TSchedulerOption>(ServiceProvider).GetAwaiter().GetResult();
+            });
+        }
+        /// <summary>
+        /// <para>zh-cn:添加Air.Cloud.Modules.Quartz的服务</para>
+        /// <para>en-us:Use QuartzServices</para>
+        /// </summary>
+        /// <typeparam name="TSchedulerOption">
+        /// <para>zh-cn:调度配置实现</para>
+        /// <para>en-us:SchedulerOptions Dependency</para>
+        /// </typeparam>
+        /// <param name="services">
+        /// <para>zh-cn:服务接口</para>
+        /// <para>en-us:ServiceCollections</para>
+        /// </param>
+        /// <param name="configure">
+        ///  Quartz配置
+        /// </param>
+        /// <param name="quartzHostedServiceConfigure">
+        ///  Quartz服务配置
+        /// </param>
+        public static void AddQuartzService<TSchedulerOption>(this IServiceCollection services, 
+            Action<IServiceCollectionQuartzConfigurator>? configure = null, 
+            Action<QuartzHostedServiceOptions>? quartzHostedServiceConfigure = null) where TSchedulerOption : class, ISchedulerStandardOptions, new()
+        {
+            services.AddSingleton<ISchedulerStandardFactory<TSchedulerOption>, SchedulerStandardFactory<TSchedulerOption>>();
+            services.AddTransient<ISchedulerFactory, StdSchedulerFactory>();
+            services.AddSingleton<QuartzJobService<TSchedulerOption>>();
+            services.AddSchedulerStandard<TSchedulerOption>();
+            if (configure == null)
+            {
+                configure = q =>
+                {
+                    q.UseMicrosoftDependencyInjectionJobFactory();
+                };
+            }
+            if (quartzHostedServiceConfigure == null)
+            {
+                quartzHostedServiceConfigure= q =>
+                {
+                    q.WaitForJobsToComplete = true;
+                };
+            }
+            services.AddQuartz(configure);
+            services.AddQuartzServer(quartzHostedServiceConfigure);
+            var QuartJobService = AppCore.GetService<QuartzJobService<TSchedulerOption>>();
+            var ServiceProvider = AppCore.GetService<IServiceProvider>();
+            QuartJobService.StartAsync<TSchedulerOption>(ServiceProvider).GetAwaiter().GetResult();
         }
     }
 }

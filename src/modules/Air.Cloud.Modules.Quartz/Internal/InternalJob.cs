@@ -19,7 +19,7 @@ namespace Air.Cloud.Modules.Quartz.Internal
 {
     [DisallowConcurrentExecution]
     [PersistJobDataAfterExecution]
-    public class InternalJob : IJob
+    public class InternalJob<TSchedulerOption> : IJob where TSchedulerOption : class,ISchedulerStandardOptions,new()
     {
         /// <summary>
         /// <para>zh-cn:执行任务</para>
@@ -29,7 +29,7 @@ namespace Air.Cloud.Modules.Quartz.Internal
         public async Task Execute(IJobExecutionContext context)
         {
             string JobId = context.MergedJobDataMap.Get("TasksId")?.ToString();
-            ISchedulerStandard<QuartzSchedulerStandardOptions> Scheduler = ISchedulerStandardFactory<QuartzSchedulerStandardOptions>.SchedulerPool.Get(JobId);
+            ISchedulerStandard<TSchedulerOption> Scheduler = ISchedulerStandardFactory<TSchedulerOption>.SchedulerPool.Get(JobId);
             switch (Scheduler.SchedulerStatus)
             {
                 case SchedulerStatusEnum.Created:
@@ -51,7 +51,7 @@ namespace Air.Cloud.Modules.Quartz.Internal
                     });
                     await Scheduler.StartAsync(Scheduler.CancellationToken);
                     Scheduler.SchedulerStatus = SchedulerStatusEnum.Running;
-                    ISchedulerStandardFactory<QuartzSchedulerStandardOptions>.SchedulerPool.Set(Scheduler);
+                    ISchedulerStandardFactory<TSchedulerOption>.SchedulerPool.Set(Scheduler);
                     break;
                 case SchedulerStatusEnum.Stopped:
                     break;
@@ -61,7 +61,16 @@ namespace Air.Cloud.Modules.Quartz.Internal
                     // Do nothing
                     break;
             }
-            await Scheduler.ExecuteAsync(Scheduler.CancellationToken);
+            try
+            {
+                await Scheduler.ExecuteAsync(Scheduler.CancellationToken);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            
 
         }
     }

@@ -48,6 +48,11 @@ namespace Air.Cloud.Core.Attributes
         /// </summary>
         public int Order { get; set; } = 1000;
 
+        /// <summary>
+        /// <para>zh-cn:是否自动加载 默认为true 可以设置为非自动加载</para>
+        /// </summary>
+        public bool AutoLoad { get; set; } = true;
+
         public AppStartupAttribute()
         {
 

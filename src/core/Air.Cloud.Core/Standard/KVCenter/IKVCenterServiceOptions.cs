@@ -1,4 +1,6 @@
-﻿namespace Air.Cloud.Core.Standard.KVCenter
+﻿using Microsoft.Extensions.Options;
+
+namespace Air.Cloud.Core.Standard.KVCenter
 {
     /// <summary>
     /// <para>zh-cn:键值存储中心选项</para>

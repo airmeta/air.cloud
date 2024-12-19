@@ -204,7 +204,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             if (!result.Item1) return app;
             #region 注册服务
             ConsulServerCenterDependency dependency = new ConsulServerCenterDependency();
-            var r = dependency.Register(new ConsulServerCenterServiceRegisterOptions()
+            var r = dependency.RegisterAsync(new ConsulServerCenterServiceRegisterOptions()
             {
                 ServiceAddress = serviceOptions.ServiceAddress,
                 ServiceName = serviceOptions.ServiceName,

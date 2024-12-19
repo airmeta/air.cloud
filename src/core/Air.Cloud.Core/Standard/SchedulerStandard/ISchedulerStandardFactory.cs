@@ -22,7 +22,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
     ///  <para>en-us:Scheduler standard options</para>
     /// </typeparam>
     public interface ISchedulerStandardFactory<TSchedulerStandardOptions>
-        where TSchedulerStandardOptions : class,ISchedulerStandardOptions
+        where TSchedulerStandardOptions : class,ISchedulerStandardOptions,new()
     {
         /// <summary>
         /// <para>zh-cn:调度池</para>
@@ -30,10 +30,19 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
         /// </summary>
         public static SchedulerPool<TSchedulerStandardOptions> SchedulerPool =new SchedulerPool<TSchedulerStandardOptions>();
         /// <summary>
-        /// <para>zh-cn:创建调度</para>
-        /// <para>en-us:Create scheduler</para>
+        /// <para>
+        /// zh-cn: 获取调度配置
+        /// </para>
+        /// <para>en-us:GetSchedulerConfiguration</para>
         /// </summary>
+        /// <typeparam name="TScheduler">
+        ///  <para>zh-cn:调度标准实现类</para>
+        ///  <para>en-us:Scheduler standard dependency</para>
+        /// </typeparam>
         /// <returns></returns>
+        /// <exception cref="Exception">
+        ///  SchedulerInformationAttribute is not found
+        /// </exception>
         public TSchedulerStandardOptions GetSchedulerConfiguration<TScheduler>() where TScheduler : class, ISchedulerStandard<TSchedulerStandardOptions>;
     }
 }
