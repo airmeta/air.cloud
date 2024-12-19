@@ -52,6 +52,8 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             IEnumerable<ISchedulerStandard<TSchedulerOption>> servicelist = _provider.GetServices<ISchedulerStandard<TSchedulerOption>>();
             foreach (var item in servicelist)
             {
+
+
                 //自动恢复任务机制a
                 try
                 {

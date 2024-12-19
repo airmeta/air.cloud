@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
@@ -20,8 +21,9 @@ using unit.webapp.model.Domains;
 namespace unit.webapp.entry.Jobs
 {
 
+    [AutoLoad(false)]
     [SchedulerInformationAttribute(CronExpression = "0/5 * * * * ? ", Name = "测试定时任务", Id = "job_test1", Description = "测试定时任务")]
-    public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>, ISingleton
+    public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>
     {
         private readonly IServiceProvider _provider;
         public CancellationToken CancellationToken { get; set; }

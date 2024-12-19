@@ -14,6 +14,7 @@ using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using System.Reflection;
 using System.Runtime.Loader;
 
 namespace Air.Cloud.Core.Standard.SchedulerStandard.Extensions
@@ -40,6 +41,12 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Extensions
                     var AllTypes = AssemblyLoadContext.Default.LoadFromAssemblyName(item).GetTypes().Where(s => s.IsClass && s.GetInterfaces().Contains(typeof(ISchedulerStandard<TSchedulerOptions>))).ToList();
                     foreach (var t in AllTypes)
                     {
+                        AutoLoadAttribute? NeedLoad = t.GetCustomAttribute<AutoLoadAttribute>();
+                        if (NeedLoad != null&&NeedLoad.Load==false)
+                        {
+                            continue;
+                        }
+
                         var instances = t.GetInterfaces();
                         string[] ints= instances.Select(i => i.Name).ToArray();
                         if (instances.Contains(typeof(ISchedulerStandard<TSchedulerOptions>)) && t.IsPublic)
