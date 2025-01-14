@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@ namespace Air.Cloud.Core.Standard.DataBase.Model;
 public interface IEntity : IEntity<MasterDbContextLocator>
 {
 }
+
 
 /// <summary>
 /// 数据库实体依赖基接口
@@ -146,12 +147,5 @@ public interface IEntity<TDbContextLocator1, TDbContextLocator2, TDbContextLocat
     where TDbContextLocator6 : class, IDbContextLocator
     where TDbContextLocator7 : class, IDbContextLocator
     where TDbContextLocator8 : class, IDbContextLocator
-{
-}
-
-/// <summary>
-/// 数据库实体依赖接口（禁止外部继承）
-/// </summary>
-public interface IPrivateEntity
 {
 }

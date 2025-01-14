@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -122,4 +122,76 @@ namespace unit.webapp.entry.Jobs
 
 
     }
+
+
+
+    [SchedulerInformation(CronExpression = "0 0/1 * * * ? ", Name = "业务超时未评价检查", Id = "job_test2", Description = "测试定时任务")]
+    public class WorkflowCheckEvaluate : ISchedulerStandard<QuartzSchedulerStandardOptions>, ISingleton
+    {
+        private readonly IServiceProvider _provider;
+        public CancellationToken CancellationToken { get; set; }
+        public SchedulerStatusEnum SchedulerStatus { get; set; }
+        public QuartzSchedulerStandardOptions Options { get; set; }
+
+        public WorkflowCheckEvaluate(ISchedulerStandardFactory<QuartzSchedulerStandardOptions> schedulerStandardFactory1, IServiceProvider _provider)
+        {
+            Options = schedulerStandardFactory1.GetSchedulerConfiguration<WorkflowCheckEvaluate>();
+            this._provider = _provider;
+
+        }
+        public Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            try
+            {
+                using (var scope = _provider.CreateScope())
+                {
+
+                    AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+                    {
+                        State = true,
+                        AdditionalParams = null,
+                        Content = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]定时任务执行成功",
+                        Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                        Title = "air.cloud.scheduler"
+                    });
+                    CancellationToken = stoppingToken;
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            {
+                State = true,
+                AdditionalParams = null,
+                Content = "定时任务Job1开始运行",
+                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Title = "air.cloud.scheduler"
+            });
+            await Task.CompletedTask;
+        }
+
+        public async Task StopAsync()
+        {
+            AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            {
+                State = true,
+                AdditionalParams = null,
+                Content = "定时任务Job1结束运行",
+                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Title = "air.cloud.scheduler"
+            });
+            await Task.CompletedTask;
+        }
+
+    }
+
 }

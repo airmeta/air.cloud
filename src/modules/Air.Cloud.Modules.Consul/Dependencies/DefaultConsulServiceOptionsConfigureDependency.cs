@@ -1,9 +1,21 @@
-﻿using Air.Cloud.Core;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Modules.Consul.Model;
 using Air.Cloud.Modules.Consul.Standard;
+
+using Microsoft.VisualBasic;
 
 namespace Air.Cloud.Modules.Consul.Dependencies
 {
@@ -54,7 +66,7 @@ namespace Air.Cloud.Modules.Consul.Dependencies
                 AppConst.EnvironmentKey = EnvironmentKey;
                 ProjectName = $"{ProjectName}.{EnvironmentKey}";
             }
-            return (IsIgnoreServiceNameKey && (!IgnoreKey.IsNullOrEmpty()))? ProjectName.Replace(IgnoreKey,string.Empty):ProjectName;
+            return (IsIgnoreServiceNameKey && (!IgnoreKey.IsNullOrEmpty()))? Strings.Replace(ProjectName, IgnoreKey, string.Empty, 1, -1, CompareMethod.Text) : ProjectName;
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,6 +84,8 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Pool
         /// 锁定对象
         /// </summary>
         /// <param name="Key"></param>
+        ///  <para>zh-cn:唯一键 </para>
+        ///  <para>en-us:Unique key</para>
         /// <returns>
         /// <para>zh-cn:结果</para>
         /// <para>en-us:Result</para>
@@ -101,7 +103,8 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Pool
         /// <para>en-us:Unlock element</para>
         /// </summary>
         /// <param name="Key">
-        /// 
+        ///  <para>zh-cn:唯一键 </para>
+        ///  <para>en-us:Unique key</para>
         /// </param>
         /// <returns>
         /// <para>zh-cn:结果</para>

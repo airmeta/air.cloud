@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\src\db\Air.Cloud.DataBase.ElasticSearch\Air.Cloud.DataBase.ElasticSearch.csproj" />
     <ProjectReference Include="..\unit.webapp.repository\unit.webapp.repository.csproj" />
   </ItemGroup>
 

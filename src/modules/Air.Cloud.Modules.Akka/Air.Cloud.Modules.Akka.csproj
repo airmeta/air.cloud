@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Akka" Version="1.5.33" />
+  </ItemGroup>
+
 </Project>
