@@ -13,7 +13,7 @@ public sealed class EventBusOptionsBuilder
     /// <summary>
     /// 事件处理器类型集合
     /// </summary>
-    private readonly List<Type> _eventHandlers = new();
+    private readonly List<Type> _messageSubscribers = new();
 
     /// <summary>
     /// 事件发布者类型
@@ -33,7 +33,7 @@ public sealed class EventBusOptionsBuilder
     /// <summary>
     /// 事件处理程序执行器
     /// </summary>
-    private Type _eventHandlerExecutor;
+    private Type _messageExecutor;
 
     /// <summary>
     /// 默认内置事件源存储器内存通道容量
@@ -75,29 +75,29 @@ public sealed class EventBusOptionsBuilder
     /// <summary>
     /// 注册事件处理器
     /// </summary>
-    /// <typeparam name="TEventSubscriber">实现自 <see cref="IEventHandler"/></typeparam>
+    /// <typeparam name="TEventSubscriber">实现自 <see cref="IMessageSubscriber"/></typeparam>
     /// <returns><see cref="EventBusOptionsBuilder"/> 实例</returns>
     public EventBusOptionsBuilder AddSubscriber<TEventSubscriber>()
-        where TEventSubscriber : class, IEventHandler
+        where TEventSubscriber : class, IMessageSubscriber
     {
-        _eventHandlers.Add(typeof(TEventSubscriber));
+        _messageSubscribers.Add(typeof(TEventSubscriber));
         return this;
     }
 
     /// <summary>
     /// 注册事件处理器
     /// </summary>
-    /// <param name="eventSubscriberType"><see cref="IEventHandler"/> 派生类型</param>
+    /// <param name="eventSubscriberType"><see cref="IMessageSubscriber"/> 派生类型</param>
     /// <returns><see cref="EventBusOptionsBuilder"/> 实例</returns>
     public EventBusOptionsBuilder AddSubscriber(Type eventSubscriberType)
     {
         // 类型检查
-        if (!typeof(IEventHandler).IsAssignableFrom(eventSubscriberType) || eventSubscriberType.IsInterface)
+        if (!typeof(IMessageSubscriber).IsAssignableFrom(eventSubscriberType) || eventSubscriberType.IsInterface)
         {
             throw new InvalidOperationException("The <eventSubscriberType> is not implement the IEventSubscriber interface.");
         }
 
-        _eventHandlers.Add(eventSubscriberType);
+        _messageSubscribers.Add(eventSubscriberType);
         return this;
     }
 
@@ -106,7 +106,7 @@ public sealed class EventBusOptionsBuilder
     /// </summary>
     /// <param name="assemblies">程序集</param>
     /// <returns><see cref="EventBusOptionsBuilder"/> 实例</returns>
-    public EventBusOptionsBuilder AddHandlers(params Assembly[] assemblies)
+    public EventBusOptionsBuilder AddSubscribers(params Assembly[] assemblies)
     {
         if (assemblies == null || assemblies.Length == 0)
         {
@@ -116,11 +116,11 @@ public sealed class EventBusOptionsBuilder
         // 获取所有导出类型（非接口，非抽象类且实现 IEventSubscriber）接口
         var subscribers = assemblies.SelectMany(ass =>
               ass.GetExportedTypes()
-                 .Where(t => t.IsPublic && t.IsClass && !t.IsInterface && !t.IsAbstract && typeof(IEventHandler).IsAssignableFrom(t)));
+                 .Where(t => t.IsPublic && t.IsClass && !t.IsInterface && !t.IsAbstract && typeof(IMessageSubscriber).IsAssignableFrom(t)));
 
         foreach (var subscriber in subscribers)
         {
-            _eventHandlers.Add(subscriber);
+            _messageSubscribers.Add(subscriber);
         }
 
         return this;
@@ -131,7 +131,7 @@ public sealed class EventBusOptionsBuilder
     /// </summary>
     /// <param name="types">类型集合</param>
     /// <returns><see cref="EventBusOptionsBuilder"/> 实例</returns>
-    public EventBusOptionsBuilder AddHandlers(IEnumerable<Type> types)
+    public EventBusOptionsBuilder AddSubscribers(IEnumerable<Type> types)
     {
         if (types == null || types.Count() == 0)
         {
@@ -140,11 +140,11 @@ public sealed class EventBusOptionsBuilder
 
         // 获取所有导出类型（非接口，非抽象类且实现 IEventSubscriber）接口
         var subscribers = types
-                 .Where(t => t.IsPublic && t.IsClass && !t.IsInterface && !t.IsAbstract && typeof(IEventHandler).IsAssignableFrom(t));
+                 .Where(t => t.IsPublic && t.IsClass && !t.IsInterface && !t.IsAbstract && typeof(IMessageSubscriber).IsAssignableFrom(t));
 
         foreach (var subscriber in subscribers)
         {
-            _eventHandlers.Add(subscriber);
+            _messageSubscribers.Add(subscriber);
         }
 
         return this;
@@ -199,12 +199,12 @@ public sealed class EventBusOptionsBuilder
     /// <summary>
     /// 注册事件处理程序执行器
     /// </summary>
-    /// <typeparam name="TEventHandlerExecutor">实现自 <see cref="IEventHandlerExecutor"/></typeparam>
+    /// <typeparam name="TEventHandlerExecutor">实现自 <see cref="IMessageExecutor"/></typeparam>
     /// <returns><see cref="EventBusOptionsBuilder"/> 实例</returns>
     public EventBusOptionsBuilder AddExecutor<TEventHandlerExecutor>()
-        where TEventHandlerExecutor : class, IEventHandlerExecutor
+        where TEventHandlerExecutor : class, IMessageExecutor
     {
-        _eventHandlerExecutor = typeof(TEventHandlerExecutor);
+        _messageExecutor = typeof(TEventHandlerExecutor);
         return this;
     }
 
@@ -241,12 +241,12 @@ public sealed class EventBusOptionsBuilder
     /// 构建事件总线配置选项
     /// </summary>
     /// <param name="services">服务集合对象</param>
-    public  void Build(IServiceCollection services)
+    public void Build(IServiceCollection services)
     {
         // 注册事件处理器
-        foreach (var eventHandler in _eventHandlers)
+        foreach (var messageSubscriber in _messageSubscribers)
         {
-            services.AddSingleton(typeof(IEventHandler), eventHandler);
+            services.AddSingleton(typeof(IMessageSubscriber), messageSubscriber);
         }
 
         // 替换事件发布者
@@ -261,9 +261,9 @@ public sealed class EventBusOptionsBuilder
             services.Replace(ServiceDescriptor.Singleton(_eventSourceStorerImplementationFactory));
         }
         // 注册事件执行器
-        if (_eventHandlerExecutor != default)
+        if (_messageExecutor != default)
         {
-            services.AddSingleton(typeof(IEventHandlerExecutor), _eventHandlerExecutor);
+            services.AddSingleton(typeof(IMessageExecutor), _messageExecutor);
         }
 
         // 注册事件重试行为规则

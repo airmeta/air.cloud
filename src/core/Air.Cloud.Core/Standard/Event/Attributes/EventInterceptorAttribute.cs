@@ -34,11 +34,11 @@ public sealed class EventInterceptorAttribute : Attribute
             //转换为Func<HttpHandlerDelegate, HttpHandlerDelegate>
             Func<EventHandlerDelegate, EventHandlerDelegate> delegates = next =>
             {
-                var middleware = ActivatorUtilities.CreateInstance(serviceProvider, TMiddleware, next) as IEventInterceptor;
+                var interceptor = ActivatorUtilities.CreateInstance(serviceProvider, TMiddleware, next) as IEventInterceptor;
                 // 返回一个新的HttpHandlerDelegate，它委托给middleware的ExcuteAsync方法
                 return async context =>
                 {
-                    await middleware.ExcuteAsync(context);
+                    await interceptor.ExcuteAsync(context);
                 };
             };
             builder.Use(delegates);

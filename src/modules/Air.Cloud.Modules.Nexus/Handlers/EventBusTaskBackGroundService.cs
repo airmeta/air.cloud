@@ -19,12 +19,8 @@ namespace Air.Cloud.Modules.Nexus.Handlers;
 /// <summary>
 /// 事件总线后台主机服务
 /// </summary>
-internal sealed class EventBusTaskBackGroundService : IEventBusTaskBackGroundService
+internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    private Task eventBusServiceTask;
     /// <summary>
     /// GC 回收默认间隔
     /// </summary>
@@ -69,7 +65,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusTaskBackGroundSer
     public EventBusTaskBackGroundService(IServiceProvider serviceProvider
         , IEventSourceStorer eventSourceStorer
         , IEventPublisher eventPublisher
-        , IEnumerable<IEventHandler> eventHandlers
+        , IEnumerable<IMessageSubscriber> eventHandlers
         , bool useUtcTimestamp
         , bool fuzzyMatch
         , bool gcCollect
@@ -79,41 +75,18 @@ internal sealed class EventBusTaskBackGroundService : IEventBusTaskBackGroundSer
         _eventPublisher = eventPublisher;
         _eventSourceStorer = eventSourceStorer;
 
-        Executor = serviceProvider.GetService<IEventHandlerExecutor>();
+        Executor = serviceProvider.GetService<IMessageExecutor>();
         UseUtcTimestamp = useUtcTimestamp;
         FuzzyMatch = fuzzyMatch;
         GCCollect = gcCollect;
         LogEnabled = logEnabled;
-        cancellationTokenSource = new CancellationTokenSource();
 
-        BuildEventHandler(eventHandlers, serviceProvider);
+        BuildEventHandlers(eventHandlers, serviceProvider);
     }
-    private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-    /// <summary>
-    /// 
-    /// </summary>
-    public void Start()
-    {
-        // 创建一个 CancellationTokenSource 对象
-        // 获取与之关联的 CancellationToken
-        CancellationToken stoppingToken = cancellationTokenSource.Token;
-        //创建线程
-        eventBusServiceTask = new Task(() => ExecuteAsync(stoppingToken), stoppingToken);
-        //启动线程
-        eventBusServiceTask.Start();
-    }
-    /// <summary>
-    /// 停止
-    /// </summary>
-    public void Stop()
-    {
-        cancellationTokenSource.Cancel();
-    }
-
     /// <summary>
     /// 事件处理程序执行器
     /// </summary>
-    private IEventHandlerExecutor Executor { get; }
+    private IMessageExecutor Executor { get; }
 
     /// <summary>
     /// 是否使用 UTC 时间
@@ -145,7 +118,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusTaskBackGroundSer
     /// </summary>
     /// <param name="stoppingToken">后台主机服务停止时取消任务 Token</param>
     /// <returns><see cref="Task"/> 实例</returns>
-    private void ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         AppRealization.Output.Print("EventBus Output", "EventBus task service is running.", Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information);
 
@@ -160,7 +133,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusTaskBackGroundSer
             try
             {
                 // 执行具体任务
-                BackgroundProcessing(stoppingToken).GetAwaiter().GetResult();
+                await BackgroundProcessing(stoppingToken);
             }
             catch
             {
@@ -290,14 +263,14 @@ internal sealed class EventBusTaskBackGroundService : IEventBusTaskBackGroundSer
         });
     }
     /// <summary>
-    /// 
+    /// 构建所有的事件处理器
     /// </summary>
-    /// <param name="eventHandlers"></param>
-    private void BuildEventHandler(IEnumerable<IEventHandler> eventHandlers, IServiceProvider serviceProvider)
+    /// <param name="messageSubscribers"></param>
+    private void BuildEventHandlers(IEnumerable<IMessageSubscriber> messageSubscribers, IServiceProvider serviceProvider)
     {
         var bindingAttr = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         // 逐条获取事件处理程序并进行包装
-        foreach (var eventHandler in eventHandlers)
+        foreach (var eventHandler in messageSubscribers)
         {
             // 获取事件处理器类型
             var eventSubscriberType = eventHandler.GetType();

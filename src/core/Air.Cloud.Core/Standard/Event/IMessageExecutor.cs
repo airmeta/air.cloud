@@ -5,7 +5,7 @@ namespace Air.Cloud.Core.Standard.Event;
 /// <summary>
 /// 事件处理程序执行器依赖接口
 /// </summary>
-public interface IEventHandlerExecutor
+public interface IMessageExecutor
 {
     /// <summary>
     /// 执行事件处理程序

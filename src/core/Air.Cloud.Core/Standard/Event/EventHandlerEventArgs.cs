@@ -13,7 +13,7 @@ public sealed class EventHandlerEventArgs : EventArgs
     public EventHandlerEventArgs(IEventSource eventSource, bool success)
     {
         Source = eventSource;
-        Status = success ? "SUCCESS" : "FAIL";
+        Status = success ? EventDefaultDefine.SUCCESS : EventDefaultDefine.FAIL;
     }
 
     /// <summary>

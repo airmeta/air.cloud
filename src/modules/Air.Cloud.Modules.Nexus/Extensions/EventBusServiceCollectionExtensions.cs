@@ -44,7 +44,7 @@ public static class EventBusServiceCollectionExtensions
         // 构建事件总线服务
         eventBusOptionsBuilder.Build(services);
 
-        services.AddSingleton<IEventBusTaskBackGroundService>(serviceProvider =>
+        services.AddSingleton<IEventBusExecutor>(serviceProvider =>
         {
             // 创建事件总线后台服务对象
             var eventBusHostedService = ActivatorUtilities.CreateInstance<EventBusTaskBackGroundService>(
