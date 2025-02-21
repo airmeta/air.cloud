@@ -12,7 +12,7 @@
     "unit.kafaka.client.entry": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "weatherforecast",
       "applicationUrl": "http://localhost:5120",
       "environmentVariables": {

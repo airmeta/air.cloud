@@ -6,7 +6,7 @@ using Air.Cloud.Core.Standard.Event.Contexts;
 using HarmonyLib;
 using static Air.Cloud.Core.Standard.Print.AppPrintInformation;
 
-namespace unit.kafaka.server.entry
+namespace unit.kafaka.client.entry
 {
     public class TestMessageSubscriber : IMessageSubscriber
     {
@@ -15,7 +15,7 @@ namespace unit.kafaka.server.entry
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        [EventDescriptionAttribute("test1")]
+        [EventDescription("test1")]
         [EventInterceptor(typeof(TestMessageInterceptor))]
         public async Task TestService1(EventHandlerExecutingContext context)
         {

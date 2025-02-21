@@ -11,42 +11,82 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Modules.Kafka.Config;
 using Air.Cloud.Modules.Kafka.Model;
+using Air.Cloud.Modules.Nexus.Extensions;
 
 using Confluent.Kafka;
-namespace unit.skywlking.entry
+using System.Reflection;
+namespace unit.kafaka.client.entry
 {
     [AppStartup(Order = int.MinValue)]
     public class Startup : AppStartup
     {
+        ConsumerConfigModel consumerConfigModel = new ConsumerConfigModel() { TopicName = "fcj_workflow_audit_test" };
+        string GroupId = AppEnvironment.IsDevelopment ? Guid.NewGuid().ToString() : AppConst.ApplicationName;
+
+
+        ProducerConfigModel producerConfigModel = new ProducerConfigModel() { TopicName = "fcj_workflow_audit_test" };
         public override void ConfigureServices(IServiceCollection services)
         {
-
+            //默认实现
+            {
+                //services.AddEventBus(options =>
+                //{
+                //    options.AddSubscribers(Assembly.GetEntryAssembly());
+                //    options.ReplaceStorer(services =>
+                //    {
+                //        return new ChannelEventSourceStorer(100);
+                //    });
+                //});
+            }
+            //kafka实现
+            {
+                services.AddEventBus(options =>
+                {
+                    options.AddSubscribers(Assembly.GetEntryAssembly());
+                    options.ReplaceStorer(services =>
+                    {
+                        var options = AppCore.GetOptions<KafkaSettingsOptions>();
+                        consumerConfigModel.Config = new ConsumerConfig()
+                        {
+                            GroupId = GroupId,
+                            BootstrapServers = options.ClusterAddress,
+                            EnableSslCertificateVerification = false
+                        };
+                        return new KafkaEventSourceStorer(producerConfigModel, consumerConfigModel, GroupId);
+                    });
+                });
+            }
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            Task.Run(async () =>
+            //kafka测试
             {
-                while (true)
-                {
-                    await Task.Delay(3000);
-                    ProducerConfigModel producerConfigModel = new ProducerConfigModel();
-                    producerConfigModel.TopicName = "fcj_workflow_audit_test";
-                    AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
-                    {
-                        Content = "123123"
-                    });
-                }
+                //Task.Run(async () =>
+                //{
+                //    while (true)
+                //    {
+                //        await Task.Delay(3000);
+                //        ProducerConfigModel producerConfigModel = new ProducerConfigModel();
+                //        producerConfigModel.TopicName = "fcj_workflow_audit_test";
+                //        AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
+                //        {
+                //            Content = "123123"
+                //        });
+                //    }
 
-            });
+                //});
+            }
 
         }
     }
 
-    public class Contents 
+    public class Contents
     {
-        public string Content { get ; set ; }
+        public string Content { get; set; }
     }
 }

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Nexus\Air.Cloud.Modules.Nexus.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Nexus\" />

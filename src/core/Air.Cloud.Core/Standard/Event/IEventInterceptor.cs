@@ -9,6 +9,27 @@ namespace Air.Cloud.Core.Standard.Event;
 /// 该接口定义在事件处理器执行前进行拦截的异步操作，<br/>
 /// 允许实现类对事件处理流程进行自定义控制（如验证、日志记录、参数修改等）
 /// </remarks>
+/// <example>
+/// //这是一个简单的示例
+/// public class ExampleInterceptor : IEventInterceptor
+/// {
+///     private readonly EventHandlerDelegate _next;
+///    public ExampleInterceptor(EventHandlerDelegate next)
+///     {
+///         _next = next;
+///     }
+/// 
+///     public async Task ExcuteAsync(EventHandlerExecutingContext context)
+///     {
+///         //前置执行 todo:
+///         //....
+///         await _next.Invoke(context);
+/// 
+///         //后置执行 todo:
+///         //....
+///     }
+/// }
+/// </example>
 public interface IEventInterceptor
 {
     /// <summary>

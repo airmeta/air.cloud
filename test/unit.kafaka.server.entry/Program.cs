@@ -15,9 +15,4 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.WebInjectInFile();
-app.MapGet("test", ([FromServices] IEventPublisher eventPublisher) =>
-{
-    eventPublisher.PublishAsync("test1", "这是测试用的");
-    return "发送成功";
-});
 app.Run();

@@ -22,8 +22,7 @@ using Air.Cloud.Modules.Nexus.Extensions;
 using Air.Cloud.Modules.Nexus.Publishers.Storers;
 using Confluent.Kafka;
 using System.Reflection;
-using unit.kafaka.server.entry;
-namespace unit.skywlking.entry
+namespace unit.kafaka.server.entry
 {
     [AppStartup(Order = int.MinValue)]
     public class Startup : AppStartup
