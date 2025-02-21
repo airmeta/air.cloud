@@ -11,7 +11,7 @@ namespace Air.Cloud.Modules.Nexus.Publishers.Storers;
 /// <para>顾名思义，这里指的是事件消息存储中心，提供读写能力</para>
 /// <para>默认实现为内存中的 <see cref="Channel"/>，可自由更换存储介质，如 Kafka，SQL Server 等</para>
 /// </remarks>
-internal sealed partial class ChannelEventSourceStorer : IEventSourceStorer
+public sealed partial class ChannelEventSourceStorer : IEventSourceStorer
 {
     /// <summary>
     /// 内存通道事件源存储器

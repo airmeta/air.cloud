@@ -10,11 +10,11 @@ public class EventBusHostedService : BackgroundService
 {
     private IEventBusExecutor _eventBusExecutor;
 
-    private EventBusHostedService()
+    public EventBusHostedService()
     {
 
     }
-    private EventBusHostedService(IEventBusExecutor eventBusExecutor) : this()
+    public EventBusHostedService(IEventBusExecutor eventBusExecutor) : this()
     {
         _eventBusExecutor = eventBusExecutor;
     }

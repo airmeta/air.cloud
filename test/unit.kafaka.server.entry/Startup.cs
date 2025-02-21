@@ -18,44 +18,74 @@ using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.MessageQueue.Config;
 using Air.Cloud.Modules.Kafka.Config;
 using Air.Cloud.Modules.Kafka.Model;
-
+using Air.Cloud.Modules.Nexus.Extensions;
+using Air.Cloud.Modules.Nexus.Publishers.Storers;
 using Confluent.Kafka;
+using System.Reflection;
+using unit.kafaka.server.entry;
 namespace unit.skywlking.entry
 {
     [AppStartup(Order = int.MinValue)]
     public class Startup : AppStartup
     {
+        ConsumerConfigModel consumerConfigModel = new ConsumerConfigModel() { TopicName = "fcj_workflow_audit_test" };
+        string GroupId = AppEnvironment.IsDevelopment ? Guid.NewGuid().ToString() : AppConst.ApplicationName;
+
+
+        ProducerConfigModel producerConfigModel = new ProducerConfigModel() { TopicName = "fcj_workflow_audit_test" };
+
         public override void ConfigureServices(IServiceCollection services)
         {
-           
+            //默认实现
+            {
+                //services.AddEventBus(options =>
+                //{
+                //    options.AddSubscribers(Assembly.GetEntryAssembly());
+                //    options.ReplaceStorer(services =>
+                //    {
+                //        return new ChannelEventSourceStorer(100);
+                //    });
+                //});
+            }
+            //kafka实现
+            {
+                services.AddEventBus(options =>
+                {
+                    options.AddSubscribers(Assembly.GetEntryAssembly());
+                    options.ReplaceStorer(services =>
+                    {
+                        var options = AppCore.GetOptions<KafkaSettingsOptions>();
+                        consumerConfigModel.Config = new ConsumerConfig()
+                        {
+                            GroupId = GroupId,
+                            BootstrapServers = options.ClusterAddress,
+                            EnableSslCertificateVerification = false
+                        };
+                        return new KafkaEventSourceStorer(producerConfigModel, consumerConfigModel, GroupId);
+                    });
+                });
+            }
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //ProducerConfigModel producerConfigModel = new ProducerConfigModel();
-            //producerConfigModel.TopicName= "fcj_network_service";
-            //AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
-            //{
-            //    Content = "123123"
-            //});
-            ConsumerConfigModel producerConfigModel = new ConsumerConfigModel();
-
-            producerConfigModel.TopicName = "fcj_workflow_audit_test";
-            string GroupId = AppEnvironment.IsDevelopment ? Guid.NewGuid().ToString() : AppConst.ApplicationName;
-            var options = AppCore.GetOptions<KafkaSettingsOptions>();
-            producerConfigModel.Config = new ConsumerConfig()
+            //kafka测试
             {
-                GroupId = GroupId,
-                BootstrapServers = options.ClusterAddress,
-                EnableSslCertificateVerification=false
-            };
-            AppRealization.Queue.Subscribe<ConsumerConfig, object>(producerConfigModel, (s) =>
-            {
-                Console.WriteLine(AppRealization.JSON.Serialize(s));
-            }, GroupId);
+                //var options = AppCore.GetOptions<KafkaSettingsOptions>();
+                //consumerConfigModel.Config = new ConsumerConfig()
+                //{
+                //    GroupId = GroupId,
+                //    BootstrapServers = options.ClusterAddress,
+                //    EnableSslCertificateVerification = false
+                //};
+                //AppRealization.Queue.Subscribe<ConsumerConfig, object>(consumerConfigModel, (s) =>
+                //{
+                //    Console.WriteLine(AppRealization.JSON.Serialize(s));
+                //}, GroupId);
+            }
         }
     }
-    public class Contents 
+    public class Contents
     {
-        public string Content { get ; set ; }
+        public string Content { get; set; }
     }
 }

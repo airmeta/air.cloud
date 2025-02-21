@@ -102,7 +102,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DataBase.SqlLite"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DataBase.ElasticSearch", "src\db\Air.Cloud.DataBase.ElasticSearch\Air.Cloud.DataBase.ElasticSearch.csproj", "{6542F444-2946-461D-94E6-C86B0A4F18FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Nexus", "src\modules\Air.Cloud.Modules.Nexus\Air.Cloud.Modules.Nexus.csproj", "{726447C7-438C-4903-9871-B9058E5F8721}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Nexus", "src\modules\Air.Cloud.Modules.Nexus\Air.Cloud.Modules.Nexus.csproj", "{726447C7-438C-4903-9871-B9058E5F8721}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
