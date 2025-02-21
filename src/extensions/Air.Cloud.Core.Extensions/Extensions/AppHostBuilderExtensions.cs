@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App.Loader;
+using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Plugins.Reflection;
 

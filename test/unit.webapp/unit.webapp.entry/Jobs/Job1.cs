@@ -55,7 +55,7 @@ namespace unit.webapp.entry.Jobs
                     
                     var testDomain = scope.ServiceProvider.GetService<ITestDomain>();
                     Console.WriteLine(testDomain == null);
-                    var data = testDomain.Search(s => s.UserId == "a09cdb089b7f48498090d1f7f11c0e7b");
+                    var data = testDomain.Search("a09cdb089b7f48498090d1f7f11c0e7b");
                     Console.WriteLine(data == null);
                     AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
                     {

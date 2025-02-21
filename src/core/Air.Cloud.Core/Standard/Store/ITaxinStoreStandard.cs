@@ -12,23 +12,23 @@
 using Air.Cloud.Core.Standard.Taxin.Events;
 using Air.Cloud.Core.Standard.Taxin.Model;
 
-namespace Air.Cloud.Core.Standard.Taxin
+namespace Air.Cloud.Core.Standard.Store
 {
     /// <summary>
     /// <para>zh-cn:Taxin 存储标准</para>
     /// <para>en-us:Taxin store</para>
     /// </summary>
-    public  interface ITaxinStoreStandard
+    public interface ITaxinStoreStandard
     {
         static ITaxinStoreStandard()
         {
-            Packages=new Dictionary<string,IEnumerable<TaxinRouteDataPackage>>();
+            Packages = new Dictionary<string, IEnumerable<TaxinRouteDataPackage>>();
         }
         /// <summary>
         /// <para>zh-cn:数据包</para>
         /// <para>en-us:Taxin data packages</para>
         /// </summary>
-        public static IDictionary<string, IEnumerable<TaxinRouteDataPackage>> Packages{ get; set; }
+        public static IDictionary<string, IEnumerable<TaxinRouteDataPackage>> Packages { get; set; }
 
         /// <summary>
         /// <para>zh-cn:当前数据包</para>
@@ -49,7 +49,7 @@ namespace Air.Cloud.Core.Standard.Taxin
         /// <para>zh-cn:在执行检查当前数据是否过时时,服务端会返回一个特定的Guid字符串,可使用该字符串与客户端字符串进行比较以确认当前数据是否过时</para>
         /// <para>en-us:When performing a check to see if the current data is out of date, the server returns a specific Guid string that can be compared with the client string to confirm whether the current data is out of date</para>
         /// </remarks>
-        public static  string CheckTag { get; set; }=Guid.NewGuid().ToString();
+        public static string CheckTag { get; set; } = Guid.NewGuid().ToString();
 
         /// <summary>
         /// <para>zh-cn:是否服务端</para>

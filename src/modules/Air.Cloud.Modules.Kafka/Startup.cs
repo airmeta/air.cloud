@@ -25,6 +25,8 @@ namespace Air.Cloud.Modules.Kafka
                .PostConfigure(options =>
                { });
             services.AddKafkaService();
+
+
         }
     }
 }

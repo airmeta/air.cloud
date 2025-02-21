@@ -13,14 +13,12 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Standard.AppInject;
-using Air.Cloud.HostApp.Dependency;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 using System.Reflection;
 
-namespace Air.Cloud.HostApp.Extensions
+namespace Air.Cloud.HostApp.Dependency
 {
     public static class HostAppInjectExtensions
     {
@@ -42,7 +40,7 @@ namespace Air.Cloud.HostApp.Extensions
                 a.AddConfiguration(AppConfigurationLoader.Configurations);
             });
             AppRealization.SetDependency<IAppInjectStandard>(new HostAppInjectDependency());
-            builder = AppRealization.Injection.Inject(builder,true);
+            builder = AppRealization.Injection.Inject(builder, true);
             return builder;
         }
 

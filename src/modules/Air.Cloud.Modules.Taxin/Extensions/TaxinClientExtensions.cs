@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.Taxin.Store;
 using Air.Cloud.Modules.Taxin.Client;

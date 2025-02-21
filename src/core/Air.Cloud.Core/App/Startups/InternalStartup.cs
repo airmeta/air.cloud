@@ -9,26 +9,25 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Modules.AppAspect.Extensions;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-namespace Air.Cloud.Core.App.Loader
+
+namespace Air.Cloud.Core.App.Startups
 {
-    /// <summary>
-    /// <para>zh-cn: 内置Startup,防止出现未配置启动项导致失败的情况</para>
-    /// <para>en-us: Built-in Startup to prevent failure due to unconfigured startup items</para>
-    /// </summary>
-    public class InternalStartup : AppStartup
+    [AppStartup(AppName = "Air.Cloud.Core", Order = int.MinValue)]
+    public  class InternalStartup : AppStartup
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             
         }
+
         public override void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddAspect();
         }
     }
 }

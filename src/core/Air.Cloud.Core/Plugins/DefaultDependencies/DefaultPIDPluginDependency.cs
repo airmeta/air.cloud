@@ -9,15 +9,18 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Plugins.Security.MD5;
-using Air.Cloud.Core.Standard.DefaultDependencies;
 
 namespace Air.Cloud.Core.Plugins.DefaultDependencies
 {
     /// <summary>
     /// PID Provider
     /// </summary>
+
+    [AppAspect]
     public class DefaultPIDPluginDependency : IPIDPlugin
     {
         private static Object locker = new Object();
@@ -49,6 +52,7 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
         /// 读取PID
         /// </summary>
         /// <returns>PID</returns>
+        [UseAspect(typeof(ExecuteMethodPrinterAspect))]
         public string Get()
         {
             lock (locker)

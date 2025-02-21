@@ -44,7 +44,7 @@ namespace Air.Cloud.Core.Attributes
         /// </summary>
         public string AppAuther { get; set; }
         /// <summary>
-        /// 数值越大越先执行该Startup
+        /// 数值越小越先执行该Startup
         /// </summary>
         public int Order { get; set; } = 1000;
 

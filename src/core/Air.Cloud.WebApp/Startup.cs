@@ -15,7 +15,6 @@ using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.FriendlyException.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
-using Air.Cloud.WebApp.UnifyResult.Providers;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +34,7 @@ namespace Air.Cloud.WebApp
             services.AddEntityDomainInject();
             // 控制器和规范化结果
             services.AddControllers();
-
+          
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

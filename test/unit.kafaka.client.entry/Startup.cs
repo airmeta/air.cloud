@@ -11,10 +11,8 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
-using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Modules.Kafka.Model;
 
 using Confluent.Kafka;
@@ -25,18 +23,28 @@ namespace unit.skywlking.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-           
+
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            ProducerConfigModel producerConfigModel = new ProducerConfigModel();
-            producerConfigModel.TopicName = "fcj_workflow_audit_test";
-            AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
+            Task.Run(async () =>
             {
-                Content = "123123"
+                while (true)
+                {
+                    await Task.Delay(3000);
+                    ProducerConfigModel producerConfigModel = new ProducerConfigModel();
+                    producerConfigModel.TopicName = "fcj_workflow_audit_test";
+                    AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
+                    {
+                        Content = "123123"
+                    });
+                }
+
             });
+
         }
     }
+
     public class Contents 
     {
         public string Content { get ; set ; }

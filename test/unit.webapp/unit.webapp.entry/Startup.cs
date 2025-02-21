@@ -15,14 +15,11 @@ using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Consul.Service;
-using Air.Cloud.Modules.Quartz.Extensions;
-using Air.Cloud.Modules.Quartz.Options;
 using Air.Cloud.Plugins.Jwt.Extensions;
 using Air.Cloud.WebApp.Extensions;
 
 using unit.webapp.common.Filters;
 using unit.webapp.common.JwtHandler;
-using unit.webapp.entry.Jobs;
 namespace unit.webapp.entry
 {
     [AppStartup(Order = int.MinValue)]
@@ -34,15 +31,17 @@ namespace unit.webapp.entry
             services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
             services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();
-
             //注入
             services.AddControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();
+
+            
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
         }
     }
+  
 }

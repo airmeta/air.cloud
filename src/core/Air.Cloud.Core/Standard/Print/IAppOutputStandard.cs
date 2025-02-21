@@ -19,6 +19,16 @@ namespace Air.Cloud.Core.Standard.Print
         /// <summary>
         /// 输出对象
         /// </summary>
+        /// <param name="title">输出对象说明</param>
+        /// <param name="content">对象内容</param>
+        /// <param name="level">输出等级</param>
+        /// <param name="type">输出类别</param>
+        /// <param name="state">显式输出</param>
+        /// <param name="AdditionalParams">附加参数</param>
+        public void Print(string title, string content, AppPrintInformation.AppPrintLevel level = AppPrintInformation.AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null);
+        /// <summary>
+        /// 输出对象
+        /// </summary>
         /// <param name="Content">打印内容</param>
         public void Print(AppPrintInformation Content);
         /// <summary>
@@ -88,12 +98,38 @@ namespace Air.Cloud.Core.Standard.Print
         /// 状态
         /// </summary>
         public bool State { get; set; } = true;
-
         /// <summary>
-        /// zh-cn: 附加参数
-        /// en-us: Additional parameters
+        /// <para>zh-cn: 附加参数</para>
+        /// <para>en-us: Additional parameters</para>
         /// </summary>
         public Dictionary<string, object> AdditionalParams { get; set; } = null;
+        /// <summary>
+        /// <para>zh-cn: 类型</para>
+        /// <para>en-us: Output content type</para>
+        /// </summary>
+        public string Type { get; set; } = "default";
+
+        public AppPrintInformation() { }
+
+        /// <summary>
+        /// <para>zh-cn:应用程序打印信息构造函数</para>
+        /// <para>en-us:Application print information constractor</para>
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="content"></param>
+        /// <param name="level"></param>
+        /// <param name="state"></param>
+        /// <param name="additionalParams"></param>
+        /// <param name="type"></param>
+        public AppPrintInformation(string title, string content, AppPrintLevel level=AppPrintLevel.Information, bool state=true, Dictionary<string, object> additionalParams=null, string type="default")
+        {
+            Title = title;
+            Level = level;
+            Content = content;
+            State = state;
+            AdditionalParams = additionalParams;
+            Type = type;
+        }
     }
     /// <summary>
     /// 默认的输出标准实现
@@ -118,15 +154,25 @@ namespace Air.Cloud.Core.Standard.Print
         public void Print(AppPrintInformation Content)
         {
             Console.WriteLine(AppRealization.JSON.Serialize(Content));
-            //if (Content.Level == AppPrintInformation.AppPrintLevel.Error)
-            //{
-            //    throw new Exception(Content.Content);
-            //}
         }
         /// <inheritdoc/>
         public void Print<T>(T Content) where T : AppPrintInformation, new()
         {
             Console.WriteLine(AppRealization.JSON.Serialize(Content));
+        }
+
+        /// <inheritdoc/>
+        public void Print(string title, string content, AppPrintInformation.AppPrintLevel level = AppPrintInformation.AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null)
+        {
+            Print(new AppPrintInformation()
+            {
+                State = state,
+                Title = title,
+                Content = content,
+                Level = level,
+                Type = type,
+                AdditionalParams = AdditionalParams
+            });
         }
     }
 }

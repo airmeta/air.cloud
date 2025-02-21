@@ -10,8 +10,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.MessageQueue.Config;
-using Air.Cloud.Core.Standard.MessageQueue.Model;
-using Air.Cloud.Core.Standard.MessageQueue.Provider;
 
 namespace Air.Cloud.Core.Standard.MessageQueue
 {
@@ -20,6 +18,17 @@ namespace Air.Cloud.Core.Standard.MessageQueue
     /// </summary>
     public interface IMessageQueueStandard
     {
+        /// <summary>
+        /// <para>zh-cn:订阅方法名称</para>
+        /// <para>en-us:Subscribe method name</para>
+        /// </summary>
+        public const string SUBSCRIBE_METHOD = "Subscribe";
+        /// <summary>
+        /// <para>zh-cn:发布方法名称</para>
+        /// <para>en-us:Publish method name</para>
+        /// </summary>
+        public const string PUBLISH_METHOD = "Publish";
+
         /// <summary>
         /// 发布消息
         /// </summary>

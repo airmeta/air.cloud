@@ -76,6 +76,12 @@ namespace Air.Cloud.Modules.RedisCache.Dependencies
         {
             return String.Get<T>(Key);
         }
+
+        public bool RemoveCache(string Key)
+        {
+            return this.Key.Delete(Key);
+        }
+
         #endregion
     }
 }

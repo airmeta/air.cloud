@@ -89,7 +89,6 @@ namespace Air.Cloud.HostApp.Dependency
 
                 // 存储根服务
                 services.AddHostedService<GenericHostLifetimeEventsHostedService>();
-
                 // 初始化应用服务
                 services.AddApplication();
 

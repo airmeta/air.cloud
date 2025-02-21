@@ -11,14 +11,24 @@
  * acknowledged.
  */
 
+using Air.Cloud.Core.App;
+using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.KVCenter;
+using Air.Cloud.Core.Standard.MessageQueue.Attributes;
+using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Consul.Model;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using System.Reflection;
+
 using unit.webapp.model.Domains;
+using Air.Cloud.Modules.Kafka.Model;
+using Confluent.Kafka;
+using System.Linq.Expressions;
+using Newtonsoft.Json;
 
 namespace unit.webapp.service.services.DataBaseModuleTest
 {
@@ -37,7 +47,7 @@ namespace unit.webapp.service.services.DataBaseModuleTest
         [HttpGet("query"),AllowAnonymous]
         public object Query()
         {
-            return Domain.Search(s => s.UserId == "a09cdb089b7f48498090d1f7f11c0e7b");
+            return Domain.Search("a09cdb089b7f48498090d1f7f11c0e7b");
         }
         [HttpGet("server"), AllowAnonymous]
         public async Task<object> Sq()
