@@ -39,7 +39,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
     /// <summary>
     /// 事件源存储器
     /// </summary>
-    private readonly IEventSourceStorer _eventSourceStorer;
+    private readonly IEventSourceStorager _eventSourceStorer;
 
     /// <summary>
     /// 事件发布服务
@@ -63,7 +63,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
     /// <param name="gcCollect">是否启用执行完成触发 GC 回收</param>
     /// <param name="logEnabled">是否启用日志记录</param>
     public EventBusTaskBackGroundService(IServiceProvider serviceProvider
-        , IEventSourceStorer eventSourceStorer
+        , IEventSourceStorager eventSourceStorer
         , IEventPublisher eventPublisher
         , IEnumerable<IMessageSubscriber> eventHandlers
         , bool useUtcTimestamp

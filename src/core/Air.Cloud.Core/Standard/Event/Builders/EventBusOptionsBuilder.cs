@@ -23,7 +23,7 @@ public sealed class EventBusOptionsBuilder
     /// <summary>
     /// 事件存储器实现工厂
     /// </summary>
-    private Func<IServiceProvider, IEventSourceStorer> _eventSourceStorerImplementationFactory;
+    private Func<IServiceProvider, IEventSourceStorager> _eventStoragerFactory;
 
     /// <summary>
     /// 事件重试行为规则类型集合
@@ -165,32 +165,32 @@ public sealed class EventBusOptionsBuilder
     /// <summary>
     /// 替换事件源存储器
     /// </summary>
-    /// <param name="implementationFactory">自定义事件源存储器工厂</param>
+    /// <param name="eventStoragerFactory">自定义事件源存储器工厂</param>
     /// <returns><see cref="EventBusOptionsBuilder"/> 实例</returns>
-    public EventBusOptionsBuilder ReplaceStorer(Func<IServiceProvider, IEventSourceStorer> implementationFactory)
+    public EventBusOptionsBuilder ReplaceStorager(Func<IServiceProvider, IEventSourceStorager> eventStoragerFactory)
     {
-        _eventSourceStorerImplementationFactory = implementationFactory;
+        _eventStoragerFactory = eventStoragerFactory;
         return this;
     }
 
     /// <summary>
     /// 替换事件源存储器（如果初始化失败则回退为默认的）
     /// </summary>
-    /// <param name="createStorer"></param>
+    /// <param name="createStorager"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public EventBusOptionsBuilder ReplaceStorerOrFallback(Func<IEventSourceStorer> createStorer)
+    public EventBusOptionsBuilder ReplaceStoragerOrFallback(Func<IEventSourceStorager> createStorager)
     {
         // 空检查
-        if (createStorer == null) throw new ArgumentNullException(nameof(createStorer));
+        if (createStorager == null) throw new ArgumentNullException(nameof(createStorager));
 
         try
         {
             // 创建事件源存储器
-            var storer = createStorer.Invoke();
+            var storer = createStorager.Invoke();
 
             // 替换事件源存储器
-            ReplaceStorer(_ => storer);
+            ReplaceStorager(_ => storer);
         }
         catch { }
 
@@ -256,9 +256,9 @@ public sealed class EventBusOptionsBuilder
         }
 
         // 替换事件存储器
-        if (_eventSourceStorerImplementationFactory != default)
+        if (_eventStoragerFactory != default)
         {
-            services.Replace(ServiceDescriptor.Singleton(_eventSourceStorerImplementationFactory));
+            services.Replace(ServiceDescriptor.Singleton(_eventStoragerFactory));
         }
         // 注册事件执行器
         if (_messageExecutor != default)

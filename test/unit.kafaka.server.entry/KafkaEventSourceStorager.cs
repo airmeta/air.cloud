@@ -5,9 +5,9 @@ using Air.Cloud.Modules.Nexus.Publishers;
 using Confluent.Kafka;
 using System.Threading.Channels;
 
-namespace unit.kafaka.client.entry
+namespace unit.kafaka.server.entry
 {
-    public class KafkaEventSourceStorer : IEventSourceStorer
+    public class KafkaEventSourceStorager : IEventSourceStorager
     {
         /// <summary>
         /// 内存通道事件源存储器
@@ -22,7 +22,7 @@ namespace unit.kafaka.client.entry
         /// </summary>
         /// <param name="producerConfigModel"></param>
         /// <param name="groupId"></param>
-        public KafkaEventSourceStorer(ProducerConfigModel producerConfigModel, ConsumerConfigModel consumerConfigModel, string groupId)
+        public KafkaEventSourceStorager(ProducerConfigModel producerConfigModel, ConsumerConfigModel consumerConfigModel, string groupId)
         {
             _producerConfigModel = producerConfigModel;
             _consumerConfigModel = consumerConfigModel;

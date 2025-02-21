@@ -40,7 +40,7 @@ namespace unit.kafaka.server.entry
                 //services.AddEventBus(options =>
                 //{
                 //    options.AddSubscribers(Assembly.GetEntryAssembly());
-                //    options.ReplaceStorer(services =>
+                //    options.ReplaceStorager(services =>
                 //    {
                 //        return new ChannelEventSourceStorer(100);
                 //    });
@@ -51,7 +51,7 @@ namespace unit.kafaka.server.entry
                 services.AddEventBus(options =>
                 {
                     options.AddSubscribers(Assembly.GetEntryAssembly());
-                    options.ReplaceStorer(services =>
+                    options.ReplaceStorager(services =>
                     {
                         var options = AppCore.GetOptions<KafkaSettingsOptions>();
                         consumerConfigModel.Config = new ConsumerConfig()
@@ -60,7 +60,7 @@ namespace unit.kafaka.server.entry
                             BootstrapServers = options.ClusterAddress,
                             EnableSslCertificateVerification = false
                         };
-                        return new KafkaEventSourceStorer(producerConfigModel, consumerConfigModel, GroupId);
+                        return new KafkaEventSourceStorager(producerConfigModel, consumerConfigModel, GroupId);
                     });
                 });
             }

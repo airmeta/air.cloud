@@ -15,13 +15,13 @@ public class DefaultEventPublisher : IEventPublisher
     /// <summary>
     /// 事件源存储器
     /// </summary>
-    private readonly IEventSourceStorer _eventSourceStorer;
+    private readonly IEventSourceStorager _eventSourceStorer;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="eventSourceStorer">事件源存储器</param>
-    public DefaultEventPublisher(IEventSourceStorer eventSourceStorer)
+    public DefaultEventPublisher(IEventSourceStorager eventSourceStorer)
     {
         _eventSourceStorer = eventSourceStorer;
     }

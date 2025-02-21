@@ -11,7 +11,7 @@ namespace Air.Cloud.Modules.Nexus.Publishers.Storers;
 /// <para>顾名思义，这里指的是事件消息存储中心，提供读写能力</para>
 /// <para>默认实现为内存中的 <see cref="Channel"/>，可自由更换存储介质，如 Kafka，SQL Server 等</para>
 /// </remarks>
-public sealed partial class ChannelEventSourceStorer : IEventSourceStorer
+public sealed partial class ChannelEventSourceStorager : IEventSourceStorager
 {
     /// <summary>
     /// 内存通道事件源存储器
@@ -22,7 +22,7 @@ public sealed partial class ChannelEventSourceStorer : IEventSourceStorer
     /// 构造函数
     /// </summary>
     /// <param name="capacity">管道最多能够处理多少消息，超过该容量进入等待写入</param>
-    public ChannelEventSourceStorer(int capacity)
+    public ChannelEventSourceStorager(int capacity)
     {
         // 配置通道，设置超出默认容量后进入等待
         var boundedChannelOptions = new BoundedChannelOptions(capacity)

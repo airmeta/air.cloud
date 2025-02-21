@@ -75,10 +75,10 @@ public static class EventBusServiceCollectionExtensions
     private static IServiceCollection AddInternalService(this IServiceCollection services, EventBusOptionsBuilder eventBusOptionsBuilder)
     {
         // 创建默认内存通道事件源对象
-        var defaultStorerOfChannel = new ChannelEventSourceStorer(eventBusOptionsBuilder.ChannelCapacity);
+        var defaultStorerOfChannel = new ChannelEventSourceStorager(eventBusOptionsBuilder.ChannelCapacity);
 
         // 注册后台任务队列接口/实例为单例，采用工厂方式创建
-        services.AddSingleton<IEventSourceStorer>(_ =>
+        services.AddSingleton<IEventSourceStorager>(_ =>
         {
             return defaultStorerOfChannel;
         });
