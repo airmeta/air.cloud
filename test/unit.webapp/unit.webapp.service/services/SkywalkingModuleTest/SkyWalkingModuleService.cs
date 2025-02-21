@@ -1,6 +1,6 @@
 ﻿
 /*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
  */
 
 using Air.Cloud.Core.Standard.DynamicServer;
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.Taxin.Client;
 
 using Microsoft.AspNetCore.Mvc;

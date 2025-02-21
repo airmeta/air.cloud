@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ namespace Air.Cloud.WebApp.App
             builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
             AppRealization.SetDependency<IAppInjectStandard>(new WebAppInjectDependency());
             builder = AppRealization.Injection.Inject(builder);
-            var app = builder.Build();
+           var app = builder.Build();
            
             return app;
         }

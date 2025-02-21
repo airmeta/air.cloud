@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ namespace Air.Cloud.Modules.Consul.Model
 
         #region 连接配置(ConnectConfig)
         /// <summary>
-        /// <para>zh-cn:注册超时时间</para>
+        /// <para>zh-cn:注册超时时间 (秒)</para>
         /// <para>en-us:</para>
         /// </summary>
         public int ConnectTimeout { get; set; } = 5;

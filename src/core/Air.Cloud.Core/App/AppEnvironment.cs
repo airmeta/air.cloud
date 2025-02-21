@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,6 +40,7 @@ namespace Air.Cloud.Core.App
                     throw new Exception("无法指定环境标识为Common，请更换环境标识");
                 if (!string.IsNullOrEmpty(ConfigEnovriment))
                 {
+                    AppConst.EnvironmentKey= ConfigEnovriment;
                     var Result = Enum.TryParse(ConfigEnovriment, out EnvironmentEnums env);
                     if (Result) AppConst.EnvironmentStatus = env;
                     if (!AppConst.EnvironmentStatus.HasValue) AppConst.EnvironmentStatus = EnvironmentEnums.Other;
@@ -94,7 +95,11 @@ namespace Air.Cloud.Core.App
                 if (AppConst.EnvironmentStatus.HasValue && AppConst.EnvironmentStatus != EnvironmentEnums.Other) return AppConst.EnvironmentStatus.Value;
                 string ConfigEnovriment = AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
                 if (!string.IsNullOrEmpty(ConfigEnovriment) && ConfigEnovriment.ToUpper() == "COMMON") throw new Exception("无法指定环境标识为Common，请更换环境标识");
-                if (!string.IsNullOrEmpty(ConfigEnovriment)) return ConfigEnovriment;
+                if (!string.IsNullOrEmpty(ConfigEnovriment))
+                {
+                    AppConst.EnvironmentKey = ConfigEnovriment;
+                    return ConfigEnovriment;
+                }
                 return AppEnvironment.RealEnvironment;
             }
         }

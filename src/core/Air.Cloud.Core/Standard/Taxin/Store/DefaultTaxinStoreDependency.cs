@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,9 +11,9 @@
  */
 using Air.Cloud.Core.Standard.Taxin.Events;
 using Air.Cloud.Core.Standard.Taxin.Tools;
-using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Model;
 using Air.Cloud.Core.Standard.Taxin.Server;
+using Air.Cloud.Core.Standard.Store;
 
 namespace Air.Cloud.Core.Standard.Taxin.Store
 {

@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,13 +9,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Dependencies;
+
 namespace Air.Cloud.Core.Standard.KVCenter
 {
     /// <summary>
     /// <para>en-us: Key-Value storage center standard</para>
     /// <para>zh-cn: 键值存储中心标准</para>
     /// </summary>
-    public interface IKVCenterStandard
+    public interface IKVCenterStandard: IStandard, ITransient
     {
         /// <summary>
         /// <para>zh-cn: 查询KV存储</para>

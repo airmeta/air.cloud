@@ -1,6 +1,6 @@
 ﻿
 /*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,19 +10,19 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.Repositories;
-
-using Microsoft.Extensions.Logging;
 
 using System.Linq.Expressions;
 
 using unit.webapp.model.Domains;
 using unit.webapp.model.Entity;
-
 namespace unit.webapp.domain.Domains
 {
+    [AppAspect]
     public class TestDomain : ITestDomain
     {
         private readonly IRepository<Test> _repository;
@@ -37,18 +37,18 @@ namespace unit.webapp.domain.Domains
             await _repository.DeleteAsync(entity);
         }
 
-        public async Task<Test> Insert(Test entity)
+        public async Task<bool> Insert(Test entity)
         {
             appCache.SetCache("123","456");
             var result = await _repository.InsertAsync(entity);
-            return result.Entity;
+            return false;
         }
-
-        public IEnumerable<IEntity> Search(Expression<Func<Test, bool>>? filter)
+        [UseAspect(typeof(ExecuteMethodPrinterAspect))]
+        public IEnumerable<IEntity> Search(string id)
         {
             var data = _repository.AsQueryable();
-            if (filter != null) data = data.Where(filter);
-            return data;
+            if (id != null) data = data.Where(s=>s.UserId== id);
+            return data.ToList();
         }
         public (int, List<Test>) Page(Expression<Func<Test, bool>>? filter, int Page, int Limit)
         {

@@ -1,6 +1,6 @@
 ﻿
 /*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Standard.MessageQueue;
+using Air.Cloud.Core.Standard.MessageQueue.Config;
+using Air.Cloud.Modules.Kafka.Config;
 using Air.Cloud.Modules.Kafka.Model;
 
 using Confluent.Kafka;
@@ -36,8 +38,16 @@ namespace unit.skywlking.entry
             //    Content = "123123"
             //});
             ConsumerConfigModel producerConfigModel = new ConsumerConfigModel();
-            producerConfigModel.TopicName = "fcj_workflow_audit_dev";
-            string GroupId=AppEnvironment.IsDevelopment? Guid.NewGuid().ToString() : AppConst.ApplicationName;
+
+            producerConfigModel.TopicName = "fcj_workflow_audit_test";
+            string GroupId = AppEnvironment.IsDevelopment ? Guid.NewGuid().ToString() : AppConst.ApplicationName;
+            var options = AppCore.GetOptions<KafkaSettingsOptions>();
+            producerConfigModel.Config = new ConsumerConfig()
+            {
+                GroupId = GroupId,
+                BootstrapServers = options.ClusterAddress,
+                EnableSslCertificateVerification=false
+            };
             AppRealization.Queue.Subscribe<ConsumerConfig, object>(producerConfigModel, (s) =>
             {
                 Console.WriteLine(AppRealization.JSON.Serialize(s));

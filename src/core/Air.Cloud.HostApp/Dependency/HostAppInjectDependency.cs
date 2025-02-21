@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -89,7 +89,6 @@ namespace Air.Cloud.HostApp.Dependency
 
                 // 存储根服务
                 services.AddHostedService<GenericHostLifetimeEventsHostedService>();
-
                 // 初始化应用服务
                 services.AddApplication();
 

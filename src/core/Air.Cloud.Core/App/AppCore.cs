@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,6 @@ using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Security.Claims;
 
 namespace Air.Cloud.Core.App
 {
@@ -438,6 +437,28 @@ namespace Air.Cloud.Core.App
         public static void DisposeUnmanagedObjects()
         {
             UnmanagedObjects.Clear();
+        }
+        /// <summary>
+        /// <para>zh-cn:从系统中的所有程序集中加载指定类型的子类型</para>
+        /// <para>en-us:Load a subtype of a specified type from all assemblies in the system</para>
+        /// </summary>
+        /// <param name="specifyTypes">
+        ///  <para>zh-cn:指定的类型</para>
+        ///  <para>en-us:Specify type</para>
+        /// </param>
+        /// <returns></returns>
+        public static Type[] LoadSpecifyTypes(params Type[] specifyTypes)
+        {
+            return Assemblies.SelectMany(ass =>
+            {
+                    return AssemblyLoadContext.Default.LoadFromAssemblyName(ass).GetTypes().Where(t =>
+                    {
+                        var IsImpl = t.GetInterfaces().Any(x => specifyTypes.Any(x1=> x1 == (x.IsGenericType ? x.GetGenericTypeDefinition() : x)));
+                        if (IsImpl && t.IsPublic && !t.IsDefined(typeof(IgnoreScanningAttribute), false))
+                            return true;
+                        return false;
+                    }).ToArray();
+            }).ToArray();
         }
     }
 }

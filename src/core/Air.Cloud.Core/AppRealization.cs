@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@ using Air.Cloud.Core.Standard.Configuration;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
-using Air.Cloud.Core.Standard.JinYiWei;
+using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.JSON;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.MessageQueue;
@@ -30,12 +30,16 @@ using Air.Cloud.Core.Standard.UtilStandard;
 using Microsoft.AspNetCore.Mvc;
 
 using System.Reflection;
+using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
+using Air.Cloud.Core.Extensions.Aspect;
 
 namespace Air.Cloud.Core
 {
     /// <summary>
     /// 所有标准实现
     /// </summary>
+    [AppAspect]
     public class AppRealization
     {
         /// <summary>
@@ -99,10 +103,15 @@ namespace Air.Cloud.Core
         /// </summary>
         public static IKVCenterStandard KVCenter => InternalRealization.KVCenter ?? DefaultRealization.KVCenter;
         /// <summary>
-        /// <para>zh-cn:日志追踪实现</para>
-        /// <para>en-us:Log tracking  dependency</para>
+        /// <para>zh-cn:服务管理中心标准</para>
+        /// <para>en-us:Server store center</para>
         /// </summary>
-        public static ITraceLogStandard Log=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
+        public static IServerCenterStandard ServerCenter => InternalRealization.ServerCenter ?? DefaultRealization.ServerCenter;
+        /// <summary>
+        /// <para>zh-cn:日志追踪实现</para>
+        /// <para>en-us:TraceLog tracking  dependency</para>
+        /// </summary>
+        public static ITraceLogStandard TraceLog=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
 
         /// <summary>
         /// <para>zh-cn:队列实现</para>
@@ -115,6 +124,7 @@ namespace Air.Cloud.Core
         /// </summary>
         /// <typeparam name="TDependency">约定类型</typeparam>
         /// <param name="standard">约定实现</param>
+        [UseAspect(typeof(ExecuteMethodPrinterAspect))]
         public static void SetDependency<TStandard>(TStandard standard) 
                 where TStandard :IStandard
         {
@@ -206,7 +216,14 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:键值对存储中心标准</para>
             /// <para>en-us:Key-Value store center</para>
             /// </summary>
-            public static IKVCenterStandard KVCenter => throw new NotImplementedException("系统未实现KV中心标准");
+            public static IKVCenterStandard KVCenter => throw new NotImplementedException("系统未实现键值对管理标准");
+
+            /// <summary>
+            /// <para>zh-cn:服务管理中心标准</para>
+            /// <para>en-us:Server store center</para>
+            /// </summary>
+            public static IServerCenterStandard ServerCenter => throw new NotImplementedException("系统未实现服务管理标准");
+
             /// <summary>
             /// <para>zh-cn:默认日志追踪</para>
             /// <para>en-us:Default log tracking </para>
@@ -282,10 +299,17 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:键值对存储中心标准</para>
             /// <para>en-us:Key-Value store center</para>
             /// </summary>
-            public static IKVCenterStandard KVCenter = null;
+            public static IKVCenterStandard KVCenter => AppCore.GetService<IKVCenterStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:服务管理中心标准</para>
+            /// <para>en-us:Server store center</para>
+            /// </summary>
+            public static IServerCenterStandard ServerCenter => AppCore.GetService<IServerCenterStandard>();
+
             /// <summary>
             /// <para>zh-cn:日志追踪</para>
-            /// <para>en-us:Log tracking </para>
+            /// <para>en-us:TraceLog tracking </para>
             /// </summary>
             public static ITraceLogStandard TraceLog => AppCore.GetService<ITraceLogStandard>();
 

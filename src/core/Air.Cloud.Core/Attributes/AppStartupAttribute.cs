@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,9 +44,14 @@ namespace Air.Cloud.Core.Attributes
         /// </summary>
         public string AppAuther { get; set; }
         /// <summary>
-        /// 数值越大越先执行该Startup
+        /// 数值越小越先执行该Startup
         /// </summary>
         public int Order { get; set; } = 1000;
+
+        /// <summary>
+        /// <para>zh-cn:是否自动加载 默认为true 可以设置为非自动加载</para>
+        /// </summary>
+        public bool AutoLoad { get; set; } = true;
 
         public AppStartupAttribute()
         {

@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,6 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.MessageQueue.Config;
 using Air.Cloud.Modules.Kafka.Config;
-using Air.Cloud.Modules.Kafka.Model;
 using Air.Cloud.Modules.Kafka.Utils;
 
 using Confluent.Kafka;
@@ -38,7 +37,7 @@ namespace Air.Cloud.Modules.Kafka.Helper
             {
                 var Config = new ProducerConfig()
                 {
-                    BootstrapServers = KafkaClusterOptions.ClusterAddress
+                    BootstrapServers = KafkaClusterOptions.ClusterAddress,
                 } as TTopicPublishConfig;
                 if (Config == null)
                 {
@@ -67,9 +66,9 @@ namespace Air.Cloud.Modules.Kafka.Helper
 
         public void Subscribe<TTopicSubscribeConfig, TMessageContentStandard>
             (ITopicSubscribeConfig<TTopicSubscribeConfig> subscribeConfig, 
-            Action<TMessageContentStandard> action,string GroupId=null)
+                Action<TMessageContentStandard> action,string GroupId=null)
                where TTopicSubscribeConfig : class
-                where TMessageContentStandard : class, new()
+                where TMessageContentStandard : class,new()
         {
           
             if (subscribeConfig.Config == null)
@@ -79,14 +78,8 @@ namespace Air.Cloud.Modules.Kafka.Helper
                     GroupId= GroupId,
                     BootstrapServers = KafkaClusterOptions.ClusterAddress
                 } as TTopicSubscribeConfig;
-                if (Config == null)
-                {
-                    AppRealization.Output.Error(new Exception("订阅配置错误"));
-                }
-                else
-                {
-                    subscribeConfig.Config = Config;
-                }
+                if (Config == null) AppRealization.Output.Error(new Exception("订阅配置错误"));
+                subscribeConfig.Config = Config;
             }
             ConsumerConfig config = subscribeConfig.Config as ConsumerConfig;
             //消费数据
@@ -103,7 +96,13 @@ namespace Air.Cloud.Modules.Kafka.Helper
                         var ConsumData = consumer.Consume();
                         try
                         {
-                            action.Invoke(AppRealization.JSON.Deserialize<TMessageContentStandard>(ConsumData.Message.Value));
+                            TMessageContentStandard messageContentStandard=AppRealization.JSON.Deserialize<TMessageContentStandard>(ConsumData.Message.Value);
+                            action.Invoke(messageContentStandard);
+                            if (!EnableCommit)
+                            {
+                                //手动提交消费配置
+                                consumer.Commit(ConsumData);
+                            }
                         }
                         catch (Exception ex)
                         {

@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.Modules.RedisCache
+namespace Air.Cloud.Modules.Kafka
 {
     public class Startup : AppStartup
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            
+
 
         }
 
@@ -23,8 +23,10 @@ namespace Air.Cloud.Modules.RedisCache
                .BindConfiguration("KafkaSettings")
                .ValidateDataAnnotations()
                .PostConfigure(options =>
-               {});
+               { });
             services.AddKafkaService();
+
+
         }
     }
 }

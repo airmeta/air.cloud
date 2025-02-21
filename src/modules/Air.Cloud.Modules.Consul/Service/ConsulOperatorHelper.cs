@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,6 @@ using Air.Cloud.Core;
 using Air.Cloud.Modules.Consul.Model;
 
 using Consul;
-
-using Microsoft.CSharp.RuntimeBinder;
 
 using System.Net;
 
@@ -35,25 +33,6 @@ namespace Air.Cloud.Modules.Consul.Service
         {
             return ConsulClient;
         }
-        public void QueryAllServices()
-        {
-            var services = ConsulClient.Catalog.Services().Result.Response;
-            Console.WriteLine("Services:");
-            foreach (var service in services)
-            {
-                Console.WriteLine($"- {service.Key}");
-            }
-        }
-        public void QueryAllNodes()
-        {
-            var nodes = ConsulClient.Catalog.Nodes().Result.Response;
-            Console.WriteLine("Nodes:");
-            foreach (var node in nodes)
-            {
-                Console.WriteLine($"- {node.Name}");
-            }
-        }
-
         public Tuple<bool, ConsulServiceOptions> InitConsulRegistration(ConsulServiceOptions serviceOptions)
         {
             #region  检查Consul服务集群

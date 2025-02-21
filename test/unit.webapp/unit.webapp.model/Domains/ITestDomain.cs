@@ -1,6 +1,6 @@
 ﻿
 /*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,8 +23,8 @@ namespace unit.webapp.model.Domains
     public interface ITestDomain : IEntityDomain, ITransient
     {
         public Task Delete(Test entity, bool FakeDelete = false);
-        public Task<Test> Insert(Test entity);
-        public IEnumerable<IEntity> Search(Expression<Func<Test, bool>>? filter);
+        public Task<bool> Insert(Test entity);
+        public IEnumerable<IEntity> Search(string id);
         public (int, List<Test>) Page(Expression<Func<Test, bool>>? filter, int Page, int Limit);
         public IEntity Update(IEntity entity);
     }

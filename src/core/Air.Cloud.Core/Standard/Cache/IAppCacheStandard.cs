@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,10 @@ namespace Air.Cloud.Core.Standard.Cache
         /// <summary>
         /// 设置对象缓存
         /// </summary>
-        /// <param name="Key">缓存键</param>
+        /// <param name="Key">
+        ///  <para>zh-cn:缓存键</para>
+        ///  <para>en-us:Cache key</para>
+        /// </param>
         /// <param name="t">缓存值</param>
         /// <param name="timeSpan">(不设置则为永久)</param>
         /// <returns></returns>
@@ -44,8 +47,21 @@ namespace Air.Cloud.Core.Standard.Cache
         /// <summary>
         /// 获取缓存
         /// </summary>
-        /// <param name="Key"></param>
+        /// <param name="Key">
+        ///  <para>zh-cn:缓存键</para>
+        ///  <para>en-us:Cache key</para>
+        /// </param>
         /// <returns></returns>
         public T GetCache<T>(string Key) where T : class, new();
+
+        /// <summary>
+        /// 移除缓存
+        /// </summary>
+        /// <param name="Key">
+        ///  <para>zh-cn:缓存键</para>
+        ///  <para>en-us:Cache key</para>
+        /// </param>
+        /// <returns></returns>
+        public bool RemoveCache(string Key);
     }
 }

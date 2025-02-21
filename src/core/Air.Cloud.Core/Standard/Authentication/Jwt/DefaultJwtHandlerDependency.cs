@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace Air.Cloud.Core.Standard.Authentication.Jwt
 {
+    /// <summary>
+    /// <para>zh-cn:默认的Jwt处理依赖</para>
+    /// <para>en-us:DefaultJwtHandlerDependency</para>
+    /// </summary>
     public class DefaultJwtHandlerDependency : IJwtHandlerStandard
     {
         /// <summary>
@@ -72,9 +76,10 @@ namespace Air.Cloud.Core.Standard.Authentication.Jwt
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public async Task UnAuthorizeHandleAsync(AuthorizationHandlerContext context)
+        public Task UnAuthorizeHandleAsync(AuthorizationHandlerContext context)
         {
             context.Fail();
+            return Task.CompletedTask;
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -86,7 +86,7 @@ namespace Air.Cloud.Modules.SkyWalking.Options
         public string Level { get; set; } = "Information";
         /// <summary>
         /// <para>zh-cn:日志文件地址</para>
-        /// <para>en-us:Log file path</para>
+        /// <para>en-us:TraceLog file path</para>
         /// </summary>
         public string FilePath { get; set; } = "logs/skyapm-{Date}.log";
     }

@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,10 @@ using XC.RSAUtil;
 
 namespace Air.Cloud.Core.Plugins.Security.RSA
 {
+    /// <summary>
+    /// <para>zh-cn:RSA加密</para>
+    /// <para>en-us:RSA Encryption Tools</para>
+    /// </summary>
     public class RsaEncryption : RsaTools
     {
         /// <summary>
@@ -29,7 +33,14 @@ namespace Air.Cloud.Core.Plugins.Security.RSA
         {
             if (string.IsNullOrEmpty(data)) return string.Empty;
             var rsaPkcs1Util = new RsaPkcs1Util(Encoding.UTF8, pubkey, prikey, 2048);
-            var content = rsaPkcs1Util.Decrypt(data, RSAEncryptionPadding.Pkcs1);
+            int ciphertextLength = 256;
+            byte[] data1 = Convert.FromBase64String(data);
+            var newData = new List<byte>(data1);
+            while (newData.Count < ciphertextLength)
+            {
+                newData.Insert(0, 0x00);
+            }
+            var content = rsaPkcs1Util.Decrypt(Convert.ToBase64String(newData.ToArray()), RSAEncryptionPadding.Pkcs1);
             return content;
         }
 

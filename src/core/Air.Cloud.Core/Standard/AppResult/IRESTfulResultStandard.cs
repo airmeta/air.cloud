@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,11 @@
  */
 namespace Air.Cloud.Core.Standard.AppResult
 {
-    public interface IRESTfulResultStandard<T> : IStandard where T : class
+    /// <summary>
+    /// REST风格结果集
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IRESTfulResultStandard<T> : IStandard
     {
         /// <summary>
         /// 状态码

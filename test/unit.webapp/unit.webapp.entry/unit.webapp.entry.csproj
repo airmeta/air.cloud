@@ -16,13 +16,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
-    <ProjectReference Include="..\unit.webapp.common\unit.webapp.common.csproj" />
-    <ProjectReference Include="..\unit.webapp.service\unit.webapp.service.csproj" />
+    <PackageReference Include="Grpc.Core" Version="2.46.6" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\" />
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj" />
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj" />
+    <ProjectReference Include="..\unit.webapp.common\unit.webapp.common.csproj" />
+    <ProjectReference Include="..\unit.webapp.service\unit.webapp.service.csproj" />
   </ItemGroup>
 
 </Project>

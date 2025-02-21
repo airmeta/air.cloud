@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (c) 2024 星曳数据
+ * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
         public SchemaInformation Schema { get; set; }
         /// <summary>
         /// <para>zh-cn:日志文件配置</para>
-        /// <para>en-us:Log file configuration</para>
+        /// <para>en-us:TraceLog file configuration</para>
         /// </summary>
         public LogFileInformation LogFile { get; set; }
         /// <summary>
@@ -109,7 +109,7 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     {
         /// <summary>
         /// <para>zh-cn:日志存放文件夹</para>
-        /// <para>en-us:Log directory</para>
+        /// <para>en-us:TraceLog directory</para>
         /// </summary>
         public string Directory { get; set; }
         /// <summary>
@@ -128,8 +128,17 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     /// </summary>
     public class ApplicationDefaultsInformation
     {
+        /// <summary>
+        /// 应用程序名称
+        /// </summary>
         public string ApplicationPoolName { get; set; }
+        /// <summary>
+        /// EnabledProtocols
+        /// </summary>
         public string EnabledProtocols { get; set; }
+        /// <summary>
+        /// IsLocallyStored
+        /// </summary>
         public bool? IsLocallyStored { get; set; }
     }
     /// <summary>
@@ -137,8 +146,17 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     /// </summary>
     public class SchemaInformation
     {
+        /// <summary>
+        /// Name
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// AllowUnrecognizedAttributes
+        /// </summary>
         public bool? AllowUnrecognizedAttributes { get; set; }
+        /// <summary>
+        /// IsCollectionDefault
+        /// </summary>
         public bool? IsCollectionDefault { get; set; }
 
     }
@@ -147,13 +165,34 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     /// </summary>
     public class LogFileInformation
     {
+        /// <summary>
+        /// Directory
+        /// </summary>
         public string Directory { get; set; }
+        /// <summary>
+        /// TruncateSize
+        /// </summary>
         public long? TruncateSize { get; set; }
+        /// <summary>
+        /// LogTargetW3C
+        /// </summary>
         public LogTargetW3C? LogTargetW3C { get; set; }
+        /// <summary>
+        /// LogExtFileFlags
+        /// </summary>
 
         public LogExtFileFlags? LogExtFileFlags { get; set; }
+        /// <summary>
+        /// Period
+        /// </summary>
         public LoggingRolloverPeriod? Period { get; set; }
+        /// <summary>
+        /// Enabled
+        /// </summary>
         public bool? Enabled { get; set; }
+        /// <summary>
+        /// CustomLogPluginClsid
+        /// </summary>
         public Guid? CustomLogPluginClsid { get; set; }
 
     }
@@ -162,9 +201,17 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     /// </summary>
     public class LimitsInformation
     {
+        /// <summary>
+        /// MaxBandwidth
+        /// </summary>
         public long? MaxBandwidth { get; set; }
-
+        /// <summary>
+        /// MaxUrlSegments
+        /// </summary>
         public long? MaxUrlSegments { get; set; }
+        /// <summary>
+        /// IsLocallyStored
+        /// </summary>
         public bool? IsLocallyStored { get; set; }
     }
 }
