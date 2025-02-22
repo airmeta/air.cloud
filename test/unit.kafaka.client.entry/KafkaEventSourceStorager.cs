@@ -9,6 +9,7 @@ namespace unit.kafaka.client.entry
 {
     public class KafkaEventSourceStorager : IEventSourceStorager
     {
+
         /// <summary>
         /// 内存通道事件源存储器
         /// </summary>

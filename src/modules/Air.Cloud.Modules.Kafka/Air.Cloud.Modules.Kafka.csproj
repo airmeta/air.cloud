@@ -15,15 +15,15 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>1.1.0.0</Version>
+    <Version>1.2.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
-    <None Include="..\..\..\LICENSE" Link="LICENSE">
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
@@ -34,5 +34,4 @@
     <ProjectReference Include="..\..\extensions\Air.Cloud.Core.Extensions\Air.Cloud.Core.Extensions.csproj" />
     <PackageReference Include="Confluent.Kafka" Version="2.1.0" />
   </ItemGroup>
-
 </Project>

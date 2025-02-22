@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 namespace Air.Cloud.Modules.Nexus;
 
 /// <summary>
@@ -5,64 +16,6 @@ namespace Air.Cloud.Modules.Nexus;
 /// </summary>
 public sealed class Retry
 {
-    ///// <summary>
-    ///// 重试有异常的方法，还可以指定特定异常
-    ///// </summary>
-    ///// <typeparam name="TException1">重试类型1</typeparam>
-    ///// <typeparam name="TException2">重试类型2</typeparam>
-    ///// <typeparam name="TException3">重试类型3</typeparam>
-    ///// <param name="action"></param>
-    ///// <param name="numRetries">重试次数</param>
-    ///// <param name="retryTimeout">重试间隔时间</param>
-    ///// <param name="finalThrow">是否最终抛异常</param>
-    ///// <param name="fallbackRule">重试失败回调</param>
-    ///// <param name="retryAction">重试时调用方法</param>
-    ///// <exception cref="ArgumentNullException"></exception>
-    //public static void Invoke<TException1, TException2, TException3>(Action action
-    //    , int numRetries
-    //    , int retryTimeout = 1000
-    //    , bool finalThrow = true
-    //    , Action<Exception> fallbackRule = default
-    //    , Action<int, int> retryAction = default)
-    //{
-    //    Invoke(action, numRetries, retryTimeout, finalThrow, [typeof(TException1), typeof(TException2), typeof(TException3)], fallbackRule, retryAction);
-    //}
-
-    ///// <summary>
-    ///// 重试有异常的方法，还可以指定特定异常
-    ///// </summary>
-    ///// <typeparam name="TException1">重试类型1</typeparam>
-    ///// <typeparam name="TException2">重试类型2</typeparam>
-    ///// <param name="action"></param>
-    ///// <param name="numRetries">重试次数</param>
-    ///// <param name="retryTimeout">重试间隔时间</param>
-    ///// <param name="finalThrow">是否最终抛异常</param>
-    ///// <param name="fallbackRule">重试失败回调</param>
-    ///// <param name="retryAction">重试时调用方法</param>
-    ///// <exception cref="ArgumentNullException"></exception>
-    //public static void Invoke<TException1, TException2>(Action action
-    //    , int numRetries
-    //    , int retryTimeout = 1000
-    //    , bool finalThrow = true
-    //    , Action<Exception> fallbackRule = default
-    //    , Action<int, int> retryAction = default) => Invoke(action, numRetries, retryTimeout, finalThrow, [typeof(TException1), typeof(TException2)], fallbackRule, retryAction);
-    ///// <summary>
-    ///// 重试有异常的方法，还可以指定特定异常
-    ///// </summary>
-    ///// <typeparam name="TException">重试类型</typeparam>
-    ///// <param name="action"></param>
-    ///// <param name="numRetries">重试次数</param>
-    ///// <param name="retryTimeout">重试间隔时间</param>
-    ///// <param name="finalThrow">是否最终抛异常</param>
-    ///// <param name="fallbackRule">重试失败回调</param>
-    ///// <param name="retryAction">重试时调用方法</param>
-    ///// <exception cref="ArgumentNullException"></exception>
-    //public static void Invoke<TException>(Action action
-    //    , int numRetries
-    //    , int retryTimeout = 1000
-    //    , bool finalThrow = true
-    //    , Action<Exception> fallbackRule = default
-    //    , Action<int, int> retryAction = default) => Invoke(action, numRetries, retryTimeout, finalThrow, [typeof(TException)], fallbackRule, retryAction);
     /// <summary>
     /// 重试有异常的方法，还可以指定特定异常
     /// </summary>
