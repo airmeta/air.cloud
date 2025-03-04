@@ -14,9 +14,9 @@ using System.Reflection;
 
 namespace Air.Cloud.Core.Modules.AppAspect.Handler
 {
-
     /// <summary>
-    /// 应用程序执行切入
+    /// <para>zh-cn:应用程序执行切入</para>
+    /// <para>en-us:Application Aspect execute handler</para>
     /// </summary>
     public interface IAspectExecuteHandler
     {
@@ -25,14 +25,27 @@ namespace Air.Cloud.Core.Modules.AppAspect.Handler
         /// <para>en-us:Before method execute</para>
         /// </summary>
         /// <param name="methodInfo">
-        /// <para>zh-cn:方法执行之前</para>
-        /// <para>en-us:Method execute before</para>
+        /// <para>zh-cn:方法</para>
+        /// <para>en-us:Method information</para>
         /// </param>
-        /// <param name="args"></param>
+        /// <param name="args">
+        ///  <para>zh-cn:方法参数</para>
+        ///  <para>en-us:method args</para>  
+        /// </param>
         public void Execute_Before(MethodInfo methodInfo,object[] args);
         /// <summary>
-        /// 执行之后
+        /// <para>zh-cn:方法执行之后</para>
+        /// <para>en-us:Before method after</para>
         /// </summary>
+        /// <param name="methodInfo">
+        /// <para>zh-cn:方法</para>
+        /// <para>en-us:Method information</para>
+        /// </param>
+        /// <param name="retValue">
+        ///  <para>zh-cn:方法返回值</para>
+        ///  <para>en-us:return value</para>  
+        /// </param>
         public void Execute_After(MethodInfo methodInfo,object retValue);
+
     }
 }

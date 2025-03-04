@@ -134,9 +134,34 @@ namespace Air.Cloud.Core.Modules.AppAspect.Internal
                 if (method != null)
                 {
                     args = method.Invoke(aspectInstance, new object[] { hostType.GetMethod(name), args }) as object[];
+                   
                 }
             }
-            var result = target.Invoke(args);
+            object result=null;
+            try
+            {
+                result = target.Invoke(args);
+            }
+            catch (Exception ex)
+            {
+                foreach (var aspect in MethodAspects.OrderBy(s => s.Order))
+                {
+                    var aspectInstance = AppCore.GetService(aspect.AppAspectDependencies) ?? Activator.CreateInstance(aspect.AppAspectDependencies);
+                    try
+                    {
+                        MethodInfo method = aspectInstance.GetType().GetMethod("Around_Error");
+                        if (method != null)
+                        {
+                            method.MakeGenericMethod(ex.GetType()).Invoke(aspectInstance, new object[] { hostType.GetMethod(name), args, ex });
+                        }
+                    }
+                    catch (Exception ex1)
+                    {
+                        AppRealization.Output.Error(ex1);
+                    }
+                    throw;
+                }
+            }
             foreach (var aspect in MethodAspects.OrderByDescending(s => s.Order))
             {
                 var aspectInstance = AppCore.GetService(aspect.AppAspectDependencies) ?? Activator.CreateInstance(aspect.AppAspectDependencies);

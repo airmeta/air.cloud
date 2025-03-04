@@ -13,15 +13,19 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
 using Air.Cloud.Modules.Quartz.Options;
+
+using unit.webapp.entry.AspectDependencies;
 using unit.webapp.model.Domains;
 
 namespace unit.webapp.entry.Jobs
 {
 
-    [AutoLoad(false)]
+    [AutoLoad(true)]
+    [AppAspect]
     [SchedulerInformationAttribute(CronExpression = "0/5 * * * * ? ", Name = "测试定时任务", Id = "job_test1", Description = "测试定时任务")]
     public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>
     {
@@ -43,8 +47,12 @@ namespace unit.webapp.entry.Jobs
             this._provider = _provider;
 
         }
+
+
+        [UseAspect(typeof(DefaultOutputAspect1))]
         public Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            throw new Exception("123132");
             try
             {
                 using (var scope = _provider.CreateScope())

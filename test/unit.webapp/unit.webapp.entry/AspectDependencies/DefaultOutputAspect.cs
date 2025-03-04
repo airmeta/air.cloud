@@ -2,6 +2,8 @@
 using Air.Cloud.Core.Modules.AppAspect.Handler;
 using Air.Cloud.Core.Standard.Print;
 
+using Nest;
+
 using System.Reflection;
 
 namespace unit.webapp.entry.AspectDependencies
@@ -12,23 +14,26 @@ namespace unit.webapp.entry.AspectDependencies
         public object[] Around_Before(MethodInfo methodInfo, object[] args)
         {
             AppRealization.Output.Print(new AppPrintInformation("环绕之前切入(可修改入参)", AppRealization.JSON.Serialize(args)));
-            if (methodInfo.Name == "PerformService")
-            {
-                Console.WriteLine("环绕之前修改参数,将[" + args[0].ToString() + "]改成了[李四]");
-                args[0] = "李四";
-            }
+         
             return args;
         }
 
         public object Around_After(MethodInfo methodInfo, object[] args, object result)
         {
             AppRealization.Output.Print(new AppPrintInformation("环绕之前切入(可修改响应)", AppRealization.JSON.Serialize(args)));
-            if (methodInfo.Name == "PerformService")
-            {
-                Console.WriteLine("环绕之后修改参数,将返回值[" + result.ToString() + "]改成了[王五]");
-                result = "王五";
-            }
+          
             return result;
+        }
+
+        public void Around_Error<TException>(MethodInfo methodInfo, object[] args, TException exception) where TException : Exception, new()
+        {
+            AppRealization.Output.Print(new AppPrintInformation("环绕时出现异常", AppRealization.JSON.Serialize(new
+            {
+                MethodInfo = methodInfo.Name,
+                Args = args,
+                Exception = exception
+            })
+                           ));
         }
         #endregion
     }
@@ -52,24 +57,27 @@ namespace unit.webapp.entry.AspectDependencies
         public object[] Around_Before(MethodInfo methodInfo, object[] args)
         {
             AppRealization.Output.Print(new AppPrintInformation("环绕之前切入(可修改入参)", AppRealization.JSON.Serialize(args)));
-            if (methodInfo.Name == "PerformService")
-            {
-                Console.WriteLine("环绕之前修改参数,将[" + args[0].ToString() + "]改成了[李四1]");
-                args[0] = "李四1";
-            }
             return args;
         }
 
         public object Around_After(MethodInfo methodInfo, object[] args, object result)
         {
-            AppRealization.Output.Print(new AppPrintInformation("环绕之前切入(可修改响应)", AppRealization.JSON.Serialize(args)));
-            if (methodInfo.Name == "PerformService")
-            {
-                Console.WriteLine("环绕之后修改参数,将返回值[" + result.ToString() + "]改成了[王五1]");
-                result = "王五1";
-            }
+            AppRealization.Output.Print(new AppPrintInformation("环绕之后切入(可修改响应)", AppRealization.JSON.Serialize(args)));
             return result;
         }
+        public void Around_Error<TException>(MethodInfo methodInfo, object[] args, TException exception) where TException : Exception, new()
+        {
+            AppRealization.Output.Print(new AppPrintInformation("环绕时出现异常", AppRealization.JSON.Serialize(new
+            {
+                MethodInfo = methodInfo.Name,
+                Args = args,
+                Exception = exception
+            })
+            ));
+        }
         #endregion
+
+
+
     }
 }

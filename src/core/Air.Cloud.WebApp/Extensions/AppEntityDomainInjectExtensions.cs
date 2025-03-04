@@ -1,11 +1,14 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
@@ -15,43 +18,69 @@ using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using System.Runtime.Loader;
-
 namespace Air.Cloud.WebApp.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:实体领域扩展</para>
+    /// <para>en-us:EntityDomain extensions</para>
+    /// </summary>
     public static class AppEntityDomainInjectExtensions
     {
+        /// <summary>
+        /// <para>zh-cn:添加领域的初始化</para>
+        /// <para>en-us:Add domain inject</para>
+        /// </summary>
+        /// <param name="services">
+        ///  <para>zh-cn:服务集合</para>
+        ///  <para>en-us:Service collection</para>
+        /// </param>
         public static void AddEntityDomainInject(this IServiceCollection services)
         {
-            var lifetimes = new[] { typeof(ITransient), typeof(IScoped), typeof(ISingleton) };
-            //扫描所有的类
-            foreach (var item in AppCore.Assemblies.ToList())
+            try
             {
-                try
-                {
-                    var AllTypes = AssemblyLoadContext.Default.LoadFromAssemblyName(item).GetTypes().Where(s => s.IsClass && s.GetInterfaces().Contains(typeof(IEntityDomain))).ToList();
-                    foreach (var t in AllTypes)
-                    {
-                        var instances = t.GetInterfaces();
-                        var regType = instances.First(a => a.GetInterfaces().Contains(typeof(IEntityDomain)));
-                        var lifeTime = instances.First(s => lifetimes.Contains(s));
-                        if (instances.Contains(typeof(IEntityDomain)) && t.IsPublic)
+                var lifetimes = new[] { typeof(ITransient), typeof(IScoped), typeof(ISingleton) };
+                Type[] AllDomains = AppCore.LoadSpecifyTypes(typeof(IEntityDomain)).Where(s=>s.IsClass).ToArray();
+                #region 调试模式检查
+                    #if DEBUG
+                        if (AllDomains.Length == 0)
                         {
-                            services.Add(ServiceDescriptor.Describe(regType, t, DependencyInjectionServiceCollectionExtensions.TryGetServiceLifetime(lifeTime)));
+                            AppRealization.Output.Print(new AppPrintInformation
+                            {
+                                Title = "domain-warning",
+                                Level = AppPrintInformation.AppPrintLevel.Error,
+                                Content = $"[code:aircloud_000001]看起来你正在调试一个不具有Domain的服务,你需要检查你的类库引用关系,并确保Domain类库被正常引入",
+                                State = true,
+                                Type = "debug"
+                            });
                         }
+                    #endif
+                #endregion
+                foreach (var t in AllDomains)
+                {
+                    var instances = t.GetInterfaces();
+                    var regType = instances.First(a => a.GetInterfaces().Contains(typeof(IEntityDomain)));
+                    var lifeTime = instances.First(s => lifetimes.Contains(s));
+                    if (instances.Contains(typeof(IEntityDomain)) && t.IsPublic)
+                    {
+                        services.Add(ServiceDescriptor.Describe(regType, t, DependencyInjectionServiceCollectionExtensions.TryGetServiceLifetime(lifeTime)));
                     }
                 }
-                catch (Exception ex)
-                {
-                    AppRealization.Output.Print(new AppPrintInformation
-                    {
-                        Title = "domain-errors",
-                        Level = AppPrintInformation.AppPrintLevel.Error,
-                        Content = $"注册Domain失败,异常信息:{ex.Message}",
-                        State = true
-                    });
-                }
             }
+            catch (Exception ex)
+            {
+                AppRealization.Output.Print(new AppPrintInformation
+                {
+                    Title = "domain-errors",
+                    Level = AppPrintInformation.AppPrintLevel.Error,
+                    AdditionalParams=new Dictionary<string, object>()
+                    {
+                        { "error",ex}
+                    },
+                    Content = $"[code:aircloud_000002]在加载Domain的过程中出现异常",
+                    State = true
+                });
+            }
+           
         }
     }
 }

@@ -140,14 +140,14 @@ namespace Air.Cloud.Core.Standard.Print
         /// <inheritdoc/>
         public void Error(Exception exception,Dictionary<string, object> pairs=default)
         {
-            Console.WriteLine(AppRealization.JSON.Serialize(new AppPrintInformation()
+            Print(new AppPrintInformation()
             {
-                Title = "Error",
+                Title = "app-error",
                 State = true,
                 AdditionalParams = pairs,
                 Content = exception.Message,
                 Level = AppPrintInformation.AppPrintLevel.Error
-            }));
+            });
             throw exception;
         }
         /// <inheritdoc/>
