@@ -37,6 +37,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <ProjectReference Include="..\..\extensions\Air.Cloud.Core.Extensions\Air.Cloud.Core.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

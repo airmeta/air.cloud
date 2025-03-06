@@ -13,6 +13,7 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Extensions.Aspects;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
@@ -48,10 +49,11 @@ namespace unit.webapp.entry.Jobs
         }
 
 
-        [Aspect(typeof(DefaultOutputAspect1))]
+        //[Aspect(typeof(DefaultOutputAspect1))]
+        [Aspect(typeof(IfNullReferenceException))]
         public Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            throw new Exception("123132");
+            throw new NullReferenceException("1111");
             try
             {
                 using (var scope = _provider.CreateScope())

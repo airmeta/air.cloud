@@ -12,12 +12,15 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Extensions.Aspects;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Modules.RedisCache.Options;
 
 using StackExchange.Redis;
 
 using System;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace Air.Cloud.Modules.RedisCache.Provider
@@ -51,20 +54,15 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         }
 
         /// <summary>
-        /// 内部方法，获取Redis连接
+        /// <para>zh-cn:获取Redis链接</para>
+        /// <para>en-us:Get Redis Connection</para>
         /// </summary>
-        /// <param name="connectionString"></param>
         /// <returns></returns>
+        [Aspect(typeof(IfNullReferenceException))]
+        [Description("获取Redis链接")]
         private static ConnectionMultiplexer Connect()
         {
             string? ConnectionString = AppCore.GetOptions<RedisSettingsOptions>()?.ConnectionString;
-            if (ConnectionString.IsNullOrEmpty()) AppRealization.Output.Print(new AppPrintInformation
-            {
-                Title = "domain-errors",
-                Level = AppPrintInformation.AppPrintLevel.Error,
-                Content = "Redis配置信息缺失",
-                State = true
-            });
             return ConnectionMultiplexer.Connect(ConnectionString);
         }
         public static ConnectionMultiplexer SetEventHandler(
