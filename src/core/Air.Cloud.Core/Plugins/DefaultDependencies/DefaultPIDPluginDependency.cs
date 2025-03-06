@@ -19,8 +19,6 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
     /// <summary>
     /// PID Provider
     /// </summary>
-
-    [AppAspect]
     public class DefaultPIDPluginDependency : IPIDPlugin
     {
         private static Object locker = new Object();
@@ -52,7 +50,7 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
         /// 读取PID
         /// </summary>
         /// <returns>PID</returns>
-        [UseAspect(typeof(ExecuteMethodPrinterAspect))]
+        [Aspect(typeof(ExecuteMethodPrinterAspect))]
         public string Get()
         {
             lock (locker)

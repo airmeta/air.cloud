@@ -20,7 +20,7 @@ namespace Air.Cloud.Core.Modules.AppAspect.Attributes
     /// </summary>
     [Injection(typeof(AppInternalAspectDependency))]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    public class UseAspectAttribute : Attribute
+    public class AspectAttribute : Attribute
     {
         /// <summary>
         /// <para>zh-cn:执行顺序</para>
@@ -43,10 +43,13 @@ namespace Air.Cloud.Core.Modules.AppAspect.Attributes
         /// </summary>
         /// <param name="appAspectDependencies"></param>
         /// <param name="Order"></param>
-        public UseAspectAttribute(Type appAspectDependencies, int Order = 1)
+        public AspectAttribute(Type appAspectDependencies, int Order = 1)
         {
             AppAspectDependencies = appAspectDependencies;
             Order = 1;
         }
     }
+
+
+
 }

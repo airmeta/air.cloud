@@ -22,7 +22,6 @@ using unit.webapp.model.Domains;
 using unit.webapp.model.Entity;
 namespace unit.webapp.domain.Domains
 {
-    [AppAspect]
     public class TestDomain : ITestDomain
     {
         private readonly IRepository<Test> _repository;
@@ -43,7 +42,7 @@ namespace unit.webapp.domain.Domains
             var result = await _repository.InsertAsync(entity);
             return false;
         }
-        [UseAspect(typeof(ExecuteMethodPrinterAspect))]
+        [Aspect(typeof(ExecuteMethodPrinterAspect))]
         public IEnumerable<IEntity> Search(string id)
         {
             var data = _repository.AsQueryable();

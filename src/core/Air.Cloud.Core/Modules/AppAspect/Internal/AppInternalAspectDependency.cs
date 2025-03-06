@@ -39,7 +39,7 @@ namespace Air.Cloud.Core.Modules.AppAspect.Internal
             if (!AppAspectOptionsBuilder.AspectMetadatas.ContainsKey(Key)) return null;
             return AppAspectOptionsBuilder.AspectMetadatas[Key];
         }
-        private UseAspectAttribute[] EmptyAspects = new UseAspectAttribute[0];
+        private AspectAttribute[] EmptyAspects = new AspectAttribute[0];
 
         /// <summary>
         ///  <para>zh-cn:方法执行之前</para>

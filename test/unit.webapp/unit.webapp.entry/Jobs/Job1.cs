@@ -25,7 +25,6 @@ namespace unit.webapp.entry.Jobs
 {
 
     [AutoLoad(true)]
-    [AppAspect]
     [SchedulerInformationAttribute(CronExpression = "0/5 * * * * ? ", Name = "测试定时任务", Id = "job_test1", Description = "测试定时任务")]
     public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>
     {
@@ -49,7 +48,7 @@ namespace unit.webapp.entry.Jobs
         }
 
 
-        [UseAspect(typeof(DefaultOutputAspect1))]
+        [Aspect(typeof(DefaultOutputAspect1))]
         public Task ExecuteAsync(CancellationToken stoppingToken)
         {
             throw new Exception("123132");

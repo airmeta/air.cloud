@@ -31,6 +31,11 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         /// <inheritdoc/>
         public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog : class, new()
         {
+            if(logContent is AppPrintInformation)
+            {
+                AppRealization.Output.Print(logContent as AppPrintInformation);
+                return;
+            }
             AppRealization.Output.Print(new AppPrintInformation()
             {
                 Content = AppRealization.JSON.Serialize(logContent),

@@ -36,10 +36,6 @@ namespace unit.webapp.entry
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();
-
-            
-
-            
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

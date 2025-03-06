@@ -44,6 +44,6 @@ namespace Air.Cloud.Core.Modules.AppAspect.Model
         /// <summary>
         /// 环绕组
         /// </summary>
-        public UseAspectAttribute[] Aspects { get; set; }
+        public AspectAttribute[] Aspects { get; set; }
     }
 }

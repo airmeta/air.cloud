@@ -39,7 +39,6 @@ namespace Air.Cloud.Core
     /// <summary>
     /// 所有标准实现
     /// </summary>
-    [AppAspect]
     public class AppRealization
     {
         /// <summary>
@@ -124,7 +123,7 @@ namespace Air.Cloud.Core
         /// </summary>
         /// <typeparam name="TDependency">约定类型</typeparam>
         /// <param name="standard">约定实现</param>
-        [UseAspect(typeof(ExecuteMethodPrinterAspect))]
+        [Aspect(typeof(ExecuteMethodPrinterAspect))]
         public static void SetDependency<TStandard>(TStandard standard) 
                 where TStandard :IStandard
         {

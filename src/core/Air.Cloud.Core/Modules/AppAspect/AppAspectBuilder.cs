@@ -48,10 +48,8 @@ namespace Air.Cloud.Core.Modules.AppAspect
             {
                 return AssemblyLoadContext.Default.LoadFromAssemblyName(ass).GetTypes().Where(t =>
                 {
-                    var UseAspectType = t.GetCustomAttribute<AppAspectAttribute>();
-
-                    if (UseAspectType != null)
-                        return true;
+                    var HasAspectFunction = t.GetMethods().SelectMany(s => s.GetCustomAttributes<AspectAttribute>()).Count() > 0;
+                    if (HasAspectFunction) return true;
                     return false;
                 }).ToList();
             }).ToList();
@@ -60,7 +58,7 @@ namespace Air.Cloud.Core.Modules.AppAspect
                 foreach (var method in type.GetMethods())
                 {
                     //attributes 为方法上的所有特性 
-                    var attributes = method.GetCustomAttributes<UseAspectAttribute>().DistinctBy(s => MD5Encryption.GetMd5By8(s.AppAspectDependencies.FullName)).OrderByDescending(s => s.Order).ToArray();
+                    var attributes = method.GetCustomAttributes<AspectAttribute>().DistinctBy(s => MD5Encryption.GetMd5By8(s.AppAspectDependencies.FullName)).OrderByDescending(s => s.Order).ToArray();
                     if (attributes.Count() == 0) continue;
                     //这个时候遍历 attributes 中的信息 并获取到对象中的AppAspectDependencies属性,动态创建对应的AppAspectDependencies 的实例
                     foreach (var item in attributes)
