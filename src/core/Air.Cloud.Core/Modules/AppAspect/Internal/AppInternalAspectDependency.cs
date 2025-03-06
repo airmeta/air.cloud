@@ -134,7 +134,6 @@ namespace Air.Cloud.Core.Modules.AppAspect.Internal
                 if (method != null)
                 {
                     args = method.Invoke(aspectInstance, new object[] { hostType.GetMethod(name), args }) as object[];
-                   
                 }
             }
             object result=null;

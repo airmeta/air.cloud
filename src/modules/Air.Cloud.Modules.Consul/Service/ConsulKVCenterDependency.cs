@@ -32,9 +32,9 @@ namespace Air.Cloud.Modules.Consul.Service
         /// </summary>
         public static ConsulClient ConsulClient => ConsulServerCenterDependency.ConsulClient;
         /// <inheritdoc/>
-        public async Task<IList<T>> QueryAsync<T>() where T : class, new()
+        public async Task<IList<T>> QueryAsync<T>(string Prefix = null) where T : class, new()
         {
-            var Result = await ConsulClient.KV.List(string.Empty);
+            var Result = await ConsulClient.KV.List(Prefix);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 return (IList<T>)Result.Response.Select(s => new ConsulKvCenterServiceInformation

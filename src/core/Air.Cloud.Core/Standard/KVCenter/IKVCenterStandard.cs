@@ -27,11 +27,15 @@ namespace Air.Cloud.Core.Standard.KVCenter
         /// <para>zh-cn:返回列表的元素类型</para>
         /// <para>en-us: Element type of the returned list</para>
         /// </typeparam>
+        /// <param name="Prefix">
+        ///  <para>zh-cn:Key前缀</para>
+        ///  <para>en-us:Key prefix</para>
+        /// </param>
         /// <returns>
         /// <para>zh-cn: 查询结果</para>
         /// <para>en-us: QueryAsync result</para>
         /// </returns>
-        public Task<IList<T>> QueryAsync<T>() where T : class, new();
+        public Task<IList<T>> QueryAsync<T>(string Prefix=null) where T : class, new();
         /// <summary>
         /// <para>zh-cn: 添加或更新KV存储</para>
         /// <para>en-us: Add or update KV storage</para>
