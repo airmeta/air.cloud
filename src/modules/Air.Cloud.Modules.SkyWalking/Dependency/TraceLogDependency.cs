@@ -43,7 +43,7 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
             }
         }
         /// <inheritdoc/>
-        public void Write(object logContent, KeyValuePair<string, string>? Tag = null)
+        public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog : class, new()
         {
             var logContentString = AppRealization.JSON.Serialize(logContent);
             _segContext.Context.Span.AddLog(LogEvent.Message(logContentString));
@@ -56,6 +56,5 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
                 _segContext.Context.Span.AddTag("event", "event");
             }
         }
-
     }
 }

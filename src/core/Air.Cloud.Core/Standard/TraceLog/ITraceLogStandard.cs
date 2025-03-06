@@ -44,6 +44,7 @@ namespace Air.Cloud.Core.Standard.TraceLog
         /// <para>zh-cn:标签信息</para>
         /// <para>en-us:Tag information</para>
         /// </param>
-        public void Write(object logContent, KeyValuePair<string, string>? Tag = null);
+        public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog: class,new();
+
     }
 }

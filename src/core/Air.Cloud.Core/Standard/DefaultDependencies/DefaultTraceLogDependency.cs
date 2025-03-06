@@ -29,7 +29,7 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
             });
         }
         /// <inheritdoc/>
-        public void Write(object logContent, KeyValuePair<string, string>? Tag = null)
+        public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog : class, new()
         {
             AppRealization.Output.Print(new AppPrintInformation()
             {
