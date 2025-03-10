@@ -53,11 +53,10 @@ namespace Air.Cloud.DataBase.ElasticSearch.Extensions
                         }
                         Type genericType = typeof(ESNoSqlRepository<>);
                         Type constructedType = genericType.MakeGenericType(t);
-                        services.Add(
-                            ServiceDescriptor.Describe(typeof(INoSqlRepository<>).MakeGenericType(t),
-                            constructedType,
-                            DependencyInjectionServiceCollectionExtensions
-                                .TryGetServiceLifetime(typeof(ITransient))));
+                        AppCore.SetService(
+                            typeof(INoSqlRepository<>).MakeGenericType(t), 
+                            constructedType, 
+                            DependencyInjectionServiceCollectionExtensions.TryGetServiceLifetime(typeof(ITransient)));
                         //注册连接池
                         ElasticSearchConnection.Pool.Set(new ElasticClientPoolElement(t));
                     }

@@ -256,6 +256,27 @@ namespace Air.Cloud.Core.App
                        },
                        serviceLifetime));
         }
+
+        /// <summary>
+        /// <para>zh-cn:注册服务</para>
+        /// <para>en-us:Set Service</para>
+        /// </summary>
+        /// <param name = "baseType" >
+        /// <para>zh-cn:服务类型</para>
+        /// <para>en-us:Service type</para>
+        /// </param>
+        /// <param name="impl">
+        /// <para>zh-cn:实例</para>
+        /// <para>en-us:Instance</para>
+        /// </param>
+        /// <param name="serviceLifetime">
+        /// <para>zh-cn:服务生命周期</para>
+        /// <para>en-us:Service lifetime</para>
+        /// </param>
+        public static void SetService(Type baseType,Type impl, ServiceLifetime serviceLifetime = ServiceLifetime.Transient)
+        {
+            InternalServices.Add(ServiceDescriptor.Describe(baseType, impl,serviceLifetime));
+        }
         #endregion
 
         /// <summary>

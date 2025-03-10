@@ -11,24 +11,14 @@
  * acknowledged.
  */
 
-using Air.Cloud.Core.App;
-using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.KVCenter;
-using Air.Cloud.Core.Standard.MessageQueue.Attributes;
-using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Consul.Model;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-using System.Reflection;
-
 using unit.webapp.model.Domains;
-using Air.Cloud.Modules.Kafka.Model;
-using Confluent.Kafka;
-using System.Linq.Expressions;
-using Newtonsoft.Json;
 
 namespace unit.webapp.service.services.DataBaseModuleTest
 {
@@ -38,12 +28,14 @@ namespace unit.webapp.service.services.DataBaseModuleTest
         private readonly ITestDomain Domain;
         private readonly IServerCenterStandard serverCenterStandard;
         private readonly IKVCenterStandard kVCenterStandard;
+
         public DataBaseQueryService(ITestDomain domain, IServerCenterStandard serverCenterStandard, IKVCenterStandard kVCenterStandard)
         {
             Domain = domain;
             this.serverCenterStandard = serverCenterStandard;
             this.kVCenterStandard = kVCenterStandard;
         }
+
         [HttpGet("query"),AllowAnonymous]
         public object Query()
         {

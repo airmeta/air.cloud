@@ -25,6 +25,7 @@ namespace unit.webapp.entry.Jobs
 {
 
     [AutoLoad(true)]
+    [NeedScanning]
     [SchedulerInformationAttribute(CronExpression = "0/5 * * * * ? ", Name = "测试定时任务", Id = "job_test1", Description = "测试定时任务")]
     public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>
     {
@@ -52,10 +53,6 @@ namespace unit.webapp.entry.Jobs
             {
                 using (var scope = _provider.CreateScope())
                 {
-                    Console.WriteLine("123132");
-                    Console.WriteLine(scope==null);
-                    Console.WriteLine(scope.ServiceProvider == null);
-                    
                     var testDomain = scope.ServiceProvider.GetService<ITestDomain>();
                     Console.WriteLine(testDomain == null);
                     var data = testDomain.Search("a09cdb089b7f48498090d1f7f11c0e7b");

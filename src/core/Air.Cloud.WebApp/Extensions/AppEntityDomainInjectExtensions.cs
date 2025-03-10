@@ -62,7 +62,7 @@ namespace Air.Cloud.WebApp.Extensions
                     var lifeTime = instances.First(s => lifetimes.Contains(s));
                     if (instances.Contains(typeof(IEntityDomain)) && t.IsPublic)
                     {
-                        services.Add(ServiceDescriptor.Describe(regType, t, DependencyInjectionServiceCollectionExtensions.TryGetServiceLifetime(lifeTime)));
+                        AppCore.SetService(regType, t, DependencyInjectionServiceCollectionExtensions.TryGetServiceLifetime(lifeTime));
                     }
                 }
             }
