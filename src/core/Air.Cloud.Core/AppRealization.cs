@@ -125,7 +125,7 @@ namespace Air.Cloud.Core
         /// <summary>
         /// 设置约定实现
         /// </summary>
-        /// <typeparam name="TDependency">约定类型</typeparam>
+        /// <typeparam name="TStandard">约定类型</typeparam>
         /// <param name="standard">约定实现</param>
         [Aspect(typeof(ExecuteMethodPrinterAspect))]
         public static void SetDependency<TStandard>(TStandard standard,IServiceCollection services=null) 
@@ -140,7 +140,6 @@ namespace Air.Cloud.Core
             {
                 Field.SetValue(null, standard);
             }
-            
         }
 
         static AppRealization()
