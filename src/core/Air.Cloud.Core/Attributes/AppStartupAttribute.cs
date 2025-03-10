@@ -12,8 +12,13 @@
 namespace Air.Cloud.Core.Attributes
 {
     /// <summary>
-    /// 应用程序启动配置
+    /// <para>zh-cn:应用程序启动配置</para>
+    /// <para>en-us:Application startup config</para>
     /// </summary>
+    /// <remarks>
+    /// <para>zh-cn:通常情况下,我们不建议你配置此选项因为该配置的order配置错误将会导致,继承AppStartup类即可</para>
+    /// <para>en-us:Normally, we do not recommend configuring this option as an incorrect order configuration will result. Inheriting the AppStartup class is sufficient</para>
+    /// </remarks>
     [IgnoreScanning, AttributeUsage(AttributeTargets.Class)]
     public class AppStartupAttribute : Attribute
     {

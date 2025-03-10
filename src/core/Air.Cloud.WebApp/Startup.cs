@@ -20,7 +20,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 namespace Air.Cloud.WebApp
 {
-    [AppStartup(AppName ="Air.Cloud.WebApp", Order =0)]
+    [AppStartup(AppName ="Air.Cloud.WebApp", Order =1)]
     public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)

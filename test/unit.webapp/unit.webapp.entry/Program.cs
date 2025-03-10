@@ -10,17 +10,14 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.App;
+using Air.Cloud.GateWay.Middleware;
 using Air.Cloud.WebApp.App;
-using Air.Cloud.WebApp.DataValidation.Attributes;
-using Air.Cloud.Modules.Consul.Extensions;
-using Air.Cloud.Core.Plugins.Security.AES;
-using Air.Cloud.Core.Modules.AppAspect.Attributes;
-using Air.Cloud.Core.Extensions.Aspects;
 
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.WebInjectInFile();
+
+
 app.Run();

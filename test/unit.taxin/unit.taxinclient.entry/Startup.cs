@@ -10,33 +10,29 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.JSON.Extensions;
-using Air.Cloud.Modules.Taxin.Client;
-using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Core.Standard.TraceLog;
 
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
-
-using unit.webapp.common.Filters;
-namespace unit.webapp.entry
+using unit.taxinclient.entry.TraceLogDependency;
+namespace unit.taxinclient.entry
 {
-    [AppStartup(Order = 12000)]
-    public class Startup :AppStartup
+    public class Startup : AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinClient<TaxinClientDependency>();
-            //注入
-            services.AddControllers(a =>
-            {
-                a.Filters.Add<ActionLogFilter>();
-            });
+            //services.AddTaxinClient<TaxinClientDependency>();
+            ////注入
+            //services.AddControllers(a =>
+            //{
+            //    a.Filters.Add<ActionLogFilter>();
+            //});
+            AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-          
+            app.UseMiddleware<TraceLogMiddleware>();
         }
     }
 }

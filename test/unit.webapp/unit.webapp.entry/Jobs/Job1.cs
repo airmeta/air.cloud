@@ -19,7 +19,6 @@ using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
 using Air.Cloud.Modules.Quartz.Options;
 
-using unit.webapp.entry.AspectDependencies;
 using unit.webapp.model.Domains;
 
 namespace unit.webapp.entry.Jobs
@@ -35,10 +34,6 @@ namespace unit.webapp.entry.Jobs
         public QuartzSchedulerStandardOptions Options { get; set; }
 
         public Job1() { }
-        public string Do()
-        {
-            return "123132";
-        }
         public Job1(
             ISchedulerStandardFactory<QuartzSchedulerStandardOptions> schedulerStandardFactory1, 
             IServiceProvider _provider)
@@ -53,7 +48,6 @@ namespace unit.webapp.entry.Jobs
         [Aspect(typeof(IfNullReferenceException))]
         public Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            throw new NullReferenceException("1111");
             try
             {
                 using (var scope = _provider.CreateScope())

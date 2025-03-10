@@ -33,6 +33,10 @@ using System.Reflection;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DataBase.Repositories;
+using Air.Cloud.Core.Standard.DynamicServer.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.Core
 {
@@ -124,11 +128,19 @@ namespace Air.Cloud.Core
         /// <typeparam name="TDependency">约定类型</typeparam>
         /// <param name="standard">约定实现</param>
         [Aspect(typeof(ExecuteMethodPrinterAspect))]
-        public static void SetDependency<TStandard>(TStandard standard) 
+        public static void SetDependency<TStandard>(TStandard standard,IServiceCollection services=null) 
                 where TStandard :IStandard
         {
             FieldInfo Field = typeof(InternalRealization).GetFields().FirstOrDefault(s => s.FieldType == typeof(TStandard));
-            Field.SetValue(null, standard);
+            if (Field==null)
+            {
+                AppCore.SetService(standard);
+            }
+            else
+            {
+                Field.SetValue(null, standard);
+            }
+            
         }
 
         static AppRealization()

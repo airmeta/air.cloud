@@ -22,7 +22,7 @@ namespace unit.webapp.entry
     /// <para>zh-cn:启动项</para>
     /// <para>en-us:Startup</para>
     /// </summary>
-    [AppStartup(Order = 500)]
+    [AppStartup(Order = 3000)]
     public class QuartStartup : AppStartup
     {
             public static CancellationTokenSource cts = new CancellationTokenSource();

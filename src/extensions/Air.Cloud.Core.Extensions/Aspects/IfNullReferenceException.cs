@@ -41,13 +41,14 @@ namespace Air.Cloud.Core.Extensions.Aspects
                     "空指针异常", 
                     $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现空指针异常",
                    AppPrintInformation.AppPrintLevel.Error, 
-                   true, 
+                   true,
                    new Dictionary<string, object>()
                     {
-                        {"error",exception }
+                        {"source",exception.Source },
+                        {"stace",exception.StackTrace }
                     }
                 );
-                AppRealization.TraceLog.Write(appPrintInformation);
+                AppRealization.Output.Print(appPrintInformation);
             }
         }
     }

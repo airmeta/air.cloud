@@ -10,23 +10,28 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Core.Standard.TraceLog;
+using Air.Cloud.GateWay.Middleware;
 using Air.Cloud.Modules.Consul.Service;
 using Air.Cloud.Plugins.Jwt.Extensions;
 using Air.Cloud.WebApp.Extensions;
 
 using unit.webapp.common.Filters;
 using unit.webapp.common.JwtHandler;
+using unit.webapp.entry.TraceLogDependency;
 namespace unit.webapp.entry
 {
-    [AppStartup(Order = int.MinValue)]
+    [AppStartup]
     public class Startup :AppStartup
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
             //services.AddTaxinClient<TaxinClientDependency>();
             services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
@@ -36,9 +41,12 @@ namespace unit.webapp.entry
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();
+
+          
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+           app.UseMiddleware<TraceLogMiddleware>();
         }
     }
   
