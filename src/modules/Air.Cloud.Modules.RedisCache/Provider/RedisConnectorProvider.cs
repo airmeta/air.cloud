@@ -9,19 +9,14 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core;
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.Extensions.Aspects;
+using Air.Cloud.Core.Extensions.Aspect;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
-using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Modules.RedisCache.Options;
 
 using StackExchange.Redis;
 
-using System;
 using System.ComponentModel;
-using System.Reflection;
 
 namespace Air.Cloud.Modules.RedisCache.Provider
 {

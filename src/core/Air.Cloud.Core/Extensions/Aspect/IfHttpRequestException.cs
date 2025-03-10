@@ -11,17 +11,16 @@
  */
 
 using Air.Cloud.Core.Modules.AppAspect.Handler;
-using Air.Cloud.Core.Standard.Print;
 
 using System.Reflection;
 
-namespace Air.Cloud.Core.Extensions.Aspects
+namespace Air.Cloud.Core.Extensions.Aspect
 {
     /// <summary>
-    /// <para>zh-cn:空指针异常捕捉环绕</para>
-    /// <para>en-us:Null pointer exception capture around</para>    
+    /// <para>zh-cn: 网络请求异常环绕</para>
+    /// <para>en-us: Network request exception around</para>
     /// </summary>
-    public  class IfNullReferenceException : IAspectAroundHandler
+    public  class IfHttpRequestException : IAspectAroundHandler
     {
         public object Around_After(MethodInfo methodInfo, object[] args, object result)
         {
@@ -35,20 +34,13 @@ namespace Air.Cloud.Core.Extensions.Aspects
 
         public void Around_Error<TException>(MethodInfo methodInfo, object[] args, TException exception) where TException : Exception, new()
         {
-            if (exception is NullReferenceException)
+            if(exception is HttpRequestException)
             {
-                AppPrintInformation appPrintInformation = new AppPrintInformation(
-                    "空指针异常", 
-                    $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现空指针异常",
-                   AppPrintInformation.AppPrintLevel.Error, 
-                   true,
-                   new Dictionary<string, object>()
-                    {
-                        {"source",exception.Source },
-                        {"stace",exception.StackTrace }
-                    }
-                );
-                AppRealization.Output.Print(appPrintInformation);
+                AppPrintInformation appPrintInformation = new AppPrintInformation("网络请求异常", $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现网络异常", Standard.Print.AppPrintInformation.AppPrintLevel.Error, true, new Dictionary<string, object>()
+                {
+                    {"error",exception }
+                });
+                AppRealization.TraceLog.Write(appPrintInformation);
             }
         }
     }

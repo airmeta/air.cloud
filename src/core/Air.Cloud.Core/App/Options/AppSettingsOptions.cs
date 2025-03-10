@@ -9,8 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.DefaultDependencies;
-
 using Microsoft.Extensions.Configuration;
 
 namespace Air.Cloud.Core.App.Options;

@@ -9,10 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.Exceptions;
-using Air.Cloud.Core.Standard.Print;
-
-namespace Air.Cloud.Core.Standard.DefaultDependencies
+namespace Air.Cloud.Core.Standard.Exceptions.Defaults
 {
     [IgnoreScanning]
     public class DefaultAppDomainExcepetionHandlerDependency : IAppDomainExceptionHandlerStandard

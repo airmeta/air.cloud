@@ -46,7 +46,6 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Extensions
                         {
                             continue;
                         }
-
                         var instances = t.GetInterfaces();
                         string[] ints= instances.Select(i => i.Name).ToArray();
                         if (instances.Contains(typeof(ISchedulerStandard<TSchedulerOptions>)) && t.IsPublic)

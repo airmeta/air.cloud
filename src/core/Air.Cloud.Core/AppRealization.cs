@@ -9,6 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Plugins.DefaultDependencies;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard;
@@ -17,26 +19,24 @@ using Air.Cloud.Core.Standard.Assemblies;
 using Air.Cloud.Core.Standard.Authentication.Jwt;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Core.Standard.Compress.Defaults;
 using Air.Cloud.Core.Standard.Configuration;
+using Air.Cloud.Core.Standard.Configuration.Defaults;
 using Air.Cloud.Core.Standard.Container;
-using Air.Cloud.Core.Standard.DefaultDependencies;
 using Air.Cloud.Core.Standard.Exceptions;
-using Air.Cloud.Core.Standard.TraceLog;
+using Air.Cloud.Core.Standard.Exceptions.Defaults;
 using Air.Cloud.Core.Standard.JSON;
+using Air.Cloud.Core.Standard.JSON.Defaults;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.MessageQueue;
+using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Core.Standard.TraceLog;
+using Air.Cloud.Core.Standard.TraceLog.Defaults;
 using Air.Cloud.Core.Standard.UtilStandard;
 
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
-using Air.Cloud.Core.Standard.ServerCenter;
-using Air.Cloud.Core.Modules.AppAspect.Attributes;
-using Air.Cloud.Core.Extensions.Aspect;
-using Air.Cloud.Core.Dependencies;
-using Air.Cloud.Core.Standard.DataBase.Repositories;
-using Air.Cloud.Core.Standard.DynamicServer.Extensions;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.Core
 {

@@ -9,15 +9,18 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.Configuration;
+using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 
-namespace Air.Cloud.Core.Standard.DefaultDependencies
+namespace Air.Cloud.Core.Standard.Configuration.Defaults
 {
     [IgnoreScanning]
     public class DefaultAppConfigurationDependency : IAppConfigurationStandard
     {
+        [Aspect(typeof(IfHttpRequestException))]
         public IConfiguration LoadConfiguration(string ConfigurationName, bool IsCommonConfiguration)
         {
             IConfiguration config = null;

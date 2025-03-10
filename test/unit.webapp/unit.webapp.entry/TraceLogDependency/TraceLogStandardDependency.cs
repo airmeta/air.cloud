@@ -35,7 +35,7 @@ namespace unit.webapp.entry.TraceLogDependency
             }
             catch (Exception)
             {
-                throw Oops.Oh("系统异常,请稍后再试"); ;
+                throw Oops.Oh("系统异常,请稍后再试");
             }
         }
     }

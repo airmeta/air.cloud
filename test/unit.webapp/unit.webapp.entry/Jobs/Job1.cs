@@ -13,7 +13,7 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Dependencies;
-using Air.Cloud.Core.Extensions.Aspects;
+using Air.Cloud.Core.Extensions.Aspect;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
@@ -25,7 +25,6 @@ namespace unit.webapp.entry.Jobs
 {
 
     [AutoLoad(true)]
-    [NeedScanning]
     [SchedulerInformationAttribute(CronExpression = "0/5 * * * * ? ", Name = "测试定时任务", Id = "job_test1", Description = "测试定时任务")]
     public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>
     {

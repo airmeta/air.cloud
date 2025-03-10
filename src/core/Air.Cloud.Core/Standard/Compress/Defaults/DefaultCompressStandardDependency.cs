@@ -13,7 +13,7 @@ using Air.Cloud.Core.Standard.UtilStandard;
 using System.IO.Compression;
 using System.Text;
 
-namespace Air.Cloud.Core.Standard.DefaultDependencies
+namespace Air.Cloud.Core.Standard.Compress.Defaults
 {
     /// <summary>
     /// GZip压缩

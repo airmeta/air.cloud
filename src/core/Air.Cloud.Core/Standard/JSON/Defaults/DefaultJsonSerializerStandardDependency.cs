@@ -10,12 +10,11 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.JSON;
-
 using Microsoft.AspNetCore.Mvc;
 
 using Newtonsoft.Json;
 
-namespace Air.Cloud.Core.Standard.DefaultDependencies
+namespace Air.Cloud.Core.Standard.JSON.Defaults
 {
     /// <summary>
     /// <para>zh-cn:默认JSON序列化实现 引用了Newtonsoft.Json</para>
@@ -35,7 +34,7 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         public DefaultJsonSerializerStandardDependency()
         {
             var s = AppCore.GetOptions<MvcNewtonsoftJsonOptions>();
-            JsonSerializerSettings = (s?.SerializerSettings)??new JsonSerializerSettings();
+            JsonSerializerSettings = (s?.SerializerSettings) ?? new JsonSerializerSettings();
         }
         /// <summary>
         /// 序列化对象
@@ -44,7 +43,7 @@ namespace Air.Cloud.Core.Standard.DefaultDependencies
         /// <returns></returns>
         public string Serialize(object value)
         {
-            return JsonConvert.SerializeObject(value,JsonSerializerSettings);
+            return JsonConvert.SerializeObject(value, JsonSerializerSettings);
         }
 
         /// <summary>
