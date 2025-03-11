@@ -20,6 +20,7 @@ using Confluent.Kafka;
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using Air.Cloud.Core.Standard.Print;
 
 namespace Air.Cloud.Modules.Kafka.Extensions
 {
@@ -63,9 +64,32 @@ namespace Air.Cloud.Modules.Kafka.Extensions
                 }
                 Action<IMessageContentStandard> Subscribe = (s) =>
                 {
-                    var instance = Activator.CreateInstance(item);
-                    var x = ImplMethod.Invoke(instance, new object[] { s });
-                    if (NeedProduce) AppRealization.Queue.Publish(producerConfig, x);
+                    try
+                    {
+                        var instance = Activator.CreateInstance(item);
+                        var x = ImplMethod.Invoke(instance, new object[] { s });
+                        if (NeedProduce) AppRealization.Queue.Publish(producerConfig, x);
+                    }
+                    catch (Exception ex)
+                    {
+                        //这里会出现异常,需要处理掉 增加Write方法 将其转给管道并出口
+                        AppRealization.TraceLog.Write(new AppPrintInformation()
+                        {
+                            Title="kafka-error",
+                            Level=AppPrintInformation.AppPrintLevel.Error,
+                            Content= ex.Message,
+                            State=true,
+                            AdditionalParams=new Dictionary<string, object>()
+                            {
+                                { "StackTrace",ex.StackTrace},
+                                { "Message",ex.Message},
+                                { "Source",ex.Source },
+                                { "InnerException",ex.InnerException?.Message},
+                                { "InnerExceptionStackTrace",ex.InnerException?.StackTrace}
+                            },
+                            Type="kafka_subscribe_error"
+                        });
+                    }
                 };
                 Method.Invoke(AppRealization.Queue, new object[]
                 {
