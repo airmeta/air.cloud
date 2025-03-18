@@ -12,37 +12,32 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Standard.AppInject;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-
-using System.Reflection;
 
 namespace Air.Cloud.HostApp.Dependency
 {
     public static class HostAppInjectExtensions
     {
         /// <summary>
-        /// Host控制台应用程序加载本地的配置文件
+        /// <para>zh-cn: Host控制台应用程序加载本地的配置文件</para>
+        /// <para>en-us: Host console application loads local configuration files</para>
         /// </summary>
+        /// <param name="builder">
+        ///    <para>zh-cn:构建器</para>
+        ///    <para>en-us:HostBuilder</para>
+        /// </param>
         /// <returns></returns>
         public static IHostBuilder HostInjectInFile(this IHostBuilder builder)
         {
-            //加载远程配置文件
-            AppRealization.Configuration.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
-            AppRealization.Configuration.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
-            AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
-            AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
-            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
-            AppCore.AppStartType = AppStartupTypeEnum.HOST;
+            AppConfigurationLoader.Configurations=AppConfiguration.AppDefaultInjectConfiguration<HostAppInjectDependency>(AppStartupTypeEnum.HOST,LoadConfigurationTypeEnum.File);
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 a.AddConfiguration(AppConfigurationLoader.Configurations);
             });
-            AppRealization.SetDependency<IAppInjectStandard>(new HostAppInjectDependency());
             builder = AppRealization.Injection.Inject(builder, true);
             return builder;
         }
-
     }
 }

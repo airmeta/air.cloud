@@ -17,9 +17,11 @@ using Air.Cloud.Core.Extensions.Aspect;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
+using Air.Cloud.DataBase.Repositories;
 using Air.Cloud.Modules.Quartz.Options;
 
 using unit.webapp.model.Domains;
+using unit.webapp.model.Entity;
 
 namespace unit.webapp.entry.Jobs
 {
@@ -53,7 +55,9 @@ namespace unit.webapp.entry.Jobs
                 using (var scope = _provider.CreateScope())
                 {
                     var testDomain = scope.ServiceProvider.GetService<ITestDomain>();
+                    var cccc = scope.ServiceProvider.GetService<IRepository<Test>> ();
                     Console.WriteLine(testDomain == null);
+                    var a=cccc.FirstOrDefault(s=>s.UserId== "a09cdb089b7f48498090d1f7f11c0e7b");
                     var data = testDomain.Search("a09cdb089b7f48498090d1f7f11c0e7b");
                     Console.WriteLine(data == null);
                     AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()

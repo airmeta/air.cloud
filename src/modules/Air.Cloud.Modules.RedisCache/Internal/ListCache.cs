@@ -14,7 +14,7 @@ using Air.Cloud.Modules.RedisCache.Provider;
 
 using StackExchange.Redis;
 
-namespace SSS.Modules.Redis.Service
+namespace Air.Cloud.Modules.RedisCache.Internal
 {
     /// <summary>
     /// RedisCache list的实现为一个双向链表，即可以支持反向查找和遍历，更方便操作，不过带来了部分额外的内存开销，
@@ -38,7 +38,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long LeftPush<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListLeftPush(key, jValue);
         }
 
@@ -64,7 +64,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long RightPush<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListRightPush(key, jValue);
         }
 
@@ -128,8 +128,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long InsertAfter<T>(string key, T pivot, T value)
         {
-            string? pValue = AppRealization.JSON.Serialize(pivot);
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string pValue = AppRealization.JSON.Serialize(pivot);
+            string jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListInsertAfter(key, pValue, jValue);
         }
 
@@ -143,8 +143,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long InsertBefore<T>(string key, T pivot, T value)
         {
-            string? pValue = AppRealization.JSON.Serialize(pivot);
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string pValue = AppRealization.JSON.Serialize(pivot);
+            string jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListInsertBefore(key, pValue, jValue);
         }
 
@@ -192,7 +192,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public long Remove<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return Redis.ListRemove(key, jValue);
         }
         #endregion
@@ -207,7 +207,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> LeftPushAsync<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListLeftPushAsync(key, jValue);
         }
 
@@ -233,7 +233,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> RightPushAsync<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListRightPushAsync(key, jValue);
         }
 
@@ -297,8 +297,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> InsertAfterAsync<T>(string key, T pivot, T value)
         {
-            string? pValue = AppRealization.JSON.Serialize(pivot);
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string pValue = AppRealization.JSON.Serialize(pivot);
+            string jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListInsertAfterAsync(key, pValue, jValue);
         }
 
@@ -312,8 +312,8 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> InsertBeforeAsync<T>(string key, T pivot, T value)
         {
-            string? pValue = AppRealization.JSON.Serialize(pivot);
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string pValue = AppRealization.JSON.Serialize(pivot);
+            string jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListInsertBeforeAsync(key, pValue, jValue);
         }
 
@@ -361,7 +361,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public async Task<long> RemoveAsync<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return await Redis.ListRemoveAsync(key, jValue);
         }
         #endregion

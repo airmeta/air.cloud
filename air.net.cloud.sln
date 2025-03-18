@@ -90,10 +90,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.kafaka.server.entry", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Quartz", "src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj", "{EE1F9847-64D9-4B42-93CE-65D33C118A12}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pedestal", "pedestal", "{A4531C92-2677-4A05-8E1B-EC2B5F3BA468}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dynasty", "src\servers\Dynasty\Dynasty.csproj", "{C7DCD96A-8A56-4198-A959-4C8B68450CBD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Akka", "src\modules\Air.Cloud.Modules.Akka\Air.Cloud.Modules.Akka.csproj", "{0EADFAD0-40C4-4F8C-A32B-3653B7630650}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.DataBase.SqlLite", "src\db\Air.Cloud.DataBase.SqlLite\Air.Cloud.DataBase.SqlLite.csproj", "{2D5AB973-E7BE-4E59-9C85-D0AA8CCEEA64}"
@@ -106,7 +102,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "susceptor", "susceptor", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirCloud.Susceptor", "src\susceptor\AirCloud.Susceptor\AirCloud.Susceptor.csproj", "{74FE0BBF-DBB6-4E34-A9C2-05BCC6002F96}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AirCloud.Susceptor.Client", "src\susceptor\AirCloud.Susceptor.Client\AirCloud.Susceptor.Client.csproj", "{CD65838E-BF31-46F8-91F7-96D7907412BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirCloud.Susceptor.Client", "src\susceptor\AirCloud.Susceptor.Client\AirCloud.Susceptor.Client.csproj", "{CD65838E-BF31-46F8-91F7-96D7907412BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -230,10 +226,6 @@ Global
 		{EE1F9847-64D9-4B42-93CE-65D33C118A12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE1F9847-64D9-4B42-93CE-65D33C118A12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE1F9847-64D9-4B42-93CE-65D33C118A12}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C7DCD96A-8A56-4198-A959-4C8B68450CBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C7DCD96A-8A56-4198-A959-4C8B68450CBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C7DCD96A-8A56-4198-A959-4C8B68450CBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C7DCD96A-8A56-4198-A959-4C8B68450CBD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0EADFAD0-40C4-4F8C-A32B-3653B7630650}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0EADFAD0-40C4-4F8C-A32B-3653B7630650}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EADFAD0-40C4-4F8C-A32B-3653B7630650}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -298,7 +290,6 @@ Global
 		{8D432D20-DBF4-4327-B1E8-6F0661BF535B} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 		{7FB78061-B66A-458E-9F8F-3FB4357AF40F} = {8D432D20-DBF4-4327-B1E8-6F0661BF535B}
 		{EE1F9847-64D9-4B42-93CE-65D33C118A12} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
-		{C7DCD96A-8A56-4198-A959-4C8B68450CBD} = {A4531C92-2677-4A05-8E1B-EC2B5F3BA468}
 		{0EADFAD0-40C4-4F8C-A32B-3653B7630650} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{2D5AB973-E7BE-4E59-9C85-D0AA8CCEEA64} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
 		{6542F444-2946-461D-94E6-C86B0A4F18FC} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}

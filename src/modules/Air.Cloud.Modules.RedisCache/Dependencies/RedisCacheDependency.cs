@@ -10,10 +10,8 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Modules.RedisCache.Internal;
 using Air.Cloud.Modules.RedisCache.Provider;
-
-using SSS.Modules.Redis;
-using SSS.Modules.Redis.Service;
 
 using StackExchange.Redis;
 

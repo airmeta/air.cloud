@@ -14,7 +14,7 @@ using Air.Cloud.Modules.RedisCache.Provider;
 
 using StackExchange.Redis;
 
-namespace SSS.Modules.Redis.Service
+namespace Air.Cloud.Modules.RedisCache.Internal
 {
 
     /// <summary>
@@ -63,7 +63,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public bool Contains<T>(string key, T value)
         {
-            string? jValue = AppRealization.JSON.Serialize(value);
+            string jValue = AppRealization.JSON.Serialize(value);
             return Redis.SetContains(key, jValue);
         }
 

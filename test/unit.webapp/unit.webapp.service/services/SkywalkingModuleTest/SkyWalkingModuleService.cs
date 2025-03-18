@@ -18,6 +18,7 @@ using Air.Cloud.Core.Standard.Taxin.Client;
 using Microsoft.AspNetCore.Mvc;
 
 using unit.webapp.model.Dto;
+using Air.Cloud.Core;
 
 namespace unit.webapp.service.services.SkywalkingModuleTest
 {
@@ -42,7 +43,7 @@ namespace unit.webapp.service.services.SkywalkingModuleTest
         [HttpPost("skywalking/test")]
         public async Task<object> Test(TestSDto dto)
         {
-            traceLog.Write(dto);
+            traceLog.Write(AppRealization.JSON.Serialize(dto));
             var data = await taxinClientStandard.SendAsync<object>("taxin.service.test");
             return new
             {

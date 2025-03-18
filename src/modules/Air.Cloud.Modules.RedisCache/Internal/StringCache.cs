@@ -14,7 +14,7 @@ using Air.Cloud.Modules.RedisCache.Provider;
 
 using StackExchange.Redis;
 
-namespace SSS.Modules.Redis.Service
+namespace Air.Cloud.Modules.RedisCache.Internal
 {
 
     /// <summary>

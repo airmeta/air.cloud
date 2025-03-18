@@ -9,20 +9,24 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Standard.Event
+namespace Air.Cloud.Core.Standard.TraceLog
 {
     /// <summary>
-    /// 事件默认定义值
+    /// <para>zh-cn:跟踪日志内容</para>
+    /// <para>en-us:Trace log content</para>
     /// </summary>
-    public class EventDefaultDefine
+    public  interface ITraceLogContent
     {
         /// <summary>
-        /// 事件执行成功
+        /// <para>zh-cn:编号</para>
+        /// <para>en-us:id</para>
         /// </summary>
-        public const string SUCCESS = "SUCCESS";
+        public string Id { get; set; }
         /// <summary>
-        /// 事件执行失败
+        /// <para>zh-cn:标签</para>
+        /// <para>en-us:Tags</para>
         /// </summary>
-        public const string FAIL = "FAIL";
+        public string Tags { get; set; }
+
     }
 }

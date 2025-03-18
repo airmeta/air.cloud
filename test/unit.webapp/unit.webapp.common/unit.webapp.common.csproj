@@ -11,5 +11,5 @@
     <ProjectReference Include="..\..\..\src\plugins\Air.Cloud.Plugins.Jwt\Air.Cloud.Plugins.Jwt.csproj" />
     <ProjectReference Include="..\..\..\src\plugins\Air.Cloud.Plugins.SpecificationDocument\Air.Cloud.Plugins.SpecificationDocument.csproj" />
   </ItemGroup>
-
+ 
 </Project>

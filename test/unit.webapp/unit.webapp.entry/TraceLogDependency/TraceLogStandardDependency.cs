@@ -14,33 +14,34 @@ namespace unit.webapp.entry.TraceLogDependency
         public TraceLogStandardDependency()
         {
         }
-        public void Write(string logContent, KeyValuePair<string, string>? Tag = null)
+        public void Write(string logContent, IDictionary<string, string> Tag = null)
         {
-            repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
-            try
-            {
-                var documents = repository.Save(AppRealization.JSON.Deserialize<TraceLogDocument>(logContent));
-            }
-            catch (Exception)
-            {
-                throw Oops.Oh("系统异常,请稍后再试");
-            }
+            AppRealization.Output.Print("日志记录",logContent);
         }
-        public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog : class, new()
+        public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()
         {
-            repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
-            try
+            if (logContent is TraceLogDocument)
             {
-                var documents = repository.Save(logContent as TraceLogDocument);
+                repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
+                try
+                {
+                    var documents = repository.Save(logContent as TraceLogDocument);
+                }
+                catch (Exception)
+                {
+                    throw Oops.Oh("系统异常,请稍后再试");
+                }
+
             }
-            catch (Exception)
+            else
             {
-                throw Oops.Oh("系统异常,请稍后再试");
+                Write(AppRealization.JSON.Serialize(logContent), Tag);
             }
+          
         }
     }
     [ElasticSearchIndex(DbKey = "air_cloud", TableName = "fcj-logs-test")]
-    public class TraceLogDocument : INoSqlEntity
+    public class TraceLogDocument : INoSqlEntity,ITraceLogContent
     {
         public string Id { get; set; } = AppCore.Guid();
         public string Host { get; set; }
@@ -57,5 +58,6 @@ namespace unit.webapp.entry.TraceLogDependency
         public string Authorization { get; set; }
         public string XAuthorization { get; set; }
         public DateTime RequestTime { get; set; } = DateTime.Now;
+        public string Tags { get ; set; }
     }
 }

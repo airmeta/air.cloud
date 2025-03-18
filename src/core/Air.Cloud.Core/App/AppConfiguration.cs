@@ -10,6 +10,8 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App.Options;
+using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Standard.AppInject;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
@@ -245,5 +247,37 @@ namespace Air.Cloud.Core.App
         {
             AppConfigurationObServer.StartListen();
         }
+
+        /// <summary>
+        /// <para>zh-cn:默认的加载配置文件的方法</para>
+        /// <para>en-us:Default method for loading configuration files</para>
+        /// </summary>
+        /// <typeparam name="TAppInjectImplementation">
+        ///  <para>zh-cn:应用注入标准实现</para>
+        ///  <para>en-us:Application injection standard implementation</para>
+        /// </typeparam>
+        /// <param name="AppStartupTypeEnum">
+        /// <para>zh-cn:应用程序启动类型</para>
+        /// <para>en-us:Application startup type</para>
+        /// </param>
+        /// <param name="loadConfigurationTypeEnum">
+        /// <para>zh-cn:加载配置文件的方式</para>
+        /// <para>en-us:Method of loading configuration files</para>
+        /// <returns></returns>
+        public static ConfigurationManager AppDefaultInjectConfiguration<TAppInjectImplementation>(
+            AppStartupTypeEnum AppStartupTypeEnum,
+            LoadConfigurationTypeEnum loadConfigurationTypeEnum)
+        where TAppInjectImplementation : IAppInjectStandard, new()
+        {
+            AppRealization.Configuration.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
+            AppRealization.Configuration.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
+            AppConst.LoadConfigurationTypeEnum = loadConfigurationTypeEnum;
+            AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
+            AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
+            AppCore.AppStartType = AppStartupTypeEnum;
+            AppRealization.SetDependency<IAppInjectStandard>(new TAppInjectImplementation());
+            return AppConfigurationLoader.Configurations;
+        }
+
     }
 }

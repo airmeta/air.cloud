@@ -11,6 +11,7 @@
  */
 
 using Air.Cloud.Core.Modules.AppAspect.Handler;
+using Air.Cloud.Core.Standard.TraceLog.Defaults;
 
 using System.Reflection;
 
@@ -22,32 +23,30 @@ namespace Air.Cloud.Core.Extensions.Aspect
     /// </summary>
     public  class IfNullReferenceException : IAspectAroundHandler
     {
+        /// <inheritdoc/>
         public object Around_After(MethodInfo methodInfo, object[] args, object result)
         {
             return result;
         }
-
+        /// <inheritdoc/>
         public object[] Around_Before(MethodInfo methodInfo, object[] args)
         {
             return args;
         }
-
+        /// <inheritdoc/>
         public void Around_Error<TException>(MethodInfo methodInfo, object[] args, TException exception) where TException : Exception, new()
         {
             if (exception is NullReferenceException)
             {
-                AppPrintInformation appPrintInformation = new AppPrintInformation(
-                    "空指针异常", 
-                    $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现空指针异常",
-                   AppPrintInformation.AppPrintLevel.Error, 
-                   true,
-                   new Dictionary<string, object>()
-                    {
-                        {"source",exception.Source },
-                        {"stace",exception.StackTrace }
-                    }
-                );
-                AppRealization.Output.Print(appPrintInformation);
+                DefaultTraceLogContent appPrintInformation = new DefaultTraceLogContent(
+                "空指针异常",
+                 $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现空指针异常",
+                new Dictionary<string, object>()
+                {
+                     {"source",exception.Source },
+                     {"stace",exception.StackTrace }
+                }, DefaultTraceLogContent.EVENT_TAG, DefaultTraceLogContent.ERROR_TAG);
+                AppRealization.TraceLog.Write(appPrintInformation);
             }
         }
     }

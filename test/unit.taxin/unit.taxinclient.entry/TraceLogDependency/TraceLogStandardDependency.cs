@@ -14,7 +14,7 @@ namespace unit.taxinclient.entry.TraceLogDependency
         public TraceLogStandardDependency()
         {
         }
-        public void Write(string logContent, KeyValuePair<string, string>? Tag = null)
+        public void Write(string logContent, IDictionary<string, string> Tag = null)
         {
             repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
             try
@@ -26,7 +26,7 @@ namespace unit.taxinclient.entry.TraceLogDependency
                 throw Oops.Oh("系统异常,请稍后再试");
             }
         }
-        public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog : class, new()
+        public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()
         {
             repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
             try
@@ -40,7 +40,7 @@ namespace unit.taxinclient.entry.TraceLogDependency
         }
     }
     [ElasticSearchIndex(DbKey = "air_cloud", TableName = "fcj-logs-test")]
-    public class TraceLogDocument : INoSqlEntity
+    public class TraceLogDocument : INoSqlEntity,ITraceLogContent
     {
         public string Id { get; set; } = AppCore.Guid();
         public string Host { get; set; }
@@ -57,5 +57,6 @@ namespace unit.taxinclient.entry.TraceLogDependency
         public string Authorization { get; set; }
         public string XAuthorization { get; set; }
         public DateTime RequestTime { get; set; } = DateTime.Now;
+        public string Tags { get; set ; }
     }
 }

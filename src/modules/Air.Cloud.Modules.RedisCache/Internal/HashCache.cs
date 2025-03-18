@@ -16,7 +16,7 @@ using Air.Cloud.Core.Standard.Cache.Redis;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Air.Cloud.Core;
 
-namespace SSS.Modules.Redis.Service
+namespace Air.Cloud.Modules.RedisCache.Internal
 {
     /// <summary>
     /// Hash:类似dictionary，通过索引快速定位到指定元素的，耗时均等，跟string的区别在于不用反序列化，直接修改某个字段
@@ -42,7 +42,7 @@ namespace SSS.Modules.Redis.Service
         /// <param name="key"></param>
         /// <param name="dataKey"></param>
         /// <returns></returns>
-        public  bool Exists(string key, string dataKey)
+        public bool Exists(string key, string dataKey)
         {
             return Redis.HashExists(key, dataKey);
         }
@@ -57,7 +57,7 @@ namespace SSS.Modules.Redis.Service
         /// <returns></returns>
         public bool Set<T>(string key, string dataKey, T t)
         {
-            string? json = AppRealization.JSON.Serialize(t);
+            string json = AppRealization.JSON.Serialize(t);
             return Redis.HashSet(key, dataKey, json);
         }
 
@@ -196,7 +196,7 @@ namespace SSS.Modules.Redis.Service
             return dic;
         }
 
-        public bool Delete(string Key, string HashKey)=> Redis.HashDelete(Key, HashKey);
+        public bool Delete(string Key, string HashKey) => Redis.HashDelete(Key, HashKey);
 
         public async Task<bool> DeleteAsync(string Key, string HashKey) => await Redis.HashDeleteAsync(Key, HashKey);
 

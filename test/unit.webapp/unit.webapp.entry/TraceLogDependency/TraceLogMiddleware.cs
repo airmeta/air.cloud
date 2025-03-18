@@ -98,8 +98,10 @@ namespace Air.Cloud.GateWay.Middleware
                 };
                 //通过接入
                 //记录日志信息
-                KeyValuePair<string, string> Tags = new KeyValuePair<string, string>("requestid", context.Request.Headers["REQUESTID"].ToString());
-                AppRealization.TraceLog.Write(log, Tags);
+                AppRealization.TraceLog.Write(log, new Dictionary<string, string>()
+                {
+                    {"requestid",context.Request.Headers["REQUESTID"].ToString() }
+                });
             }
     }
 }

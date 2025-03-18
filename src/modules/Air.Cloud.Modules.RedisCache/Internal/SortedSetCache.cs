@@ -14,14 +14,14 @@ using Air.Cloud.Modules.RedisCache.Provider;
 
 using StackExchange.Redis;
 
-namespace SSS.Modules.Redis.Service
+namespace Air.Cloud.Modules.RedisCache.Internal
 {
     /// <summary>
     /// Sorted Sets是将 Set 中的元素增加了一个权重参数 score，使得集合中的元素能够按 score 进行有序排列
     /// 1.带有权重的元素，比如一个游戏的用户得分排行榜
     /// 2.比较复杂的数据结构，一般用到的场景不算太多
     /// </summary>
-    public class SortedSetCache :ISortedSetCache
+    public class SortedSetCache : ISortedSetCache
     {
         private readonly IDatabase Redis;
         public SortedSetCache(IDatabase Redis)

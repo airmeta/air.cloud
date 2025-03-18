@@ -21,6 +21,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Air.Cloud.Core.Standard.Print;
+using Air.Cloud.Core.Standard.TraceLog.Defaults;
 
 namespace Air.Cloud.Modules.Kafka.Extensions
 {
@@ -72,14 +73,11 @@ namespace Air.Cloud.Modules.Kafka.Extensions
                     }
                     catch (Exception ex)
                     {
-                        //这里会出现异常,需要处理掉 增加Write方法 将其转给管道并出口
-                        AppRealization.TraceLog.Write(new AppPrintInformation()
+                        AppRealization.TraceLog.Write(new DefaultTraceLogContent()
                         {
-                            Title="kafka-error",
-                            Level=AppPrintInformation.AppPrintLevel.Error,
-                            Content= ex.Message,
-                            State=true,
-                            AdditionalParams=new Dictionary<string, object>()
+                            Title = "kafka-error",
+                            Content = ex.Message,
+                            AdditionalParams = new Dictionary<string, object>()
                             {
                                 { "StackTrace",ex.StackTrace},
                                 { "Message",ex.Message},
@@ -87,7 +85,7 @@ namespace Air.Cloud.Modules.Kafka.Extensions
                                 { "InnerException",ex.InnerException?.Message},
                                 { "InnerExceptionStackTrace",ex.InnerException?.StackTrace}
                             },
-                            Type="kafka_subscribe_error"
+                            Tags = "kafka_subscribe_error"
                         });
                     }
                 };

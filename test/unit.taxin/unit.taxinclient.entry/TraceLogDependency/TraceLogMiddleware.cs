@@ -94,10 +94,10 @@ namespace unit.taxinclient.entry.TraceLogDependency
                 Authorization = context.Request.Headers["Authorization"].ToString(),
                 XAuthorization = context.Request.Headers["X-Authorization"].ToString()
             };
-            //通过接入
-            //记录日志信息
-            KeyValuePair<string, string> Tags = new KeyValuePair<string, string>("requestid", context.Request.Headers["REQUESTID"].ToString());
-            AppRealization.TraceLog.Write(log, Tags);
+            AppRealization.TraceLog.Write(log, new Dictionary<string, string>()
+            {
+                {"requestid",context.Request.Headers["REQUESTID"].ToString() }
+            });
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -173,10 +173,10 @@ namespace unit.taxinclient.entry.TraceLogDependency
                 Authorization = context.Request.Headers["Authorization"].ToString(),
                 XAuthorization = context.Request.Headers["X-Authorization"].ToString()
             };
-            //通过接入
-            //记录日志信息
-            KeyValuePair<string, string> Tags = new KeyValuePair<string, string>("requestid", context.Request.Headers["REQUESTID"].ToString());
-            AppRealization.TraceLog.Write(log, Tags);
+            AppRealization.TraceLog.Write(log, new Dictionary<string, string>()
+            {
+                {"requestid",context.Request.Headers["REQUESTID"].ToString() }
+            });
             await Task.CompletedTask;
         }
     }

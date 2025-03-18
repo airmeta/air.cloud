@@ -11,6 +11,7 @@
  */
 
 using Air.Cloud.Core.Modules.AppAspect.Handler;
+using Air.Cloud.Core.Standard.TraceLog.Defaults;
 
 using System.Reflection;
 
@@ -22,24 +23,28 @@ namespace Air.Cloud.Core.Extensions.Aspect
     /// </summary>
     public  class IfHttpRequestException : IAspectAroundHandler
     {
+        /// <inheritdoc/>
         public object Around_After(MethodInfo methodInfo, object[] args, object result)
         {
             return result;
         }
-
+        /// <inheritdoc/>
         public object[] Around_Before(MethodInfo methodInfo, object[] args)
         {
             return args;
         }
-
+        /// <inheritdoc/>
         public void Around_Error<TException>(MethodInfo methodInfo, object[] args, TException exception) where TException : Exception, new()
         {
             if(exception is HttpRequestException)
             {
-                AppPrintInformation appPrintInformation = new AppPrintInformation("网络请求异常", $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现网络异常", Standard.Print.AppPrintInformation.AppPrintLevel.Error, true, new Dictionary<string, object>()
-                {
-                    {"error",exception }
-                });
+                DefaultTraceLogContent appPrintInformation = new DefaultTraceLogContent(
+                    "网络请求异常",
+                    $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现网络异常",
+                    new Dictionary<string, object>()
+                    {
+                        {"error",exception }
+                    }, DefaultTraceLogContent.EVENT_TAG, DefaultTraceLogContent.ERROR_TAG);
                 AppRealization.TraceLog.Write(appPrintInformation);
             }
         }

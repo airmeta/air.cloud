@@ -11,11 +11,8 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.TraceLog;
 
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Mvc;
 using SkyApm.Tracing;
 using SkyApm.Tracing.Segments;
 
@@ -30,12 +27,15 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
         private IEntrySegmentContextAccessor _segContext => AppCore.GetService<IEntrySegmentContextAccessor>();
         
         /// <inheritdoc/>
-        public void Write(string logContent,KeyValuePair<string,string>? Tag=null)
+        public void Write(string logContent, IDictionary<string, string> Tag =null)
         {
             _segContext.Context.Span.AddLog(LogEvent.Message(logContent));
-            if (Tag != null&&Tag.HasValue)
+            if (Tag.Count>0)
             {
-                _segContext.Context.Span.AddTag(Tag.Value.Key, Tag.Value.Value);
+                foreach (var item in Tag)
+                {
+                    _segContext.Context.Span.AddTag(item.Key, item.Value);
+                }
             }
             else
             {
@@ -43,13 +43,16 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
             }
         }
         /// <inheritdoc/>
-        public void Write<TLog>(TLog logContent, KeyValuePair<string, string>? Tag = null) where TLog : class, new()
+        public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()
         {
             var logContentString = AppRealization.JSON.Serialize(logContent);
             _segContext.Context.Span.AddLog(LogEvent.Message(logContentString));
-            if (Tag != null && Tag.HasValue)
+            if (Tag.Count > 0)
             {
-                _segContext.Context.Span.AddTag(Tag.Value.Key, Tag.Value.Value);
+                foreach (var item in Tag)
+                {
+                    _segContext.Context.Span.AddTag(item.Key, item.Value);
+                }
             }
             else
             {
