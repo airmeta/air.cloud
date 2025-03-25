@@ -9,7 +9,6 @@
 using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.Core.Standard.DataBase.Model;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Air.Cloud.DataBase.Entities.Configures;

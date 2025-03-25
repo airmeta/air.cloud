@@ -17,8 +17,6 @@ namespace Air.Cloud.Core.Modules.AppPrint
     /// </summary>
     public class AppPrintInformation
     {
-
-
         /// <summary>
         /// 标题
         /// </summary>
@@ -44,7 +42,7 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <para>zh-cn: 类型</para>
         /// <para>en-us: Output content type</para>
         /// </summary>
-        public string Type { get; set; } = "default";
+        public string Type { get; set; } = AppPrintConstType.DEFAULT_TYPE;
 
         public AppPrintInformation() { }
 
@@ -58,7 +56,7 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <param name="state"></param>
         /// <param name="additionalParams"></param>
         /// <param name="type"></param>
-        public AppPrintInformation(string title, string content, AppPrintLevel level = AppPrintLevel.Information, bool state = true, Dictionary<string, object> additionalParams = null, string type = "default")
+        public AppPrintInformation(string title, string content, AppPrintLevel level = AppPrintLevel.Information, bool state = true, Dictionary<string, object> additionalParams = null, string type = AppPrintConstType.DEFAULT_TYPE)
         {
             Title = title;
             Level = level;

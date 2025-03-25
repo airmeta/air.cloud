@@ -52,11 +52,6 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     public bool? InjectSpecificationDocument { get; set; }
 
     /// <summary>
-    /// 是否打印数据库连接信息
-    /// </summary>
-    public bool? PrintDbConnectionInfo { get; set; }
-
-    /// <summary>
     /// 配置支持的包前缀名
     /// </summary>
     public string[] SupportPackageNamePrefixs { get; set; }
@@ -79,7 +74,6 @@ public sealed class AppSettingsOptions : IConfigurableOptions<AppSettingsOptions
     {
         options.InjectSpecificationDocument ??= (AppEnvironment.IsProduction?false:true);
         options.EnabledReferenceAssemblyScan ??= false;
-        options.PrintDbConnectionInfo ??= (AppEnvironment.IsProduction ? false : true);
         options.OutputOriginalSqlExecuteLog ??= (AppEnvironment.IsProduction ? false : true);
         options.SupportPackageNamePrefixs ??= Array.Empty<string>();
         options.GateWayAddress??="http://localhost:5000";

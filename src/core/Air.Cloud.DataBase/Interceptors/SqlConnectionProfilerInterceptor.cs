@@ -20,16 +20,10 @@ namespace Air.Cloud.DataBase.Interceptors;
 internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
 {
     /// <summary>
-    /// 是否打印数据库连接信息
-    /// </summary>
-    private readonly bool IsPrintDbConnectionInfo;
-
-    /// <summary>
     /// 构造函数
     /// </summary>
     public SqlConnectionProfilerInterceptor()
     {
-        IsPrintDbConnectionInfo = AppCore.Settings.PrintDbConnectionInfo.Value;
     }
 
     /// <summary>
@@ -70,13 +64,18 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
     /// <param name="eventData">数据库连接事件数据</param>
     private void PrintConnectionToMiniProfiler(DbConnection connection, ConnectionEventData eventData)
     {
-        // 打印连接信息消息
-        AppRealization.Output.Print(new AppPrintInformation
+        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
         {
-            Title = "connection",
+            Title = "数据库链接状态更新",
             Level = AppPrintLevel.Information,
-            Content = $"[Connection Id: {eventData.ConnectionId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
-            State = true
-        });
+            Content = $"已读取到数据库链接信息",
+            AdditionalParams=new Dictionary<string, object>()
+            {
+                  {"connection_id", eventData.ConnectionId},
+                  {"connection_str", connection.ConnectionString},
+            },
+            State = true,
+            Type = AppPrintConstType.ORM_EXEC_TYPE
+        }), Db.TraceLogTags);
     }
 }

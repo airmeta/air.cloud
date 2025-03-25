@@ -13,10 +13,14 @@ using Air.Cloud.DataBase.Internal;
 
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging;
 
+using Org.BouncyCastle.Crypto.Tls;
+
+using System.Data;
 using System.Data.Common;
 using System.Text;
+
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Air.Cloud.DataBase.Extensions;
 
@@ -26,11 +30,6 @@ namespace Air.Cloud.DataBase.Extensions;
 [IgnoreScanning]
 public static class DbObjectExtensions
 {
-    /// <summary>
-    /// 是否打印数据库连接信息到 MiniProfiler 中
-    /// </summary>
-    private static readonly bool IsPrintDbConnectionInfo;
-
     /// <summary>
     /// 是否记录 EFCore 执行 sql 命令打印日志
     /// </summary>
@@ -42,7 +41,6 @@ public static class DbObjectExtensions
     static DbObjectExtensions()
     {
         var appsettings = AppCore.Settings;
-        IsPrintDbConnectionInfo = appsettings.PrintDbConnectionInfo.Value;
         IsLogEntityFrameworkCoreSqlExecuteCommand = appsettings.OutputOriginalSqlExecuteLog.Value;
     }
 
@@ -253,24 +251,20 @@ public static class DbObjectExtensions
     /// <param name="isAsync"></param>
     private static void PrintDataBaseConnectionInformation(DatabaseFacade databaseFacade, DbConnection dbConnection, bool isAsync)
     {
-        AppRealization.Output.Print(new AppPrintInformation
+        var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
+        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
         {
-            Title = "sql",
+            Title = "数据库链接状态更新",
             Level = AppPrintLevel.Information,
-            Content = $"Open{(isAsync ? "Async" : string.Empty)},Connection Open{(isAsync ? "Async" : string.Empty)}()",
-            State = true
-        });
-        if (IsPrintDbConnectionInfo)
-        {
-            var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
-            AppRealization.Output.Print(new AppPrintInformation
+            Content = $"已读取到数据库链接信息",
+            AdditionalParams = new Dictionary<string, object>()
             {
-                Title = "connection",
-                Level = AppPrintLevel.Information,
-                Content = $"[Connection Id: {connectionId}] / [Database: {dbConnection.Database}] / [Connection String: {dbConnection.ConnectionString}]",
-                State = true
-            });
-        }
+                  {"connection_id", connectionId},
+                  {"connection_str", dbConnection.ConnectionString},
+            },
+            State = true,
+            Type = AppPrintConstType.ORM_EXEC_TYPE
+        }), Db.TraceLogTags);
     }
 
     /// <summary>
@@ -280,23 +274,12 @@ public static class DbObjectExtensions
     /// <param name="dbCommand"></param>
     private static void LogSqlExecuteCommand(DatabaseFacade databaseFacade, DbCommand dbCommand)
     {
-        // 打印执行 SQL
-        AppRealization.Output.Print(new AppPrintInformation
-        {
-            Title = "sql",
-            Level = AppPrintLevel.Information,
-            Content = dbCommand.CommandText,
-            State = true
-        });
-
         // 判断是否启用
         if (!IsLogEntityFrameworkCoreSqlExecuteCommand) return;
-
         // 构建日志内容
         var sqlLogBuilder = new StringBuilder();
         sqlLogBuilder.Append(@"Executed DbCommand (NaN) ");
         sqlLogBuilder.Append(@" [Parameters=[");
-
         // 拼接命令参数
         var parameters = dbCommand.Parameters;
         for (var i = 0; i < parameters.Count; i++)
@@ -311,23 +294,25 @@ public static class DbObjectExtensions
             sqlLogBuilder.Append($"{parameter.ParameterName}='{parameter.Value}' (Size = {parameter.Size}) (DbType = {dbType})");
             if (i < parameters.Count - 1) sqlLogBuilder.Append(", ");
         }
-
         sqlLogBuilder.Append(@$"], CommandType='{dbCommand.CommandType}', CommandTimeout='{dbCommand.CommandTimeout}']");
         sqlLogBuilder.Append("\r\n");
         sqlLogBuilder.Append(dbCommand.CommandType == CommandType.StoredProcedure ? "EXEC " + dbCommand.CommandText : dbCommand.CommandText);
-
-        // 打印日志
-        var logger = databaseFacade.GetService<ILogger<SqlExecuteCommand>>();
-        logger.LogInformation(sqlLogBuilder.ToString());
-        AppRealization.Output.Print(new AppPrintInformation()
+        
+        var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
+        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation()
         {
-            Title="Air.Cloud.DataBase标准输出",
-            Content=sqlLogBuilder.ToString(),
-            Level=AppPrintLevel.Information,
-            State=true,
-            AdditionalParams=null,
-            Type=""
-        });
 
+            Title = "数据库语句执行监听",
+            Level = AppPrintLevel.Information,
+            Content = $"已读取到数据库语句执行记录",
+            AdditionalParams = new Dictionary<string, object>()
+            {
+                {"connection_id",connectionId},
+                {"connection_str", dbCommand.Connection.ConnectionString},
+                {"sql_str",sqlLogBuilder.ToString() }
+            },
+            State = true,
+            Type = AppPrintConstType.ORM_EXEC_TYPE
+        }), Db.TraceLogTags);
     }
 }

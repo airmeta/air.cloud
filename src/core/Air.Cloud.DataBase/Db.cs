@@ -7,6 +7,7 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.Extensions.DatabaseProvider;
@@ -25,6 +26,16 @@ public static class Db
     /// 迁移类库名称
     /// </summary>
     internal static string MigrationAssemblyName = "Air.Database.Migrations";
+
+    /// <summary>
+    /// <para>zh-cn:跟踪日志标识</para>
+    /// <para>en-us:Trace log tag</para>
+    /// </summary>
+    internal static Dictionary<string, string> TraceLogTags = new Dictionary<string, string>()
+    {
+        { "db_log",AppPrintConstType.ORM_EXEC_TYPE }
+    };
+
     /// <summary>
     /// 获取非泛型仓储
     /// </summary>

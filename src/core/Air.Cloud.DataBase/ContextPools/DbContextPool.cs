@@ -8,19 +8,13 @@
 
 using Air.Cloud.Core;
 using Air.Cloud.Core.Modules.AppPrint;
-using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.DataBase.Extensions.DatabaseProvider;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 
-using System;
 using System.Collections.Concurrent;
-using System.Data;
 using System.Data.Common;
-
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Air.Cloud.DataBase.ContextPools;
 
@@ -30,11 +24,6 @@ namespace Air.Cloud.DataBase.ContextPools;
 [IgnoreScanning]
 public class DbContextPool : IDbContextPool
 {
-    /// <summary>
-    /// 是否打印数据库连接信息
-    /// </summary>
-    private readonly bool IsPrintDbConnectionInfo;
-
     /// <summary>
     /// 线程安全的数据库上下文集合
     /// </summary>
@@ -57,7 +46,6 @@ public class DbContextPool : IDbContextPool
     public DbContextPool(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        IsPrintDbConnectionInfo = AppCore.Settings.PrintDbConnectionInfo.Value;
 
         _dbContexts = new ConcurrentDictionary<Guid, DbContext>();
         _failedDbContexts = new ConcurrentDictionary<Guid, DbContext>();
@@ -108,14 +96,21 @@ public class DbContextPool : IDbContextPool
             var connection = database.GetDbConnection();
             // 回滚事务
             currentTransaction?.Rollback();
-
-            AppRealization.Output.Print(new AppPrintInformation
+            // 打印数据库关闭信息
+            AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
-                Title = "transaction",
+                Title = "数据库事务状态更新",
                 Level = AppPrintLevel.Error,
-                Content = $"[Connection Id: {context.ContextId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
-                State = true
-            });
+                Content = "已触发事务回滚",
+                State = true,
+                AdditionalParams=new Dictionary<string, object>()
+                {
+                    {"connection_id", context.ContextId},
+                    {"connection_str", connection.ConnectionString},
+
+                },
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }), Db.TraceLogTags);
         };
     }
 
@@ -196,31 +191,28 @@ public class DbContextPool : IDbContextPool
     /// <returns></returns>
     public void BeginTransaction(bool ensureTransaction = false)
     {
-    // 判断 dbContextPool 中是否包含DbContext，如果是，则使用第一个数据库上下文开启事务，并应用于其他数据库上下文
-    EnsureTransaction: if (_dbContexts.Any())
+        // 判断 dbContextPool 中是否包含DbContext，如果是，则使用第一个数据库上下文开启事务，并应用于其他数据库上下文
+        EnsureTransaction: if (_dbContexts.Any())
         {
             // 如果共享事务不为空，则直接共享
             if (DbContextTransaction != null) goto ShareTransaction;
-
             // 先判断是否已经有上下文开启了事务
             var transactionDbContext = _dbContexts.FirstOrDefault(u => u.Value.Database.CurrentTransaction != null);
-
             DbContextTransaction = transactionDbContext.Value != null
                    ? transactionDbContext.Value.Database.CurrentTransaction
                    // 如果没有任何上下文有事务，则将第一个开启事务
                    : _dbContexts.First().Value.Database.BeginTransaction();
-
-        // 共享事务
-        ShareTransaction: ShareTransaction(DbContextTransaction.GetDbTransaction());
-
-            // 打印事务实际开启信息
-            AppRealization.Output.Print(new AppPrintInformation
+            // 共享事务
+            ShareTransaction: ShareTransaction(DbContextTransaction.GetDbTransaction());
+            // 打印数据库关闭信息
+            AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
-                Title = "database",
+                Title = "数据库事务状态更新",
                 Level = AppPrintLevel.Information,
-                Content = $"Start",
-                State = true
-            });
+                Content = $"事务已开启",
+                State = true,
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }), Db.TraceLogTags);
         }
         else
         {
@@ -247,37 +239,37 @@ public class DbContextPool : IDbContextPool
         {
             // 将所有数据库上下文修改 SaveChanges();，这里另外判断是否需要手动提交
             var hasChangesCount = SavePoolNow();
-
             // 如果事务为空，则执行完毕后关闭连接
             if (DbContextTransaction == null)
             {
                 if (withCloseAll) CloseAll();
                 return;
             }
-
             // 提交共享事务
             DbContextTransaction?.Commit();
-            AppRealization.Output.Print(new AppPrintInformation
+            // 打印数据库关闭信息
+            AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
-                Title = "transaction",
+                Title = "数据库事务状态更新",
                 Level = AppPrintLevel.Information,
-                Content = $"Transaction Completed! Has {hasChangesCount} DbContext Changes.",
-                State = true
-            });
+                Content = $"事务已完成提交,检测到{hasChangesCount}项DbContext变化",
+                State = true,
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }), Db.TraceLogTags);
         }
         catch
         {
             // 回滚事务
             if (DbContextTransaction?.GetDbTransaction()?.Connection != null) DbContextTransaction?.Rollback();
-
-            // 打印事务回滚消息
-            AppRealization.Output.Print(new AppPrintInformation
+            // 打印数据库关闭信息
+            AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
-                Title = "transaction",
+                Title = "数据库事务状态更新",
                 Level = AppPrintLevel.Error,
-                Content = "Rollback",
-                State = true
-            });
+                Content = "已触发事务回滚",
+                State = true,
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }), Db.TraceLogTags);
             throw;
         }
         finally
@@ -288,7 +280,6 @@ public class DbContextPool : IDbContextPool
                 DbContextTransaction?.Dispose();
             }
         }
-
         // 关闭所有连接
         if (withCloseAll) CloseAll();
     }
@@ -303,15 +294,15 @@ public class DbContextPool : IDbContextPool
         if (DbContextTransaction?.GetDbTransaction()?.Connection != null) DbContextTransaction?.Rollback();
         DbContextTransaction?.Dispose();
         DbContextTransaction = null;
-
-        // 打印事务回滚消息
-        AppRealization.Output.Print(new AppPrintInformation
+        // 打印数据库关闭信息
+        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
         {
-            Title = "transaction",
+            Title = "数据库事务状态更新",
             Level = AppPrintLevel.Error,
-            Content = "Rollback",
-            State = true
-        });
+            Content = "已触发事务回滚",
+            State = true,
+            Type = AppPrintConstType.ORM_EXEC_TYPE
+        }), Db.TraceLogTags);
         // 关闭所有连接
         if (withCloseAll) CloseAll();
     }
@@ -327,16 +318,16 @@ public class DbContextPool : IDbContextPool
         {
             var conn = item.Value.Database.GetDbConnection();
             if (conn.State != ConnectionState.Open) continue;
-
             conn.Close();
             // 打印数据库关闭信息
-            AppRealization.Output.Print(new AppPrintInformation
+            AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
-                Title = "sql",
+                Title = "数据库链接已经关闭",
                 Level = AppPrintLevel.Information,
-                Content = "Connection Close",
-                State = true
-            });
+                Content = $"链接字符串为: {conn.ConnectionString}",
+                State = true,
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }),Db.TraceLogTags);
         }
     }
 

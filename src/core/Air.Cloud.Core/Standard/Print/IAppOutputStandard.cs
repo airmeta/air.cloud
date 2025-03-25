@@ -78,7 +78,7 @@ namespace Air.Cloud.Core.Standard.Print
         }
 
         /// <inheritdoc/>
-        public void Print(string title, string content, AppPrintLevel level =AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null)
+        public void Print(string title, string content, AppPrintLevel level =AppPrintLevel.Information, string type = AppPrintConstType.DEFAULT_TYPE, bool state = true, Dictionary<string, object> AdditionalParams = null)
         {
             Print(new AppPrintInformation()
             {

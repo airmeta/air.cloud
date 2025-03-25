@@ -51,7 +51,7 @@ namespace Air.Cloud.WebApp.Extensions
                                 Level = AppPrintLevel.Error,
                                 Content = $"[code:aircloud_000001]看起来你正在调试一个不具有Domain的服务,你需要检查你的类库引用关系,并确保Domain类库被正常引入",
                                 State = true,
-                                Type = "debug"
+                                Type = AppPrintConstType.DEBUG_LOG_TYPE
                             });
                         }
                     #endif
