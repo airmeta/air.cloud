@@ -1,12 +1,8 @@
 ﻿using Air.Cloud.Core;
-using Air.Cloud.Core.App;
-using Air.Cloud.Core.Extensions.Aspect;
-using Air.Cloud.Core.Modules.AppAspect.Attributes;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Event;
 using Air.Cloud.Core.Standard.Event.Attributes;
 using Air.Cloud.Core.Standard.Event.Contexts;
-using HarmonyLib;
-using static Air.Cloud.Core.Standard.Print.AppPrintInformation;
 
 namespace unit.kafaka.server.entry
 {

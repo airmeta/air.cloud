@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Modules.Docker.Helper;
 using Air.Cloud.Modules.Docker.Internal;
 using Air.Cloud.Modules.Docker.Model;
@@ -28,11 +29,11 @@ namespace Air.Cloud.Modules.Docker.Events
                 CancellationTokenSource cancellation = new CancellationTokenSource();
                 await Client.System.MonitorEventsAsync(new ContainerEventsParameters(), new Progress<Message>((m) =>
                 {
-                    AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         State = true,
                         Content = "Container status changed",
-                        Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                        Level = AppPrintLevel.Information,
                         Title = "Air.Cloud.Modules.Docker"
                     });
                     //清理掉现在的状态

@@ -10,7 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Modules.AppAspect.Handler;
-
+using Air.Cloud.Core.Modules.AppPrint;
 using System.Reflection;
 
 namespace Air.Cloud.Core.Extensions.Aspect
@@ -31,7 +31,7 @@ namespace Air.Cloud.Core.Extensions.Aspect
                     {"return_value", retValue}
                 },
                 Content = $"Execute method {methodInfo.DeclaringType.FullName}.{methodInfo.Name} Finish",
-                Level = AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "After Execute Method",
                 Type = "method_log"
             });
@@ -47,7 +47,7 @@ namespace Air.Cloud.Core.Extensions.Aspect
                     {"args", args}
                 }:null,
                 Content=$"Execute method {methodInfo.DeclaringType.FullName}.{methodInfo.Name} Start",
-                Level=AppPrintInformation.AppPrintLevel.Information,
+                Level=AppPrintLevel.Information,
                 Title= "Before Execute Method",
                 Type="method_log"
             });

@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -59,7 +60,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Extensions
                     AppRealization.Output.Print(new AppPrintInformation
                     {
                         Title = "domain-errors",
-                        Level = AppPrintInformation.AppPrintLevel.Error,
+                        Level = AppPrintLevel.Error,
                         Content = $"注册调度任务失败,异常信息:{ex.Message}",
                         State = true
                     });

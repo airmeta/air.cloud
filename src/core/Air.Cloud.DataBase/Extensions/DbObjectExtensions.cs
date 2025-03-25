@@ -7,16 +7,14 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.DataBase.Helpers;
 using Air.Cloud.DataBase.Internal;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using System.Data;
 using System.Data.Common;
 using System.Text;
 
@@ -28,16 +26,6 @@ namespace Air.Cloud.DataBase.Extensions;
 [IgnoreScanning]
 public static class DbObjectExtensions
 {
-    /// <summary>
-    /// MiniProfiler 分类名
-    /// </summary>
-    private const string MiniProfilerCategory = "connection";
-
-    /// <summary>
-    /// 是否是开发环境
-    /// </summary>
-    private static bool IsDevelopment => AppEnvironment.IsDevelopment;
-
     /// <summary>
     /// 是否打印数据库连接信息到 MiniProfiler 中
     /// </summary>
@@ -195,7 +183,6 @@ public static class DbObjectExtensions
         if (dbConnection.State == ConnectionState.Closed)
         {
             dbConnection.Open();
-
             // 打印数据库连接信息到 MiniProfiler
             PrintDataBaseConnectionInformation(databaseFacade, dbConnection, false);
         }
@@ -269,7 +256,7 @@ public static class DbObjectExtensions
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "sql",
-            Level = AppPrintInformation.AppPrintLevel.Information,
+            Level = AppPrintLevel.Information,
             Content = $"Open{(isAsync ? "Async" : string.Empty)},Connection Open{(isAsync ? "Async" : string.Empty)}()",
             State = true
         });
@@ -279,7 +266,7 @@ public static class DbObjectExtensions
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "connection",
-                Level = AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Content = $"[Connection Id: {connectionId}] / [Database: {dbConnection.Database}] / [Connection String: {dbConnection.ConnectionString}]",
                 State = true
             });
@@ -297,7 +284,7 @@ public static class DbObjectExtensions
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "sql",
-            Level = AppPrintInformation.AppPrintLevel.Information,
+            Level = AppPrintLevel.Information,
             Content = dbCommand.CommandText,
             State = true
         });
@@ -332,5 +319,15 @@ public static class DbObjectExtensions
         // 打印日志
         var logger = databaseFacade.GetService<ILogger<SqlExecuteCommand>>();
         logger.LogInformation(sqlLogBuilder.ToString());
+        AppRealization.Output.Print(new AppPrintInformation()
+        {
+            Title="Air.Cloud.DataBase标准输出",
+            Content=sqlLogBuilder.ToString(),
+            Level=AppPrintLevel.Information,
+            State=true,
+            AdditionalParams=null,
+            Type=""
+        });
+
     }
 }

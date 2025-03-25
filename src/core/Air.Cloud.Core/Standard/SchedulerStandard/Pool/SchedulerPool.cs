@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */using Air.Cloud.Core.Collections;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Modules.StandardPool;
 
 using System.Collections.Concurrent;
@@ -54,7 +55,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Pool
                     AdditionalParams = null,
                     Content = "Current scheduler object is locked",
                     Title = "SchedulerPool Notice",
-                    Level = AppPrintInformation.AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warning
                 });
                 return false;
             }

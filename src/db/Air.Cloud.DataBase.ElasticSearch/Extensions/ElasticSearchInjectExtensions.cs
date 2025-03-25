@@ -1,6 +1,7 @@
 ﻿using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
 using Air.Cloud.Core.Standard.DynamicServer.Extensions;
@@ -45,7 +46,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Extensions
                             AppRealization.Output.Print(new AppPrintInformation
                             {
                                 Title = "domain-errors",
-                                Level = AppPrintInformation.AppPrintLevel.Error,
+                                Level = AppPrintLevel.Error,
                                 Content = $"未正确配置索引信息,[{t.FullName}]缺少[ElasticSearchIndex]特性",
                                 State = true
                             });
@@ -66,7 +67,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Extensions
                     AppRealization.Output.Print(new AppPrintInformation
                     {
                         Title = "domain-errors",
-                        Level = AppPrintInformation.AppPrintLevel.Error,
+                        Level = AppPrintLevel.Error,
                         Content = $"注册ElasticSearch连接池异常,异常信息:{ex.Message}",
                         State = true
                     });

@@ -7,6 +7,7 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.DataBase.UnitOfWork;
 using Air.Cloud.DataBase.UnitOfWork.Attributes;
 
@@ -59,7 +60,7 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "unitofwork",
-            Level = AppPrintInformation.AppPrintLevel.Information,
+            Level = AppPrintLevel.Information,
             Content = "start",
             State = true
         });
@@ -94,7 +95,7 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "unitofwork",
-            Level = AppPrintInformation.AppPrintLevel.Information,
+            Level = AppPrintLevel.Information,
             Content = "finish",
             State = true
         });

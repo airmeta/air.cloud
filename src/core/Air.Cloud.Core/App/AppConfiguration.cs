@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.AppInject;
 
 using Microsoft.Extensions.Configuration;
@@ -138,7 +139,7 @@ namespace Air.Cloud.Core.App
                         { ex.Message,ex}
                     },
                     Content = "加载应用程序选项时出现异常",
-                    Level = AppPrintInformation.AppPrintLevel.Error,
+                    Level = AppPrintLevel.Error,
                     Title = ex.Message,
                 });
                 throw;

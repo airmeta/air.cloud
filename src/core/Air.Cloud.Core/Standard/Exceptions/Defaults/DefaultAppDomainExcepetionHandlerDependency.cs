@@ -9,6 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Modules.AppPrint;
+
 namespace Air.Cloud.Core.Standard.Exceptions.Defaults
 {
     [IgnoreScanning]
@@ -26,7 +28,7 @@ namespace Air.Cloud.Core.Standard.Exceptions.Defaults
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "domain-errors",
-                Level = AppPrintInformation.AppPrintLevel.Error,
+                Level = AppPrintLevel.Error,
                 Content = exception.Message,
                 State = true
             });

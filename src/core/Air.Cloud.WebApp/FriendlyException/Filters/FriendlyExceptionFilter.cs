@@ -22,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using System.Diagnostics;
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 
 namespace Air.Cloud.WebApp.FriendlyException.Filters;
 
@@ -135,7 +136,7 @@ public sealed class FriendlyExceptionFilter : IAsyncExceptionFilter
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "errors",
-                Level = AppPrintInformation.AppPrintLevel.Error,
+                Level = AppPrintLevel.Error,
                 Content = $"{exceptionFileName}:line {exceptionFileLineNumber}",
                 State = true
             });
@@ -144,7 +145,7 @@ public sealed class FriendlyExceptionFilter : IAsyncExceptionFilter
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "errors",
-            Level = AppPrintInformation.AppPrintLevel.Error,
+            Level = AppPrintLevel.Error,
             Content = exception.ToString(),
             State = true
         });

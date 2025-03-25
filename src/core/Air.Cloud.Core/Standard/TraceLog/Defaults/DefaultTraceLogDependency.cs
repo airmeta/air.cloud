@@ -1,5 +1,4 @@
-﻿
-/*
+﻿/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,10 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.TraceLog;
-
-using static Air.Cloud.Core.Standard.Print.AppPrintInformation;
-
 namespace Air.Cloud.Core.Standard.TraceLog.Defaults
 {
     /// <summary>

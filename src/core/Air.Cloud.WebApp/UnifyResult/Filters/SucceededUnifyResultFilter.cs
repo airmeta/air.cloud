@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Air.Cloud.WebApp.DataValidation.Internal;
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 
 namespace Air.Cloud.WebApp.UnifyResult.Filters;
 
@@ -66,7 +67,7 @@ public class SucceededUnifyResultFilter : IAsyncActionFilter, IOrderedFilter
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "validation",
-                Level = AppPrintInformation.AppPrintLevel.Error,
+                Level = AppPrintLevel.Error,
                 Content = $"Validation Failed:\r\n{validationMetadata.Message}",
                 State = true
             });

@@ -22,18 +22,17 @@ namespace unit.webapp.entry
     /// <para>zh-cn:启动项</para>
     /// <para>en-us:Startup</para>
     /// </summary>
-    [AppStartup(Order = 3000)]
+    //[AppStartup(Order =1)]  Order比默认的大就没有问题 比默认的小就会报空指针异常
     public class QuartStartup : AppStartup
     {
-            public static CancellationTokenSource cts = new CancellationTokenSource();
-            public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-            {
-                app.UseQuartzServices<QuartzSchedulerStandardOptions>();
-            }
-            public override void ConfigureServices(IServiceCollection services)
-            {
-                services.AddQuartzService<QuartzSchedulerStandardOptions>();
-            }
-        
+        public static CancellationTokenSource cts = new CancellationTokenSource();
+        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            app.UseQuartzServices<QuartzSchedulerStandardOptions>();
+        }
+        public override void ConfigureServices(IServiceCollection services)
+        {
+            services.AddQuartzService<QuartzSchedulerStandardOptions>();
+        }
     }
 }

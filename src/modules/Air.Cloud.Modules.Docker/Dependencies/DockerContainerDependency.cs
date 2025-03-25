@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.Container.Model;
 using Air.Cloud.Modules.Docker.Helper;
@@ -62,9 +63,9 @@ namespace Air.Cloud.Modules.Docker.Dependencies
             catch (Exception ex)
             {
                 //记录日志
-                AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+                AppRealization.Output.Print(new AppPrintInformation()
                 {
-                    Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error,
+                    Level = AppPrintLevel.Error,
                     Title = "容器信息读取异常",
                     Content = ex.Message
                 });

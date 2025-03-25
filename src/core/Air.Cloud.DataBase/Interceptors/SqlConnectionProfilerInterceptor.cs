@@ -7,6 +7,7 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using System.Data.Common;
@@ -73,7 +74,7 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "connection",
-            Level = AppPrintInformation.AppPrintLevel.Information,
+            Level = AppPrintLevel.Information,
             Content = $"[Connection Id: {eventData.ConnectionId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
             State = true
         });

@@ -1,6 +1,7 @@
 ﻿using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.DataBase.Options;
 using Air.Cloud.Core.Standard.Print;
@@ -49,7 +50,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                     AdditionalParams = null,
                     Content = "无法读取ES索引信息",
                     Title = "ElasticSearchConnectionPool Notice",
-                    Level = AppPrintInformation.AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warning
                 });
                 throw new Exception("无法读取ES索引信息");
             }
@@ -86,7 +87,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                     AdditionalParams = null,
                     Content = "无法读取ES索引信息",
                     Title = "ElasticSearchConnectionPool Notice",
-                    Level = AppPrintInformation.AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warning
                 });
                 throw new Exception("无法读取ES索引信息");
             }

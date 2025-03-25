@@ -7,6 +7,7 @@
 // See the Mulan PSL v2 for more details.
 
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.DataBase.Extensions.DatabaseProvider;
 
@@ -111,7 +112,7 @@ public class DbContextPool : IDbContextPool
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "transaction",
-                Level = AppPrintInformation.AppPrintLevel.Error,
+                Level = AppPrintLevel.Error,
                 Content = $"[Connection Id: {context.ContextId}] / [Database: {connection.Database}]{(IsPrintDbConnectionInfo ? $" / [Connection String: {connection.ConnectionString}]" : string.Empty)}",
                 State = true
             });
@@ -216,7 +217,7 @@ public class DbContextPool : IDbContextPool
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "database",
-                Level = AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Content = $"Start",
                 State = true
             });
@@ -259,7 +260,7 @@ public class DbContextPool : IDbContextPool
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "transaction",
-                Level = AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Content = $"Transaction Completed! Has {hasChangesCount} DbContext Changes.",
                 State = true
             });
@@ -273,7 +274,7 @@ public class DbContextPool : IDbContextPool
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "transaction",
-                Level = AppPrintInformation.AppPrintLevel.Error,
+                Level = AppPrintLevel.Error,
                 Content = "Rollback",
                 State = true
             });
@@ -307,7 +308,7 @@ public class DbContextPool : IDbContextPool
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "transaction",
-            Level = AppPrintInformation.AppPrintLevel.Error,
+            Level = AppPrintLevel.Error,
             Content = "Rollback",
             State = true
         });
@@ -332,7 +333,7 @@ public class DbContextPool : IDbContextPool
             AppRealization.Output.Print(new AppPrintInformation
             {
                 Title = "sql",
-                Level = AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Content = "Connection Close",
                 State = true
             });

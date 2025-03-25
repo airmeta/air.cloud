@@ -15,10 +15,6 @@ namespace Air.Cloud.Core.Attributes
     /// <para>zh-cn:应用程序启动配置</para>
     /// <para>en-us:Application startup config</para>
     /// </summary>
-    /// <remarks>
-    /// <para>zh-cn:通常情况下,我们不建议你配置此选项因为该配置的order配置错误将会导致,继承AppStartup类即可</para>
-    /// <para>en-us:Normally, we do not recommend configuring this option as an incorrect order configuration will result. Inheriting the AppStartup class is sufficient</para>
-    /// </remarks>
     [IgnoreScanning, AttributeUsage(AttributeTargets.Class)]
     public class AppStartupAttribute : Attribute
     {
@@ -51,12 +47,19 @@ namespace Air.Cloud.Core.Attributes
         /// <summary>
         /// 数值越小越先执行该Startup
         /// </summary>
-        public int Order { get; set; } = 1000;
-
+        public int Order { get; set; } = 0;
         /// <summary>
-        /// <para>zh-cn:是否自动加载 默认为true 可以设置为非自动加载</para>
+        /// <para>zh-cn:依赖某个AppStartUp抽象类的实现类</para>
+        /// <para>en-us:Depend on an implementation class of an AppStartUp abstract class</para>
         /// </summary>
-        public bool AutoLoad { get; set; } = true;
+        /// <remarks>
+        /// <para>tag:v1.2.1</para>
+        /// <para>zh-cn: 在1.2.1中增加了该参数
+        /// 允许用户以依赖的方式排列Appstartup类,
+        /// 修复由于多个相同Order值导致的错误注入
+        /// </para>
+        /// </remarks>
+        public Type DependType { get; set; }
 
         public AppStartupAttribute()
         {

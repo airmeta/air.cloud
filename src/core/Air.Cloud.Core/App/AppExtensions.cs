@@ -141,7 +141,8 @@ namespace Air.Cloud.Core.App
         }
 
         /// <summary>
-        /// 获取请求生存周期的服务
+        /// <para>zh-cn:获取请求生存周期的服务</para>
+        /// <para>en-us:GetAsync request survival cycle service</para>
         /// </summary>
         /// <typeparam name="TService"></typeparam>
         /// <param name="serviceProvider"></param>
@@ -192,7 +193,8 @@ namespace Air.Cloud.Core.App
         }
 
         /// <summary>
-        /// 获取选项
+        /// <para>zh-cn:获取选项</para>
+        /// <para>en-us:GetAsync options</para>
         /// </summary>
         /// <typeparam name="TOptions">强类型选项类</typeparam>
         /// <param name="serviceProvider"></param>

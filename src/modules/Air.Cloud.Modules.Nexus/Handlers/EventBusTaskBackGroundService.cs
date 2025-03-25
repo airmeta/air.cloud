@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Event;
 using Air.Cloud.Core.Standard.Event.Attributes;
 using Air.Cloud.Core.Standard.Event.Builders;
@@ -130,11 +131,11 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
     /// <returns><see cref="Task"/> 实例</returns>
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        AppRealization.Output.Print("EventBus Output", "EventBus task service is running.", Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information);
+        AppRealization.Output.Print("EventBus Output", "EventBus task service is running.", AppPrintLevel.Information);
 
         // 注册后台主机服务停止监听
         stoppingToken.Register(() =>
-            AppRealization.Output.Print("EventBus Output", $"EventBus task service is stopping.", Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information)
+            AppRealization.Output.Print("EventBus Output", $"EventBus task service is stopping.", AppPrintLevel.Information)
         );
 
         // 监听服务是否取消
@@ -170,7 +171,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
         // 空检查
         if (string.IsNullOrWhiteSpace(eventSource?.EventName))
         {
-            AppRealization.Output.Print("EventBus Output", "Invalid EventName, EventName cannot be <null> or an empty string.", Core.Standard.Print.AppPrintInformation.AppPrintLevel.Warning);
+            AppRealization.Output.Print("EventBus Output", "Invalid EventName, EventName cannot be <null> or an empty string.", AppPrintLevel.Warning);
 
             return;
         }
@@ -183,7 +184,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
         // 空订阅
         if (!eventHandlersThatShouldRun.Any() && !eventSource.IgnoreNotFound)
         {
-            AppRealization.Output.Print("EventBus Output", "Subscriber with event Name <{EventName}> was not found.", Core.Standard.Print.AppPrintInformation.AppPrintLevel.Warning, AdditionalParams: new Dictionary<string, object>()
+            AppRealization.Output.Print("EventBus Output", "Subscriber with event Name <{EventName}> was not found.", AppPrintLevel.Warning, AdditionalParams: new Dictionary<string, object>()
             {
                 { "event-name",eventSource.EventName}
             });
@@ -234,7 +235,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
                 catch (Exception ex)
                 {
                     // 输出异常日志
-                    AppRealization.Output.Print("EventBus Output", "Error occurred executing in {EventName}.", Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error, AdditionalParams: new Dictionary<string, object>()
+                    AppRealization.Output.Print("EventBus Output", "Error occurred executing in {EventName}.", AppPrintLevel.Error, AdditionalParams: new Dictionary<string, object>()
                     {
                         { "event-name",eventSource.EventName},
                         { "error",ex }
@@ -356,7 +357,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
             {
                 // 输出重试日志
                 AppRealization.Output.Print("EventBus Output", "Retrying {times}/{total} times for {EventName}",
-                    Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information, AdditionalParams: new Dictionary<string, object>()
+                    AppPrintLevel.Information, AdditionalParams: new Dictionary<string, object>()
                 {
                     {"times",times },
                     {"total",total },

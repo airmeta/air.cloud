@@ -180,7 +180,7 @@ public static class SqlAdoNetExtensions
     /// <param name="commandType">命令类型</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>受影响行数</returns>
-    public static async Task<int> ExecuteNonQueryAsync(this DatabaseFacade databaseFacade, string sql, DbParameter[] parameters = null, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
+    internal static async Task<int> ExecuteNonQueryAsync(this DatabaseFacade databaseFacade, string sql, DbParameter[] parameters = null, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
     {
         // 初始化数据库连接对象和数据库命令对象
         var (_, dbCommand) = await databaseFacade.PrepareDbCommandAsync(sql, parameters, commandType, cancellationToken);
@@ -203,7 +203,7 @@ public static class SqlAdoNetExtensions
     /// <param name="commandType">命令类型</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>(int rowEffects, DbParameter[] dbParameters)</returns>
-    public static async Task<(int rowEffects, DbParameter[] dbParameters)> ExecuteNonQueryAsync(this DatabaseFacade databaseFacade, string sql, object model, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
+    internal static async Task<(int rowEffects, DbParameter[] dbParameters)> ExecuteNonQueryAsync(this DatabaseFacade databaseFacade, string sql, object model, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
     {
         // 初始化数据库连接对象和数据库命令对象
         var (_, dbCommand, dbParameters) = await databaseFacade.PrepareDbCommandAsync(sql, model, commandType, cancellationToken);

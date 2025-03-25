@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
+using Air.Cloud.Core.Modules.AppPrint;
 
 namespace Air.Cloud.Core.Reflection
 {
@@ -107,7 +108,7 @@ namespace Air.Cloud.Core.Reflection
                         AdditionalParams=new Dictionary<string, object> {
                              {"error",ex }
                         },
-                        Level=AppPrintInformation.AppPrintLevel.Error
+                        Level=AppPrintLevel.Error
                     });
                 }
             }
@@ -140,7 +141,7 @@ namespace Air.Cloud.Core.Reflection
                     AdditionalParams = new Dictionary<string, object> {
                              {"error",ex }
                         },
-                    Level = AppPrintInformation.AppPrintLevel.Error
+                    Level = AppPrintLevel.Error
                 });
             }
             return null;

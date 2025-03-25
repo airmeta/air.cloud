@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Http.Extensions;
 using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin;
@@ -58,9 +59,9 @@ namespace Air.Cloud.Modules.Taxin.Client
                     var Result = AppRealization.JSON.Deserialize<TaxinActionResult>(Content);
                     if (!Result.IsSuccess)
                     {
-                        AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                        AppRealization.Output.Print(new AppPrintInformation()
                         {
-                            Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error,
+                            Level = AppPrintLevel.Error,
                             State = true,
                             Content = "Taxin client offline failed",
                             Title = "Taxin client offline failed"
@@ -71,7 +72,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             }
             catch (Exception ex)
             {
-                AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                AppRealization.Output.Print(new AppPrintInformation()
                 {
                     Title = "Taxin client error",
                     Content = ex.Message,
@@ -114,7 +115,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             }
             catch (Exception ex)
             {
-                AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                AppRealization.Output.Print(new AppPrintInformation()
                 {
                     Title = "Taxin client error",
                     Content = ex.Message,
@@ -149,7 +150,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 }
                 catch (Exception ex)
                 {
-                    AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         Title = "Taxin client error",
                         Content = ex.Message,
@@ -227,7 +228,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                         var Result = AppRealization.JSON.Deserialize<TResult>(Content);
                         return Result;
                     }
-                    AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         Title = "Taxin client request error",
                         Content = $"Taxin client request Url:{httpRequestMessage.RequestUri}StatusCode:{response.StatusCode} error",
@@ -241,7 +242,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             }
             catch (Exception ex)
             {
-                AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                AppRealization.Output.Print(new AppPrintInformation()
                 {
                     Title = "Taxin client request error",
                     Content = ex.Message,

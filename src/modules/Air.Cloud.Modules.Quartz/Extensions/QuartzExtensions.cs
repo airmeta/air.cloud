@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Extensions;
 using Air.Cloud.Modules.Quartz.Factory;
@@ -40,12 +41,12 @@ namespace Air.Cloud.Modules.Quartz.Extensions
         /// <returns></returns>
         public static  async Task StartAsync<TSchedulerOption>(this QuartzJobService<TSchedulerOption> _quartzJob, IServiceProvider _provider) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
-            AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+            AppRealization.Output.Print(new AppPrintInformation()
             {
                 State = true,
                 AdditionalParams = null,
                 Content = "定时任务开始挂载",
-                Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "air.cloud.scheduler"
             });
             // 解析你的作用域服务
@@ -58,19 +59,19 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                     var result = await _quartzJob.RunAsync(item);
                     if (result)
                     {
-                        AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                        AppRealization.Output.Print(new AppPrintInformation()
                         {
                             State = true,
                             AdditionalParams = null,
                             Content = "定时任务挂载成功",
-                            Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                            Level = AppPrintLevel.Information,
                             Title = "air.cloud.scheduler"
                         });
                     }
                 }
                 catch (Exception ex)
                 {
-                    AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         State = true,
                         AdditionalParams = new Dictionary<string, object>()
@@ -78,7 +79,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                                 {"error",ex }
                             },
                         Content = "定时任务挂载失败",
-                        Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error,
+                        Level = AppPrintLevel.Error,
                         Title = "air.cloud.scheduler"
                     });
                 }
@@ -106,19 +107,19 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                         var result = await _quartzJob.CloseAsync(item);
                         if (result)
                         {
-                            AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                            AppRealization.Output.Print(new AppPrintInformation()
                             {
                                 State = true,
                                 AdditionalParams = null,
                                 Content = "定时任务取消挂载成功",
-                                Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                                Level = AppPrintLevel.Information,
                                 Title = "App:Dispatch"
                             });
                         }
                     }
                     catch (Exception ex)
                     {
-                        AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                        AppRealization.Output.Print(new AppPrintInformation()
                         {
                             State = true,
                             AdditionalParams = new Dictionary<string, object>()
@@ -126,7 +127,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                                 {"error",ex }
                             },
                             Content = "定时任务取消挂载失败",
-                            Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error,
+                            Level = AppPrintLevel.Error,
                             Title = "App:Dispatch"
                         });
                     }
@@ -162,12 +163,12 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             var jobKeys = (await scheduler.GetJobKeys(GroupMatcher<JobKey>.GroupEquals(schedulerStandard.Options.GroupName))).ToList().FirstOrDefault();
             if (jobKeys == null)
             {
-                AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                AppRealization.Output.Print(new AppPrintInformation()
                 {
                     State = true,
                     AdditionalParams = null,
                     Content = "未查询到定时任务信息",
-                    Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                    Level = AppPrintLevel.Information,
                     Title = "air.cloud.scheduler"
                 });
                 return null;
@@ -176,12 +177,12 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             ITrigger trigger = triggers?.Where(x => x.JobKey.Name == schedulerStandard.Options.Name)?.FirstOrDefault();
             if (trigger == null)
             {
-                AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation()
+                AppRealization.Output.Print(new AppPrintInformation()
                 {
                     State = true,
                     AdditionalParams = null,
                     Content = "未查询到定时任务触发器信息",
-                    Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                    Level = AppPrintLevel.Information,
                     Title = "air.cloud.scheduler"
                 });
                 return null;

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Air.Cloud.Core.Modules.AppPrint;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Connections
 {
@@ -50,7 +51,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                     AdditionalParams = null,
                     Content = "Current es client is locked",
                     Title = "ElasticSearchConnectionPool Notice",
-                    Level = AppPrintInformation.AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warning
                 });
                 return false;
             }

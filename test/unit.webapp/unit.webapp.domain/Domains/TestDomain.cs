@@ -16,6 +16,7 @@ using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.Repositories;
 
+using System.Data.Common;
 using System.Linq.Expressions;
 
 using unit.webapp.model.Domains;

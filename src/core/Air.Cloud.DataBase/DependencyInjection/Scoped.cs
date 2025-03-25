@@ -69,7 +69,6 @@ public static partial class Scoped
     private static (IServiceScope Scoped, ServiceProvider ServiceProvider) CreateScope(ref IServiceScopeFactory scopeFactory)
     {
         ServiceProvider undisposeServiceProvider = default;
-
         if (scopeFactory == null)
         {
             // 默认返回根服务
@@ -81,7 +80,6 @@ public static partial class Scoped
                 scopeFactory = undisposeServiceProvider.GetService<IServiceScopeFactory>();
             }
         }
-
         // 解析服务作用域工厂
         var scoped = scopeFactory.CreateScope();
         return (scoped, undisposeServiceProvider);

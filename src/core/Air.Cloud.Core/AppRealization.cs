@@ -115,7 +115,7 @@ namespace Air.Cloud.Core
         /// <para>en-us:TraceLog tracking  dependency</para>
         /// </summary>
         public static ITraceLogStandard TraceLog=>InternalRealization.TraceLog ?? DefaultRealization.TraceLog;
-
+       
         /// <summary>
         /// <para>zh-cn:队列实现</para>
         /// <para>en-us:queue dependency</para>
@@ -123,10 +123,25 @@ namespace Air.Cloud.Core
         public static IMessageQueueStandard Queue=> InternalRealization.Queue ?? DefaultRealization.Queue;
 
         /// <summary>
-        /// 设置约定实现
+        /// <para>zh-cn:设置约定实现</para>
+        /// <para>en-us:Set dependency</para>
         /// </summary>
-        /// <typeparam name="TStandard">约定类型</typeparam>
-        /// <param name="standard">约定实现</param>
+        /// <typeparam name="TStandard">
+        /// <para>zh-cn:约定类型</para>
+        /// <para>en-us:StandardType</para>
+        /// </typeparam>
+        /// <param name="standard">
+        ///    <para>zh-cn:约定实现实例</para>
+        ///    <para>en-us:Standard instance</para>
+        /// </param>
+        /// <param name="services">
+        ///  <para>zh-cn:服务集合</para>
+        ///  <para>en-us:Service collection</para>
+        /// </param>
+        /// <remarks>
+        ///  <para>zh-cn:注意,此方法在设置标准实现时,需要放在Startup中使用,在Program.cs中使用时,可能会带来空指针异常,这是因为Program.cs中的代码执行时间会比框架内置的资源加载要早</para>
+        ///  <para>en-us:Note that this method needs to be used in Startup when setting standard implementations. When used in Program.cs, it may cause a null pointer exception, because the code execution time in Program.cs is earlier than the built-in resource loading of the framework.</para>
+        /// </remarks>
         [Aspect(typeof(ExecuteMethodPrinterAspect))]
         public static void SetDependency<TStandard>(TStandard standard,IServiceCollection services=null) 
                 where TStandard :IStandard
@@ -162,7 +177,7 @@ namespace Air.Cloud.Core
                 var Instance = Activator.CreateInstance(Types[0]);
                 item.SetValue(null, Instance);
             }
-        }
+        }  
         /// <summary>
         /// 默认标准实现
         /// </summary>

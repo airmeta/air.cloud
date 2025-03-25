@@ -12,6 +12,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.DataBase.Domains;
 using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
@@ -47,7 +48,7 @@ namespace Air.Cloud.WebApp.Extensions
                             AppRealization.Output.Print(new AppPrintInformation
                             {
                                 Title = "domain-warning",
-                                Level = AppPrintInformation.AppPrintLevel.Error,
+                                Level = AppPrintLevel.Error,
                                 Content = $"[code:aircloud_000001]看起来你正在调试一个不具有Domain的服务,你需要检查你的类库引用关系,并确保Domain类库被正常引入",
                                 State = true,
                                 Type = "debug"
@@ -71,7 +72,7 @@ namespace Air.Cloud.WebApp.Extensions
                 AppRealization.Output.Print(new AppPrintInformation
                 {
                     Title = "domain-errors",
-                    Level = AppPrintInformation.AppPrintLevel.Error,
+                    Level = AppPrintLevel.Error,
                     AdditionalParams=new Dictionary<string, object>()
                     {
                         { "error",ex}

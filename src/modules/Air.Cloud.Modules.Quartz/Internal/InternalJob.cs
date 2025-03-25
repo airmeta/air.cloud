@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Modules.Quartz.Options;
@@ -39,7 +40,7 @@ namespace Air.Cloud.Modules.Quartz.Internal
                         AppRealization.Output.Print(new AppPrintInformation
                         {
                             Title = "air.cloud.scheduler",
-                            Level = AppPrintInformation.AppPrintLevel.Warning,
+                            Level = AppPrintLevel.Warning,
                             Content = $"当前调度任务未挂载,本次调度将会正常执行,并使其完成挂载",
                             State = true
                         });

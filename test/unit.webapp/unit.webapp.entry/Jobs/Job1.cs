@@ -15,13 +15,12 @@ using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Extensions.Aspect;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
-using Air.Cloud.DataBase.Repositories;
 using Air.Cloud.Modules.Quartz.Options;
 
 using unit.webapp.model.Domains;
-using unit.webapp.model.Entity;
 
 namespace unit.webapp.entry.Jobs
 {
@@ -55,25 +54,22 @@ namespace unit.webapp.entry.Jobs
                 using (var scope = _provider.CreateScope())
                 {
                     var testDomain = scope.ServiceProvider.GetService<ITestDomain>();
-                    var cccc = scope.ServiceProvider.GetService<IRepository<Test>> ();
                     Console.WriteLine(testDomain == null);
-                    var a=cccc.FirstOrDefault(s=>s.UserId== "a09cdb089b7f48498090d1f7f11c0e7b");
                     var data = testDomain.Search("a09cdb089b7f48498090d1f7f11c0e7b");
-                    Console.WriteLine(data == null);
-                    AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         State = true,
                         AdditionalParams = null,
                         Content = AppRealization.JSON.Serialize(data),
-                        Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                        Level = AppPrintLevel.Information,
                         Title = "air.cloud.scheduler"
                     });
-                    AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         State = true,
                         AdditionalParams = null,
                         Content = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]定时任务执行成功",
-                        Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                        Level = AppPrintLevel.Information,
                         Title = "air.cloud.scheduler"
                     });
                     this.CancellationToken = stoppingToken;
@@ -90,12 +86,12 @@ namespace unit.webapp.entry.Jobs
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            AppRealization.Output.Print(new AppPrintInformation()
             {
                 State = true,
                 AdditionalParams = null,
                 Content = "定时任务Job1开始运行",
-                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "air.cloud.scheduler"
             });
           
@@ -104,20 +100,20 @@ namespace unit.webapp.entry.Jobs
 
         public async Task StopAsync()
         {
-            AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            AppRealization.Output.Print(new AppPrintInformation()
             {
                 State = true,
                 AdditionalParams = null,
                 Content = "定时任务Job1结束运行",
-                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "air.cloud.scheduler"
             });
-            File.WriteAllText($"{AppConst.ApplicationPath}/job_stop_log.txt", AppRealization.JSON.Serialize(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            File.WriteAllText($"{AppConst.ApplicationPath}/job_stop_log.txt", AppRealization.JSON.Serialize(new AppPrintInformation()
             {
                 State = true,
                 AdditionalParams = null,
                 Content = "定时任务Job1结束运行",
-                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "air.cloud.scheduler"
             }));
             await Task.CompletedTask;
@@ -149,12 +145,12 @@ namespace unit.webapp.entry.Jobs
                 using (var scope = _provider.CreateScope())
                 {
 
-                    AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
                         State = true,
                         AdditionalParams = null,
                         Content = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]定时任务执行成功",
-                        Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                        Level = AppPrintLevel.Information,
                         Title = "air.cloud.scheduler"
                     });
                     CancellationToken = stoppingToken;
@@ -171,12 +167,12 @@ namespace unit.webapp.entry.Jobs
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            AppRealization.Output.Print(new AppPrintInformation()
             {
                 State = true,
                 AdditionalParams = null,
                 Content = "定时任务Job1开始运行",
-                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "air.cloud.scheduler"
             });
             await Task.CompletedTask;
@@ -184,12 +180,12 @@ namespace unit.webapp.entry.Jobs
 
         public async Task StopAsync()
         {
-            AppRealization.Output.Print(new Air.Cloud.Core.Standard.Print.AppPrintInformation()
+            AppRealization.Output.Print(new AppPrintInformation()
             {
                 State = true,
                 AdditionalParams = null,
                 Content = "定时任务Job1结束运行",
-                Level = Air.Cloud.Core.Standard.Print.AppPrintInformation.AppPrintLevel.Information,
+                Level = AppPrintLevel.Information,
                 Title = "air.cloud.scheduler"
             });
             await Task.CompletedTask;

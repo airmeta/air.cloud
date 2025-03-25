@@ -135,6 +135,6 @@ public static class AppServiceCollectionExtensions
     /// <returns>int</returns>
     private static int GetStartupOrder(Type type)
     {
-        return !type.IsDefined(typeof(AppStartupAttribute), true) ? 1000 : type.GetCustomAttribute<AppStartupAttribute>(true).Order;
+        return !type.IsDefined(typeof(AppStartupAttribute), true) ? 0 : type.GetCustomAttribute<AppStartupAttribute>(true).Order;
     }
 }

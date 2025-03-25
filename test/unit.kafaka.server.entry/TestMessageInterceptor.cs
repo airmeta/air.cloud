@@ -1,9 +1,8 @@
 ﻿using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Event;
 using Air.Cloud.Core.Standard.Event.Builders;
 using Air.Cloud.Core.Standard.Event.Contexts;
-
-using static Air.Cloud.Core.Standard.Print.AppPrintInformation;
 
 namespace unit.kafaka.server.entry
 {

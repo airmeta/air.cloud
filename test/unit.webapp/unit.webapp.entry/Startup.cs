@@ -10,6 +10,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+global using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;

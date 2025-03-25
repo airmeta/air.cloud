@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Modules.IIS.Model;
 
 using Microsoft.Web.Administration;
@@ -50,7 +51,7 @@ namespace Air.Cloud.Modules.IIS.Helper
             }
             catch (Exception ex)
             {
-                AppRealization.Output.Print(new Core.Standard.Print.AppPrintInformation
+                AppRealization.Output.Print(new AppPrintInformation
                 {
                     State = true,
                     AdditionalParams = new Dictionary<string, object>
@@ -58,7 +59,7 @@ namespace Air.Cloud.Modules.IIS.Helper
                         { "Title","读取站点信息失败"},
                         { "Content",ex.Message}
                     },
-                    Level = Core.Standard.Print.AppPrintInformation.AppPrintLevel.Error,
+                    Level = AppPrintLevel.Error,
                     Title = "读取站点信息失败"
                 });
                 return null;

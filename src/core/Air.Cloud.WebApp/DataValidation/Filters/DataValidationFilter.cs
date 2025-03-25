@@ -22,6 +22,7 @@ using Microsoft.Extensions.Options;
 using System.Reflection;
 using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.Print;
+using Air.Cloud.Core.Modules.AppPrint;
 
 
 namespace Air.Cloud.WebApp.DataValidation.Filters;
@@ -163,7 +164,7 @@ public sealed class DataValidationFilter : IAsyncActionFilter, IOrderedFilter
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "validation",
-            Level=AppPrintInformation.AppPrintLevel.Error,
+            Level=AppPrintLevel.Error,
             Content = $"Validation Failed:\r\n{validationMetadata.Message}",
             State = true
         });

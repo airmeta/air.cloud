@@ -9,6 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using System.Data;
+using Air.Cloud.Core.Modules.AppPrint;
+
 namespace Air.Cloud.Core.Standard.Print
 {
     /// <summary>
@@ -25,7 +28,7 @@ namespace Air.Cloud.Core.Standard.Print
         /// <param name="type">输出类别</param>
         /// <param name="state">显式输出</param>
         /// <param name="AdditionalParams">附加参数</param>
-        public void Print(string title, string content, AppPrintInformation.AppPrintLevel level = AppPrintInformation.AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null);
+        public void Print(string title, string content, AppPrintLevel level = AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null);
         /// <summary>
         /// 输出对象
         /// </summary>
@@ -45,93 +48,6 @@ namespace Air.Cloud.Core.Standard.Print
         public void Error(Exception exception, Dictionary<string, object> pairs = default);
     }
     /// <summary>
-    /// <para>zh-cn:输出打印信息</para>
-    /// <para>en-us:Output message content</para>
-    /// </summary>
-    public class AppPrintInformation
-    {
-        /// <summary>
-        /// <para>zh-cn:输出打印等级</para>
-        /// <para>en-us:Output message level</para>
-        /// </summary>
-        public enum AppPrintLevel
-        {
-            /// <summary>
-            /// <para>zh-cn:普通消息</para>
-            /// <para>en-us:Information</para>
-            /// </summary>
-            Information,
-            /// <summary>
-            /// <para>zh-cn:警告消息</para>
-            /// <para>en-us:Warning</para>
-            /// </summary>
-            Warning,
-            /// <summary>
-            /// <para>zh-cn:错误消息</para>
-            /// <para>en-us:Error</para>
-            /// </summary>
-            Error,
-            /// <summary>
-            /// <para>zh-cn:调试消息</para>
-            /// <para>en-us:Debug</para>
-            /// </summary>
-            Debug,
-            /// <summary>
-            /// <para>zh-cn:追踪消息</para>
-            /// <para>en-us:Trace</para>
-            /// </summary>
-            Trace
-        }
-        /// <summary>
-        /// 标题
-        /// </summary>
-        public string Title { get; set; }
-        /// <summary>
-        /// 类型信息: Information,Warning,Error 
-        /// </summary>
-        public AppPrintLevel Level { get; set; } = AppPrintLevel.Information;
-        /// <summary>
-        /// 内容
-        /// </summary>
-        public string Content { get; set; }
-        /// <summary>
-        /// 状态
-        /// </summary>
-        public bool State { get; set; } = true;
-        /// <summary>
-        /// <para>zh-cn: 附加参数</para>
-        /// <para>en-us: Additional parameters</para>
-        /// </summary>
-        public Dictionary<string, object> AdditionalParams { get; set; } = null;
-        /// <summary>
-        /// <para>zh-cn: 类型</para>
-        /// <para>en-us: Output content type</para>
-        /// </summary>
-        public string Type { get; set; } = "default";
-
-        public AppPrintInformation() { }
-
-        /// <summary>
-        /// <para>zh-cn:应用程序打印信息构造函数</para>
-        /// <para>en-us:Application print information constractor</para>
-        /// </summary>
-        /// <param name="title"></param>
-        /// <param name="content"></param>
-        /// <param name="level"></param>
-        /// <param name="state"></param>
-        /// <param name="additionalParams"></param>
-        /// <param name="type"></param>
-        public AppPrintInformation(string title, string content, AppPrintLevel level=AppPrintLevel.Information, bool state=true, Dictionary<string, object> additionalParams=null, string type="default")
-        {
-            Title = title;
-            Level = level;
-            Content = content;
-            State = state;
-            AdditionalParams = additionalParams;
-            Type = type;
-        }
-    }
-    /// <summary>
     /// 默认的输出标准实现
     /// </summary>
     [IgnoreScanning]
@@ -146,7 +62,7 @@ namespace Air.Cloud.Core.Standard.Print
                 State = true,
                 AdditionalParams = pairs,
                 Content = exception.Message,
-                Level = AppPrintInformation.AppPrintLevel.Error
+                Level = AppPrintLevel.Error
             });
             throw exception;
         }
@@ -162,7 +78,7 @@ namespace Air.Cloud.Core.Standard.Print
         }
 
         /// <inheritdoc/>
-        public void Print(string title, string content, AppPrintInformation.AppPrintLevel level = AppPrintInformation.AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null)
+        public void Print(string title, string content, AppPrintLevel level =AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null)
         {
             Print(new AppPrintInformation()
             {
