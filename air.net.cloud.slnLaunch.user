@@ -4,10 +4,11 @@
     "Projects": [
       {
         "Name": "test\\unit.webapp\\unit.webapp.entry\\unit.webapp.entry.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": ""
       },
       {
-        "Name": "test\\doc.engine\\Air.Cloud.DocEngine\\Air.Cloud.DocEngine.csproj",
+        "Name": "test\\unit.kafaka.client.entry\\unit.kafaka.client.entry.csproj",
         "Action": "Start"
       }
     ]

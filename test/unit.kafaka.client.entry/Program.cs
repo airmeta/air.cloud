@@ -10,6 +10,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
+using Air.Cloud.Modules.Kafka.Model;
 using Air.Cloud.WebApp.App;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +19,19 @@ var builder = WebApplication.CreateBuilder(args);
 var app = builder.WebInjectInFile();
 app.MapGet("test", ([FromServices] IEventPublisher eventPublisher) =>
 {
-    eventPublisher.PublishAsync("test1", "这是测试用的");
+    AppRealization.Queue.Publish(new ProducerConfigModel()
+    {
+        TopicName= "fcj_workflow_audit_test"
+    },new T()
+    {
+        Content = "这是测试用的",
+    });
+    //eventPublisher.PublishAsync("test1", "这是测试用的");
     return "发送成功";
 });
 app.Run();
+
+public class T
+{
+    public string Content { get; set; }
+}
