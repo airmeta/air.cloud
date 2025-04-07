@@ -50,7 +50,6 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies
         /// 读取PID
         /// </summary>
         /// <returns>PID</returns>
-        [Aspect(typeof(ExecuteMethodPrinterAspect))]
         public string Get()
         {
             lock (locker)

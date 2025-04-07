@@ -13,8 +13,13 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.SchedulerStandard;
+using Air.Cloud.Core.Standard.TraceLog.Defaults;
 using Air.Cloud.Modules.Quartz.Options;
 using Quartz;
+
+using System.Reflection;
+
+using System;
 
 namespace Air.Cloud.Modules.Quartz.Internal
 {
@@ -66,10 +71,17 @@ namespace Air.Cloud.Modules.Quartz.Internal
             {
                 await Scheduler.ExecuteAsync(Scheduler.CancellationToken);
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-
-                throw;
+                DefaultTraceLogContent appPrintInformation = new DefaultTraceLogContent(
+                    "定时任务异常",
+                   $"在执行[{Scheduler.Options.Name}]任务时出现异常,已记录异常信息",
+                  new Dictionary<string, object>()
+                  {
+                         {"source",exception.Source },
+                         {"stace",exception.StackTrace }
+                  }, DefaultTraceLogContent.EVENT_TAG, DefaultTraceLogContent.ERROR_TAG);
+                AppRealization.TraceLog.Write(appPrintInformation);
             }
             
 

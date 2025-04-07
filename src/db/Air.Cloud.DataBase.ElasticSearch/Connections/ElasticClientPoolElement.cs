@@ -4,7 +4,6 @@ using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.DataBase.Options;
-using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.DataBase.ElasticSearch.Attributes;
 
 using Elasticsearch.Net;

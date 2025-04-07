@@ -104,6 +104,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirCloud.Susceptor", "src\s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirCloud.Susceptor.Client", "src\susceptor\AirCloud.Susceptor.Client\AirCloud.Susceptor.Client.csproj", "{CD65838E-BF31-46F8-91F7-96D7907412BA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.Courier", "src\modules\Air.Cloud.Modules.Courier\Air.Cloud.Modules.Courier.csproj", "{E1C0D164-0990-4DF4-B1B5-0773342CC010}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -250,6 +252,10 @@ Global
 		{CD65838E-BF31-46F8-91F7-96D7907412BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD65838E-BF31-46F8-91F7-96D7907412BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD65838E-BF31-46F8-91F7-96D7907412BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1C0D164-0990-4DF4-B1B5-0773342CC010}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1C0D164-0990-4DF4-B1B5-0773342CC010}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1C0D164-0990-4DF4-B1B5-0773342CC010}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1C0D164-0990-4DF4-B1B5-0773342CC010}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -296,6 +302,7 @@ Global
 		{726447C7-438C-4903-9871-B9058E5F8721} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{74FE0BBF-DBB6-4E34-A9C2-05BCC6002F96} = {A22CF22D-A9F0-4240-A3A2-157CCFEB0C2E}
 		{CD65838E-BF31-46F8-91F7-96D7907412BA} = {A22CF22D-A9F0-4240-A3A2-157CCFEB0C2E}
+		{E1C0D164-0990-4DF4-B1B5-0773342CC010} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

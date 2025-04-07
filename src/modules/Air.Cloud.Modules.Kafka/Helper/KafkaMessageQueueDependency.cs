@@ -14,6 +14,7 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.MessageQueue.Config;
 using Air.Cloud.Modules.Kafka.Config;
+using Air.Cloud.Modules.Kafka.Pool;
 using Air.Cloud.Modules.Kafka.Utils;
 
 using Confluent.Kafka;
@@ -27,6 +28,17 @@ namespace Air.Cloud.Modules.Kafka.Helper
     {
         public KafkaSettingsOptions KafkaClusterOptions => AppCore.GetOptions<KafkaSettingsOptions>();
 
+        /// <summary>
+        /// 生产者配置池
+        /// </summary>
+        private static ProducerConfigPool producerConfigPool = new ProducerConfigPool();
+
+        /// <summary>
+        /// 生产者池
+        /// </summary>
+        private static ProducerPool producerPool=new ProducerPool();
+
+
         #region 生产与消费
         public void Publish<TTopicPublishConfig,TMessageContentStandard>
                 (ITopicPublishConfig<TTopicPublishConfig> producerConfigModel, TMessageContentStandard Content) 
@@ -35,33 +47,36 @@ namespace Air.Cloud.Modules.Kafka.Helper
         {
             if (producerConfigModel.Config == null)
             {
-                var Config = new ProducerConfig()
+                var Config = producerPool.Get(producerConfigModel.TopicName);
+                if (Config==null)
                 {
-                    BootstrapServers = KafkaClusterOptions.ClusterAddress,
-                } as TTopicPublishConfig;
-                if (Config == null)
-                {
-                    AppRealization.Output.Error(new Exception("推送配置错误"));
+                    ProducerConfig DefaultProducerConfig = new ProducerConfig()
+                    {
+                        BootstrapServers = KafkaClusterOptions.ClusterAddress,
+                    };
+                    producerConfigModel.Config = DefaultProducerConfig as TTopicPublishConfig;
+                    producerPool.Set((ITopicPublishConfig<ProducerConfig>)producerConfigModel);
                 }
                 else
                 {
-                    producerConfigModel.Config = Config;
+                    producerConfigModel = (ITopicPublishConfig<TTopicPublishConfig>)Config;
                 }
             }
-            IProducer<int, string> producer = null;
-            if (producer == null)
+            Tuple<string, IProducer<int, string>> producerInstance = producerPool.Get(producerConfigModel.TopicName);
+            if (producerInstance == null)
             {
+                //重新构建生产者
                 ProducerBuilder<int, string> produce = new ProducerBuilder<int, string>(producerConfigModel.Config as ProducerConfig);
-                //produce.SetErrorHandler(ErrorProducerHandler);
-                producer=produce.Build();
+                producerInstance = new Tuple<string, IProducer<int, string>>(producerConfigModel.TopicName, produce.Build());
+                producerPool.Set(producerInstance);
             }
-            producer.Produce(producerConfigModel.TopicName, new Message<int, string>()
+            producerInstance.Item2.Produce(producerInstance.Item1, new Message<int, string>()
             {
                 Key = KafkaRandomKey.GetRandom(),
                 Value = AppRealization.JSON.Serialize(Content),
                 Timestamp = new Timestamp(DateTime.Now)
             });
-            producer.Flush(new TimeSpan(0, 0, 5));
+            producerInstance.Item2.Flush(new TimeSpan(0, 0, 5));
         }
 
         public void Subscribe<TTopicSubscribeConfig, TMessageContentStandard>
@@ -70,21 +85,20 @@ namespace Air.Cloud.Modules.Kafka.Helper
                where TTopicSubscribeConfig : class
                 where TMessageContentStandard : class,new()
         {
-          
-            if (subscribeConfig.Config == null)
-            {
-                var Config = new ConsumerConfig()
-                {
-                    GroupId= GroupId,
-                    BootstrapServers = KafkaClusterOptions.ClusterAddress
-                } as TTopicSubscribeConfig;
-                if (Config == null) AppRealization.Output.Error(new Exception("订阅配置错误"));
-                subscribeConfig.Config = Config;
-            }
-            ConsumerConfig config = subscribeConfig.Config as ConsumerConfig;
             //消费数据
             Task.Factory.StartNew(() =>
             {
+                if (subscribeConfig.Config == null)
+                {
+                    var Config = new ConsumerConfig()
+                    {
+                        GroupId = GroupId,
+                        BootstrapServers = KafkaClusterOptions.ClusterAddress
+                    } as TTopicSubscribeConfig;
+                    if (Config == null) AppRealization.Output.Error(new Exception("订阅配置错误"));
+                    subscribeConfig.Config = Config;
+                }
+                ConsumerConfig config = subscribeConfig.Config as ConsumerConfig;
                 ConsumerBuilder<int, string> consume = new ConsumerBuilder<int, string>(config);
                 config.EnableAutoCommit = true;
                 var EnableCommit = config.EnableAutoCommit.HasValue && config.EnableAutoCommit.Value;
@@ -111,9 +125,7 @@ namespace Air.Cloud.Modules.Kafka.Helper
                     }
                 }
             }, TaskCreationOptions.LongRunning);
-
         }
-
         #endregion
     }
 }

@@ -11,18 +11,20 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Extensions.Aspect;
-using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Modules.Quartz.Extensions;
 using Air.Cloud.Modules.Quartz.Options;
 
-namespace unit.webapp.entry
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Air.Cloud.Modules.Quartz
 {
     /// <summary>
     /// <para>zh-cn:启动项</para>
     /// <para>en-us:Startup</para>
     /// </summary>
-    //[AppStartup(Order =1)]  Order比默认的大就没有问题 比默认的小就会报空指针异常
+    [AppStartup(Order =1100)]
     public class QuartStartup : AppStartup
     {
         public static CancellationTokenSource cts = new CancellationTokenSource();
@@ -30,6 +32,7 @@ namespace unit.webapp.entry
         {
             app.UseQuartzServices<QuartzSchedulerStandardOptions>();
         }
+
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddQuartzService<QuartzSchedulerStandardOptions>();

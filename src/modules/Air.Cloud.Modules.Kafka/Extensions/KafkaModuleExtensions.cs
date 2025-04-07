@@ -27,6 +27,7 @@ namespace Air.Cloud.Modules.Kafka.Extensions
 {
     public static class KafkaModuleExtensions
     {
+        public static IDictionary<Type,object> MessageQueueSubscriber = new Dictionary<Type, object>();
         /// <summary>
         /// <para>zh-cn:初始化Kafka服务</para>
         /// <para>en-us: Initialize Kafka service</para>
@@ -67,7 +68,13 @@ namespace Air.Cloud.Modules.Kafka.Extensions
                 {
                     try
                     {
-                        var instance = Activator.CreateInstance(item);
+                        
+
+                        var instance = MessageQueueSubscriber.ContainsKey(item) ? MessageQueueSubscriber[item]:Activator.CreateInstance(item);
+                        if (!MessageQueueSubscriber.ContainsKey(item))
+                        {
+                            MessageQueueSubscriber.Add(item, instance);
+                        }
                         var x = ImplMethod.Invoke(instance, new object[] { s });
                         if (NeedProduce) AppRealization.Queue.Publish(producerConfig, x);
                     }

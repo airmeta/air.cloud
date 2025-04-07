@@ -14,6 +14,7 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Standard.TraceLog;
+using Air.Cloud.Modules.Taxin.Client;
 
 using unit.taxinclient.entry.TraceLogDependency;
 namespace unit.taxinclient.entry

@@ -1,16 +1,9 @@
-﻿using Air.Cloud.Core.Collections;
-using Air.Cloud.Core.Modules.StandardPool;
-using Air.Cloud.Core.Standard.Print;
-using Air.Cloud.Core.Standard.SchedulerStandard;
-using Air.Cloud.Core;
-
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Air.Cloud.Core;
+using Air.Cloud.Core.Collections;
 using Air.Cloud.Core.Modules.AppPrint;
+using Air.Cloud.Core.Modules.StandardPool;
+
+using System.Collections.Concurrent;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Connections
 {

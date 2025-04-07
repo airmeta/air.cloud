@@ -37,14 +37,14 @@ namespace unit.kafaka.server.entry
         {
             //默认实现
             {
-                //services.AddEventBus(options =>
-                //{
-                //    options.AddSubscribers(Assembly.GetEntryAssembly());
-                //    options.ReplaceStorager(services =>
-                //    {
-                //        return new ChannelEventSourceStorer(100);
-                //    });
-                //});
+                services.AddEventBus(options =>
+                {
+                    options.AddSubscribers(Assembly.GetEntryAssembly());
+                    options.ReplaceStorager(services =>
+                    {
+                        return new ChannelEventSourceStorager(100);
+                    });
+                });
             }
             //kafka实现
             {

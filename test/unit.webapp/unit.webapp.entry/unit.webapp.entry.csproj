@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
     <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
+    <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Courier\Air.Cloud.Modules.Courier.csproj" />
     <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj" />
     <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj" />
     <ProjectReference Include="..\unit.webapp.common\unit.webapp.common.csproj" />

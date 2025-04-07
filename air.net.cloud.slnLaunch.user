@@ -3,12 +3,11 @@
     "Name": "\u65B0\u5EFA\u914D\u7F6E\u6587\u4EF6",
     "Projects": [
       {
-        "Name": "test\\unit.kafaka.client.entry\\unit.kafaka.client.entry.csproj",
-        "Action": "Start",
-        "DebugTarget": ""
+        "Name": "test\\unit.webapp\\unit.webapp.entry\\unit.webapp.entry.csproj",
+        "Action": "Start"
       },
       {
-        "Name": "test\\unit.webapp\\unit.webapp.entry\\unit.webapp.entry.csproj",
+        "Name": "test\\doc.engine\\Air.Cloud.DocEngine\\Air.Cloud.DocEngine.csproj",
         "Action": "Start"
       }
     ]

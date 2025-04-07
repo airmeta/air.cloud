@@ -46,7 +46,7 @@ namespace unit.webapp.entry.Jobs
 
 
         //[Aspect(typeof(DefaultOutputAspect1))]
-        [Aspect(typeof(IfNullReferenceException))]
+        //[Aspect(typeof(IfNullReferenceException))]
         public Task ExecuteAsync(CancellationToken stoppingToken)
         {
             try

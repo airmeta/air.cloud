@@ -15,9 +15,14 @@ using Air.Cloud.Core.Plugins.Reflection.Internal;
 using Air.Cloud.DocEngine.XmlDocHelper;
 
 using System;
+using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml.Linq;
+
+
+SocketClient.LoaderOptimization(IPAddress.Parse("127.0.0.1"), 8888);
+
 
 var xmlCommentHelper = new XmlCommentHelper();
 xmlCommentHelper.LoadAll();

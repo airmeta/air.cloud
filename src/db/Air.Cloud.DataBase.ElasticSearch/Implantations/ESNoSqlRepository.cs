@@ -5,8 +5,6 @@ using Air.Cloud.Core.Standard.DataBase.Options;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
 using Air.Cloud.DataBase.ElasticSearch.Attributes;
 
-using Nest;
-
 using System.Reflection;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Implantations
