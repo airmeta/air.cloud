@@ -55,7 +55,7 @@ namespace Air.Cloud.Modules.Kafka.Helper
                         BootstrapServers = KafkaClusterOptions.ClusterAddress,
                     };
                     producerConfigModel.Config = DefaultProducerConfig as TTopicPublishConfig;
-                    producerPool.Set((ITopicPublishConfig<ProducerConfig>)producerConfigModel);
+                    producerPool.Set((Tuple<string, IProducer<int, string>>)producerConfigModel);
                 }
                 else
                 {
