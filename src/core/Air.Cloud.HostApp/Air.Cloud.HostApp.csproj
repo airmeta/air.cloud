@@ -16,7 +16,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>1.2.0.2</Version>
+    <Version>1.2.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

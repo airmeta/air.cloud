@@ -8,7 +8,6 @@
 
 using Air.Cloud.DataBase.Attributes;
 using Air.Cloud.DataBase.Enums;
-using Air.Cloud.DataBase.Extensions;
 using Air.Cloud.DataBase.Internal;
 
 using System.Data.Common;
