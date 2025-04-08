@@ -63,7 +63,7 @@ internal static class AppDbContextBuilder
 
         // 查找所有数据库函数，必须是公开静态方法，且所在父类也必须是公开静态方法
         DbFunctionMethods = AppCore.EffectiveTypes
-            .Where(t => t.IsAbstract && t.IsSealed && t.IsClass && !t.IsDefined(typeof(ManualAttribute), true))
+            .Where(t => t.IsAbstract && t.IsSealed && t.IsClass)
             .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m => !m.IsDefined(typeof(IgnoreScanningAttribute), false) && m.IsDefined(typeof(QueryableFunctionAttribute), true)));
     }
 
@@ -127,13 +127,8 @@ internal static class AppDbContextBuilder
     {
         // 反射创建实体类型构建器
         var entityTypeBuilder = ModelBuildEntityMethod.MakeGenericMethod(type).Invoke(modelBuilder, null) as EntityTypeBuilder;
-
-        // 配置动态表名
-        if (!ConfigureEntityMutableTableName(type, entityTypeBuilder, dbContext, dbContextLocator, dbContextCorrelationType))
-        {
-            // 配置实体表名
-            ConfigureEntityTableName(type, appDbContextAttribute, entityTypeBuilder, dbContext, dbContextType);
-        }
+        // 配置实体表名
+        ConfigureEntityTableName(type, appDbContextAttribute, entityTypeBuilder, dbContext, dbContextType);
         return entityTypeBuilder;
     }
 
@@ -153,69 +148,12 @@ internal static class AppDbContextBuilder
         // 排除无键实体或已经贴了 [Table] 特性的类型
         if (typeof(IPrivateEntityNotKey).IsAssignableFrom(type) || !string.IsNullOrWhiteSpace(tableAttribute?.Schema)) return;
 
-        // 获取真实表名
-        var tableName = tableAttribute?.Name ?? type.Name;
-
-        // 获取类型前缀 [TableFixs] 特性
-        var tableFixsAttribute = !type.IsDefined(typeof(TableFixsAttribute), true)
-            ? default
-            : type.GetCustomAttribute<TableFixsAttribute>(true);
-
-        // 获取表名最终前后缀
-        var tablePrefix = (tableFixsAttribute?.Prefix ?? appDbContextAttribute?.TablePrefix)?.Trim();
-        var tableSuffix = (tableFixsAttribute?.Suffix ?? appDbContextAttribute?.TableSuffix)?.Trim();
-
-        // 如果没有定义 Table 特性且没有定义 TableFixs 特性，且没有实现 IMultiTenantOnSchema 接口且 AppDbContextAttribute 没有配置前后缀
-        // 满足以上条件则不配置表名
-        if (!(tableAttribute == null && tableFixsAttribute == null && string.IsNullOrWhiteSpace(tablePrefix) && string.IsNullOrWhiteSpace(tableSuffix)))
-        {
-            entityTypeBuilder.Metadata.SetTableName($"{tablePrefix}{tableName}{tableSuffix}");
-        }
-
         // 设置 Schema
         if (!string.IsNullOrWhiteSpace(tableAttribute?.Schema))
         {
             entityTypeBuilder.Metadata.SetSchema(tableAttribute?.Schema);
         }
     }
-
-    /// <summary>
-    /// 配置实体动态表名
-    /// </summary>
-    /// <param name="entityType">实体类型</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="dbContextCorrelationType">数据库实体关联类型</param>
-    private static bool ConfigureEntityMutableTableName(Type entityType, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator, DbContextCorrelationType dbContextCorrelationType)
-    {
-        var isSet = false;
-
-        // 获取实体动态配置表配置
-        var entityMutableTableTypes = dbContextCorrelationType.EntityMutableTableTypes
-            .Where(u => u.GetInterfaces()
-                .Any(i => i.HasImplementedRawGeneric(typeof(IPrivateEntityMutableTable<>)) && i.GenericTypeArguments.Contains(entityType)));
-
-        if (!entityMutableTableTypes.Any()) return isSet;
-
-        // 只应用于扫描的最后配置
-        var lastEntityMutableTableType = entityMutableTableTypes.Last();
-
-        // 支持显式和隐式查找
-        var getTableNameMethod = lastEntityMutableTableType.GetMethod("GetTableName")
-            ?? typeof(IPrivateEntityMutableTable<>).MakeGenericType(entityType).GetMethod("GetTableName");
-
-        var tableMeta = (string[])(getTableNameMethod?.Invoke(Activator.CreateInstance(lastEntityMutableTableType), new object[] { dbContext, dbContextLocator }));
-        if (tableMeta != null)
-        {
-            // 设置动态表名
-            entityBuilder.ToTable(tableMeta[0], tableMeta.Length > 1 ? tableMeta[1] : null);
-            isSet = true;
-        }
-
-        return isSet;
-    }
-
     /// <summary>
     /// 配置无键实体类型
     /// </summary>
@@ -471,12 +409,6 @@ internal static class AppDbContextBuilder
                     if (entityCorrelationType.HasImplementedRawGeneric(typeof(IPrivateEntitySeedData<>)))
                     {
                         result.EntitySeedDataTypes.Add(entityCorrelationType);
-                    }
-
-                    // 添加动态表类型
-                    if (entityCorrelationType.HasImplementedRawGeneric(typeof(IPrivateEntityMutableTable<>)))
-                    {
-                        result.EntityMutableTableTypes.Add(entityCorrelationType);
                     }
 
                     // 添加实体数据改变监听
