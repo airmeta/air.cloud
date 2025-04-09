@@ -22,7 +22,7 @@ namespace unit.webapp.repository.DbContexts
     /// <summary>
     /// 系统数据库配置
     /// </summary>
-    [AppDbContext("OracleConnectionString", DbProvider.Oracle)]
+    [AppDbContext("OracleConnectionString", DbProvider.Dm)]
     public class DefaultDbContext : AppDbContext<DefaultDbContext>
     {
         public DefaultDbContext(DbContextOptions<DefaultDbContext> options) : base(options)
