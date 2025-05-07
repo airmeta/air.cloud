@@ -71,7 +71,7 @@ public static class DbProvider
     /// <summary>
     /// Dm 提供器程序集
     /// </summary>
-    public const string Dm = "Microsoft.EntityFrameworkCore.Dm";
+    public const string Dm = "Dm.Microsoft.EntityFrameworkCore";
 
     /// <summary>
     /// 不支持存储过程的数据库

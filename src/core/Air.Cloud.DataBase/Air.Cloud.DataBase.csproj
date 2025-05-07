@@ -32,8 +32,8 @@
   <ItemGroup>
     <PackageReference Include="UAParser" Version="3.1.47" />
     <ProjectReference Include="..\Air.Cloud.Core\Air.Cloud.Core.csproj" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.21" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.20" />
   </ItemGroup>
 
 </Project>

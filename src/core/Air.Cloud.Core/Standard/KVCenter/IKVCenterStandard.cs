@@ -35,7 +35,7 @@ namespace Air.Cloud.Core.Standard.KVCenter
         /// <para>zh-cn: 查询结果</para>
         /// <para>en-us: QueryAsync result</para>
         /// </returns>
-        public Task<IList<T>> QueryAsync<T>(string Prefix=null) where T : class, new();
+        public Task<IList<T>> QueryAsync<T>(string Prefix="/") where T : class, new();
         /// <summary>
         /// <para>zh-cn: 添加或更新KV存储</para>
         /// <para>en-us: Add or update KV storage</para>

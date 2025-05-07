@@ -18,9 +18,17 @@ using Consul;
 
 namespace Air.Cloud.Modules.Consul.Service
 {
+    /// <summary>
+    /// <para>zh-cn:Consul注册中心</para>
+    /// <para>en-us:Consul server center </para>
+    /// </summary>
     public class ConsulServerCenterDependency : IServerCenterStandard
     {
 
+        /// <summary>
+        /// <para>zh-cn:客户端</para>
+        /// <para>en-us:Consul client</para>
+        /// </summary>
         public static ConsulClient ConsulClient { get; set; }
 
         static ConsulServerCenterDependency()

@@ -32,13 +32,10 @@ public class DynamicModelCacheKeyFactory : IModelCacheKeyFactory
         Interlocked.Increment(ref cacheKey);
     }
 
-    /// <summary>
-    /// 更新模型缓存
-    /// </summary>
-    /// <param name="context"></param>
-    /// <returns></returns>
-    public object Create(DbContext context)
+
+    public object Create(DbContext context, bool designTime)
     {
         return (context.GetType(), cacheKey);
+
     }
 }
