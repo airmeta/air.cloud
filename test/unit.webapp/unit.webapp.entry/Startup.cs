@@ -45,8 +45,21 @@ namespace unit.webapp.entry
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-           app.UseMiddleware<TraceLogMiddleware>();
+           
         }
     }
-  
+
+    [AppStartup(Order =3000)]
+    public class Startup1 : AppStartup
+    {
+        public override void ConfigureServices(IServiceCollection services)
+        {
+          
+        }
+        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            app.UseMiddleware<TraceLogMiddleware>();
+        }
+    }
+
 }

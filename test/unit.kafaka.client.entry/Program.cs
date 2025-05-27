@@ -11,6 +11,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
+using Air.Cloud.Core.Enums;
 using Air.Cloud.Modules.Kafka.Model;
 using Air.Cloud.WebApp.App;
 using Microsoft.AspNetCore.Mvc;
@@ -19,14 +20,10 @@ var builder = WebApplication.CreateBuilder(args);
 var app = builder.WebInjectInFile();
 app.MapGet("test", ([FromServices] IEventPublisher eventPublisher) =>
 {
-    AppRealization.Queue.Publish(new ProducerConfigModel()
-    {
-        TopicName= "fcj_workflow_audit_test"
-    },new T()
+    eventPublisher.PublishAsync(EnvironmentEnums.Development, new T()
     {
         Content = "这是测试用的",
     });
-    //eventPublisher.PublishAsync("test1", "这是测试用的");
     return "发送成功";
 });
 app.Run();

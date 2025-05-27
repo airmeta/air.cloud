@@ -17,7 +17,7 @@ using System.ComponentModel;
 
 namespace unit.webapp.entry.QueueDependency
 {
-    [AppQueueDescriptor("fcj_workflow_audit_test", "fcj_workflow_callback_test","testGroup")]
+    [AppQueueDescriptor("fcj_workflow_audit", "fcj_workflow_callback","testGroup")]
     public class WorkflowAuditSubscribeDependency : IMessageQueueSubscribeStandard<WorkflowPublishNews>
     {
         public object Subscribe(WorkflowPublishNews message)

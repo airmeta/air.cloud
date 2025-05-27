@@ -9,6 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.DataBase.ElasticSearch.Enums;
+
 namespace Air.Cloud.DataBase.ElasticSearch.Attributes
 {
     /// <summary>
@@ -34,5 +36,18 @@ namespace Air.Cloud.DataBase.ElasticSearch.Attributes
         /// <para>en-us:DataBase key</para>
         /// </summary>
         public string DbKey { get; set; }
+
+
+        /// <summary>
+        /// <para>zh-cn:索引切分标记</para>
+        /// <para>en-us:Index splitting tag</para>
+        /// </summary>
+        public string SegmentationTag { get; set; } = "-";
+
+        /// <summary>
+        /// <para>zh-cn:索引切分规则</para>
+        /// <para>en-us:Index splitting rules</para>
+        /// </summary>
+        public IndexSegmentationPatternEnum SegmentationPattern { get; set; }=IndexSegmentationPatternEnum.None;
     }
 }

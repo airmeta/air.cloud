@@ -5,6 +5,7 @@ using Air.Cloud.Core;
 using Air.Cloud.WebApp.FriendlyException;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.ElasticSearch.Attributes;
+using Air.Cloud.DataBase.ElasticSearch.Enums;
 
 namespace unit.webapp.entry.TraceLogDependency
 {
@@ -40,7 +41,10 @@ namespace unit.webapp.entry.TraceLogDependency
           
         }
     }
-    [ElasticSearchIndex(DbKey = "air_cloud", TableName = "fcj-logs-test")]
+    [ElasticSearchIndex(
+        DbKey = "air_cloud", 
+        TableName = "fcj-logs-test",
+        SegmentationPattern = IndexSegmentationPatternEnum.Month)]
     public class TraceLogDocument : INoSqlEntity,ITraceLogContent
     {
         public string Id { get; set; } = AppCore.Guid();

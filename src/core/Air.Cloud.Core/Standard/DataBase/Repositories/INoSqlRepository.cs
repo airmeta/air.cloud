@@ -186,8 +186,11 @@ namespace Air.Cloud.Core.Standard.DataBase.Repositories
         /// <para>zh-cn:获取连接</para>
         /// <para>en-us:Get database client</para>
         /// </summary>
-        /// <typeparam name="TConnection">数据库连接类型</typeparam>
-        /// <returns></returns>
-        TConnection Connection<TConnection>() where TConnection:class;
+        /// <typeparam name="TClient">数据库连接类型</typeparam>
+        /// <returns>
+        ///  <para>zh-cn:客户端连接</para>
+        ///  <para>en-us:client</para>
+        /// </returns>
+        TClient Client<TClient>() where TClient : class;
     }
 }

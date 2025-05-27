@@ -31,7 +31,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Extensions
     {
 
         /// <summary>
-        /// <para>zh-cn:注册调度任务</para>
+        /// <para>zh-cn:注册ES服务</para>
         /// <para>en-us: Inject app scheduler</para>
         /// </summary>
         /// <param name="services">

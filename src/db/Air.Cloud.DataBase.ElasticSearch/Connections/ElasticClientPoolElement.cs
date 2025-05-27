@@ -16,10 +16,14 @@ using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.DataBase.Options;
 using Air.Cloud.DataBase.ElasticSearch.Attributes;
+using Air.Cloud.DataBase.ElasticSearch.Enums;
 
 using Elasticsearch.Net;
 
+using Org.BouncyCastle.Crypto.Tls;
+
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Connections
 {
@@ -42,29 +46,17 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
         /// </summary>
         public string UID => MD5Encryption.GetMd5By32(Name);
 
-        public ElasticClientPoolElement(IElasticClient client, string name)
+        public ElasticClientPoolElement(IElasticClient client, string Name, IndexSegmentationPatternEnum indexSegmentPattern = IndexSegmentationPatternEnum.None,string SegmentationTag="-")
         {
-            Client = client;
-            Name = name;
+            this.Client = client;
+            this.Name = GetTableName(Name, indexSegmentPattern, SegmentationTag, string.Empty);
         }
         public ElasticClientPoolElement(IElasticClient client, Type DocumentType)
         {
             Client = client;
-            Name = DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>()?.TableName??string.Empty;
-            if (Name.IsNullOrEmpty()) Name = DocumentType.Name.ToLower();
-            if (Name.IsNullOrEmpty())
-            {
-                AppRealization.Output.Print(new AppPrintInformation()
-                {
-                    State = true,
-                    AdditionalParams = null,
-                    Content = "无法读取ES索引信息",
-                    Title = "ElasticSearchConnectionPool Notice",
-                    Level = AppPrintLevel.Warning
-                });
-                throw new Exception("无法读取ES索引信息");
-            }
+            Name = GetTableName(DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>(), DocumentType.Name.ToLower());
         }
+
         public ElasticClientPoolElement(Type DocumentType)
         {
             ElasticSearchIndexAttribute? noSqlTableAttribute = DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>();
@@ -87,8 +79,17 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
             settings.BasicAuthentication(DataBaseOption.Account, DataBaseOption.Password);
             Client = new ElasticClient(settings);
             #endregion
-            Name = noSqlTableAttribute?.TableName ?? string.Empty;
-            if (Name.IsNullOrEmpty()) Name = DocumentType.Name.ToLower();
+            Name = GetTableName(noSqlTableAttribute, DocumentType.Name.ToLower());
+        }
+
+        public string GetTableName(ElasticSearchIndexAttribute elasticSearchIndex,string DefaultName = null)
+        {
+            string Name = elasticSearchIndex?.TableName ?? string.Empty;
+            return GetTableName(Name, elasticSearchIndex.SegmentationPattern, elasticSearchIndex.SegmentationTag, DefaultName);
+        }
+        public static string GetTableName(string Name, IndexSegmentationPatternEnum SegmentationPattern= IndexSegmentationPatternEnum.None, string SegmentationTag="-",string DefaultName = null)
+        {
+            if (Name.IsNullOrEmpty()) Name = DefaultName;
             if (Name.IsNullOrEmpty())
             {
                 AppRealization.Output.Print(new AppPrintInformation()
@@ -101,6 +102,20 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                 });
                 throw new Exception("无法读取ES索引信息");
             }
+            switch (SegmentationPattern)
+            {
+                case Enums.IndexSegmentationPatternEnum.None:
+                    return Name;
+                case Enums.IndexSegmentationPatternEnum.Year:
+                    return string.Format("{0}{1}{2}", Name, SegmentationTag, DateTime.Now.Year);
+                case Enums.IndexSegmentationPatternEnum.Month:
+                    return string.Format("{0}{1}{2}{3}{4}", Name, SegmentationTag, DateTime.Now.Year - 2000, SegmentationTag, DateTime.Now.Month);
+                case Enums.IndexSegmentationPatternEnum.Day:
+                    return string.Format("{0}{1}{2}", Name, SegmentationTag, DateTime.Now.Year - 2000, SegmentationTag, DateTime.Now.DayOfYear);
+                default:
+                    return Name;
+            }
         }
     }
+
 }

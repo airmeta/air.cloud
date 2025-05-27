@@ -25,25 +25,13 @@ namespace unit.kafaka.client.entry
     [AppStartup(Order = int.MinValue)]
     public class Startup : AppStartup
     {
-        ConsumerConfigModel consumerConfigModel = new ConsumerConfigModel() { TopicName = "fcj_workflow_audit_test" };
+        ConsumerConfigModel consumerConfigModel = new ConsumerConfigModel() { TopicName = "fcj_events_test" };
         string GroupId = AppEnvironment.IsDevelopment ? Guid.NewGuid().ToString() : AppConst.ApplicationName;
 
 
-        ProducerConfigModel producerConfigModel = new ProducerConfigModel() { TopicName = "fcj_workflow_audit_test" };
+        ProducerConfigModel producerConfigModel = new ProducerConfigModel() { TopicName = "fcj_events_test" };
         public override void ConfigureServices(IServiceCollection services)
         {
-            //默认实现
-            {
-                //services.AddEventBus(options =>
-                //{
-                //    options.AddSubscribers(Assembly.GetEntryAssembly());
-                //    options.ReplaceStorager(services =>
-                //    {
-                //        return new ChannelEventSourceStorer(100);
-                //    });
-                //});
-            }
-            //kafka实现
             {
                 services.AddEventBus(options =>
                 {
@@ -64,24 +52,6 @@ namespace unit.kafaka.client.entry
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //kafka测试
-            {
-                //Task.Run(async () =>
-                //{
-                //    while (true)
-                //    {
-                //        await Task.Delay(3000);
-                //        ProducerConfigModel producerConfigModel = new ProducerConfigModel();
-                //        producerConfigModel.TopicName = "fcj_workflow_audit_test";
-                //        AppRealization.Queue.Publish<ProducerConfig, Contents>(producerConfigModel, new Contents()
-                //        {
-                //            Content = "123123"
-                //        });
-                //    }
-
-                //});
-            }
-
         }
     }
 

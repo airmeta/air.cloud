@@ -15,7 +15,7 @@ using Air.Cloud.Core.Standard.MessageQueue.Attributes;
 
 namespace unit.webapp.entry.QueueDependency
 {
-    [AppQueueDescriptor("fcj_workflow_callback",GroupId ="testGroup")]
+    [AppQueueDescriptor("fcj_workflow_callback",GroupId ="testGroup112123132")]
     public class WorkflowAuditSubscribeReciveDependency : IMessageQueueSubscribeStandard<WorkflowPublishNews>
     {
         public object Subscribe(WorkflowPublishNews message)

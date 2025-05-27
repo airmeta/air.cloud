@@ -26,7 +26,7 @@ namespace unit.webapp.service.services.ElasticSearchTest
         {
             var data = await repository.QueryAsync(async (s) =>
             {
-                var data = await s.Connection<IElasticClient>().SearchAsync<TestDocument>(x =>
+                var data = await s.Client<IElasticClient>().SearchAsync<TestDocument>(x =>
                 {
                     return x.From(0).Size(10).Query(q => q.MatchAll());
                 });

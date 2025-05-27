@@ -10,140 +10,145 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DataBase.Options;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
 using Air.Cloud.DataBase.ElasticSearch.Attributes;
+using Air.Cloud.DataBase.ElasticSearch.Connections;
+using Air.Cloud.DataBase.ElasticSearch.Extensions;
 
 using System.Reflection;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Implantations
 {
+    /// <summary>
+    /// <para>zh-cn:ES的数据仓储</para>
+    /// <para>en-us:ES data repository</para>
+    /// </summary>
+    /// <typeparam name="TDocument"></typeparam>
     public class ESNoSqlRepository<TDocument> : INoSqlRepository<TDocument>
         where TDocument :class,INoSqlEntity, new()
     {
         /// <summary>
         /// <para>zh-cn:索引名称</para>
         /// </summary>
-        private readonly string IndexName;
-        public ElasticSearchConnection DataBase;
-        private DataBaseOptions Options => AppCore.GetOptions<DataBaseOptions>();
+        private readonly ElasticClientPoolElement clientPoolElement;
+        /// <summary>
+        /// <para>zh-cn:构造函数</para>
+        /// <para>en-us:Constractor</para>
+        /// </summary>
         public ESNoSqlRepository()
         {
-            IndexName = typeof(TDocument).GetCustomAttribute<ElasticSearchIndexAttribute>()?.TableName;
-            if(IndexName.IsNullOrEmpty()) IndexName=typeof(TDocument).Name.ToLower();
-            DataBase=new ElasticSearchConnection()
-            {
-                ConnectionName = IndexName
-            };
+            Type DocumentType = typeof(TDocument);
+            string Key = DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>().GetElementUID(DocumentType);
+            clientPoolElement = ElasticSearchConnection.Pool.Get(Key);
         }
-
+        /// <inheritdoc/>
         public INoSqlRepository<TDodument> Change<TDodument>() where TDodument : class,INoSqlEntity, new()
         {
             return (INoSqlRepository<TDodument>)AppCore.GetService<INoSqlRepository<TDocument>>();
         }
+        /// <inheritdoc/>
         public TDocument Save(TDocument T)
         {
-            IndexResponse response = DataBase?.Connection?.IndexDocument<TDocument>(T);
+            IndexResponse response = clientPoolElement?.Client?.IndexDocument<TDocument>(T);
             if (response!=null&&response?.Result == Result.Created || response?.Result == Result.Updated)
             {
                 return T;
             }
             throw response.OriginalException;
         }
-
+        /// <inheritdoc/>
         public async Task<TDocument> SaveAsync(TDocument T)
         {
-            IndexResponse response = await DataBase?.Connection?.IndexDocumentAsync<TDocument>(T);
+            IndexResponse response = await clientPoolElement?.Client?.IndexDocumentAsync<TDocument>(T);
             if (response != null && response?.Result == Result.Created || response?.Result == Result.Updated)
             {
                 return T;
             }
             throw response.OriginalException;
         }
-
+        /// <inheritdoc/>
         public bool Save(IEnumerable<TDocument> T)
         {
-            BulkResponse response = DataBase?.Connection.IndexMany<TDocument>(T);
+            BulkResponse response = clientPoolElement?.Client.IndexMany<TDocument>(T);
             if (response != null && response?.IsValid == true)
             {
                 return true;
             }
             return false;
         }
-
+        /// <inheritdoc/>
         public async  Task<bool> SaveAsync(IEnumerable<TDocument> T)
         {
-            BulkResponse response = await DataBase?.Connection.IndexManyAsync<TDocument>(T);
+            BulkResponse response = await clientPoolElement?.Client.IndexManyAsync<TDocument>(T);
             if (response != null && response?.IsValid == true)
             {
                 return true;
             }
             return false;
         }
-
+        /// <inheritdoc/>
         public TDocument Update(TDocument T)
         {
             DocumentPath<TDocument> deletePath = new DocumentPath<TDocument>(T.Id);
-            var res = DataBase.Connection.Update(deletePath, (p) => p.Doc(T).Index(DataBase.Connection.ConnectionSettings.DefaultIndex));
+            var res = clientPoolElement?.Client.Update(deletePath, (p) => p.Doc(T).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex));
             if (res!=null&& res.IsValid==true) return res.Get.Source;
             throw res.OriginalException;
         }
-
+        /// <inheritdoc/>
         public async Task<TDocument> UpdateAsync(TDocument T)
         {
             DocumentPath<TDocument> deletePath = new DocumentPath<TDocument>(T.Id);
-            var res = await DataBase.Connection.UpdateAsync(deletePath, (p) => p.Doc(T).Index(DataBase.Connection.ConnectionSettings.DefaultIndex));
+            var res = await clientPoolElement?.Client.UpdateAsync(deletePath, (p) => p.Doc(T).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex));
             if (res != null && res.IsValid == true)
             {
                 return T;
             }
             throw res.OriginalException;
         }
-
+        /// <inheritdoc/>
         TDocument INoSqlRepository<TDocument>.FirstOrDefault(string Key)
         {
-            return DataBase.Connection.Get(new DocumentPath<TDocument>(new Id(Key))).Source;
+            return clientPoolElement?.Client.Get(new DocumentPath<TDocument>(new Id(Key))).Source;
         }
-
-        public  async Task<TDocument?> FirstOrDefaultAsync(string Key)
+        /// <inheritdoc/>
+        public async Task<TDocument?> FirstOrDefaultAsync(string Key)
         {
-            return (await DataBase.Connection.GetAsync(new DocumentPath<TDocument>(new Id(Key)))).Source;
+            return (await clientPoolElement?.Client.GetAsync(new DocumentPath<TDocument>(new Id(Key)))).Source;
         }
-
+        /// <inheritdoc/>
         public IQueryable<TDocument> Query(Func<INoSqlRepository<TDocument>, IQueryable<TDocument>> Query)
         {
             return Query.Invoke(this);
         }
-
+        /// <inheritdoc/>
         public async Task<IQueryable<TDocument>> QueryAsync(Func<INoSqlRepository<TDocument>, Task<IQueryable<TDocument>>> Query)
         {
             //由于查询方法相较于普通数据库来说复杂,所以查询语句由外部构建 并执行
             return await Query.Invoke(this);
         }
+        /// <inheritdoc/>
         public bool Delete(string Id = null)
         {
-            if(this.DataBase.Connection==null) throw new Exception("Connection Error");
-            var path = DocumentPath<TDocument>.Id(Id).Index(this.DataBase.Connection.ConnectionSettings.DefaultIndex);
-            DeleteResponse response = DataBase.Connection.Delete(path);
+            var path = DocumentPath<TDocument>.Id(Id).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex);
+            DeleteResponse response = clientPoolElement?.Client.Delete(path);
             if (response.Result == Result.Deleted) return true;
             throw response.OriginalException;
         }
-
+        /// <inheritdoc/>
         public async Task<bool> DeleteAsync(string Id = null)
         {
-            if (this.DataBase.Connection == null) throw new Exception("Connection Error");
-            var path = DocumentPath<TDocument>.Id(Id).Index(this.DataBase.Connection.ConnectionSettings.DefaultIndex);
-            DeleteResponse response = await this.DataBase.Connection.DeleteAsync(path);
+            var path = DocumentPath<TDocument>.Id(Id).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex);
+            DeleteResponse response = await clientPoolElement?.Client.DeleteAsync(path);
             if (response.Result == Result.Deleted) return true;
             throw response.OriginalException;
 
         }
-
-        public TConnection Connection<TConnection>() where TConnection:class
+        /// <inheritdoc/>
+        public TClient Client<TClient>() where TClient : class
         {
-            return DataBase.Connection as TConnection;
+            return clientPoolElement?.Client as TClient;
         }
     }
 }
