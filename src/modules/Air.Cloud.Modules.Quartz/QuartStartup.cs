@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Modules.Quartz.Extensions;
@@ -27,15 +28,40 @@ namespace Air.Cloud.Modules.Quartz
     [AppStartup(Order =1100)]
     public class QuartStartup : AppStartup
     {
-        public static CancellationTokenSource cts = new CancellationTokenSource();
+        /// <inheritdoc/>
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseQuartzServices<QuartzSchedulerStandardOptions>();
+            if (EnableQuartzAutoInject()) {
+                app.UseQuartzServices<QuartzSchedulerStandardOptions>();
+            }
         }
-
+        /// <inheritdoc/>
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddQuartzService<QuartzSchedulerStandardOptions>();
+            if (EnableQuartzAutoInject())
+            {
+                services.AddQuartzService<QuartzSchedulerStandardOptions>();
+            }
         }
+        /// <summary>
+        ///  <para>zh-cn:是否启用Quartz自动注入</para>
+        ///  <para>en-us:Whether to enable Quartz automatic injection</para>
+        /// </summary>
+        /// <returns></returns>
+        public bool EnableQuartzAutoInject()
+        {
+            string EnableQuartzAutoInject = AppConfigurationLoader.InnerConfiguration["AppSettings:EnableQuartzAutoInject"]?.ToString();
+            if (EnableQuartzAutoInject?.ToLower()=="false")
+            {
+                return false;
+            }
+            EnableQuartzAutoInject = AppCore.Configuration["AppSettings:EnableQuartzAutoInject"]?.ToString();
+            if (EnableQuartzAutoInject?.ToLower() == "false")
+            {
+                return false;
+            }
+            return true;
+        }
+
     }
 }

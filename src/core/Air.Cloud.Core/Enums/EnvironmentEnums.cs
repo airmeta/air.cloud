@@ -12,7 +12,7 @@
 namespace Air.Cloud.Core.Enums
 {
     /// <summary>
-    /// 运行环境枚举  自定义配置则使用Other 会自动读取对应后缀名的配置文件
+    /// 运行环境枚举
     /// </summary>
     public enum EnvironmentEnums
     {

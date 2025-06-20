@@ -74,17 +74,24 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
             var nodesStr = DataBaseOption.ConnectionString.Split(',');
             var nodes = nodesStr.Select(s => new Uri(s)).ToList();
             var connectionPool = new SniffingConnectionPool(nodes);
+            Name = GetTableName(noSqlTableAttribute, DocumentType.Name.ToLower());
             var settings = new ConnectionSettings(connectionPool);
-            if (!string.IsNullOrEmpty(noSqlTableAttribute.TableName)) settings.DefaultIndex(noSqlTableAttribute.TableName);
-            settings.BasicAuthentication(DataBaseOption.Account, DataBaseOption.Password);
+            if (!string.IsNullOrEmpty(noSqlTableAttribute.TableName))
+            {
+                settings.DefaultIndex(Name);
+            }
+            if (!DataBaseOption.Account.IsNullOrEmpty())
+            {
+                settings.BasicAuthentication(DataBaseOption.Account, DataBaseOption.Password);
+            }
             Client = new ElasticClient(settings);
             #endregion
-            Name = GetTableName(noSqlTableAttribute, DocumentType.Name.ToLower());
+           
         }
 
         public string GetTableName(ElasticSearchIndexAttribute elasticSearchIndex,string DefaultName = null)
         {
-            string Name = elasticSearchIndex?.TableName ?? string.Empty;
+            string Name = elasticSearchIndex?.TableName ?? throw new Exception("索引名称为空,无法创建索引连接信息");
             return GetTableName(Name, elasticSearchIndex.SegmentationPattern, elasticSearchIndex.SegmentationTag, DefaultName);
         }
         public static string GetTableName(string Name, IndexSegmentationPatternEnum SegmentationPattern= IndexSegmentationPatternEnum.None, string SegmentationTag="-",string DefaultName = null)

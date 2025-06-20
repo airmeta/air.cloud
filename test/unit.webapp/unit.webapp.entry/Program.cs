@@ -10,15 +10,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Plugins.Map;
 using Air.Cloud.GateWay.Middleware;
 using Air.Cloud.WebApp.App;
 
 using System.Net;
-
-
+using Air.Cloud.Modules.Consul.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.WebInjectInFile();
+var app = builder.WebInjectInConsul();
 
 
 app.Run();

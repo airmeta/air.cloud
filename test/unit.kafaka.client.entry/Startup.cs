@@ -25,11 +25,11 @@ namespace unit.kafaka.client.entry
     [AppStartup(Order = int.MinValue)]
     public class Startup : AppStartup
     {
-        ConsumerConfigModel consumerConfigModel = new ConsumerConfigModel() { TopicName = "fcj_events_test" };
+        ConsumerConfigModel consumerConfigModel = new ConsumerConfigModel() { TopicName = "fcj_events_dev" };
         string GroupId = AppEnvironment.IsDevelopment ? Guid.NewGuid().ToString() : AppConst.ApplicationName;
 
 
-        ProducerConfigModel producerConfigModel = new ProducerConfigModel() { TopicName = "fcj_events_test" };
+        ProducerConfigModel producerConfigModel = new ProducerConfigModel() { TopicName = "fcj_events_dev" };
         public override void ConfigureServices(IServiceCollection services)
         {
             {

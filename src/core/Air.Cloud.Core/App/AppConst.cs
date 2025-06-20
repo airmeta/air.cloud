@@ -43,12 +43,12 @@ namespace Air.Cloud.Core.App
         /// <para>zh-cn: 系统环境配置文件全名称</para>
         /// <para>en-us: System environment configuration file full name</para>
         /// </summary>
-        public static string SystemEnvironmentConfigFileFullName => string.Format(ENVIRONMENT_CONFIG_FILE, AppEnvironment.VirtualEnvironment);
+        public static string SystemEnvironmentConfigFileFullName => string.Format(ENVIRONMENT_CONFIG_FILE, AppEnvironment.VirtualEnvironmentKey);
         /// <summary>
         /// <para>zh-cn:全局公共配置文件全名称</para>
         /// <para>en-us: Global common configuration file full name</para>
         /// </summary>
-        public static string CommonEnvironmentConfigFileFullName => string.Format(ENVIRONMENT_CONFIG_FILE, $"Common.{AppEnvironment.VirtualEnvironment}");
+        public static string CommonEnvironmentConfigFileFullName => string.Format(ENVIRONMENT_CONFIG_FILE, $"Common.{AppEnvironment.VirtualEnvironmentKey}");
         /// <summary>
         /// <para>zh-cn: 默认IP地址</para>
         /// <para>en-us: Default IP address</para>
@@ -116,16 +116,6 @@ namespace Air.Cloud.Core.App
         public static LoadConfigurationTypeEnum LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
 
 
-        #region  v1.0.2 新增项
-        /// <summary>
-        /// <para>zh-cn:当前应用程序启动模式标识</para> 
-        /// <para>en-us:Current application startup mode</para>
-        /// </summary>
-        /// <remarks>
-        ///   <para>zh-cn: 用于标识当前应用程序启动模式的字符串,单单凭借EnvironmentStatus可能无法完全的去表示用户配置的Environment</para>
-        /// </remarks>
-        public static string  EnvironmentKey = EnvironmentStatus.ToString();
 
-        #endregion
     }
 }

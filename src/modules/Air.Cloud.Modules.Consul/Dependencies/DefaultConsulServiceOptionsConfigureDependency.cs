@@ -59,13 +59,6 @@ namespace Air.Cloud.Modules.Consul.Dependencies
         {
             string ProjectName = AppConst.ApplicationName;
             if (AppEnvironment.IsTest) ProjectName = $"{ProjectName}.{AppConst.ENVIRONMENT_TEST_KEY}";
-            if (AppConst.EnvironmentStatus.HasValue && AppConst.EnvironmentStatus.Value == EnvironmentEnums.Other)
-            {
-                //如果是其他环境，则追加环境名称
-                string EnvironmentKey=  AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
-                AppConst.EnvironmentKey = EnvironmentKey;
-                ProjectName = $"{ProjectName}.{EnvironmentKey}";
-            }
             return (IsIgnoreServiceNameKey && (!IgnoreKey.IsNullOrEmpty()))? Strings.Replace(ProjectName, IgnoreKey, string.Empty, 1, -1, CompareMethod.Text) : ProjectName;
         }
     }
