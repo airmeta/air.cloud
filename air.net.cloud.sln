@@ -106,7 +106,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirCloud.Susceptor.Client",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Courier", "src\modules\Air.Cloud.Modules.Courier\Air.Cloud.Modules.Courier.csproj", "{E1C0D164-0990-4DF4-B1B5-0773342CC010}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Plugins.CodeGenerator", "src\plugins\Air.Cloud.Plugins.CodeGenerator\Air.Cloud.Plugins.CodeGenerator.csproj", "{E3FC0874-2E94-4F19-B2DE-8BB6DA596870}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Plugins.CodeGenerator", "src\plugins\Air.Cloud.Plugins.CodeGenerator\Air.Cloud.Plugins.CodeGenerator.csproj", "{E3FC0874-2E94-4F19-B2DE-8BB6DA596870}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.UnitTest", "test\Air.Cloud.UnitTest\Air.Cloud.UnitTest.csproj", "{00865320-1E31-42B7-8BD5-CBB230C57CD5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -262,6 +264,10 @@ Global
 		{E3FC0874-2E94-4F19-B2DE-8BB6DA596870}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3FC0874-2E94-4F19-B2DE-8BB6DA596870}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3FC0874-2E94-4F19-B2DE-8BB6DA596870}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -310,6 +316,7 @@ Global
 		{CD65838E-BF31-46F8-91F7-96D7907412BA} = {A22CF22D-A9F0-4240-A3A2-157CCFEB0C2E}
 		{E1C0D164-0990-4DF4-B1B5-0773342CC010} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{E3FC0874-2E94-4F19-B2DE-8BB6DA596870} = {AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}
+		{00865320-1E31-42B7-8BD5-CBB230C57CD5} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

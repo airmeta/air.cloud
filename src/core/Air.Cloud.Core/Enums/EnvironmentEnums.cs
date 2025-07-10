@@ -27,10 +27,6 @@ namespace Air.Cloud.Core.Enums
         /// <summary>
         /// Test
         /// </summary>
-        Test,
-        /// <summary>
-        /// Other
-        /// </summary>
-        Other
+        Test
     }
 }

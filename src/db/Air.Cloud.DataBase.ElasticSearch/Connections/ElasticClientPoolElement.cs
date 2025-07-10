@@ -20,10 +20,7 @@ using Air.Cloud.DataBase.ElasticSearch.Enums;
 
 using Elasticsearch.Net;
 
-using Org.BouncyCastle.Crypto.Tls;
-
 using System.Reflection;
-using System.Xml.Linq;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Connections
 {

@@ -47,7 +47,7 @@ namespace Air.Cloud.Core.App
                     AppEnvironment.EnvironmentKey= ConfigEnovriment;
                     var Result = Enum.TryParse(ConfigEnovriment, out EnvironmentEnums env);
                     if (Result) AppConst.EnvironmentStatus = env;
-                    if (!AppConst.EnvironmentStatus.HasValue) AppConst.EnvironmentStatus = EnvironmentEnums.Other;
+                    if (!AppConst.EnvironmentStatus.HasValue) AppConst.EnvironmentStatus = RealEnvironment();
                     return AppConst.EnvironmentStatus.Value;
                 }
                 return RealEnvironment();
@@ -81,11 +81,7 @@ namespace Air.Cloud.Core.App
             /// <para>en-us:Current program virtual running environment identifier string</para>
             internal static string VirtualEnvironmentKey()
             {
-                EnvironmentEnums environmentEnums = VirtualEnvironment();
-
-                if (environmentEnums == EnvironmentEnums.Other) return AppEnvironment.EnvironmentKey;
-
-                return environmentEnums.ToString();
+                return AppEnvironment.EnvironmentKey;
             }
             /// <summary>
             /// <para>zh-cn:当前程序虚拟运行环境标识字符串</para>
@@ -93,7 +89,6 @@ namespace Air.Cloud.Core.App
             internal static string RealEnvironmentKey()
             {
                 EnvironmentEnums environmentEnums = RealEnvironment();
-
                 return environmentEnums.ToString();
             }
 
@@ -108,24 +103,6 @@ namespace Air.Cloud.Core.App
                 if (isInDocker) AppConst.EnvironmentContainers = EnvironmentContainersEnum.DOCKER;
                 AppConst.EnvironmentContainers = EnvironmentContainersEnum.OTHER;
                 return AppConst.EnvironmentContainers.Value;
-            }
-
-
-            /// <summary>
-            /// 获取当前应用程序启动配置文件实例
-            /// </summary>
-            /// <returns></returns>
-            public static object DiyEnvironment()
-            {
-                if (AppConst.EnvironmentStatus.HasValue && AppConst.EnvironmentStatus != EnvironmentEnums.Other) return AppConst.EnvironmentStatus.Value;
-                string ConfigEnovriment = AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
-                if (!string.IsNullOrEmpty(ConfigEnovriment) && ConfigEnovriment.ToUpper() == "COMMON") throw new Exception("无法指定环境标识为Common，请更换环境标识");
-                if (!string.IsNullOrEmpty(ConfigEnovriment))
-                {
-                    AppEnvironment.EnvironmentKey = ConfigEnovriment;
-                    return ConfigEnovriment;
-                }
-                return AppEnvironment.RealEnvironment;
             }
         }
         /// <summary>

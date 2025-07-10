@@ -42,6 +42,12 @@ namespace Air.Cloud.DataBase.ElasticSearch.Implantations
             Type DocumentType = typeof(TDocument);
             string Key = DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>().GetElementUID(DocumentType);
             clientPoolElement = ElasticSearchConnection.Pool.Get(Key);
+            if (clientPoolElement==null)
+            {
+                //表示当前对象未被注册到池中 只有一种可能就是已经触发了滚动条件
+                clientPoolElement= new ElasticClientPoolElement(DocumentType);
+                ElasticSearchConnection.Pool.Set(clientPoolElement);
+            }
         }
         /// <inheritdoc/>
         public INoSqlRepository<TDodument> Change<TDodument>() where TDodument : class,INoSqlEntity, new()
