@@ -32,18 +32,15 @@ namespace Air.Cloud.WebApp.App
         {
             var Configuration = AppRealization.Configuration.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
             var CommonConfiguration = AppRealization.Configuration.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
+            builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
             AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
             AppCore.AppStartType = AppStartupTypeEnum.WEB;
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
-            builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
             AppRealization.SetDependency<IAppInjectStandard>(new WebAppInjectDependency());
             builder = AppRealization.Injection.Inject(builder);
             var app = builder.Build();
-           
             return app;
         }
-
-
     }
 }

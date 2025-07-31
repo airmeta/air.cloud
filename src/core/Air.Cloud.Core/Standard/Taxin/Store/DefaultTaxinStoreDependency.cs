@@ -44,6 +44,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
         public  event EventHandler<TaxinStoreEventArgs> GetPersistenceHandler = null;
        
 
+
         /// <summary>
         /// <para>zh-cn:默认Taxin存储Set事件</para>
         /// <para>en-us:By default, Taxin stores the Set event</para>
@@ -104,10 +105,10 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
                     data=(Dictionary<string, IEnumerable<TaxinRouteDataPackage>>)TaxinStoreTools.FolderGet();
                     break;
                 case PersistenceMethodEnum.Cache:
-                    data=AppRealization.Cache.GetCache<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(Options.PersistenceKey);
+                    AppRealization.Output.Error(new Exception("Taxin默认实现不支持使用缓存存储"));
                     break;
                 case PersistenceMethodEnum.KVCenter:
-                    data = await AppRealization.KVCenter.GetAsync<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(Options.PersistenceKey);
+                    AppRealization.Output.Error(new Exception("Taxin默认实现不支持键值对存储"));
                     break;
             }
             ITaxinStoreStandard.Packages = data;
@@ -126,10 +127,10 @@ namespace Air.Cloud.Core.Standard.Taxin.Store
                     TaxinStoreTools.FolderSet(Packages);
                     break;
                 case PersistenceMethodEnum.Cache:
-                    AppRealization.Cache.SetCache(Options.PersistenceKey,AppRealization.JSON.Serialize(Packages));
+                    AppRealization.Output.Error(new Exception("Taxin默认实现不支持使用缓存存储"));
                     break;
                 case PersistenceMethodEnum.KVCenter:
-                    await AppRealization.KVCenter.AddOrUpdateAsync(Options.PersistenceKey, AppRealization.JSON.Serialize(Packages));
+                    AppRealization.Output.Error(new Exception("Taxin默认实现不支持键值对存储"));
                     break;
             }
             ITaxinStoreStandard.Packages = Packages;

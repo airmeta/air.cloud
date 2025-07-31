@@ -11,7 +11,9 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
+using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin;
@@ -102,17 +104,43 @@ namespace Air.Cloud.Modules.Taxin.Store
         /// <inheritdoc/>
         public async Task<IDictionary<string, IEnumerable<TaxinRouteDataPackage>>> GetPersistenceAsync()
         {
-            Dictionary<string, IEnumerable<TaxinRouteDataPackage>> data = new Dictionary<string, IEnumerable<TaxinRouteDataPackage>>();
+            IDictionary<string, IEnumerable<TaxinRouteDataPackage>> data = new Dictionary<string, IEnumerable<TaxinRouteDataPackage>>();
             switch (Options.PersistenceMethod)
             {
                 case PersistenceMethodEnum.Folder:
-                    data = (Dictionary<string, IEnumerable<TaxinRouteDataPackage>>)TaxinStoreTools.FolderGet();
+                    data=TaxinStoreTools.FolderGet();
                     break;
                 case PersistenceMethodEnum.Cache:
-                    data = AppRealization.Cache.GetCache<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(Options.PersistenceKey);
+                    if (AppRealization.Cache == null)
+                    {
+                        AppRealization.Output.Error(new Exception("无法获取到缓存模块信息"));
+                    }
+                    var data1 = AppRealization.Cache.GetCache(ITaxinStoreStandard.GetPersistenceCachePath(Options.PersistencePath, ":"));
+                    if (data1.IsNullOrEmpty())
+                    {
+                        AppRealization.Output.Print(new AppPrintInformation()
+                        {
+                            Level = AppPrintLevel.Information,
+                            State = true,
+                            Content = "The StoreData Is Empty",
+                            Title = "Taxin Notice"
+                        });
+                    }
+                    else
+                    {
+                        data = AppRealization.JSON.Deserialize<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(data1);
+                    }
                     break;
                 case PersistenceMethodEnum.KVCenter:
-                    data = await AppRealization.KVCenter.GetAsync<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(Options.PersistenceKey);
+                    if (AppRealization.KVCenter == null)
+                    {
+                        AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
+                    }
+                    var kvData = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVPath(Options.PersistencePath));
+                    if (kvData!=null&&!kvData.Value.IsNullOrEmpty())
+                    {
+                        data = AppRealization.JSON.Deserialize<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(kvData.Value);
+                    }
                     break;
             }
             ITaxinStoreStandard.Packages = data;
@@ -131,10 +159,18 @@ namespace Air.Cloud.Modules.Taxin.Store
                     TaxinStoreTools.FolderSet(Packages);
                     break;
                 case PersistenceMethodEnum.Cache:
-                    AppRealization.Cache.SetCache(Options.PersistenceKey, AppRealization.JSON.Serialize(Packages));
+                    if (AppRealization.Cache == null)
+                    {
+                        AppRealization.Output.Error(new Exception("无法获取到缓存模块信息"));
+                    }
+                    AppRealization.Cache.SetCache(ITaxinStoreStandard.GetPersistenceCachePath(Options.PersistencePath, ":"), AppRealization.JSON.Serialize(Packages));
                     break;
                 case PersistenceMethodEnum.KVCenter:
-                    await AppRealization.KVCenter.AddOrUpdateAsync(Options.PersistenceKey, AppRealization.JSON.Serialize(Packages));
+                    if (AppRealization.KVCenter == null)
+                    {
+                        AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
+                    }
+                    await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVPath(Options.PersistencePath), AppRealization.JSON.Serialize(Packages));
                     break;
             }
             ITaxinStoreStandard.Packages = Packages;

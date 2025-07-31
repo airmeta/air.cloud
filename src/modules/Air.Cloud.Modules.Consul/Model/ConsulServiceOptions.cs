@@ -28,6 +28,8 @@ namespace Air.Cloud.Modules.Consul.Model
     [ConfigurationInfo("ConsulServiceOptions")]
     public class ConsulServiceOptions
     {
+        public  static string ServiceId = AppRealization.PID.Get();
+
         #region  Consul配置(ConsulConfig)
         /// <summary>
         /// <para>zh-cn:Consul地址</para>
@@ -38,15 +40,6 @@ namespace Air.Cloud.Modules.Consul.Model
         #endregion
 
         #region 服务配置(ServiceConfig)
-        /// <summary>
-        /// <para>zh-cn:当前服务ID</para>
-        /// <para>en-us:Current service id</para>
-        /// </summary>
-        /// <remarks>
-        ///  <para>zh-cn:这个ID为PID,只有这样才能保持唯一</para>
-        ///  <para>en-us: This id is same as PID</para>
-        /// </remarks>
-        public string ServiceId { get; set; } = AppRealization.PID.Get();
         /// <summary>
         /// <para>zh-cn:服务名称</para>
         /// <para>en-us:Service name</para>
@@ -69,7 +62,7 @@ namespace Air.Cloud.Modules.Consul.Model
         /// <para>zh-cn:忽略项名称</para>
         /// <para>en-us:IgnoreKey</para>
         /// </summary>
-        public string  IgnoreKey { get; internal set; } = ".Entry";
+        public string IgnoreKey { get; internal set; } = ".Entry";
 
         #endregion
 

@@ -18,6 +18,7 @@ using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
+using System.Reflection;
 using System.Runtime.Loader;
 
 namespace Air.Cloud.Core.App
@@ -91,6 +92,10 @@ namespace Air.Cloud.Core.App
             // 第四选择，构建新的服务对象（性能最差）
             else
             {
+                if (InternalServices == null)
+                {
+                    return null;
+                }
                 var serviceProvider = InternalServices.BuildServiceProvider();
                 UnmanagedObjects.Add(serviceProvider);
                 return serviceProvider;
@@ -137,7 +142,7 @@ namespace Air.Cloud.Core.App
         /// </returns>
         public static object GetService(Type type, IServiceProvider serviceProvider = default)
         {
-            return (serviceProvider ?? GetServiceProvider(type)).GetService(type);
+            return (serviceProvider ?? GetServiceProvider(type))?.GetService(type);
         }
 
         /// <summary>
@@ -161,7 +166,7 @@ namespace Air.Cloud.Core.App
         /// <returns></returns>
         public static object GetRequiredService(Type type, IServiceProvider serviceProvider = default)
         {
-            return (serviceProvider ?? GetServiceProvider(type)).GetRequiredService(type);
+            return (serviceProvider ?? GetServiceProvider(type))?.GetRequiredService(type);
         }
 
         #endregion

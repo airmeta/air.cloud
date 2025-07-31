@@ -1,15 +1,11 @@
-﻿using Air.Cloud.Core;
-using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Plugins.PID;
-using Air.Cloud.Modules.Kafka.Config;
-using Air.Cloud.Modules.Kafka.Extensions;
-using Air.Cloud.Modules.Kafka.Helper;
+﻿using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Standard.Taxin;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.Modules.Kafka
+namespace Air.Cloud.Modules.Taxin
 {
     public class Startup : AppStartup
     {
@@ -21,14 +17,11 @@ namespace Air.Cloud.Modules.Kafka
 
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddOptions<KafkaSettingsOptions>()
-               .BindConfiguration("KafkaSettings")
+            services.AddOptions<TaxinOptions>()
+               .BindConfiguration("TaxinSettings")
                .ValidateDataAnnotations()
                .PostConfigure(options =>
                { });
-            services.AddKafkaService();
-
-
         }
     }
 }

@@ -28,4 +28,18 @@ namespace Air.Cloud.Core.Standard.KVCenter
         /// </summary>
         public string Value { get; set; }
     }
+
+    public class DefaultKVCenterServiceOptions: IKVCenterServiceOptions
+    {
+        /// <summary>
+        /// <para>zh-cn:键</para>
+        /// <para>en-us:Key</para>
+        /// </summary>
+        public string Key { get; set; }
+        /// <summary>
+        /// <para>zh-cn:值</para>
+        /// <para>en-us:Value</para>
+        /// </summary>
+        public string Value { get; set; }
+    }
 }

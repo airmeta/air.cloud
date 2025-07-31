@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.Extensions.Aspect;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
+using Air.Cloud.Core.Plugins;
 using Air.Cloud.Core.Plugins.DefaultDependencies;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard;
@@ -33,8 +34,6 @@ using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.TraceLog.Defaults;
 using Air.Cloud.Core.Standard.UtilStandard;
-
-using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
 
@@ -96,6 +95,12 @@ namespace Air.Cloud.Core
         ///  (暂时只在Windows 环境下进行测试)
         /// </remarks>
         public static IPIDPlugin PID => InternalRealization.PID ?? DefaultRealization.PID;
+
+        /// <summary>
+        /// <para>zh-cn:插件工厂</para>
+        /// <para>en-us:Plugin factory</para>
+        /// </summary>
+        public static IAppPluginFactory AppPlugin => InternalRealization.AppPlugin ?? DefaultRealization.AppPlugin;
         /// <summary>
         /// 系统注入标准
         /// </summary>
@@ -128,23 +133,19 @@ namespace Air.Cloud.Core
         /// </summary>
         /// <typeparam name="TStandard">
         /// <para>zh-cn:约定类型</para>
-        /// <para>en-us:StandardType</para>
+        /// <para>en-us:Standard type</para>
         /// </typeparam>
         /// <param name="standard">
         ///    <para>zh-cn:约定实现实例</para>
         ///    <para>en-us:Standard instance</para>
-        /// </param>
-        /// <param name="services">
-        ///  <para>zh-cn:服务集合</para>
-        ///  <para>en-us:Service collection</para>
         /// </param>
         /// <remarks>
         ///  <para>zh-cn:注意,此方法在设置标准实现时,需要放在Startup中使用,在Program.cs中使用时,可能会带来空指针异常,这是因为Program.cs中的代码执行时间会比框架内置的资源加载要早</para>
         ///  <para>en-us:Note that this method needs to be used in Startup when setting standard implementations. When used in Program.cs, it may cause a null pointer exception, because the code execution time in Program.cs is earlier than the built-in resource loading of the framework.</para>
         /// </remarks>
         [Aspect(typeof(ExecuteMethodPrinterAspect))]
-        public static void SetDependency<TStandard>(TStandard standard,IServiceCollection services=null) 
-                where TStandard :IStandard
+        public static void SetDependency<TStandard>(TStandard standard) 
+                where TStandard : class, IStandard
         {
             FieldInfo Field = typeof(InternalRealization).GetFields().FirstOrDefault(s => s.FieldType == typeof(TStandard));
             if (Field==null)
@@ -155,6 +156,32 @@ namespace Air.Cloud.Core
             {
                 Field.SetValue(null, standard);
             }
+        }
+        /// <summary>
+        /// <para>zh-cn:设置约定实现</para>
+        /// <para>en-us:Set dependency</para>
+        /// </summary>
+        /// <typeparam name="TPlugin">
+        /// <para>zh-cn:插件类型</para>
+        /// <para>en-us:Plugin type</para>
+        /// </typeparam>
+        /// <param name="plugin">
+        ///    <para>zh-cn:插件实例</para>
+        ///    <para>en-us:Plugin instance</para>
+        /// </param>
+        /// <param name="PluginName">
+        ///  <para>zh-cn:插件名(可选,默认为实例的类型全名)</para>
+        ///  <para>en-us:Plugin name (optional, default is the full name of the instance type)</para>
+        /// </param>
+        /// <remarks>
+        ///  <para>zh-cn:注意,此方法在设置标准实现时,需要放在Startup中使用,在Program.cs中使用时,可能会带来空指针异常,这是因为Program.cs中的代码执行时间会比框架内置的资源加载要早</para>
+        ///  <para>en-us:Note that this method needs to be used in Startup when setting standard implementations. When used in Program.cs, it may cause a null pointer exception, because the code execution time in Program.cs is earlier than the built-in resource loading of the framework.</para>
+        /// </remarks>
+        [Aspect(typeof(ExecuteMethodPrinterAspect))]
+        public static bool SetPlugin<TPlugin>(TPlugin plugin,string PluginName=null)
+                where TPlugin : class,IPlugin
+        {
+           return  AppPlugin.SetPlugin(plugin, PluginName);
         }
 
         static AppRealization()
@@ -231,7 +258,13 @@ namespace Air.Cloud.Core
             /// <remarks>
             ///  这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一
             /// </remarks>
-            public static IPIDPlugin PID => new DefaultPIDPluginDependency();
+            public static IPIDPlugin PID => AppRealization.AppPlugin.GetPlugin<IPIDPlugin>();
+
+            /// <summary>
+            /// <para>zh-cn:插件工厂</para>
+            /// <para>en-us:Plugin factory</para>
+            /// </summary>
+            public static IAppPluginFactory AppPlugin =>new AppPluginFactory();
 
             /// <summary>
             /// 系统注入标准默认实现
@@ -310,10 +343,15 @@ namespace Air.Cloud.Core
             /// 应用程序PID信息 
             /// </summary>
             /// <remarks>
-            ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
-            ///  (暂时只在Windows 环境下进行测试)
+            ///  这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一
             /// </remarks>
-            public static IPIDPlugin PID=null;
+            public static IPIDPlugin PID => AppCore.GetService<IPIDPlugin>();
+            /// <summary>
+            /// <para>zh-cn:插件工厂</para>
+            /// <para>en-us:Plugin factory</para>
+            /// </summary>
+            public static IAppPluginFactory AppPlugin => AppCore.GetService<IAppPluginFactory>();
+
 
             /// <summary>
             /// 系统注入标准实现

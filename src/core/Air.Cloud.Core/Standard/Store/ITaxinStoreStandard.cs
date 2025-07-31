@@ -20,6 +20,21 @@ namespace Air.Cloud.Core.Standard.Store
     /// </summary>
     public interface ITaxinStoreStandard
     {
+
+
+        /// <summary>
+        /// <para>zh-cn:缓存持久化路径</para>
+        /// <para>en-us:Cache persistence path</para>
+        /// </summary>
+        public static string GetPersistenceCachePath(string PersistencePath, string Separator = ":") => $"{PersistencePath}{Separator}{AppConst.ApplicationName}{Separator}{AppRealization.PID.Get()}".ToLower();
+
+        /// <summary>
+        /// <para>zh-cn:键值对配置中心持久化路径拼接</para>
+        /// <para>en-us:Key-value configuration center persistence path splicing</para>
+        /// /// </summary>
+        public static string GetPersistenceKVPath(string PersistencePath ) => $"{PersistencePath}/{AppConst.ApplicationName}/{AppRealization.PID.Get()}.json".ToLower();
+
+
         static ITaxinStoreStandard()
         {
             Packages = new Dictionary<string, IEnumerable<TaxinRouteDataPackage>>();

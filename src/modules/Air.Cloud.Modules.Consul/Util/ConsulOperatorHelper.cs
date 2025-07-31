@@ -48,9 +48,9 @@ namespace Air.Cloud.Modules.Consul.Service
             //如果有相同IP地址的服务,则不注册
             if (serviceUrls.Count(s => serviceOptions.ServiceAddress.Contains(s.Address) || s.Address.Contains(serviceOptions.ServiceAddress)) > 0)
             {
-                var ServicesInfo = serviceUrls.FirstOrDefault(s => s.Service.ID == serviceOptions.ServiceId);
+                var ServicesInfo = serviceUrls.FirstOrDefault(s => s.Service.ID == ConsulServiceOptions.ServiceId);
                 //排除自己重启的情况
-                if (ServicesInfo != null && ServicesInfo.Service.ID != serviceOptions.ServiceId)
+                if (ServicesInfo != null && ServicesInfo.Service.ID != ConsulServiceOptions.ServiceId)
                 {
                     CheckSuccess = false;
                 }
@@ -62,16 +62,16 @@ namespace Air.Cloud.Modules.Consul.Service
             #endregion
 
             #region 2.检测当前ID 是否在集群里面冲突 冲突(指的是当前ID绑定了其他端口的项目 并且那个项目正在使用)
-            if (serviceUrls.Count(s => s.Service.ID == serviceOptions.ServiceId) > 0)
+            if (serviceUrls.Count(s => s.Service.ID == ConsulServiceOptions.ServiceId) > 0)
             {
-                var ServicesInfo = serviceUrls.FirstOrDefault(s => s.Service.ID == serviceOptions.ServiceId);
+                var ServicesInfo = serviceUrls.FirstOrDefault(s => s.Service.ID == ConsulServiceOptions.ServiceId);
                 //判断是否为自己重启 重启不更换PID
                 if (!(serviceOptions.ServiceAddress.Contains(ServicesInfo.Address) 
                     || ServicesInfo.Address.Contains(serviceOptions.ServiceAddress)))
                 {
                     //表示ID冲突 需要重新生成
                     //出现这个情况是因为 该项目文件是在已注册的服务环境复制出来的 需要进行更换
-                    serviceOptions.ServiceId = AppRealization.PID.Get();
+                    ConsulServiceOptions.ServiceId = AppRealization.PID.Get();
                 }
             }
             #endregion

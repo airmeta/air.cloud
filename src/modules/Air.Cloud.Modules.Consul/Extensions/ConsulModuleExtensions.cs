@@ -12,9 +12,11 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.Modules.Consul.Dependencies;
 using Air.Cloud.Modules.Consul.Model;
+using Air.Cloud.Modules.Consul.Plugins;
 using Air.Cloud.Modules.Consul.Service;
 using Air.Cloud.Modules.Consul.Standard;
 using Air.Cloud.Modules.Consul.Util;
@@ -24,6 +26,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+using System;
 using System.Reflection;
 namespace Air.Cloud.Modules.Consul.Extensions
 {
@@ -130,6 +133,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 IAppInjectStandard appInject = assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
                 AppRealization.SetDependency(appInject);
             #endregion
+            AppRealization.SetPlugin<IPIDPlugin>(new ConsulPIDPluginDependency());
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
             AppConst.ApplicationName = Assembly.GetEntryAssembly().GetName().Name;
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
@@ -161,9 +165,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
         {
             InitAppInject();
             ConsulServiceOptions consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
-
             var Config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
-
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 if (Config.Item2 != null)
@@ -208,7 +210,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             {
                 ServiceAddress = serviceOptions.ServiceAddress,
                 ServiceName = serviceOptions.ServiceName,
-                ServiceKey = serviceOptions.ServiceId,
+                ServiceKey = ConsulServiceOptions.ServiceId,
                 HealthCheckTimeStep = new TimeSpan(0, 0, serviceOptions.HealthCheckTimeStep),
                 HealthCheckRoute = serviceOptions.HealthCheckRoute,
                 Timeout = new TimeSpan(0, 0, serviceOptions.ConnectTimeout),
@@ -219,7 +221,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             // 应用程序终止时，注销服务
             lifetime.ApplicationStopping.Register(() =>
             {
-                ConsulHelpers.GetConsulClient().Agent.ServiceDeregister(serviceOptions.ServiceId).Wait();
+                ConsulHelpers.GetConsulClient().Agent.ServiceDeregister(ConsulServiceOptions.ServiceId).Wait();
             });
 
             lifetime.ApplicationStarted.Register(() =>

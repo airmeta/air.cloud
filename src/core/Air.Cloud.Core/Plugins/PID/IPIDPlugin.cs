@@ -10,18 +10,23 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Plugins.DefaultDependencies;
 
 namespace Air.Cloud.Core.Plugins.PID
 {
     /// <summary>
-    /// PID 插件
+    /// <para>zh-cn:PID 插件</para>
+    /// <para>en-us:PID Plugin</para>
     /// </summary>
+    /// <remarks>
+    /// <para>zh-cn:此插件为特殊插件类型, 不能依赖于ServiceProcider 因为它在ServiceProvider之前就开始使用</para>
+    /// <para>en-us: This plugin is a special type of plugin, it cannot depend on ServiceProvider because it is used before ServiceProvider starts.</para>
+    /// </remarks>
     public interface IPIDPlugin:IPlugin,ISingleton
     {
-
         public static string PID_FILE_PATH = "start.pid";
         public static string StartPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "/" + PID_FILE_PATH;
-
+        
         /// <summary>
         /// 获取PID
         /// </summary>

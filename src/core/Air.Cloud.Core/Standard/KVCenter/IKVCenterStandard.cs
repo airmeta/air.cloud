@@ -82,6 +82,6 @@ namespace Air.Cloud.Core.Standard.KVCenter
         /// <para>zh-cn:值的转换结果</para>
         /// <para>en-us:Value conversion result</para>
         /// </returns>
-        public Task<T> GetAsync<T>(string Key) where T : class, new();
+        public Task<T> GetAsync<T>(string Key) where T : IKVCenterServiceOptions, new();
     }
 }

@@ -25,7 +25,7 @@ using unit.webapp.model.Domains;
 namespace unit.webapp.entry.Jobs
 {
 
-    [AutoLoad(true)]
+    [AutoLoad(false)]
     [SchedulerInformationAttribute(CronExpression = "0/5 * * * * ? ", Name = "测试定时任务", Id = "job_test1", Description = "测试定时任务")]
     public class Job1 : ISchedulerStandard<QuartzSchedulerStandardOptions>
     {

@@ -85,7 +85,7 @@ namespace Air.Cloud.Modules.Consul.Service
             return Result != null && Result.StatusCode == System.Net.HttpStatusCode.OK;
         }
         /// <inheritdoc/>
-        public async Task<T> GetAsync<T>(string Key) where T : class, new()
+        public async Task<T> GetAsync<T>(string Key) where T : IKVCenterServiceOptions, new()
         {
             var Result = await ConsulClient.KV.Get(Key);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)
@@ -106,7 +106,6 @@ namespace Air.Cloud.Modules.Consul.Service
             {
                 return default;
             }
-
         }
     }
 }

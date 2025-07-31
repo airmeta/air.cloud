@@ -26,11 +26,18 @@ namespace Air.Cloud.Core.Standard.Taxin
         /// <para>zh-cn:服务端地址</para>
         /// <para>en-us:Server address</para>
         /// </summary>
+        public string ServerAddress { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:服务端地址</para>
+        /// <para>en-us:Server address</para>
+        /// </summary>
         /// <remarks>
         /// <para>zh-cn:如果配置文件中没有配置服务端地址，则使用网关地址</para>
         /// <para>en-us:If the server address is not configured in the configuration file, the gateway address is used</para>
         /// </remarks>
-        public string ServerAddress => AppConfiguration.GetConfig<AppSettingsOptions>().GateWayAddress;
+        public string GetServerAddress() => string.IsNullOrEmpty(ServerAddress) ? AppConfiguration.GetConfig<AppSettingsOptions>().GateWayAddress : ServerAddress;
+
         /// <summary>
         /// <para>zh-cn:检查频率</para>
         /// <para>en-us:CheckAsync Rate</para>
@@ -77,11 +84,6 @@ namespace Air.Cloud.Core.Standard.Taxin
         /// <para>en-us:Persistence path</para>
         /// </summary>
         public string PersistencePath { get; set; } = "Taxin";
-        /// <summary>
-        /// <para>zh-cn:持久化Key</para>
-        /// <para>en-us:Persistence key</para>
-        /// </summary>
-        public string PersistenceKey { get; set; } = "TaxinData";
         /// <summary>
         /// <para>zh-cn:持久化输出</para>
         /// <para>en-us:Persistence output</para>

@@ -25,6 +25,10 @@ using System.Data;
 
 namespace Air.Cloud.Modules.Taxin.Client
 {
+    /// <summary>
+    /// <para>zh-cn:默认的客户端实现</para>
+    /// <para>en-us:Default Taxin client dependency</para>
+    /// </summary>
     public class TaxinClientDependency : ITaxinClientStandard
     {
         private ITaxinStoreStandard ITaxinStoreStandard => AppCore.GetService<ITaxinStoreStandard>();
@@ -40,12 +44,14 @@ namespace Air.Cloud.Modules.Taxin.Client
         {
             this.Headers.Add("client", AppRealization.PID.Get());
         }
+        /// <inheritdoc/>
         public async Task OnLineAsync()
         {
             //加载存储的数据
             await this.ITaxinStoreStandard.GetStoreAsync();
             TaxinTools.Scanning();
         }
+        /// <inheritdoc/>
         public async Task OffLineAsync()
         {
             try
@@ -53,7 +59,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 using (var client = HttpClientFactory.CreateClient())
                 {
                     client.Timeout = new TimeSpan(0, 3, 0);
-                    string Url = (new Uri(new Uri(Options.ServerAddress), Options.OffLineRoute)).ToString();
+                    string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.OffLineRoute)).ToString();
                     var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(new { UniqueKey = ITaxinStoreStandard.Current.UniqueKey, InstancePId=ITaxinStoreStandard.Current.InstancePId }));
                     string Content = await result.Content.ReadAsStringAsync();
                     var Result = AppRealization.JSON.Deserialize<TaxinActionResult>(Content);
@@ -64,7 +70,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                             Level = AppPrintLevel.Error,
                             State = true,
                             Content = "Taxin client offline failed",
-                            Title = "Taxin client offline failed"
+                            Title = "Taxin Notice"
                         });
                     }
                     await this.ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
@@ -74,7 +80,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             {
                 AppRealization.Output.Print(new AppPrintInformation()
                 {
-                    Title = "Taxin client error",
+                    Title = "Taxin Notice",
                     Content = ex.Message,
                     AdditionalParams = new Dictionary<string, object>()
                     {
@@ -83,13 +89,14 @@ namespace Air.Cloud.Modules.Taxin.Client
                 });
             }
         }
+        /// <inheritdoc/>
         public async Task PullAsync()
         {
             using (var client = HttpClientFactory.CreateClient())
             {
                 client.Timeout = new TimeSpan(0, 5, 0);
                 //拉取
-                string Url = (new Uri(new Uri(Options.ServerAddress), Options.PullRoute)).ToString();
+                string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PullRoute)).ToString();
                 var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(string.Empty));
                 string Content = await result.Content.ReadAsStringAsync();
                 var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
@@ -97,7 +104,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
             }
         }
-
+        /// <inheritdoc/>
         public async Task PushAsync()
         {
             try
@@ -105,7 +112,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 using (var client = HttpClientFactory.CreateClient())
                 {
                     client.Timeout = new TimeSpan(0,5, 0);
-                    string Url = (new Uri(new Uri(Options.ServerAddress), Options.PushRoute)).ToString();
+                    string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PushRoute)).ToString();
                     var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(AppRealization.JSON.Serialize(ITaxinStoreStandard.Current)));
                     string Content = await result.Content.ReadAsStringAsync();
                     var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
@@ -117,7 +124,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             {
                 AppRealization.Output.Print(new AppPrintInformation()
                 {
-                    Title = "Taxin client error",
+                    Title = "Taxin Notice",
                     Content = ex.Message,
                     AdditionalParams = new Dictionary<string, object>()
                     {
@@ -126,13 +133,14 @@ namespace Air.Cloud.Modules.Taxin.Client
                 });
             }
         }
+        /// <inheritdoc/>
         public async Task CheckAsync()
         {
             using (var client = HttpClientFactory.CreateClient())
             {
                 client.Timeout = new TimeSpan(0, 3, 0);
                 string Route = $"{Options.CheckRoute}?CheckTag={ITaxinStoreStandard.CheckTag}";
-                string Url = (new Uri(new Uri(Options.ServerAddress), Route)).ToString();
+                string Url = (new Uri(new Uri(Options.GetServerAddress()), Route)).ToString();
                 try
                 {
                     string Content = await client.GetStringAsync(Url);
@@ -152,7 +160,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                 {
                     AppRealization.Output.Print(new AppPrintInformation()
                     {
-                        Title = "Taxin client error",
+                        Title = "Taxin Notice",
                         Content = ex.Message,
                         AdditionalParams = new Dictionary<string, object>()
                             {
@@ -163,7 +171,7 @@ namespace Air.Cloud.Modules.Taxin.Client
 
             }
         }
-     
+        /// <inheritdoc/>
         public async Task<TResult> SendAsync<TResult>(string Route, object Data=null,Tuple<Version,Version> Version=null) where TResult : class
         {
             var Routes=ITaxinStoreStandard.Routes[Route];
@@ -217,7 +225,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                     Data = Data ??new { };
                     HttpRequestMessage httpRequestMessage = new HttpRequestMessage()
                     {
-                        RequestUri = new Uri(new Uri(Options.ServerAddress), RouteInfo.Route),
+                        RequestUri = new Uri(new Uri(Options.GetServerAddress()), RouteInfo.Route),
                         Method = RouteInfo.HttpMethod,
                         Content = client.SetBody(Data)
                     };
@@ -230,7 +238,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                     }
                     AppRealization.Output.Print(new AppPrintInformation()
                     {
-                        Title = "Taxin client request error",
+                        Title = "Taxin Notice",
                         Content = $"Taxin client request Url:{httpRequestMessage.RequestUri}StatusCode:{response.StatusCode} error",
                         AdditionalParams = new Dictionary<string, object>()
                         {
@@ -244,7 +252,7 @@ namespace Air.Cloud.Modules.Taxin.Client
             {
                 AppRealization.Output.Print(new AppPrintInformation()
                 {
-                    Title = "Taxin client request error",
+                    Title = "Taxin Notice",
                     Content = ex.Message,
                     AdditionalParams = new Dictionary<string, object>()
                     {

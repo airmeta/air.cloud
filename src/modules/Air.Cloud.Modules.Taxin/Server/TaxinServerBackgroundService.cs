@@ -12,7 +12,6 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Modules.AppPrint;
-using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Server;

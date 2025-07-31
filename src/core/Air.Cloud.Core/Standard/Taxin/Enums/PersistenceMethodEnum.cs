@@ -31,7 +31,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Server
         /// <para>zh-cn:存储在键值对中心</para>
         /// <para>en-us:Stored in key-value center</para>
         /// </summary>
-        KVCenter=3,
+        KVCenter=2,
         /// <summary>
         /// <para>zh-cn:其他</para>
         /// <para>en-us:Other</para>
@@ -40,6 +40,6 @@ namespace Air.Cloud.Core.Standard.Taxin.Server
         /// <para>zh-cn:使用其他方式则会调用存储钩子并将数据传入,由开发人员自定义存储</para>
         /// <para>en-us:Using other methods will call the storage hook and pass the data, allowing developers to customize the storage</para>
         /// </remarks>
-        Other = 4,
+        Other = 99,
     }
 }

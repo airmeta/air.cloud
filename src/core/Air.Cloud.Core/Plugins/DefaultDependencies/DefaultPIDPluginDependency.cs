@@ -9,8 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Extensions.Aspect;
-using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Plugins.Security.MD5;
 

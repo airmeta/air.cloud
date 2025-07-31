@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Modules.AppAspect.Extensions;
+using Air.Cloud.Core.Plugins;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

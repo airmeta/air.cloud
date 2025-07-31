@@ -1,6 +1,10 @@
-﻿using Air.Cloud.Core.App.Startups;
+﻿using Air.Cloud.Core;
+using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Attributes;
+using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Modules.Consul.Plugins;
 using Air.Cloud.Modules.Consul.Service;
 
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.Modules.Consul
 {
+    [AppStartupAttribute(AppName = "Air.Cloud.Core", Order = int.MinValue)]
     public  class Startup : AppStartup
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
