@@ -31,6 +31,7 @@ namespace Air.Cloud.Modules.Taxin.Client
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            string A = AppCore.Configuration["AppSettings:GateWayAddress"];
             AppRealization.Output.Print(new AppPrintInformation()
             {
                 Title = "The Taxin service is being launched",

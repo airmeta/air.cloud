@@ -136,7 +136,7 @@ namespace Air.Cloud.Modules.Taxin.Store
                     {
                         AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
                     }
-                    var kvData = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVPath(Options.PersistencePath));
+                    var kvData = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath));
                     if (kvData!=null&&!kvData.Value.IsNullOrEmpty())
                     {
                         data = AppRealization.JSON.Deserialize<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(kvData.Value);
@@ -170,7 +170,7 @@ namespace Air.Cloud.Modules.Taxin.Store
                     {
                         AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
                     }
-                    await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVPath(Options.PersistencePath), AppRealization.JSON.Serialize(Packages));
+                    await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath), AppRealization.JSON.Serialize(Packages));
                     break;
             }
             ITaxinStoreStandard.Packages = Packages;

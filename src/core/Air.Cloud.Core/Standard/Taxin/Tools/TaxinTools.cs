@@ -126,7 +126,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
         /// </summary>
         /// <param name="Result"></param>
         /// <returns></returns>
-        public static async Task SetPackages(IEnumerable<IEnumerable<TaxinRouteDataPackage>> Result)
+        public static void SetPackages(IEnumerable<IEnumerable<TaxinRouteDataPackage>> Result)
         {
             IList<TaxinRouteDataPackage> ItemValues = null;
             foreach (var item in Result)
@@ -155,6 +155,36 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
             _ = SortRoutes(ITaxinStoreStandard.Packages);
         }
 
+        /// <summary>
+        /// <para>zh-cn:设置客户端存储的数据包</para>
+        /// <para>en-us:Set data packages</para>
+        /// </summary>
+        /// <param name="Result"></param>
+        /// <returns></returns>
+        public static void SetPackages(IEnumerable<TaxinRouteDataPackage> Result)
+        {
+            IList<TaxinRouteDataPackage> ItemValues = null;
+            foreach (var item in Result)
+            {
+                string Key = item.UniqueKey;
+                if (Key == ITaxinStoreStandard.Current.UniqueKey) continue;
+                if (ITaxinStoreStandard.Packages.ContainsKey(Key))
+                {
+                    ItemValues = ITaxinStoreStandard.Packages[Key].ToList();
+                }
+                else
+                {
+                    ItemValues = new List<TaxinRouteDataPackage>();
+                }
+                if (ItemValues.Any(x => x.InstancePId == item.InstancePId))
+                {
+                    ItemValues = ItemValues.Where(x => x.InstancePId != item.InstancePId).ToList();
+                }
+                ItemValues.Add(item);
+                ITaxinStoreStandard.Packages[Key] = ItemValues;
+            }
+            _ = SortRoutes(ITaxinStoreStandard.Packages);
+        }
         /// <summary>
         /// <para>zh-cn:复杂数据结构处理与分析</para>
         /// <para>en-us:Data sort</para>

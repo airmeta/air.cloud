@@ -9,13 +9,13 @@
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>[Alpha]Air.Cloud.Core 为Air.Cloud系列的核心库,内置一些加密方法,工具类,扩展方法 以及 约定标准接口,提供这些约定标准供其他的插件/模块中实现,以提高框架的可扩展能力,通过自定义扩展的实现,可以将该框架打造成最符合你需要的类型</Description>
+    <Description>Air.Cloud.Core 为Air.Cloud系列的核心库,内置一些加密方法,工具类,扩展方法 以及 约定标准接口,提供这些约定标准供其他的插件/模块中实现,以提高框架的可扩展能力,通过自定义扩展的实现,可以将该框架打造成最符合你需要的类型</Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>1.2.1.2</Version>
+    <Version>1.2.2.1</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>

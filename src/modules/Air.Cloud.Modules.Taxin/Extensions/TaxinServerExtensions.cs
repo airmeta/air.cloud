@@ -31,32 +31,6 @@ namespace Air.Cloud.Modules.Taxin.Extensions
     /// </summary>
     public static class TaxinServerExtensions
     {
-
-        /// <summary>
-        /// <para>zh-cn:Taxin服务端注入</para>
-        /// <para>en-us:Taxin server injection</para>
-        /// </summary>
-        /// <typeparam name="TTaxinServerDependency">
-        /// <para>zh-cn:Taxin 服务端实现类</para>
-        /// <para>en-us:Taxin server implementation type</para>
-        /// </typeparam>
-        /// <param name="services">
-        /// <para>zh-cn:服务集合</para>
-        /// <para>en-us: Services collection</para>
-        /// </param>
-        /// <returns>
-        /// <para>zh-cn:服务集合</para>
-        /// <para>en-us: Services collection</para>
-        /// </returns>
-        public static IServiceCollection AddTaxinServer<TTaxinServerDependency>(this IServiceCollection services) 
-            where TTaxinServerDependency : class, ITaxinServerStandard, new()
-        {
-            services.AddSingleton<ITaxinStoreStandard, DefaultTaxinStoreDependency>();
-            services.AddSingleton<ITaxinServerStandard, TTaxinServerDependency>();
-            services.AddHostedService<TaxinServerBackgroundService>();
-            ITaxinStoreStandard.IsTaxinServer = true;
-            return services;
-        }
         /// <summary>
         /// <para>zh-cn:Taxin服务端注入</para>
         /// <para>en-us:Taxin server injection</para>

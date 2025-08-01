@@ -54,28 +54,44 @@ namespace Air.Cloud.Modules.Taxin.Server
                 Title = "The Taxin service is being launched",
                 Content = "The Taxin service is being launched"
             });
-            await TaxinServer.OnLineAsync();
-            if (Options.Persistence)
+            switch (Options.PersistenceMethod)
             {
-                await Task.Factory.StartNew(async () =>
-                {
+                case PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Cache:
+                    await TaxinServer.OnLineAsync();
+                    if (Options.Persistence)
+                    {
+                        await Task.Factory.StartNew(async () =>
+                        {
+                            AppRealization.Output.Print(new AppPrintInformation()
+                            {
+                                Title = "Taxin Notice",
+                                Content = "Start loading the instance state and transferring it"
+                            });
+                            while (!stoppingToken.IsCancellationRequested)
+                            {
+                                try
+                                {
+                                    //整理数据(该方法暂时未定义 后续需要增加一个数据整理方法)
+                                    await StoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                                    await Task.Delay(TimeSpan.FromSeconds(Options.PersistenceRate), stoppingToken);
+                                }
+                                catch (OperationCanceledException) { }
+                            }
+                        }, stoppingToken);
+                    }
+                    break;
+                case PersistenceMethodEnum.KVCenter:
+                    //服务端要降级成客户端模式
                     AppRealization.Output.Print(new AppPrintInformation()
                     {
-                        Title = "The Taxin service is successfully launched",
-                        Content = "Start loading the instance state and transferring it"
+                        Title = "Taxin Notice",
+                        // KVCenter存储类型不支持服务端模式 请使用AddTaxinClient方法注入客户端模式",
+                        Content = "The KVCenter storage type does not support server mode. Please use the AddTaxinClient method to inject client mode"
                     });
-                    while (!stoppingToken.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            //整理数据(该方法暂时未定义 后续需要增加一个数据整理方法)
-                            await StoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
-                            await Task.Delay(TimeSpan.FromSeconds(Options.PersistenceRate), stoppingToken);
-                        }
-                        catch (OperationCanceledException) { }
-                    }
-                }, stoppingToken);
+                    throw new NotSupportedException("The KVCenter storage type does not support server mode. Please use the AddTaxinClient method to inject client mode");
             }
+           
         }
         public override async Task StopAsync(CancellationToken cancellationToken)
         {

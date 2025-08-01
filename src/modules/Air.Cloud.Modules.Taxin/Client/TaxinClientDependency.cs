@@ -11,8 +11,11 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Http.Extensions;
+using Air.Cloud.Core.Plugins.InternalRequest;
+using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
@@ -31,18 +34,38 @@ namespace Air.Cloud.Modules.Taxin.Client
     /// </summary>
     public class TaxinClientDependency : ITaxinClientStandard
     {
+        /// <summary>
+        /// <para>zh-cn:Taxin存储标准实现</para>
+        /// <para>en-us:Taxin store standard dependency</para>
+        /// </summary>
         private ITaxinStoreStandard ITaxinStoreStandard => AppCore.GetService<ITaxinStoreStandard>();
+        
         private IHttpClientFactory HttpClientFactory => AppCore.GetService<IHttpClientFactory>();
 
+        /// <summary>
+        /// <para>zh-cn:内部调用请求头</para>
+        /// <para>en-us:Internal request headers</para>
+        /// </summary>
         private IDictionary<string, string> Headers = new Dictionary<string, string>();
         /// <summary>
         /// <para>zh-cn:Taxin 配置选项</para>
         /// <para>en-us:Taxin options </para>
         /// </summary>
         private TaxinOptions Options => AppCore.GetOptions<TaxinOptions>();
+
+        /// <summary>
+        /// <para>zh-cn:默认构造函数</para>
+        /// <para>en-us:Default constructor</para>
+        /// </summary>
         public TaxinClientDependency()
         {
-            this.Headers.Add("client", AppRealization.PID.Get());
+            //装载内部访问令牌
+            IInternalAccessValidPlugin internalAccessValidPlugin = AppRealization.AppPlugin.GetPlugin<IInternalAccessValidPlugin>();
+            if (internalAccessValidPlugin!=null)
+            {
+               var AccessToken= internalAccessValidPlugin.CreateInternalAccessToken();
+               this.Headers.Add(AccessToken.Item1, AccessToken.Item2);
+            }
         }
         /// <inheritdoc/>
         public async Task OnLineAsync()
@@ -54,120 +77,180 @@ namespace Air.Cloud.Modules.Taxin.Client
         /// <inheritdoc/>
         public async Task OffLineAsync()
         {
-            try
+            switch (Options.PersistenceMethod)
             {
-                using (var client = HttpClientFactory.CreateClient())
-                {
-                    client.Timeout = new TimeSpan(0, 3, 0);
-                    string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.OffLineRoute)).ToString();
-                    var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(new { UniqueKey = ITaxinStoreStandard.Current.UniqueKey, InstancePId=ITaxinStoreStandard.Current.InstancePId }));
-                    string Content = await result.Content.ReadAsStringAsync();
-                    var Result = AppRealization.JSON.Deserialize<TaxinActionResult>(Content);
-                    if (!Result.IsSuccess)
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                    try
+                    {
+                        using (var client = HttpClientFactory.CreateClient())
+                        {
+                            client.Timeout = new TimeSpan(0, 3, 0);
+                            string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.OffLineRoute)).ToString();
+                            var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(new { UniqueKey = ITaxinStoreStandard.Current.UniqueKey, InstancePId = ITaxinStoreStandard.Current.InstancePId }));
+                            string Content = await result.Content.ReadAsStringAsync();
+                            var Result = AppRealization.JSON.Deserialize<TaxinActionResult>(Content);
+                            if (!Result.IsSuccess)
+                            {
+                                AppRealization.Output.Print(new AppPrintInformation()
+                                {
+                                    Level = AppPrintLevel.Error,
+                                    State = true,
+                                    Content = "Taxin client offline failed",
+                                    Title = "Taxin Notice"
+                                });
+                            }
+                            await this.ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                        }
+                    }
+                    catch (Exception ex)
                     {
                         AppRealization.Output.Print(new AppPrintInformation()
                         {
-                            Level = AppPrintLevel.Error,
-                            State = true,
-                            Content = "Taxin client offline failed",
-                            Title = "Taxin Notice"
+                            Title = "Taxin Notice",
+                            Content = ex.Message,
+                            AdditionalParams = new Dictionary<string, object>()
+                            {
+                                {"error",ex }
+                            }
                         });
                     }
-                    await this.ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppRealization.Output.Print(new AppPrintInformation()
-                {
-                    Title = "Taxin Notice",
-                    Content = ex.Message,
-                    AdditionalParams = new Dictionary<string, object>()
+                    break;
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                    AppRealization.Output.Print(new AppPrintInformation()
                     {
-                        {"error",ex }
-                    }
-                });
+                        Title = "Taxin Notice",
+                        Content = "采用KVCenter模式,将会自动去中心化,OffLine方法已跳过",
+                        Level=AppPrintLevel.Information
+                    });
+                    break;
             }
         }
         /// <inheritdoc/>
         public async Task PullAsync()
         {
-            using (var client = HttpClientFactory.CreateClient())
+            switch (Options.PersistenceMethod)
             {
-                client.Timeout = new TimeSpan(0, 5, 0);
-                //拉取
-                string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PullRoute)).ToString();
-                var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(string.Empty));
-                string Content = await result.Content.ReadAsStringAsync();
-                var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
-                await TaxinTools.SetPackages(Result);
-                await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                    using (var client = HttpClientFactory.CreateClient())
+                    {
+                        client.Timeout = new TimeSpan(0, 0, 30);
+                        string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PullRoute)).ToString();
+                        var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(string.Empty));
+                        string Content = await result.Content.ReadAsStringAsync();
+                        var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
+                        TaxinTools.SetPackages(Result);
+                        await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                    }
+                    break;
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                    var AllData = await AppRealization.KVCenter.QueryAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVDataBasePath(Options.PersistencePath));
+                    foreach (var item in AllData)
+                    {
+                        var package = AppRealization.JSON.Deserialize<TaxinRouteDataPackage>(item.Value);
+                        if (ITaxinStoreStandard.Packages.ContainsKey(package.UniqueKey))
+                        {
+                            var Packages = ITaxinStoreStandard.Packages[package.UniqueKey]?.Where(s => s.InstancePId != package.InstancePId).ToList();
+                            Packages.Add(package);
+                            ITaxinStoreStandard.Packages[package.UniqueKey] = Packages;
+                        }
+                        else
+                        {
+                            var Packages = new List<TaxinRouteDataPackage>(){
+                                package
+                            };
+                            ITaxinStoreStandard.Packages[package.UniqueKey] = Packages;
+                        }
+                    }
+                    TaxinTools.SetPackages(ITaxinStoreStandard.Packages.SelectMany(s=>s.Value));
+                    await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                    break;
             }
         }
         /// <inheritdoc/>
         public async Task PushAsync()
         {
-            try
+            switch (Options.PersistenceMethod)
             {
-                using (var client = HttpClientFactory.CreateClient())
-                {
-                    client.Timeout = new TimeSpan(0,5, 0);
-                    string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PushRoute)).ToString();
-                    var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(AppRealization.JSON.Serialize(ITaxinStoreStandard.Current)));
-                    string Content = await result.Content.ReadAsStringAsync();
-                    var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
-                    await TaxinTools.SetPackages(Result);
-                    await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppRealization.Output.Print(new AppPrintInformation()
-                {
-                    Title = "Taxin Notice",
-                    Content = ex.Message,
-                    AdditionalParams = new Dictionary<string, object>()
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                    try
                     {
-                        {"error",ex }
+                        using (var client = HttpClientFactory.CreateClient())
+                        {
+                            client.Timeout = new TimeSpan(0, 5, 0);
+                            string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PushRoute)).ToString();
+                            var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(AppRealization.JSON.Serialize(ITaxinStoreStandard.Current)));
+                            string Content = await result.Content.ReadAsStringAsync();
+                            var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
+                            TaxinTools.SetPackages(Result);
+                            await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
+                        }
                     }
-                });
+                    catch (Exception ex)
+                    {
+                        AppRealization.Output.Print(new AppPrintInformation()
+                        {
+                            Title = "Taxin Notice",
+                            Content = ex.Message,
+                            AdditionalParams = new Dictionary<string, object>()
+                            {
+                                {"error",ex }
+                            }
+                        });
+                    }
+                    break;
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                     await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVDataPath(Options.PersistencePath),AppRealization.JSON.Serialize(ITaxinStoreStandard.Current));
+                    break;
             }
+            
         }
         /// <inheritdoc/>
         public async Task CheckAsync()
         {
-            using (var client = HttpClientFactory.CreateClient())
+            switch (Options.PersistenceMethod)
             {
-                client.Timeout = new TimeSpan(0, 3, 0);
-                string Route = $"{Options.CheckRoute}?CheckTag={ITaxinStoreStandard.CheckTag}";
-                string Url = (new Uri(new Uri(Options.GetServerAddress()), Route)).ToString();
-                try
-                {
-                    string Content = await client.GetStringAsync(Url);
-                    var Result = AppRealization.JSON.Deserialize<TaxinActionResult>(Content);
-                    if (Result.IsSuccess)
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                    using (var client = HttpClientFactory.CreateClient())
                     {
-                        if (Result.IsChange)
+                        client.Timeout = new TimeSpan(0, 3, 0);
+                        string Route = $"{Options.CheckRoute}?CheckTag={ITaxinStoreStandard.CheckTag}";
+                        string Url = (new Uri(new Uri(Options.GetServerAddress()), Route)).ToString();
+                        try
                         {
-                            //pull server data
-                            await PullAsync();
-                            //标志已经被修改
-                            ITaxinStoreStandard.CheckTag = Result.NewTag;
+                            string Content = await client.GetStringAsync(Url);
+                            var Result = AppRealization.JSON.Deserialize<TaxinActionResult>(Content);
+                            if (Result.IsSuccess)
+                            {
+                                if (Result.IsChange)
+                                {
+                                    //pull server data
+                                    await PullAsync();
+                                    //标志已经被修改
+                                    ITaxinStoreStandard.CheckTag = Result.NewTag;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            AppRealization.Output.Print(new AppPrintInformation()
+                            {
+                                Title = "Taxin Notice",
+                                Content = ex.Message,
+                                AdditionalParams = new Dictionary<string, object>()
+                                        {
+                                            {"error",ex }
+                                        }
+                            });
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    AppRealization.Output.Print(new AppPrintInformation()
-                    {
-                        Title = "Taxin Notice",
-                        Content = ex.Message,
-                        AdditionalParams = new Dictionary<string, object>()
-                            {
-                                {"error",ex }
-                            }
-                    });
-                }
+                    break;
+                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                    await PullAsync();
+                    break;
 
             }
         }
@@ -231,20 +314,20 @@ namespace Air.Cloud.Modules.Taxin.Client
                     };
                     var response = await client.SetHeaders(Headers).SendAsync(httpRequestMessage);
                     string Content = await response.Content.ReadAsStringAsync();
+                    AppRealization.Output.Print(new AppPrintInformation()
+                    {
+                        Title = "Taxin Notice",
+                        Content = $"Taxin client request Url:{httpRequestMessage.RequestUri} StatusCode:{response.StatusCode}",
+                        AdditionalParams = new Dictionary<string, object>()
+                        {
+                            {"content",Content }
+                        }
+                    });
                     if (response.StatusCode == System.Net.HttpStatusCode.OK)
                     {
                         var Result = AppRealization.JSON.Deserialize<TResult>(Content);
                         return Result;
                     }
-                    AppRealization.Output.Print(new AppPrintInformation()
-                    {
-                        Title = "Taxin Notice",
-                        Content = $"Taxin client request Url:{httpRequestMessage.RequestUri}StatusCode:{response.StatusCode} error",
-                        AdditionalParams = new Dictionary<string, object>()
-                        {
-                            {"error",Content }
-                        }
-                    });
                     throw new HttpRequestException("请求下游服务出现异常,请稍后再试");
                 }
             }

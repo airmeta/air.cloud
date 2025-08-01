@@ -29,6 +29,10 @@ namespace Air.Cloud.Core.Standard.KVCenter
         public string Value { get; set; }
     }
 
+    /// <summary>
+    /// <para>zh-cn:默认键值对参数</para>
+    /// <para>en-us:Default key-value pair parameters</para>
+    /// </summary>
     public class DefaultKVCenterServiceOptions: IKVCenterServiceOptions
     {
         /// <summary>

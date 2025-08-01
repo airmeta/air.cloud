@@ -19,6 +19,9 @@ using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.GateWay.Middleware;
 using Air.Cloud.Modules.Consul.Service;
+using Air.Cloud.Modules.Taxin.Client;
+using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Store;
 using Air.Cloud.Plugins.Jwt.Extensions;
 using Air.Cloud.WebApp.Extensions;
 
@@ -33,7 +36,7 @@ namespace unit.webapp.entry
         public override void ConfigureServices(IServiceCollection services)
         {
             AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
-            //services.AddTaxinClient<TaxinClientDependency>();
+            services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
             services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
             services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();

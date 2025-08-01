@@ -73,6 +73,7 @@ namespace Air.Cloud.Core.App
                 }
                 //生产模式
                 if (!AppConst.EnvironmentStatus.HasValue) AppConst.EnvironmentStatus = EnvironmentEnums.Production;
+                AppEnvironment.EnvironmentKey = AppConst.EnvironmentStatus.Value.ToString();
                 return AppConst.EnvironmentStatus.Value;
             }
 
@@ -81,6 +82,11 @@ namespace Air.Cloud.Core.App
             /// <para>en-us:Current program virtual running environment identifier string</para>
             internal static string VirtualEnvironmentKey()
             {
+                if (AppEnvironment.EnvironmentKey.IsNullOrEmpty())
+                {
+                    _ = VirtualEnvironment();
+                }
+
                 return AppEnvironment.EnvironmentKey;
             }
             /// <summary>

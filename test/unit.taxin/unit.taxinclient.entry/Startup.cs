@@ -15,6 +15,7 @@ using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Modules.Taxin.Client;
 using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Store;
 
 using unit.taxinclient.entry.TraceLogDependency;
 namespace unit.taxinclient.entry
@@ -23,7 +24,7 @@ namespace unit.taxinclient.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinClient<TaxinClientDependency>();
+            services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
             ////注入
             //services.AddControllers(a =>
             //{

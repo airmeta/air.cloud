@@ -37,15 +37,19 @@ namespace Air.Cloud.Modules.Consul.Service
             var Result = await ConsulClient.KV.List(Prefix);
             if (Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                return (IList<T>)Result.Response.Select(s => new ConsulKvCenterServiceInformation
+                return Result.Response.Select(s =>
                 {
-                    Key = s.Key,
-                    Value = s.Value == null ? string.Empty : Encoding.UTF8.GetString(s.Value),
-                    LockIndex = s.LockIndex,
-                    ModifyIndex = s.ModifyIndex,
-                    CreateIndex = s.CreateIndex,
-                    Flags = s.Flags,
-                    Session = s.Session
+                    var d = new ConsulKvCenterServiceInformation
+                    {
+                        Key = s.Key,
+                        Value = s.Value == null ? string.Empty : Encoding.UTF8.GetString(s.Value),
+                        LockIndex = s.LockIndex,
+                        ModifyIndex = s.ModifyIndex,
+                        CreateIndex = s.CreateIndex,
+                        Flags = s.Flags,
+                        Session = s.Session
+                    };
+                    return d.Adapt<T>();
                 }).ToList();
             }
             else

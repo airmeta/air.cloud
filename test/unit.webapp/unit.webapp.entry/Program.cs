@@ -10,10 +10,10 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App;
 using Air.Cloud.Modules.Consul.Extensions;
+using Air.Cloud.Modules.Consul.Model;
 var builder = WebApplication.CreateBuilder(args);
-
 var app = builder.WebInjectInConsul();
-
 
 app.Run();

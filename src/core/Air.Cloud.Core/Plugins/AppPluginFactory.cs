@@ -1,4 +1,15 @@
-﻿namespace Air.Cloud.Core.Plugins
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+namespace Air.Cloud.Core.Plugins
 {
     /// <summary>
     /// <para>zh-cn:应用程序插件工厂</para>
@@ -63,7 +74,37 @@
             where TPlugin : class,IPlugin
         {
             PluginName= PluginName ?? typeof(TPlugin).FullName;
-            return IAppPluginFactory.Plugins[PluginName] as TPlugin;
+            if (IAppPluginFactory.Plugins.ContainsKey(PluginName))
+            {
+                return IAppPluginFactory.Plugins[PluginName] as TPlugin;
+            }
+            var PluginInstance = AppCore.GetService<TPlugin>();
+            if (PluginInstance != null)
+            {
+                IAppPluginFactory.Plugins.TryAdd(PluginName, PluginInstance);
+                return PluginInstance;
+            }
+            //尝试构建插件信息 如果插件的实现为唯一的
+            //查询TPlugin的所有实现 并使用Assembly.CreatInstance来创建插件实例
+            Type type = AppCore.PluginTypes.Where(s => s.IsClass).FirstOrDefault(s => typeof(TPlugin).IsAssignableFrom(s));
+            if (type==null)
+            {
+                throw new KeyNotFoundException($"Plugin '{PluginName}' not found in the factory.");
+            }
+            try
+            {
+                var plugin = Activator.CreateInstance(type) as TPlugin;
+                IAppPluginFactory.Plugins.TryAdd(PluginName, plugin);
+                return plugin;
+            }
+            catch (Exception)
+            {
+
+
+                throw new KeyNotFoundException($"Plugin '{PluginName}' not found in the factory.");
+            }
+
+
         }
         /// <inheritdoc/>
         public bool SetPlugin<TPlugin>(TPlugin plugin, string PluginName= null)

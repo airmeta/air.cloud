@@ -32,7 +32,7 @@ namespace unit.taxinserver.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddTaxinServer<TaxinServerDependency, TaxinClientDependency, TaxinStoreDependency>();
+            services.AddTaxinClient<TaxinClientDependency, TaxinStoreDependency>();
             //注入
             services.AddControllers(a =>
             {
