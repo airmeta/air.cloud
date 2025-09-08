@@ -14,6 +14,6 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Modules.Consul.Extensions;
 using Air.Cloud.Modules.Consul.Model;
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.WebInjectInConsul();
+var app = builder.InjectGrpcServer().WebInjectInConsul();
 
 app.Run();

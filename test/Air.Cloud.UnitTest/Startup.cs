@@ -1,26 +1,33 @@
-﻿using Air.Cloud.Core.App.Internal;
+﻿using Air.Cloud.Core.App;
+using Air.Cloud.HostApp.Dependency;
+using Air.Cloud.Plugins.Jwt.Options;
+using Air.Cloud.Plugins.Jwt;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-using Xunit.Abstractions;
-using Xunit.Sdk;
-// 配置启动类类型，第一个参数是 Startup 类完整限定名，第二个参数是当前项目程序集名称
-[assembly: TestFramework("Air.Cloud.UnitTest.Startup", "Air.Cloud.UnitTest")]
+using System.Reflection;
 
 namespace Air.Cloud.UnitTest
 {
-    /// <summary>
-    /// 单元测试启动类
-    /// </summary>
-    /// <remarks>在这里可以使用 Furion 几乎所有功能</remarks>
-    public sealed class Startup : XunitTestFramework
+    public class Startup
     {
-        public Startup(IMessageSink messageSink) : base(messageSink)
+        // 自定义 host 构建
+        public void ConfigureHost(IHostBuilder hostBuilder)
         {
-            // 初始化 IServiceCollection 对象
-            var services = Inject.Create();
+            hostBuilder.HostInjectInFile(Assembly.GetAssembly(typeof(Startup)));
+        }
 
-            services.BuildServiceProvider();
+        public void ConfigureServices(IServiceCollection services, HostBuilderContext hostBuilderContext)
+        {
+            services.AddOptions<JWTSettingsOptions>()
+                .BindConfiguration("JWTSettings")
+                .ValidateDataAnnotations();
+        }
+
+        // 可以添加要用到的方法参数，会自动从注册的服务中获取服务实例，类似于 asp.net core 里 Configure 方法
+        public void Configure(IServiceProvider applicationServices)
+        {
         }
     }
 }

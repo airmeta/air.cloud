@@ -187,6 +187,10 @@ namespace Air.Cloud.Core.App
             {
                 configName = s?.ConfigurationName;
             }
+            if (configName.IsNullOrEmpty())
+            {
+                configName = typeof(T).Name;
+            }
             return configuration.GetSection(configName).Get<T>();
         }
 
@@ -267,13 +271,15 @@ namespace Air.Cloud.Core.App
         /// <returns></returns>
         public static ConfigurationManager AppDefaultInjectConfiguration<TAppInjectImplementation>(
             AppStartupTypeEnum AppStartupTypeEnum,
-            LoadConfigurationTypeEnum loadConfigurationTypeEnum)
+            LoadConfigurationTypeEnum loadConfigurationTypeEnum,
+            Assembly EntryAssembly=null
+            )
         where TAppInjectImplementation : IAppInjectStandard, new()
         {
             AppRealization.Configuration.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
             AppRealization.Configuration.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
             AppConst.LoadConfigurationTypeEnum = loadConfigurationTypeEnum;
-            AppConst.ApplicationName = Assembly.GetCallingAssembly().GetName().Name;
+            AppConst.ApplicationName = EntryAssembly!=null? EntryAssembly.GetName().Name:Assembly.GetEntryAssembly().GetName().Name;
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
             AppCore.AppStartType = AppStartupTypeEnum;
             AppRealization.SetDependency<IAppInjectStandard>(new TAppInjectImplementation());

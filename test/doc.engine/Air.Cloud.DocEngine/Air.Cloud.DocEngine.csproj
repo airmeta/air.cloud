@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\core\Air.Cloud.HostApp\Air.Cloud.HostApp.csproj" />
+    <ProjectReference Include="..\..\..\src\extensions\Air.Cloud.Extensions.Grpc\Air.Cloud.Extensions.Grpc.csproj" />
     <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Courier\Air.Cloud.Modules.Courier.csproj" />
   </ItemGroup>
 

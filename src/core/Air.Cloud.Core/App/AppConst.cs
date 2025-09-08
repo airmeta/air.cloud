@@ -88,7 +88,7 @@ namespace Air.Cloud.Core.App
         ///  <para>zh-cn: 由ApplicationName和PID拼接而成</para>
         ///  <para>en-us: Concatenated by ApplicationName and PID</para>
         /// </remarks>
-        public static string ApplicationInstanceName =string.Empty;
+        public static string ApplicationInstanceName = string.Empty;
         /// <summary>
         /// <para>zh-cn:当前程序运行信息</para>
         /// <para>en-us:Current program running information</para>
@@ -117,5 +117,22 @@ namespace Air.Cloud.Core.App
 
 
 
+        /// <summary>
+        ///  <para>zh-cn:应用程序启动绑定路径信息</para>
+        ///  <para>en-us:Application startup binding path information</para>
+        /// </summary>
+        /// <returns>
+        ///  <para>zh-cn:路径信息,多个路径之间用</para>
+        /// </returns>
+        public static string GetApplicationUrls()
+        {
+            string[] Commands = AppEnvironment.CommandLines;
+
+            string ASPNETCORE_URLS = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+
+            string Urls = ASPNETCORE_URLS ?? Commands.FirstOrDefault(m => m.StartsWith("--urls"))?.Split('=')[1] ?? string.Empty;
+
+            return Urls;
+        }
     }
 }

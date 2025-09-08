@@ -16,6 +16,8 @@ using Air.Cloud.Core.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
+using System.Reflection;
+
 namespace Air.Cloud.HostApp.Dependency
 {
     public static class HostAppInjectExtensions
@@ -29,9 +31,12 @@ namespace Air.Cloud.HostApp.Dependency
         ///    <para>en-us:HostBuilder</para>
         /// </param>
         /// <returns></returns>
-        public static IHostBuilder HostInjectInFile(this IHostBuilder builder)
+        public static IHostBuilder HostInjectInFile(this IHostBuilder builder,Assembly assembly=null)
         {
-            AppConfigurationLoader.Configurations=AppConfiguration.AppDefaultInjectConfiguration<HostAppInjectDependency>(AppStartupTypeEnum.HOST,LoadConfigurationTypeEnum.File);
+            AppConfigurationLoader.Configurations=AppConfiguration.AppDefaultInjectConfiguration<HostAppInjectDependency>(
+                    AppStartupTypeEnum.HOST,
+                    LoadConfigurationTypeEnum.File,
+                    assembly);
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 a.AddConfiguration(AppConfigurationLoader.Configurations);

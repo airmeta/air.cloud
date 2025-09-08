@@ -13,6 +13,7 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
+using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.Store;
@@ -136,10 +137,17 @@ namespace Air.Cloud.Modules.Taxin.Store
                     {
                         AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
                     }
-                    var kvData = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath));
-                    if (kvData!=null&&!kvData.Value.IsNullOrEmpty())
+                    DefaultKVCenterServiceOptions MetaStoreContent = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVStoreMetaPath(Options.PersistencePath));
+                    if (!MetaStoreContent.Value.IsNullOrEmpty())
                     {
-                        data = AppRealization.JSON.Deserialize<Dictionary<string, IEnumerable<TaxinRouteDataPackage>>>(kvData.Value);
+
+                        List<string> Keys = AppRealization.JSON.Deserialize<List<string>>(MetaStoreContent.Value);
+                        foreach (var item in Keys)
+                        {
+                            DefaultKVCenterServiceOptions Values = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath, MD5Encryption.GetMd5By32(item)));
+
+                            data.Add(item, AppRealization.JSON.Deserialize<IEnumerable<TaxinRouteDataPackage>>(Values.Value));
+                        }
                     }
                     break;
             }
@@ -170,7 +178,18 @@ namespace Air.Cloud.Modules.Taxin.Store
                     {
                         AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
                     }
-                    await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath), AppRealization.JSON.Serialize(Packages));
+                    #region  重新设置路由信息
+
+                    IList<string> AllKeys= Packages.Keys.ToList();
+
+                    await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVStoreMetaPath(Options.PersistencePath), AppRealization.JSON.Serialize(AllKeys));
+
+                    foreach (var item in AllKeys)
+                    {
+                        string Value = AppRealization.JSON.Serialize(Packages[item]);
+                        await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath, MD5Encryption.GetMd5By32(item)), Value);
+                    }
+                    #endregion
                     break;
             }
             ITaxinStoreStandard.Packages = Packages;

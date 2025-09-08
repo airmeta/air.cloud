@@ -20,6 +20,7 @@ using Air.Cloud.DataBase.ElasticSearch.Enums;
 
 using Elasticsearch.Net;
 
+using System;
 using System.Reflection;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Connections
@@ -31,29 +32,84 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
     public  class ElasticClientPoolElement
     {
         /// <summary>
-        /// ES客户端
+        /// <para>zh-cn:ES客户端</para>
+        /// .<para>en-us:ES Client</para>
         /// </summary>
         public IElasticClient Client { get; set; }
         /// <summary>
-        /// 客户端名称(索引名唯一)
+        /// <para>zh-cn:客户端名称(索引名唯一)</para>
+        /// <para>en-us:Client Name(Index name is unique)</para>
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 唯一标识  使用索引名做MD5唯一
+        /// <para>zh-cn:唯一标识  使用索引名做MD5唯一</para>
+        /// <para>en-us:Unique identification Use the index name as MD5 unique</para>
         /// </summary>
         public string UID => MD5Encryption.GetMd5By32(Name);
 
+        /// <summary>
+        /// <para>zh-cn:使用ElasticClient与索引名称实例化客户端连接池元素</para>
+        /// <para>en-us:Instantiate the client connection pool element with ElasticClient and index name</para>
+        /// </summary>
+        /// <param name="client">
+        /// <para> zh-cn:客户端信息</para>
+        /// <para>en-us:Client information</para>
+        /// </param>
+        /// <param name="Name">
+        ///  <para>zh-cn:索引标准名称</para>
+        ///  <para>en-us:Index standard name</para>
+        /// </param>
+        /// <param name="indexSegmentPattern">
+        ///  <para>zh-cn:索引切分规则</para>
+        ///  <para>en-us:Index segmentation rules</para>
+        /// </param>
+        /// <param name="SegmentationTag">
+        ///  <para>zh-cn:切分标记</para>
+        ///  <para>en-us:Segmentation tag</para>
+        /// </param>
+        /// <remarks>
+        ///  <para>zh-cn:最终生成的索引名称为以下几种情况:
+        ///    <br>年(Name+SegmentationTag+自2000年之后经过多少年) </br>
+        ///    <br>月(Name+SegmentationTag+自2000年之后经过多少年+SegmentationTag+当前月份) </br>
+        ///    <br>日(Name+SegmentationTag+自2000年之后经过多少年+SegmentationTag+今天在一年中的第几天) </br>
+        /// </para>
+        /// <para>en-us:The final index name is one of the following:
+        ///    <br>By Year(Name+SegmentationTag+(passed since 2000)) </br>
+        ///    <br>By Month(Name+SegmentationTag+(passed since 2000)+SegmentationTag+Month) </br>
+        ///    <br>By DayOfYear(Name+SegmentationTag+(passed since 2000)+SegmentationTag+DayOfYear) </br> 
+        /// </para>
+        /// </remarks>
         public ElasticClientPoolElement(IElasticClient client, string Name, IndexSegmentationPatternEnum indexSegmentPattern = IndexSegmentationPatternEnum.None,string SegmentationTag="-")
         {
             this.Client = client;
             this.Name = GetTableName(Name, indexSegmentPattern, SegmentationTag, string.Empty);
         }
+
+        /// <summary>
+        /// <para>zh-cn:使用ElasticClient与文档类型实例化客户端连接池元素</para>
+        /// <para>en-us:Instantiate the client connection pool element with ElasticClient and index name</para>
+        /// </summary>
+        /// <param name="client">
+        /// <para> zh-cn:客户端信息</para>
+        /// <para>en-us:Client information</para>
+        /// </param>
+        /// <param name="DocumentType">
+        ///  <para>zh-cn:索引对应文档类型</para>
+        ///  <para>en-us:Index corresponding document type</para>
+        /// </param>
         public ElasticClientPoolElement(IElasticClient client, Type DocumentType)
         {
             Client = client;
             Name = GetTableName(DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>(), DocumentType.Name.ToLower());
         }
-
+        /// <summary>
+        /// <para>zh-cn:使用文档类型实例化客户端连接池元素</para>
+        /// <para>en-us:Instantiate the client connection pool element with ElasticClient and index name</para>
+        /// </summary>
+        /// <param name="DocumentType">
+        ///  <para>zh-cn:索引对应文档类型</para>
+        ///  <para>en-us:Index corresponding document type</para>
+        /// </param>
         public ElasticClientPoolElement(Type DocumentType)
         {
             ElasticSearchIndexAttribute? noSqlTableAttribute = DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>();
@@ -62,7 +118,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                 throw new Exception($"未检测到\"{DocumentType.Name}\"的NoSqlTable特性");
             }
             var DataBaseOptions = AppCore.GetOptions<DataBaseOptions>();
-            var DataBaseOption = DataBaseOptions.Options.FirstOrDefault(s=>s.Key == noSqlTableAttribute.DbKey);
+            var DataBaseOption = DataBaseOptions.Options?.FirstOrDefault(s=>s.Key == noSqlTableAttribute.DbKey);
             if (DataBaseOption == null)
             {
                 throw new Exception($"未检测到名为\"{noSqlTableAttribute.DbKey}\"的数据库配置");
@@ -93,6 +149,12 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
         }
         public static string GetTableName(string Name, IndexSegmentationPatternEnum SegmentationPattern= IndexSegmentationPatternEnum.None, string SegmentationTag="-",string DefaultName = null)
         {
+            return GetInternalTableName(Name,DateTime.Now,SegmentationPattern,SegmentationTag,DefaultName);
+        }
+
+
+        private static string GetInternalTableName(string Name, DateTime dateTime, IndexSegmentationPatternEnum SegmentationPattern = IndexSegmentationPatternEnum.None, string SegmentationTag = "-", string DefaultName = null)
+        {
             if (Name.IsNullOrEmpty()) Name = DefaultName;
             if (Name.IsNullOrEmpty())
             {
@@ -111,14 +173,34 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                 case Enums.IndexSegmentationPatternEnum.None:
                     return Name;
                 case Enums.IndexSegmentationPatternEnum.Year:
-                    return string.Format("{0}{1}{2}", Name, SegmentationTag, DateTime.Now.Year);
+                    return string.Format("{0}{1}{2}", Name, SegmentationTag, dateTime.Year);
                 case Enums.IndexSegmentationPatternEnum.Month:
-                    return string.Format("{0}{1}{2}{3}{4}", Name, SegmentationTag, DateTime.Now.Year - 2000, SegmentationTag, DateTime.Now.Month);
+                    return string.Format("{0}{1}{2}{3}{4}", Name, SegmentationTag, dateTime.Year - 2000, SegmentationTag, dateTime.Month);
                 case Enums.IndexSegmentationPatternEnum.Day:
-                    return string.Format("{0}{1}{2}", Name, SegmentationTag, DateTime.Now.Year - 2000, SegmentationTag, DateTime.Now.DayOfYear);
+                    return string.Format("{0}{1}{2}{3}{4}", Name, SegmentationTag, dateTime.Year - 2000, SegmentationTag, dateTime.DayOfYear);
                 default:
                     return Name;
             }
+        }
+
+        public static string GetNextSegmentationTableName(string Name,IndexSegmentationPatternEnum SegmentationPattern = IndexSegmentationPatternEnum.None, string SegmentationTag = "-", string DefaultName = null)
+        {
+            DateTime dateTime = DateTime.Now;
+            switch (SegmentationPattern)
+            {
+                case IndexSegmentationPatternEnum.Year:
+                    dateTime=dateTime.AddYears(1);
+                    break;
+                case IndexSegmentationPatternEnum.Month:
+                    dateTime = dateTime.AddMonths(1);
+                    break;
+                case IndexSegmentationPatternEnum.Day:
+                    dateTime = dateTime.AddDays(1);
+                    break;
+                default:
+                    break;
+            }
+            return GetInternalTableName(Name, dateTime, SegmentationPattern, SegmentationTag, DefaultName);
         }
     }
 

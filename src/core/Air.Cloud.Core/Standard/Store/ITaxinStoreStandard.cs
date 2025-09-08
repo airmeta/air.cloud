@@ -31,8 +31,15 @@ namespace Air.Cloud.Core.Standard.Store
         /// <summary>
         /// <para>zh-cn:键值对配置中心持久化路径拼接</para>
         /// <para>en-us:Key-value configuration center persistence path splicing</para>
-        /// /// </summary>
-        public static string GetPersistenceKVStorePath(string PersistencePath) => $"{PersistencePath}/store/{AppConst.ApplicationName}/{AppRealization.PID.Get()}.json".ToLower();
+        /// </summary>
+        public static string GetPersistenceKVStorePath(string PersistencePath,string KeyName) => $"{PersistencePath}/store/{AppConst.ApplicationName}/{AppRealization.PID.Get()}/store/{KeyName}.json".ToLower();
+
+        /// <summary>
+        /// <para>zh-cn:键值对配置中心持久化路径拼接</para>
+        /// <para>en-us:Key-value configuration center persistence path splicing</para>
+        /// </summary>
+        public static string GetPersistenceKVStoreMetaPath(string PersistencePath) => $"{PersistencePath}/store/{AppConst.ApplicationName}/{AppRealization.PID.Get()}/taxin.meta.json".ToLower();
+
         /// <summary>
         /// <para>zh-cn:键值对配置中心持久化路径拼接</para>
         /// <para>en-us:Key-value configuration center persistence path splicing</para>

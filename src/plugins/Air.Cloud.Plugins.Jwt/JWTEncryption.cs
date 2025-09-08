@@ -337,9 +337,16 @@ namespace Air.Cloud.Plugins.Jwt
             // 判断请求报文头中是否有 "Authorization" 报文头
             var bearerToken = httpContext.Request.Headers[headerKey].ToString();
             if (string.IsNullOrWhiteSpace(bearerToken)) return default;
-
             var prefixLenght = tokenPrefix.Length;
-            return bearerToken.StartsWith(tokenPrefix, true, null) && bearerToken.Length > prefixLenght ? bearerToken[prefixLenght..] : default;
+            if (bearerToken.StartsWith(tokenPrefix, StringComparison.OrdinalIgnoreCase) && bearerToken.Length > prefixLenght)
+            {
+                return bearerToken[prefixLenght..];
+            }
+            else
+            {
+                //如果值不为空 则直接返回 
+                return bearerToken;
+            }
         }
 
         /// <summary>

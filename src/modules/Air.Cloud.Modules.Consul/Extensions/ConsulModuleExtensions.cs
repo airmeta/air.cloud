@@ -72,7 +72,8 @@ namespace Air.Cloud.Modules.Consul.Extensions
         ///   <para>en-us: Consul options configure</para>
         /// </typeparam>
         /// <returns></returns>
-        public static WebApplication WebInjectInConsul<TConsulServiceOptionsConfigureDependency>(this WebApplicationBuilder builder, Action<ConsulServiceOptions> action = null)
+        public static WebApplication WebInjectInConsul<TConsulServiceOptionsConfigureDependency>(this WebApplicationBuilder builder,
+            Action<ConsulServiceOptions> action = null)
             where TConsulServiceOptionsConfigureDependency:class,IConsulServiceOptionsConfigureStandard,new()
         {
             InitAppInject();
