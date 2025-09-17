@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
-    <ProjectReference Include="..\..\..\src\extensions\Air.Cloud.Extensions.Grpc\Air.Cloud.Extensions.Grpc.csproj" />
     <ProjectReference Include="..\..\unit.webapp\unit.webapp.common\unit.webapp.common.csproj" />
     <ProjectReference Include="..\..\unit.webapp\unit.webapp.service\unit.webapp.service.csproj" />
   </ItemGroup>

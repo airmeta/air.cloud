@@ -19,10 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 //app.Run();
 
 
-var app1 = builder.InjectGrpcServer((s) =>
-{
-    s.WebHost.UseStartup();
-}).WebInjectInFile();
+var app1 = builder.InjectGrpcServer().WebInjectInFile();
 
 
 app1.Run();

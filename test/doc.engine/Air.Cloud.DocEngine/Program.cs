@@ -28,7 +28,7 @@ using Microsoft.AspNetCore.Hosting;
 var x = Host.CreateDefaultBuilder(args);
 var builder = x.InjectGrpcServer(s =>
 {
-    s.UseStartup<>();
+    //s.UseStartup<>();
 }).HostInjectInFile(Assembly.GetExecutingAssembly());
 var app = builder.Build();
 
