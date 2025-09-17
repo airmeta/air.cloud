@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.Standard.Cache.Redis;
 using Air.Cloud.Modules.RedisCache.Internal;
+using Air.Cloud.Modules.RedisCache.Options;
 using Air.Cloud.Modules.RedisCache.Provider;
 
 using StackExchange.Redis;
@@ -40,6 +41,27 @@ namespace Air.Cloud.Modules.RedisCache.Dependencies
         public RedisCacheDependency(int DataBaseIndex = 0)
         {
             this.Redis = Connection.GetDatabase(DataBaseIndex);
+        }
+        /// <summary>
+        /// <para>zh-cn:Redis缓存依赖</para>
+        /// <para>en-us:Redis cache dependency</para>
+        /// </summary>
+        /// <param name="DataBaseIndex">
+        /// <para>zh-cn:Redis数据库索引</para>
+        /// <para>en-us:Redis database index</para>
+        /// </param>
+        /// <param name="redisSettingsOptions">
+        ///  <para>zh-cn:外部配置</para>
+        ///  <para>en-us:External configuration</para>
+        /// </param>
+        /// <param name="UseToGlobal">
+        /// <para>zh-cn:是否应用到全局,false则仅在本示例中生效</para>
+        /// <para>en-us:Whether to apply to the global, false only takes effect in this instance</para>
+        /// </param>
+
+        public RedisCacheDependency(RedisSettingsOptions redisSettingsOptions,bool UseToGlobal=false, int DataBaseIndex = 0)
+        {
+            this.Redis = RedisConnectorProvider.Change(redisSettingsOptions, UseToGlobal).GetDatabase(DataBaseIndex);
         }
         /// <summary>
         /// <para>zh-cn:更改Redis数据库索引</para>

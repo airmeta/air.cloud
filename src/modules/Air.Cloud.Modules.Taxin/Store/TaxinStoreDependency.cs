@@ -178,7 +178,7 @@ namespace Air.Cloud.Modules.Taxin.Store
                     {
                         AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
                     }
-                    #region  重新设置路由信息
+                    #region  重新设置路由信息 原先的方式不支持大量路由数据信息
 
                     IList<string> AllKeys= Packages.Keys.ToList();
 

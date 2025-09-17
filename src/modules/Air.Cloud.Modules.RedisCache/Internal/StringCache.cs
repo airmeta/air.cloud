@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Standard.Cache.Redis;
 using Air.Cloud.Modules.RedisCache.Provider;
 
@@ -111,7 +112,12 @@ namespace Air.Cloud.Modules.RedisCache.Internal
         public async Task<List<T>> GetAsync<T>(params string[] keys) => RedisCacheProvider.ConvetList<T>(await Redis.StringGetAsync(RedisCacheProvider.ConvertRedisKeys(keys)));
 
         public string Get(string Key) => Redis.StringGet(Key);
-        public T Get<T>(string Key) => AppRealization.JSON.Deserialize<T>(Redis.StringGet(Key));
+
+        public T Get<T>(string Key) {
+            string Value = Redis.StringGet(Key);
+            if(Value.IsNullOrEmpty()) return default;
+            return AppRealization.JSON.Deserialize<T>(Value);
+        } 
         #endregion
     }
 }

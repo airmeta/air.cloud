@@ -1,4 +1,15 @@
-﻿using Air.Cloud.Core.Extensions.GrpcServer.Options;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.Core.Extensions.GrpcServer.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -22,7 +33,8 @@ public static class GrpcServerInjectExtensions
     ///  
     /// </param>
     /// <returns></returns>
-    public static WebApplicationBuilder InjectGrpcServer(this WebApplicationBuilder builder, Func<WebApplicationBuilder, string> ServiceAddress = null)
+    public static WebApplicationBuilder InjectGrpcServer(this WebApplicationBuilder builder,
+        Func<WebApplicationBuilder, string> ServiceAddress = null,string Scheme="http")
     {
         builder.WebHost.ConfigureKestrel(options =>
         {
@@ -31,7 +43,7 @@ public static class GrpcServerInjectExtensions
             {
                 listenOptions.Protocols = HttpProtocols.Http2;
             });
-            string RpcUrls = $"http://{IPAddress.Any}:{grpcServiceOptions.Port}";
+            string RpcUrls = $"{Scheme}://{IPAddress.Any}:{grpcServiceOptions.Port}";
             if (ServiceAddress != null)
             {
                 string ServiceAddressStr = ServiceAddress.Invoke(builder);
@@ -78,9 +90,14 @@ public static class GrpcServerInjectExtensions
     /// <para>en-us:Initialize and register the Grpc server</para>
     /// </summary>
     /// <param name="builder"></param>
-    /// <param name="ServiceAddress"></param>
-    /// <returns></returns>
-    public static IHostBuilder InjectGrpcServer(this IHostBuilder builder, Action<IWebHostBuilder> UseStartUp)
+    /// <param name="UseStartUp">
+    ///  <para>zh-cn:启动配置</para>
+    ///  <para>en-us:Startup configuration</para>
+    /// </param>
+    /// <returns>
+    ///  <see cref="IHostBuilder"/>
+    /// </returns>
+    public static IHostBuilder InjectGrpcServer(this IHostBuilder builder, Action<IWebHostBuilder> UseStartUp=null)
     {
         GrpcServiceOptions grpcServiceOptions = AppConfigurationLoader.InnerConfiguration.GetConfig<GrpcServiceOptions>();
         builder.ConfigureWebHostDefaults(webBuilder =>
@@ -92,7 +109,7 @@ public static class GrpcServerInjectExtensions
                     listenOptions.Protocols = HttpProtocols.Http2;
                 });
             });
-            UseStartUp.Invoke(webBuilder);
+            UseStartUp?.Invoke(webBuilder);
         });
         return builder;
     }

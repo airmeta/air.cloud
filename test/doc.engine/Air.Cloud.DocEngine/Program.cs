@@ -24,7 +24,6 @@ using Air.Cloud.Core.App;
 using Air.Cloud.HostApp.Dependency;
 using System.Net;
 using Microsoft.Extensions.Hosting;
-using Air.Cloud.Extensions.Grpc.Extensions;
 using Microsoft.AspNetCore.Hosting;
 var x = Host.CreateDefaultBuilder(args);
 var builder = x.InjectGrpcServer(s =>

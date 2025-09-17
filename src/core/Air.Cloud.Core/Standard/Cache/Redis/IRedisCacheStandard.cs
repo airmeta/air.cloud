@@ -58,9 +58,34 @@ namespace Air.Cloud.Core.Standard.Cache.Redis
     }
     public interface IStringCache
     {
-        string Get(string keys);
+        /// <summary>
+        /// <para>zh-cn:根据键获取值</para>
+        /// <para>en-us:Get value by key</para>
+        /// </summary>
+        /// <param name="key">
+        ///  <para>zh-cn:键</para>
+        ///  <para>en-us:Key</para>
+        /// </param>
+        /// <returns></returns>
+        string Get(string key);
         List<string> Get(params string[] keys);
-        T Get<T>(string keys);
+        /// <summary>
+        /// <para>zh-cn:获取一个对象</para>
+        /// <para>en-us:Get an object</para>
+        /// </summary>
+        /// <typeparam name="T">
+        ///  <para>zh-cn:对象类型</para>
+        ///  <para>en-us:Object type</para>
+        /// </typeparam>
+        /// <param name="Key">
+        ///  <para>zh-cn:保存的Key名称</para>
+        ///  <para>en-us:Saved Key Name</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:反序列化后的对象信息,如果未获取到值,或者为 Empty或null 则返回default </para>
+        /// <para>en-us:Deserialized object information, if no value is obtained, or Empty or null, return default</para>
+        /// </returns>
+        T Get<T>(string Key);
         List<T> Get<T>(params string[] keys);
         Task<List<string>> GetAsync(params string[] keys);
         Task<List<T>> GetAsync<T>(params string[] keys);

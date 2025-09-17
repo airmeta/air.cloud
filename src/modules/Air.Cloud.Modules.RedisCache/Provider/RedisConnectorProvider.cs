@@ -17,6 +17,7 @@ using Air.Cloud.Modules.RedisCache.Options;
 using StackExchange.Redis;
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Air.Cloud.Modules.RedisCache.Provider
 {
@@ -57,8 +58,12 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         [Description("获取Redis链接")]
         private static ConnectionMultiplexer Connect()
         {
-            string? ConnectionString = AppCore.GetOptions<RedisSettingsOptions>()?.ConnectionString;
-            return ConnectionMultiplexer.Connect(ConnectionString);
+            RedisSettingsOptions Connection = AppCore.GetOptions<RedisSettingsOptions>();
+            return ConnectionMultiplexer.Connect(Connection.ConnectionString, (x) =>
+            {
+                x.User = Connection?.UserName??string.Empty;
+                x.Password= Connection?.Password??string.Empty;
+            });
         }
         public static ConnectionMultiplexer SetEventHandler(
             this ConnectionMultiplexer connection,
@@ -97,5 +102,33 @@ namespace Air.Cloud.Modules.RedisCache.Provider
             };
             return connection;
         }
+
+        /// <summary>
+        /// <para>zh-cn:切换Redis数据库地址</para>
+        /// <para>en-us:Switch Redis database address</para>
+        /// </summary>
+        /// <param name="Connection">
+        ///  <para>zh-cn:Redis数据库连接信息</para>
+        ///  <para>en-us:Redis database connection information</para>
+        /// </param>
+        /// <returns>
+        ///  <para>zh-cn:新的连接信息</para>
+        ///  <para>en-us:New connection information</para>
+        /// </returns>
+        /// <remarks>
+        ///  <para>zh-cn:如果需要切换Redis数据库地址，请使用此方法</para>
+        ///  <para>en-us:If you need to switch the Redis database address, please use this method</para>
+        /// </remarks>
+        public static ConnectionMultiplexer Change(RedisSettingsOptions Connection,bool UseToGlobal=false)
+        {
+            var instance= ConnectionMultiplexer.Connect(Connection.ConnectionString, (x) =>
+            {
+                x.User = Connection?.UserName ?? string.Empty;
+                x.Password = Connection?.Password ?? string.Empty;
+            });
+            if (UseToGlobal) _instance = instance;
+            return instance;
+        }
+
     }
 }
