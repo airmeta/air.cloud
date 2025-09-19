@@ -137,10 +137,11 @@ namespace Air.Cloud.Modules.Taxin.Store
                     {
                         AppRealization.Output.Error(new Exception("无法获取到键值对模块信息"));
                     }
-                    DefaultKVCenterServiceOptions MetaStoreContent = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVStoreMetaPath(Options.PersistencePath));
-                    if (!MetaStoreContent.Value.IsNullOrEmpty())
-                    {
+                    var MetaStorePath = ITaxinStoreStandard.GetPersistenceKVStoreMetaPath(Options.PersistencePath);
 
+                    DefaultKVCenterServiceOptions MetaStoreContent = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(MetaStorePath);
+                    if (MetaStoreContent != null && !MetaStoreContent.Value.IsNullOrEmpty())
+                    {
                         List<string> Keys = AppRealization.JSON.Deserialize<List<string>>(MetaStoreContent.Value);
                         foreach (var item in Keys)
                         {
