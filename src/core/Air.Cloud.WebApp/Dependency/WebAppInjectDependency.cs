@@ -12,6 +12,8 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Filters;
+using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Plugins.Banner;
 using Air.Cloud.Core.Standard.AppInject;
 
 using Microsoft.Extensions.Configuration;
@@ -25,6 +27,8 @@ namespace Air.Cloud.WebApp.Dependency
     {
         public T Inject<T>(T t, params object[] parameter) where T : class
         {
+            var bannerPrint = AppRealization.AppPlugin.GetPlugin<IAppBannerPlugin>();
+            bannerPrint.PrintOrganizationName();
             if (t is WebApplicationBuilder webApplicationBuilder)
             {
                 ConfigureWebApplication(webApplicationBuilder.WebHost);
@@ -36,7 +40,7 @@ namespace Air.Cloud.WebApp.Dependency
         /// 加载配置文件
         /// </summary>
         /// <returns></returns>
-        public static IWebHostBuilder ConfigureWebAppConfiguration(IWebHostBuilder builder)
+        private  static IWebHostBuilder ConfigureWebAppConfiguration(IWebHostBuilder builder)
         {
             IConfiguration config = null;
             IChangeToken token = null;
@@ -65,7 +69,7 @@ namespace Air.Cloud.WebApp.Dependency
         /// </summary>
         /// <remarks>此次添加 <see cref="HostBuilder"/> 参数是为了兼容 .NET 5 直接升级到 .NET 6 问题</remarks>
         /// <param name="builder"></param>
-        public  static void ConfigureWebApplication(IWebHostBuilder builder)
+        private static void ConfigureWebApplication(IWebHostBuilder builder)
         {
             // 自动装载配置
             ConfigureWebAppConfiguration(builder);

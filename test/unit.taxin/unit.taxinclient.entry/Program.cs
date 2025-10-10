@@ -10,14 +10,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+
 using Air.Cloud.WebApp.App;
+
+
 var builder = WebApplication.CreateBuilder(args);
-
-//var app = builder.InjectGrpcServer().WebInjectInConsul();
-
-
-//app.Run();
-
 
 var app1 = builder.InjectGrpcServer().WebInjectInFile();
 

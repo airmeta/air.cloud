@@ -19,7 +19,7 @@ using Microsoft.Extensions.Hosting;
 using System.Reflection;
 using System.Text;
 
-namespace Air.Cloud.Core.App;
+namespace Air.Cloud.Core.Extensions;
 
 /// <summary>
 /// 应用服务集合拓展类（由框架内部调用）
@@ -102,10 +102,10 @@ public static class AppServiceCollectionExtensions
         // 扫描所有继承 AppStartup 的类
         var startups = AppCore.StartTypes
             .Where(u => typeof(AppStartup).IsAssignableFrom(u) && u.IsClass && !u.IsAbstract && !u.IsGenericType)
-            .OrderByDescending(u => GetStartupOrder(u));
+            .OrderByDescending(u => GetStartupOrder(u)).Reverse().ToList();
        
         // 注册自定义 startup
-        foreach (var type in startups.Reverse())
+        foreach (var type in startups)
         {
             var startup = Activator.CreateInstance(type) as AppStartup;
             AppCore.AppStartups.Add(startup);

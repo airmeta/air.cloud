@@ -12,6 +12,8 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Plugins;
+using Air.Cloud.Core.Plugins.Banner;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.Modules.Consul.Dependencies;
@@ -129,7 +131,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
         /// </summary>
         private static void InitAppInject() {
             #region  初始化注入
-                var InjectionType = AppCore.StandardTypes.Where(s => s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
+            var InjectionType = AppCore.StandardTypes.Where(s => s.GetInterfaces().Contains(typeof(IAppInjectStandard))).FirstOrDefault();
                 Assembly assembly = Assembly.GetAssembly(InjectionType);
                 IAppInjectStandard appInject = assembly.CreateInstance(InjectionType.FullName) as IAppInjectStandard;
                 AppRealization.SetDependency(appInject);

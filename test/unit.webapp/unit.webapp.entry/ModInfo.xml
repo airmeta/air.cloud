@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Mod>
+	<!--入口程序集-->
+	<Entry>FCJ.System.Entry</Entry>
+	<!--需要加载的程序集-->
+	<Assemblies>
+		<!-- 如果一个程序集分别具有多个type的功能 则Type中使用逗号分割 这类情况不常见 -->
+		<!-- 服务程序集 -->
+		<Assembly Name="FCJ.System.Service" Type="Service"></Assembly>
+		<!-- 领域程序集 -->
+		<Assembly Name="FCJ.System.Domain" Type="Domain"></Assembly>
+		<!-- 模型程序集 -->
+		<Assembly Name="FCJ.System.Model" Type="Model"></Assembly>
+		<!-- 依赖程序集 -->
+		<Assembly Name="FCJ.Common" Type="Dependency,Domain"></Assembly>
+	</Assemblies>
+	<Settings>
+		<!-- 是否启用定时任务 -->
+		<EnableJob>true</EnableJob>
+		<!-- 是否启用GRPC服务 -->
+		<EnableGRPC>true</EnableGRPC>
+		<!-- 是否启用接口服务 -->
+		<EnableService>true</EnableService>
+		<!-- 是否启用模组的配置文件加载 -->
+		<EnableModSettingLoad>true</EnableModSettingLoad>
+	</Settings>
+</Mod>

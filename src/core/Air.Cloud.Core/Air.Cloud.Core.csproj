@@ -42,5 +42,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Protobuf Include="Protos\*.proto" GrpcServices="Client" Link="Protos\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Modules\AppChannel\" />
+  </ItemGroup>
 
 </Project>

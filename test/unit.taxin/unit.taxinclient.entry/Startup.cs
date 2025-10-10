@@ -13,6 +13,8 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Standard.TraceLog;
+using Air.Cloud.WebApp.DynamicApiController.Extensions;
+using Air.Cloud.WebApp.UnifyResult.Extensions;
 
 using unit.taxinclient.entry.TraceLogDependency;
 namespace unit.taxinclient.entry
@@ -23,11 +25,13 @@ namespace unit.taxinclient.entry
         {
             //services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
             ////注入
-            //services.AddControllers(a =>
-            //{
-            //    a.Filters.Add<ActionLogFilter>();
-            //});
+            services.AddControllers(a =>
+            {
+              
+            });
             AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
+
+            services.AddDynamicApiControllers().AddUnifyResult();
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

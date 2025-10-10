@@ -14,21 +14,17 @@ using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Enhance;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Modules;
+using Air.Cloud.Core.Modules.AppAssembly;
 using Air.Cloud.Core.Plugins;
-using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.Core.Standard.DynamicServer;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyModel;
-using Microsoft.Extensions.Options;
 
 using System.Collections.Concurrent;
 using System.Reflection;
-using System.Runtime.Loader;
 
 namespace Air.Cloud.Core.App
 {
@@ -62,7 +58,7 @@ namespace Air.Cloud.Core.App
         static AppCore()
         {
             // 加载程序集
-            Assemblies = AssemblyLoader.GetAssemblies();
+            Assemblies = AppAssemblyLoader.GetAssemblies();
             CrucialAssemblies = Assemblies.Where(s => s.Name != null &&
                          (s.Name.Contains(ASSEMBLY_MODULES_KEY)
                              || s.Name.Contains(ASSEMBLY_PLUGINS_KEY)
@@ -72,7 +68,7 @@ namespace Air.Cloud.Core.App
             Plugins = Assemblies.Where(s => s.FullName.Contains(ASSEMBLY_PLUGINS_KEY)).ToList();
             Enhances = Assemblies.Where(s => s.FullName.Contains(ASSEMBLY_ENHANCE_KEY)).ToList();
             //加载所有的关键类型
-            CrucialTypes = Assemblies.SelectMany(AssemblyLoader.GetTypes);
+            CrucialTypes = Assemblies.SelectMany(AppAssemblyLoader.GetTypes);
             // 未托管的对象
             UnmanagedObjects = new ConcurrentBag<IDisposable>();
             AppStartups = new ConcurrentBag<AppStartup>();
@@ -170,89 +166,6 @@ namespace Air.Cloud.Core.App
 
         #endregion
 
-        #region AssemblyLoader
-        /// <summary>
-        /// 程序集加载器
-        /// </summary>
-        internal static class AssemblyLoader
-        {
-            /// <summary>
-            /// 获取应用有效程序集
-            /// </summary>
-            /// <returns>IEnumerable</returns>
-            internal static IEnumerable<AssemblyName> GetAssemblies()
-            {
-                // 排除数据库迁移程序集 这里可以换成内存动态生成一个Database.Migrations程序集
-                var ExcludeAssemblyNames = new string[] { "Database.Migrations" };
-                IEnumerable<AssemblyName> scanAssemblies  = DependencyContext.Default.RuntimeLibraries
-                 .Where(u =>
-                        (u.Type == "project" && !ExcludeAssemblyNames.Any(j => u.Name.EndsWith(j))) ||
-                        (u.Type == "package" && (u.Name.StartsWith(nameof(Air)) || Settings.SupportPackageNamePrefixs.Any(p => u.Name.StartsWith(p)))) ||
-                        (Settings.EnabledReferenceAssemblyScan == true && u.Type == "reference"))    // 判断是否启用引用程序集扫描
-                 .Select(u => new AssemblyName(u.Name));
-                IEnumerable<Assembly> externalAssemblies = new List<Assembly>();
-
-                #region  加载插件程序集
-                //插件检查-是否具有插件 如果有则加载插件
-                if (Directory.Exists(AppConst.AppPluginsPath))
-                {
-                    var PluginFiles = Directory.GetFiles(AppConst.AppPluginsPath, "*.dll", SearchOption.AllDirectories);
-                    var PluginAssemlies = new List<AssemblyName>();
-                    foreach (var PluginPath in PluginFiles)
-                    {
-                        var loadedAssembly = Reflect.LoadAssembly(PluginPath);
-                        if (loadedAssembly == default)
-                        {
-                            Console.WriteLine($"加载插件失败:{Path.GetFileName(PluginPath)}");
-                            continue;
-                        }
-                        PluginAssemlies.Add(loadedAssembly.GetName());
-                    }
-                    scanAssemblies.Concat(PluginAssemlies);
-                }
-                #endregion
-                return scanAssemblies;
-            }
-
-            /// <summary>
-            /// 加载程序集中的所有类型
-            /// </summary>
-            /// <param name="ass">程序集名称</param>
-            /// <returns></returns>
-            internal static IEnumerable<Type> GetTypes(AssemblyName ass)
-            {
-                IEnumerable<Type> types = new List<Type>();
-                try
-                {
-                    types = AssemblyLoadContext.Default.LoadFromAssemblyName(ass).GetTypes().Where(t =>
-                    {
-                        var instances = t.GetInterfaces();
-                        if ((instances.Contains(typeof(IPlugin))
-                        || instances.Contains(typeof(IModule))
-                        || instances.Contains(typeof(IEnhance))
-                        || instances.Contains(typeof(IStandard))
-                        || instances.Contains(typeof(IDynamicService))
-                        || instances.Contains(typeof(IPrivateEntity))
-                        ) && t.IsPublic&& !t.IsDefined(typeof(IgnoreScanningAttribute), false))
-                            return true;
-                        if (t.IsDefined(typeof(NeedScanningAttribute)))
-                            return true;
-                        if (t.BaseType == typeof(AppStartup))
-                            return true;
-                        return false;
-                    }).ToList();
-                }
-                catch
-                {
-                    Console.WriteLine($"构建类库分析器时失败,失败类库:[{ass.FullName}]");
-                }
-                return types;
-            }
-        }
-
-        #endregion
-
-
         /// <summary>
         /// 存储根服务，可能为空
         /// </summary>
@@ -281,11 +194,33 @@ namespace Air.Cloud.Core.App
         /// </summary>
         public static ConcurrentBag<AppStartup> AppStartups;
 
-        /// <summary>
-        /// 外部程序集
-        /// </summary>
-        public static IEnumerable<Assembly> ExternalAssemblies;
+ 
+        public static class AppExternal
+        {
+            /// <summary>
+            /// 模组程序集 包含了功能服务 在启动时会被装配到程序中 可能会提供接口服务 API服务等各类型系统内支持的服务
+            /// </summary>
+            public static IEnumerable<AssemblyName> ExternalModuleAssemblies => AppRealization.DynamicAppLoader.TryLoadModules();
+
+            /// <summary>
+            /// 插件程序集 在全局API中生效的插件扩展,是对API请求的功能性扩展,不会影响到API本身的功能
+            /// </summary>
+            public static IEnumerable<AssemblyName> ExternalPluginAssemblies => AppRealization.DynamicAppLoader.TryLoadPlugins();
+
+            /// <summary>
+            /// <para>zh-cn:外部模组关键类</para>
+            /// <para>en-us:External module crucial types</para>
+            /// </summary>
+            public static IEnumerable<Type> ExternalModuleCrucialTypes = new List<Type>();
+
+            /// <summary>
+            /// <para>zh-cn:外部插件关键类</para>
+            /// <para>en-us:External plugin crucial types</para>
+            /// </summary>
+            public static IEnumerable<Type> ExternalPluginCrucialTypes = new List<Type>();
 
 
+
+        }
     }
 }

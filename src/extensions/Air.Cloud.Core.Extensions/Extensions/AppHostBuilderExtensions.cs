@@ -10,7 +10,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App.Loader;
-using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Plugins.Reflection;
 
@@ -44,7 +43,7 @@ namespace Air.Cloud.Core.Extensions
             hostBuilder.UseSetting(WebHostDefaults.HostingStartupAssembliesKey, combineAssembliesName);
 
             // 实现假的 Starup，解决泛型主机启动问题
-            hostBuilder.UseStartup<InternalStartup>();
+            hostBuilder.UseStartup<Startup>();
             return hostBuilder;
         }
 

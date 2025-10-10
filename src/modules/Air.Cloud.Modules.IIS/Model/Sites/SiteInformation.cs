@@ -147,7 +147,7 @@ namespace Air.Cloud.Modules.IIS.Model.Sites
     public class SchemaInformation
     {
         /// <summary>
-        /// Name
+        /// MainAssemblyName
         /// </summary>
         public string Name { get; set; }
         /// <summary>

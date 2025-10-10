@@ -183,7 +183,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
         // 空订阅
         if (!eventHandlersThatShouldRun.Any() && !eventSource.IgnoreNotFound)
         {
-            AppRealization.Output.Print("EventBus Output", "Subscriber with event Name <{EventName}> was not found.", AppPrintLevel.Warning, AdditionalParams: new Dictionary<string, object>()
+            AppRealization.Output.Print("EventBus Output", "Subscriber with event MainAssemblyName <{EventName}> was not found.", AppPrintLevel.Warning, AdditionalParams: new Dictionary<string, object>()
             {
                 { "event-name",eventSource.EventName}
             });

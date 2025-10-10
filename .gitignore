@@ -65,3 +65,4 @@ bld/
 [Ll]og/
 [Ll]ogs/
 /src/modules/Air.Cloud.Modules.Consul/bin
+/.idea

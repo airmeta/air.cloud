@@ -38,7 +38,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
         public IElasticClient Client { get; set; }
         /// <summary>
         /// <para>zh-cn:客户端名称(索引名唯一)</para>
-        /// <para>en-us:Client Name(Index name is unique)</para>
+        /// <para>en-us:Client MainAssemblyName(Index name is unique)</para>
         /// </summary>
         public string Name { get; set; }
         /// <summary>
@@ -69,14 +69,14 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
         /// </param>
         /// <remarks>
         ///  <para>zh-cn:最终生成的索引名称为以下几种情况:
-        ///    <br>年(Name+SegmentationTag+自2000年之后经过多少年) </br>
-        ///    <br>月(Name+SegmentationTag+自2000年之后经过多少年+SegmentationTag+当前月份) </br>
-        ///    <br>日(Name+SegmentationTag+自2000年之后经过多少年+SegmentationTag+今天在一年中的第几天) </br>
+        ///    <br>年(MainAssemblyName+SegmentationTag+自2000年之后经过多少年) </br>
+        ///    <br>月(MainAssemblyName+SegmentationTag+自2000年之后经过多少年+SegmentationTag+当前月份) </br>
+        ///    <br>日(MainAssemblyName+SegmentationTag+自2000年之后经过多少年+SegmentationTag+今天在一年中的第几天) </br>
         /// </para>
         /// <para>en-us:The final index name is one of the following:
-        ///    <br>By Year(Name+SegmentationTag+(passed since 2000)) </br>
-        ///    <br>By Month(Name+SegmentationTag+(passed since 2000)+SegmentationTag+Month) </br>
-        ///    <br>By DayOfYear(Name+SegmentationTag+(passed since 2000)+SegmentationTag+DayOfYear) </br> 
+        ///    <br>By Year(MainAssemblyName+SegmentationTag+(passed since 2000)) </br>
+        ///    <br>By Month(MainAssemblyName+SegmentationTag+(passed since 2000)+SegmentationTag+Month) </br>
+        ///    <br>By DayOfYear(MainAssemblyName+SegmentationTag+(passed since 2000)+SegmentationTag+DayOfYear) </br> 
         /// </para>
         /// </remarks>
         public ElasticClientPoolElement(IElasticClient client, string Name, IndexSegmentationPatternEnum indexSegmentPattern = IndexSegmentationPatternEnum.None,string SegmentationTag="-")

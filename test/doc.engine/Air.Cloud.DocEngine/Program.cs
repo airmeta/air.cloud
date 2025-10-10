@@ -56,10 +56,10 @@ app.Run();
 //Dictionary<string,string> strings = new Dictionary<string, string>();
 //foreach (var type in alltypes)
 //{
-//    string RoutePath = type.FullName.Replace("." + type.Name, "").Replace(".", "\\");
+//    string RoutePath = type.FullName.Replace("." + type.MainAssemblyName, "").Replace(".", "\\");
 //    string FileDirectory = BasePath + "\\" + RoutePath;
 //    if (!Directory.Exists(FileDirectory)) Directory.CreateDirectory(FileDirectory);
-//    string FilePath = FileDirectory + "\\" + type.Name.Replace("`1", "");
+//    string FilePath = FileDirectory + "\\" + type.MainAssemblyName.Replace("`1", "");
 //    if (!File.Exists(FilePath + ".md"))
 //    {
 //        var file = File.Create(FilePath + ".md");
@@ -70,7 +70,7 @@ app.Run();
 //    }
 //    List<string> Contents = new List<string>();
 //    var typeComment = xmlCommentHelper.GetTypeComment(type);
-//    Contents.Add($"## {type.Name}.cs ");
+//    Contents.Add($"## {type.MainAssemblyName}.cs ");
 //    Contents.Add("\r\n");
 //    Contents.Add("#### 描述:");
 //    Contents.Add("\r\n");
@@ -78,30 +78,30 @@ app.Run();
 //    Contents.Add("\r\n");
 //    Contents.Add("#### 定义: ");
 //    Contents.Add("``` csharp");
-//    Contents.Add($"public {(type.IsSealed ? sealeds : string.Empty)} {(type.Name.EndsWith("`1") ? interfaces : classs)} {type.Name.Replace("`1", "")}");
+//    Contents.Add($"public {(type.IsSealed ? sealeds : string.Empty)} {(type.MainAssemblyName.EndsWith("`1") ? interfaces : classs)} {type.MainAssemblyName.Replace("`1", "")}");
 //    Contents.Add("```");
 
 //    var fields = type.GetFields(bindingAttr: System.Reflection.BindingFlags.NonPublic);
 //    foreach (var field in fields)
 //    {
 //        var fieldComment = xmlCommentHelper.GetFieldOrPropertyComment(field);
-//        Console.WriteLine($"{field.Name}字段的注释：{fieldComment}");
+//        Console.WriteLine($"{field.MainAssemblyName}字段的注释：{fieldComment}");
 //    }
 //    var properties = type.GetProperties();
 //    if (properties.Any())
 //    {
 //        Contents.Add($"---");
 //        Contents.Add($"## 属性 ");
-//        Contents.Add($"| Name      | Type | Description|");
+//        Contents.Add($"| MainAssemblyName      | Type | Description|");
 //        Contents.Add("| ----------- | ----------- |-----------|");
 //    }
 //    foreach (var property in properties)
 //    {
 //        var propertyComment = xmlCommentHelper.GetFieldOrPropertyComment(property);
-//        Contents.Add($"|     {property.Name} |  {property.PropertyType.FullName?.Substring(0, (property.PropertyType.FullName.IndexOf("`1") == -1 ? property.PropertyType.FullName.Length : property.PropertyType.FullName.IndexOf("`1")))} | {propertyComment.Replace("<br>", "").Replace("\r\n", "<br>")} |");
+//        Contents.Add($"|     {property.MainAssemblyName} |  {property.PropertyType.FullName?.Substring(0, (property.PropertyType.FullName.IndexOf("`1") == -1 ? property.PropertyType.FullName.Length : property.PropertyType.FullName.IndexOf("`1")))} | {propertyComment.Replace("<br>", "").Replace("\r\n", "<br>")} |");
 //    }
 
-//    var methods = type.GetMethods().Where(s => (!(s.Name.StartsWith("set_") || s.Name.StartsWith("get_"))) && (!ig.Contains(s.Name)));
+//    var methods = type.GetMethods().Where(s => (!(s.MainAssemblyName.StartsWith("set_") || s.MainAssemblyName.StartsWith("get_"))) && (!ig.Contains(s.MainAssemblyName)));
 //    if (methods.Any())
 //    {
 //        Contents.Add($"---");
@@ -112,7 +112,7 @@ app.Run();
 //    foreach (var method in methods)
 //    {
 //        var methodComment = xmlCommentHelper.GetMethodComment(method);
-//        Contents.Add($"| {method.Name} | {methodComment.Replace("<br>", "").Replace("\r\n", "<br>")} |");
+//        Contents.Add($"| {method.MainAssemblyName} | {methodComment.Replace("<br>", "").Replace("\r\n", "<br>")} |");
 //    }
 //    if (methods.Any())
 //    {
@@ -123,46 +123,46 @@ app.Run();
 //    {
 //        var methodComment = xmlCommentHelper.GetMethodComment(method);
 //        var dict = xmlCommentHelper.GetParameterComments(method);
-//        Contents.Add($"####  {method.Name}");
+//        Contents.Add($"####  {method.MainAssemblyName}");
 //        Contents.Add($"* 方法描述:<br> {methodComment.Replace("<br>", "").Replace("\r\n", "<br>")}");
 //        Contents.Add($"* 方法类型:"+(method.IsStatic?"静态方法":method.IsAsync()?"异步方法":"普通方法"));
 //        if (method.ReturnType.IsGenericType)
 //        {
-//            string c = method.ReturnType.GetGenericArguments()[0].Name;
-//            Contents.Add($"* 响应类型: {method.ReturnType.Name.Replace("`1", "").Replace("1", "")}<{c}>");
+//            string c = method.ReturnType.GetGenericArguments()[0].MainAssemblyName;
+//            Contents.Add($"* 响应类型: {method.ReturnType.MainAssemblyName.Replace("`1", "").Replace("1", "")}<{c}>");
 //        }
 //        else
 //        {
-//            Contents.Add($"* 响应类型:<br> {method.ReturnType.Name} <br> ({method.ReturnType.FullName?.Split(",")[0]})");
+//            Contents.Add($"* 响应类型:<br> {method.ReturnType.MainAssemblyName} <br> ({method.ReturnType.FullName?.Split(",")[0]})");
 //        }
 //        Contents.Add($"* 方法参数:");
 //        ParameterInfo[] methodParameterInfos = method.GetParameters();
 //        string[] Arr = dict.Keys.ToArray();
-//        Contents.Add($"| Name      | Type | Description|");
+//        Contents.Add($"| MainAssemblyName      | Type | Description|");
 //        Contents.Add("| ----------- | ----------- |-----------|");
 //        for (int i = 0; i < methodParameterInfos.Count(); i++)
 //        {
 //            ParameterInfo? para = methodParameterInfos[i];
-//            if (para == null|| para.Name==null) continue;
-//            string? Value = dict[para.Name];
+//            if (para == null|| para.MainAssemblyName==null) continue;
+//            string? Value = dict[para.MainAssemblyName];
 //            string TypeStr = string.Empty;
 //            if (para.ParameterType.IsGenericType)
 //            {
-//                string c = para.ParameterType.GetGenericArguments()[0].Name;
-//                TypeStr=$"{para.ParameterType.Name.Replace("`1", "").Replace("1","")}<{c}>";
+//                string c = para.ParameterType.GetGenericArguments()[0].MainAssemblyName;
+//                TypeStr=$"{para.ParameterType.MainAssemblyName.Replace("`1", "").Replace("1","")}<{c}>";
 //            }
 //            else
 //            {
-//                TypeStr = $"{para.ParameterType.Name}";
+//                TypeStr = $"{para.ParameterType.MainAssemblyName}";
 //            }
-//            Contents.Add($"| {para.Name} | {TypeStr} |<br> {Value.Replace("<br>", "").Replace("\r\n", "<br>")}|");
+//            Contents.Add($"| {para.MainAssemblyName} | {TypeStr} |<br> {Value.Replace("<br>", "").Replace("\r\n", "<br>")}|");
 //        }
 //    }
 //    File.WriteAllLines(FilePath + ".md", Contents);
-//    string Url = FilePath.Replace(BasePath, "").Replace("\\", "/").ToLower().Replace(type.Name.Replace("`1", "").ToLower(), type.Name.Replace("`1", "")).Replace("/air/cloud/", "/air.cloud/");
+//    string Url = FilePath.Replace(BasePath, "").Replace("\\", "/").ToLower().Replace(type.MainAssemblyName.Replace("`1", "").ToLower(), type.MainAssemblyName.Replace("`1", "")).Replace("/air/cloud/", "/air.cloud/");
 //    if (!strings.ContainsKey(Url))
 //    {
-//        strings.Add(Url, $"* [{type.Name.Replace("`1", "")}.cs]({Url}.md)");
+//        strings.Add(Url, $"* [{type.MainAssemblyName.Replace("`1", "")}.cs]({Url}.md)");
 //    }
 //}
 //File.AppendAllLines(BasePath + "/" + "Slide.md", strings.OrderBy(s=>s.Key).Select(s=>s.Value).ToList());

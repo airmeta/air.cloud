@@ -6,10 +6,14 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
-using Air.Cloud.WebApp.DynamicApiController.Options;
+using Air.Cloud.Core.Modules;
+using Air.Cloud.Core.Plugins.Security.MD5;
+using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.WebApp.DynamicApiController.Conventions;
+using Air.Cloud.WebApp.DynamicApiController.Options;
 using Air.Cloud.WebApp.DynamicApiController.Providers;
 
 using Microsoft.AspNetCore.Mvc;
@@ -45,22 +49,23 @@ public static class DynamicApiControllerServiceCollectionExtensions
     /// <returns></returns>
     public static IServiceCollection AddDynamicApiControllers(this IServiceCollection services)
     {
+        services.AddDynamicApp();
         var partManager = services.FirstOrDefault(s => s.ServiceType == typeof(ApplicationPartManager))?.ImplementationInstance as ApplicationPartManager
             ?? throw new InvalidOperationException($"`{nameof(AddDynamicApiControllers)}` must be invoked after `{nameof(MvcServiceCollectionExtensions.AddControllers)}`.");
-
-        // 解决项目类型为 <Project Sdk="Microsoft.NET.Sdk"> 不能加载 API 问题，默认支持 <Project Sdk="Microsoft.NET.Sdk.Web">
-        //foreach (var assembly in App.Assemblies)
-        //{
-        //    if (partManager.ApplicationParts.Any(u => u.Name != assembly.GetName().Name))
-        //    {
-        //        partManager.ApplicationParts.Add(new AssemblyPart(assembly));
-        //    }
-        //}
-
-        // 载入模块化/插件程序集部件
-        if (AppCore.ExternalAssemblies != null && AppCore.ExternalAssemblies.Any())
+        // 载入模块化部件
+        if (AppCore.AppExternal.ExternalModuleAssemblies != null && AppCore.AppExternal.ExternalModuleAssemblies.Any())
         {
-            foreach (var assembly in AppCore.ExternalAssemblies)
+            var Services= AppCore.AppExternal.ExternalModuleCrucialTypes.Where(s => s.GetInterfaces().Contains(typeof(IDynamicService))).ToList();
+
+            IDictionary<string,Assembly> assemblies = new Dictionary<string, Assembly>();
+
+            foreach (var item in Services)
+            {
+                var AssemblyKey = MD5Encryption.GetMd5By32($"{item.Assembly.FullName} {item.Assembly.Location}");
+                
+                assemblies.TryAdd(AssemblyKey, item.Assembly);
+            }
+            foreach (var assembly in assemblies.Values)
             {
                 if (partManager.ApplicationParts.Any(u => u.Name != assembly.GetName().Name))
                 {
@@ -68,7 +73,6 @@ public static class DynamicApiControllerServiceCollectionExtensions
                 }
             }
         }
-
         // 添加控制器特性提供器
         partManager.FeatureProviders.Add(new DynamicApiControllerFeatureProvider());
 
@@ -83,29 +87,5 @@ public static class DynamicApiControllerServiceCollectionExtensions
         });
 
         return services;
-    }
-
-    /// <summary>
-    /// 添加外部程序集部件集合
-    /// </summary>
-    /// <param name="mvcBuilder">Mvc构建器</param>
-    /// <param name="assemblies"></param>
-    /// <returns>Mvc构建器</returns>
-    public static IMvcBuilder AddExternalAssemblyParts(this IMvcBuilder mvcBuilder, IEnumerable<Assembly> assemblies)
-    {
-        var partManager = mvcBuilder.PartManager;
-        // 载入程序集部件
-        if (partManager != null && assemblies != null && assemblies.Any())
-        {
-            foreach (var assembly in assemblies)
-            {
-                if (partManager.ApplicationParts.Any(u => u.Name != assembly.GetName().Name))
-                {
-                    mvcBuilder.AddApplicationPart(assembly);
-                }
-            }
-        }
-
-        return mvcBuilder;
     }
 }

@@ -11,6 +11,8 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Plugins.Banner;
 using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.HostApp.Event;
 
@@ -25,6 +27,8 @@ namespace Air.Cloud.HostApp.Dependency
     {
         public T Inject<T>(T hostBuilder, params object[] objects) where T : class
         {
+            var bannerPrint = AppRealization.AppPlugin.GetPlugin<IAppBannerPlugin>();
+            bannerPrint.PrintOrganizationName();
             bool? AuthRegisterBackgroundService = objects.First()?.ToString()?.ToLower() == "true";
             if (hostBuilder is IHostBuilder)
             {
@@ -41,7 +45,7 @@ namespace Air.Cloud.HostApp.Dependency
         /// 加载配置文件
         /// </summary>
         /// <returns></returns>
-        public static IHostBuilder ConfigureHostAppConfiguration(IHostBuilder builder)
+        private static IHostBuilder ConfigureHostAppConfiguration(IHostBuilder builder)
         {
             IConfiguration config = null;
             IChangeToken token = null;
@@ -71,7 +75,7 @@ namespace Air.Cloud.HostApp.Dependency
         /// </summary>
         /// <param name="builder">主机</param>
         /// <param name="autoRegisterBackgroundService">是否注册后台运行任务</param>
-        internal static void ConfigureHostApplication(IHostBuilder builder, bool autoRegisterBackgroundService = true)
+        private static void ConfigureHostApplication(IHostBuilder builder, bool autoRegisterBackgroundService = true)
         {
             // 自动装载配置
             ConfigureHostAppConfiguration(builder);

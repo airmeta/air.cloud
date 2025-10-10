@@ -35,13 +35,14 @@ namespace unit.webapp.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+            Console.WriteLine("加载完成unit.webapp.entry,并执行其startup");
             AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
             services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
             services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
             services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();
             //注入
-            services.AddControllers(a =>
+            services.AddAppControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();

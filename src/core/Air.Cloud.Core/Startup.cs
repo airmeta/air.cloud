@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Modules.AppAspect.Extensions;
 using Air.Cloud.Core.Plugins;
 
@@ -16,14 +17,14 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.Core.App.Startups
+namespace Air.Cloud.Core
 {
     [AppStartup(AppName = "Air.Cloud.Core", Order = int.MinValue)]
-    public  class InternalStartup : AppStartup
+    public  class Startup : AppStartup
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            
+            app.UseDynamicApp();
         }
 
         public override void ConfigureServices(IServiceCollection services)

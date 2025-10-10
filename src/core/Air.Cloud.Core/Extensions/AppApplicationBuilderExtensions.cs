@@ -28,15 +28,6 @@ namespace Air.Cloud.Core.Extensions
     public static class AppApplicationBuilderExtensions
     {
         /// <summary>
-        /// 注入基础中间件
-        /// </summary>
-        /// <param name="app"></param>
-        /// <returns></returns>
-        public static IApplicationBuilder UseAppInject(this IApplicationBuilder app)
-        {
-            return app;
-        }
-        /// <summary>
         /// 添加应用中间件
         /// </summary>
         /// <param name="app">应用构建器</param>

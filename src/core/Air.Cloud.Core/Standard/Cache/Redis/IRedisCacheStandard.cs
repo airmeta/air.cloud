@@ -79,7 +79,7 @@ namespace Air.Cloud.Core.Standard.Cache.Redis
         /// </typeparam>
         /// <param name="Key">
         ///  <para>zh-cn:保存的Key名称</para>
-        ///  <para>en-us:Saved Key Name</para>
+        ///  <para>en-us:Saved Key MainAssemblyName</para>
         /// </param>
         /// <returns>
         /// <para>zh-cn:反序列化后的对象信息,如果未获取到值,或者为 Empty或null 则返回default </para>

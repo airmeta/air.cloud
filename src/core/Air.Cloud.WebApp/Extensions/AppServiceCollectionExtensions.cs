@@ -1,11 +1,14 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.WebApp.DataValidation.Extensions;
 using Air.Cloud.WebApp.DynamicApiController.Extensions;
 using Air.Cloud.WebApp.Extensions.Options;
@@ -44,10 +47,11 @@ public static class AppServiceCollectionExtensions
     /// <returns>IMvcBuilder</returns>
     public static IServiceCollection AddInject(this IServiceCollection services, Action<InjectServiceOptions> configure = null)
     {
+       
         // 载入服务配置选项
         var configureOptions = new InjectServiceOptions();
         configure?.Invoke(configureOptions);
-
+      
         services.AddDynamicApiControllers()
                 .AddDataValidation(configureOptions?.DataValidationConfigure)
                 .AddFriendlyException(configureOptions?.FriendlyExceptionConfigure);
@@ -56,66 +60,21 @@ public static class AppServiceCollectionExtensions
     }
 
     /// <summary>
-    /// MiniAPI 服务注入基础配置（带Swagger）
+    /// <para>zh-cn:注入规范化响应</para>
+    /// <para>en-us:Inject standardized response</para>
     /// </summary>
-    /// <param name="services">服务集合</param>
-    /// <param name="configure"></param>
-    /// <returns>IMvcBuilder</returns>
-    /// <remarks>https://docs.microsoft.com/zh-cn/aspnet/core/fundamentals/minimal-apis?view=aspnetcore-6.0</remarks>
-    public static IServiceCollection AddInjectMini(this IServiceCollection services, Action<InjectServiceOptions> configure = null)
-    {
-        // 载入服务配置选项
-        var configureOptions = new InjectServiceOptions();
-        configure?.Invoke(configureOptions);
-
-        services.AddEndpointsApiExplorer()
-                .AddDataValidation(configureOptions?.DataValidationConfigure)
-                .AddFriendlyException(configureOptions?.FriendlyExceptionConfigure);
-
-        return services;
-    }
-
-    /// <summary>
-    /// Mvc 注入基础配置
-    /// </summary>
-    /// <param name="mvcBuilder">Mvc构建器</param>
-    /// <param name="configure"></param>
-    /// <returns>IMvcBuilder</returns>
-    public static IMvcBuilder AddInjectBase(this IMvcBuilder mvcBuilder, Action<InjectServiceOptions> configure = null)
-    {
-        mvcBuilder.Services.AddInjectBase(configure);
-
-        return mvcBuilder;
-    }
-
-    /// <summary>
-    /// Mvc 注入基础配置
-    /// </summary>
-    /// <param name="services">服务集合</param>
-    /// <param name="configure"></param>
-    /// <returns>IMvcBuilder</returns>
-    public static IServiceCollection AddInjectBase(this IServiceCollection services, Action<InjectServiceOptions> configure = null)
-    {
-        // 载入服务配置选项
-        var configureOptions = new InjectServiceOptions();
-        configure?.Invoke(configureOptions);
-
-        services.AddDataValidation(configureOptions?.DataValidationConfigure)
-                .AddFriendlyException(configureOptions?.FriendlyExceptionConfigure);
-
-        return services;
-    }
-
-    /// <summary>
-    /// Mvc 注入基础配置和规范化结果
-    /// </summary>
-    /// <param name="mvcBuilder"></param>
-    /// <param name="configure"></param>
+    /// <param name="mvcBuilder">
+    ///  <para>zh-cn:Mvc构建器</para>
+    ///  <para>en-us:Mvc builder</para>
+    /// </param>
+    /// <param name="configure">
+    ///  <para>zh-cn:配置选项</para>
+    ///  <para>en-us:Configuration options</para>
+    /// </param>
     /// <returns></returns>
     public static IMvcBuilder AddInjectWithUnifyResult(this IMvcBuilder mvcBuilder, Action<InjectServiceOptions> configure = null)
     {
         mvcBuilder.Services.AddInjectWithUnifyResult(configure);
-
         return mvcBuilder;
     }
 
@@ -163,21 +122,4 @@ public static class AppServiceCollectionExtensions
 
         return services;
     }
-
-    /// <summary>
-    /// 解决 .NET6 WebApplication 模式下二级虚拟目录错误问题
-    /// </summary>
-    /// <param name="app"></param>
-    /// <returns></returns>
-    public static IApplicationBuilder MapRouteControllers(this IApplicationBuilder app)
-    {
-        app.UseRouting();
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllers();
-        });
-
-        return app;
-    }
-
 }

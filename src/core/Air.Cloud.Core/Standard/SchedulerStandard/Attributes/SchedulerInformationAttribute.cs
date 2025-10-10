@@ -26,7 +26,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Attributes
         public string Id { get; set; }
         /// <summary>
         /// <para>zh-cn:名称</para>
-        /// <para>en-us:Name</para>
+        /// <para>en-us:MainAssemblyName</para>
         /// </summary>
         public string Name { get; set; }
         /// <summary>
@@ -55,7 +55,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Attributes
         /// </param>
         /// <param name="name">
         /// <para>zh-cn:名称</para>
-        /// <para>en-us:Name</para>
+        /// <para>en-us:MainAssemblyName</para>
         /// </param>
         /// <param name="groupName">
         /// <para>zh-cn:任务组</para>

@@ -11,8 +11,8 @@
  */
 using Air.Cloud.Core.Extensions.Aspect;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
+using Air.Cloud.Core.Modules.DynamicApp;
 using Air.Cloud.Core.Plugins;
-using Air.Cloud.Core.Plugins.DefaultDependencies;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.AppInject;
@@ -128,6 +128,13 @@ namespace Air.Cloud.Core
         public static IMessageQueueStandard Queue=> InternalRealization.Queue ?? DefaultRealization.Queue;
 
         /// <summary>
+        /// <para>zh-cn:动态应用加载标准实现</para>
+        /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
+        /// </summary>
+        public static IDynamicAppLoaderStandard DynamicAppLoader => InternalRealization.DynamicAppLoader ?? DefaultRealization.DynamicAppLoader;
+
+
+        /// <summary>
         /// <para>zh-cn:设置约定实现</para>
         /// <para>en-us:Set dependency</para>
         /// </summary>
@@ -211,38 +218,43 @@ namespace Air.Cloud.Core
         protected static class DefaultRealization
         {
             /// <summary>
+            /// <para>zh-cn:动态应用加载标准实现</para>
+            /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
+            /// </summary>
+            public static readonly IDynamicAppLoaderStandard DynamicAppLoader = new DynamicAppLoaderDependency();
+            /// <summary>
             /// 压缩与解压缩标准实现
             /// </summary>
-            public static ICompressStandard Compress => new DefaultCompressStandardDependency();
+            public static readonly ICompressStandard Compress = new DefaultCompressStandardDependency();
 
             /// <summary>
             /// 内容输出标准实现
             /// </summary>
-            public static IAppOutputStandard Output => new DefaultAppOutputDependency();
+            public static readonly IAppOutputStandard Output = new DefaultAppOutputDependency();
             /// <summary>
             /// 容器标准实现
             /// </summary>
-            public static IContainerStandard Container => throw new NotImplementedException("未查询到容器标准的实现");
+            public static  IContainerStandard Container => throw new NotImplementedException("未查询到容器标准的实现");
             /// <summary>
             /// 系统配置标准实现
             /// </summary>
-            public static IAppConfigurationStandard Configuration => new DefaultAppConfigurationDependency();
+            public static readonly IAppConfigurationStandard Configuration = new DefaultAppConfigurationDependency();
             /// <summary>
             /// 全局异常标准实现
             /// </summary>
-            public static IAppDomainExceptionHandlerStandard DomainExceptionHandler => new DefaultAppDomainExcepetionHandlerDependency();
+            public static readonly IAppDomainExceptionHandlerStandard DomainExceptionHandler = new DefaultAppDomainExcepetionHandlerDependency();
             /// <summary>
             /// 类库扫描标准实现
             /// </summary>
-            public static IAssemblyScanningStandard AssemblyScanning => new DefaultAssemblyScanningDependency();
+            public static readonly IAssemblyScanningStandard AssemblyScanning = new DefaultAssemblyScanningDependency();
             /// <summary>
             /// JSON Web Token 标准实现
             /// </summary>
-            public static IJwtHandlerStandard Jwt => new DefaultJwtHandlerDependency();
+            public static readonly IJwtHandlerStandard Jwt = new DefaultJwtHandlerDependency();
             /// <summary>
             /// 缓存标准实现
             /// </summary>
-            public static IAppCacheStandard Cache => throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
+            public static  IAppCacheStandard Cache => throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
             /// <summary>
             /// Redis缓存标准实现
             /// </summary>
@@ -258,13 +270,13 @@ namespace Air.Cloud.Core
             /// <remarks>
             ///  这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一
             /// </remarks>
-            public static IPIDPlugin PID => AppRealization.AppPlugin.GetPlugin<IPIDPlugin>();
+            public static  IPIDPlugin PID => AppRealization.AppPlugin.GetPlugin<IPIDPlugin>();
 
             /// <summary>
             /// <para>zh-cn:插件工厂</para>
             /// <para>en-us:Plugin factory</para>
             /// </summary>
-            public static IAppPluginFactory AppPlugin =>new AppPluginFactory();
+            public static readonly IAppPluginFactory AppPlugin =new AppPluginFactory();
 
             /// <summary>
             /// 系统注入标准默认实现
@@ -286,7 +298,7 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:默认日志追踪</para>
             /// <para>en-us:Default log tracking </para>
             /// </summary>
-            public static ITraceLogStandard TraceLog => new DefaultTraceLogDependency();
+            public static readonly ITraceLogStandard TraceLog = new DefaultTraceLogDependency();
             /// <summary>
             /// <para>zh-cn:默认队列实现</para>
             /// <para>en-us:Default queue dependency</para>
@@ -299,15 +311,24 @@ namespace Air.Cloud.Core
         protected static class InternalRealization
         {
             /// <summary>
-            /// 压缩与解压缩标准实现
+            /// <para>zh-cn:动态应用加载标准实现</para>
+            /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
+            /// </summary>
+            public static  IDynamicAppLoaderStandard DynamicAppLoader => AppCore.GetService<IDynamicAppLoaderStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:压缩与解压缩标准实现</para>
+            /// <para>en-us: Compression and decompression standard implementation</para>
             /// </summary>
             public static ICompressStandard Compress => AppCore.GetService<ICompressStandard>();
             /// <summary>
-            /// 内容输出标准实现
+            /// <para>zh-cn:内容输出标准实现</para>
+            /// <para>en-us: Content output standard implementation</para>
             /// </summary>
             public static IAppOutputStandard Output = null;
             /// <summary>
-            /// 容器标准实现
+            /// <para>zh-cn:容器标准实现</para>
+            /// <para>en-us: Container standard implementation</para>
             /// </summary>
             public static IContainerStandard Container => AppCore.GetService<IContainerStandard>();
             /// <summary>
