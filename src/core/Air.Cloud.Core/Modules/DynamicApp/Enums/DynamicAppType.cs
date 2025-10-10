@@ -9,21 +9,23 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Modules.DynamicApp.Model
+namespace Air.Cloud.Core.Modules.DynamicApp.Enums
 {
-    public class ModInformation
+    /// <summary>
+    /// <para>zh-cn:动态应用类型</para>
+    /// <para>en-us: Dynamic Application Type</para>
+    /// </summary>
+    public enum  DynamicAppType
     {
         /// <summary>
-        /// 入口程序集
+        /// <para>zh-cn:模组</para>
+        /// <para>en-us:Mod</para>
         /// </summary>
-        public string Entry { get; set; }
+        Mod,
         /// <summary>
-        /// 需要加载的程序集
+        /// <para>zh-cn:插件</para>
+        /// <para>en-us:Plugin</para>
         /// </summary>
-        public List<ModAssemblyInformation> Assemblies { get; set; }
-        /// <summary>
-        /// 模组配置
-        /// </summary>
-        public ModSettings Settings { get; set; }
+        Plugin
     }
 }

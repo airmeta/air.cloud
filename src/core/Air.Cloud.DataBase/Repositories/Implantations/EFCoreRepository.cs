@@ -10,7 +10,6 @@ using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.ContextPools;
 using Air.Cloud.DataBase.Internal;
-using Air.Cloud.DataBase.Repositories;
 
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -21,7 +20,7 @@ using System.Collections.Concurrent;
 using System.Data.Common;
 using System.Linq.Expressions;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// 非泛型EF Core仓储实现

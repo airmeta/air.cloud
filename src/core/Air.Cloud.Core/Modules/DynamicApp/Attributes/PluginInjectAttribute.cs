@@ -24,7 +24,7 @@ namespace Air.Cloud.Core.Modules.DynamicApp.Attributes
         ///  <para>zh-cn:当前插件在何处应用</para>
         ///  <para>en-us:Where the plugin is applied</para>
         /// </summary>
-        public DynamicAppUsageEnum Usage { get; set; }
+        public DynamicAppUsage Usage { get; set; }
         /// <summary>
         ///  <para>zh-cn:同Usage同OrderType的插件之间的顺序</para>
         ///  <para>en-us:The order among plugins with the same Usage and OrderType</para>
@@ -34,7 +34,7 @@ namespace Air.Cloud.Core.Modules.DynamicApp.Attributes
         /// <para>zh-cn:插件排序类型</para>
         /// <para>en-us:Plugin sorting type</para>
         /// </summary>
-        public PluginOrderEnum OrderType { get; set; }
+        public DynamicPluginOrder OrderType { get; set; }
 
     }
 }

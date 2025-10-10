@@ -13,10 +13,9 @@ using Air.Cloud.DataBase.Helpers;
 
 using Microsoft.EntityFrameworkCore.Query;
 
-using System.Linq;
 using System.Linq.Expressions;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// 可写仓储分部类

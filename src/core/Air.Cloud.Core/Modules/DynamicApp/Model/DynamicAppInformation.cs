@@ -30,12 +30,12 @@ namespace Air.Cloud.Core.Modules.DynamicApp.Model
         /// <para>zh-cn:动态应用用途</para>
         /// <para>en-us: Dynamic application usage</para>
         /// </summary>
-        public DynamicAppUsageEnum Usage { get; set; }
+        public DynamicAppUsage Usage { get; set; }
         /// <summary>
         /// <para>zh-cn:动态应用加载顺序类型</para>
         /// <para>en-us: Dynamic application load order type</para>
         /// </summary>
-        public PluginOrderEnum OrderType { get; set; }
+        public DynamicPluginOrder OrderType { get; set; }
 
         /// <summary>
         /// <para>zh-cn:动态应用加载顺序</para>

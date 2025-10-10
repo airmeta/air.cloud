@@ -24,14 +24,15 @@ namespace unit.taxinclient.entry
         public override void ConfigureServices(IServiceCollection services)
         {
             //services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
+            AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
             ////注入
             services.AddControllers(a =>
             {
               
-            });
-            AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
-
-            services.AddDynamicApiControllers().AddUnifyResult();
+            })
+            .AddDynamicApiControllers()
+            .AddUnifyResult();
+   
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

@@ -1,15 +1,17 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 
-
-using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Modules.DynamicApp.Attributes;
 using Air.Cloud.Core.Standard.DynamicServer;
-using Air.Cloud.WebApp.DynamicApiController.Attributes;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -85,23 +87,22 @@ public static class Penetrates
     /// <returns></returns>
     public static bool IsApiController(Type type)
     {
-        return IsApiControllerCached.GetOrAdd(type, Function);
+        return IsApiControllerCached.GetOrAdd(type, CheckAPIType);
+    }
+    
+    private static bool CheckAPIType(Type type)
+    {
+        // 不能是非公开、基元类型、值类型、抽象类、接口、泛型类
+        if (!type.IsPublic || type.IsPrimitive || type.IsValueType || type.IsAbstract || type.IsInterface || type.IsGenericType) return false;
 
-        // 本地静态方法
-        static bool Function(Type type)
+        // 继承 ControllerBase 或 实现 IDynamicApiController 的类型 或 贴了 [DynamicApiController] 特性
+        if (!typeof(Controller).IsAssignableFrom(type) && typeof(ControllerBase).IsAssignableFrom(type) || typeof(IDynamicService).IsAssignableFrom(type) || type.IsDefined(typeof(DynamicApiControllerAttribute), true))
         {
-            // 不能是非公开、基元类型、值类型、抽象类、接口、泛型类
-            if (!type.IsPublic || type.IsPrimitive || type.IsValueType || type.IsAbstract || type.IsInterface || type.IsGenericType) return false;
+            // 不是能被导出忽略的接口
+            if (type.IsDefined(typeof(ApiExplorerSettingsAttribute), true) && type.GetCustomAttribute<ApiExplorerSettingsAttribute>(true).IgnoreApi) return false;
 
-            // 继承 ControllerBase 或 实现 IDynamicApiController 的类型 或 贴了 [DynamicApiController] 特性
-            if (!typeof(Controller).IsAssignableFrom(type) && typeof(ControllerBase).IsAssignableFrom(type) || typeof(IDynamicService).IsAssignableFrom(type) || type.IsDefined(typeof(DynamicApiControllerAttribute), true))
-            {
-                // 不是能被导出忽略的接口
-                if (type.IsDefined(typeof(ApiExplorerSettingsAttribute), true) && type.GetCustomAttribute<ApiExplorerSettingsAttribute>(true).IgnoreApi) return false;
-
-                return true;
-            }
-            return false;
+            return true;
         }
+        return false;
     }
 }

@@ -8,7 +8,7 @@
 
 using Air.Cloud.Core.Standard.DataBase.Model;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// 可写仓储分部类

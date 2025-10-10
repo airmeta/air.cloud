@@ -10,7 +10,7 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// 可删除仓储分部类

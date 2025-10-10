@@ -13,7 +13,7 @@ using Air.Cloud.DataBase.Internal;
 
 using System.Data.Common;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// Sql 执行仓储分部类

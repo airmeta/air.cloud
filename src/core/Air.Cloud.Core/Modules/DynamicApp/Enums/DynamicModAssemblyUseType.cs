@@ -1,4 +1,15 @@
-﻿namespace Air.Cloud.Core.Modules.DynamicApp.Enums
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+namespace Air.Cloud.Core.Modules.DynamicApp.Enums
 {
     /// <summary>
     /// <para>zh-cn:动态模组程序集使用类型枚举</para>
@@ -8,7 +19,7 @@
     ///    <para>zh-cn:在V1版本中我们将会在此枚举中定义Service,Domain,Entity,Model,Repository,Dependency这几个分类,所有的加载逻辑都围绕这几个分类完成</para>
     ///    <para>en-us:In version V1, we will define several categories in this enumeration: Service, Domain, Entity, Model, Repository, and Dependency. All loading logic revolves around these categories.</para>
     /// </remarks>
-    public enum DynamicModAssemblyUseTypeEnum
+    public enum DynamicModAssemblyUseType
     {
         /// <summary>
         /// <para>zh-cn:接口服务</para>

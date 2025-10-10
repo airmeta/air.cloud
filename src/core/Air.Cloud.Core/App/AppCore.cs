@@ -20,6 +20,7 @@ using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -194,18 +195,24 @@ namespace Air.Cloud.Core.App
         /// </summary>
         public static ConcurrentBag<AppStartup> AppStartups;
 
+        /// <summary>
+        /// <para>zh-cn:应用程序部件管理器</para>
+        /// <para>en-us:Application Part Manager</para>
+        /// </summary>
+        public static ApplicationPartManager ApplicationPart;
+
  
         public static class AppExternal
         {
             /// <summary>
             /// 模组程序集 包含了功能服务 在启动时会被装配到程序中 可能会提供接口服务 API服务等各类型系统内支持的服务
             /// </summary>
-            public static IEnumerable<AssemblyName> ExternalModuleAssemblies => AppRealization.DynamicAppLoader.TryLoadModules();
+            public static IEnumerable<AssemblyName> ExternalModuleAssemblies => AppRealization.DynamicAppStore.TryLoadApplication(Core.Modules.DynamicApp.Enums.DynamicAppType.Mod);
 
             /// <summary>
             /// 插件程序集 在全局API中生效的插件扩展,是对API请求的功能性扩展,不会影响到API本身的功能
             /// </summary>
-            public static IEnumerable<AssemblyName> ExternalPluginAssemblies => AppRealization.DynamicAppLoader.TryLoadPlugins();
+            public static IEnumerable<AssemblyName> ExternalPluginAssemblies => AppRealization.DynamicAppStore.TryLoadApplication(Core.Modules.DynamicApp.Enums.DynamicAppType.Plugin);
 
             /// <summary>
             /// <para>zh-cn:外部模组关键类</para>

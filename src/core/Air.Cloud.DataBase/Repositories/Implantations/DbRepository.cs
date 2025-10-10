@@ -11,7 +11,7 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Air.Cloud.DataBase.Repositories;
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// 多数据库仓储

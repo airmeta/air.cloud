@@ -42,7 +42,7 @@ namespace Air.Cloud.Core.Modules.AppAssembly.Builder
             get
             {
                 string Dir = Path.GetDirectoryName(AssemblyDirectoryPath);
-                string filePath = Path.Combine(Dir, IDynamicAppLoaderStandard.MOD_CONFIG_FILE_NAME);
+                string filePath = Path.Combine(Dir, IDynamicAppStoreStandard.MOD_CONFIG_FILE_NAME);
                 return filePath;
             }
         }
@@ -80,7 +80,7 @@ namespace Air.Cloud.Core.Modules.AppAssembly.Builder
                 string directory = Path.GetDirectoryName(AssemblyFilePath);
                 foreach (var item in information.Assemblies)
                 {
-                    _ = TryLoadNormalAssembly($"{Path.Combine(directory, item.Name)}.{IDynamicAppLoaderStandard.ASSEMBLY_EXTENSIONS} ", context);
+                    _ = TryLoadNormalAssembly($"{Path.Combine(directory, item.Name)}.{IDynamicAppStoreStandard.ASSEMBLY_EXTENSIONS} ", context);
                 }
                 AssemblyName = TryLoadMainAssembly(AssemblyFileName, AssemblyName, context);
             }

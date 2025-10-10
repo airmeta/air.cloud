@@ -16,7 +16,7 @@ namespace Air.Cloud.Core.Modules.DynamicApp.Enums
     /// <para>zh-cn:动态应用使用场景枚举</para>
     /// <para>en-us: Dynamic Application Usage Scenario Enumeration</para>
     /// </summary>
-    public enum DynamicAppUsageEnum
+    public enum DynamicAppUsage
     {
         /// <summary>
         /// <para>zh-cn:过滤器</para>

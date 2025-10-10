@@ -24,7 +24,7 @@ namespace Air.Cloud.Core
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseDynamicApp();
+            app.UseDynamicAppMiddleware();
         }
 
         public override void ConfigureServices(IServiceCollection services)

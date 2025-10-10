@@ -59,11 +59,9 @@ namespace Air.Cloud.Modules.Consul.Extensions
             return WebInjectInConsul<DefaultConsulServiceOptionsConfigureDependency>(builder,action);
         }
         /// <summary>
-        /// 从远程加载配置文件并注册当前服务到Consul
+        /// <para>zh-cn:从远程加载配置文件并注册当前服务到Consul</para>
+        /// <para>en-us:Load configuration from remote and register the current service to Consul</para>
         /// </summary>
-        /// <remarks>
-        /// 是否注册到Consul 依赖于appsettings.json 里面的EnableConsul
-        /// </remarks>
         /// <param name="builder">WebApplication构建器</param>
         /// <param name="action">
         /// <para>zh-cn:自定义构建行为</para>

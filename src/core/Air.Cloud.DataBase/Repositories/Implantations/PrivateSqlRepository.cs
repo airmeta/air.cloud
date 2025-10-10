@@ -1,12 +1,4 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
-using Air.Cloud.Core.Dependencies;
+﻿using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.DataBase.ContextPools;
 using Air.Cloud.DataBase.Repositories;
@@ -15,38 +7,7 @@ using Air.Cloud.DataBase.Repositories.Dependencies;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
-
-/// <summary>
-/// Sql 操作仓储实现
-/// </summary>
-[IgnoreScanning]
-public partial class SqlRepository : SqlRepository<MasterDbContextLocator>, ISqlRepository
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="serviceProvider">服务提供器</param>
-    public SqlRepository(IServiceProvider serviceProvider) : base(serviceProvider)
-    {
-    }
-}
-
-/// <summary>
-/// Sql 操作仓储实现
-/// </summary>
-[IgnoreScanning]
-public partial class SqlRepository<TDbContextLocator> : PrivateSqlRepository, ISqlRepository<TDbContextLocator>
-    where TDbContextLocator : class, IDbContextLocator
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="serviceProvider">服务提供器</param>
-    public SqlRepository(IServiceProvider serviceProvider) : base(typeof(TDbContextLocator), serviceProvider)
-    {
-    }
-}
+namespace Air.Cloud.DataBase.Repositories.Implantations;
 
 /// <summary>
 /// 私有 Sql 仓储

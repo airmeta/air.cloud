@@ -1,41 +1,45 @@
-﻿using Air.Cloud.Core;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.Core;
 using Air.Cloud.Core.Enhance;
 using Air.Cloud.Core.Modules;
 using Air.Cloud.Core.Modules.DynamicApp;
 using Air.Cloud.Core.Modules.DynamicApp.Attributes;
+using Air.Cloud.Core.Modules.DynamicApp.Enums;
 using Air.Cloud.Core.Modules.DynamicApp.Model;
+using Air.Cloud.Core.Modules.DynamicApp.Provider;
 using Air.Cloud.Core.Plugins;
+using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DynamicServer;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
-
+/// <summary>
+/// <para>zh-cn:动态应用扩展类</para>
+/// <para>en-us: Dynamic Application Extension Class</para>
+/// </summary>
 public static  class DynamicAppExtensions
 {
-    //需要解决接口 控制器 中间件 拦截器 的 动态加载问题 将其挂载到主程序中
-    //  模组将会忽略启动程序集中的program.cs类,继承了AppStartup的startup.cs类(因为如果加载可能会导致主程序崩溃)
-    //  每个模组都增加basepath 用来区分各个模组的接口路由地址 这样可以根据不通的basepath来应用不同的中间件和拦截器  如果只有一个模组 并且basepath为空或者/ 则表示应用到全局
-
-    //调整目录接口 增加lib文件夹 和 ModInfo.xml 配置文件
-    // ModInfo.xml 暂定以下配置:
-    //    1. 模组名称
-    //    2. 模组版本
-    //    3. 模组描述   
-    //    4. 模组运行端口
-    //    5. 模组BasePath
-    //    6. 模组接口Dll名称
-    //    7. 模组启动Dll名称
-    // lib文件夹存放动态加载的dll ModInfo.xml 配置文件存放动态应用的配置信息
-    // 需要单独为主程序提供一个启动方法 用来扫描 并加载 多个动态应用的配置文件
-
-    //需要增加插件的挂载 现在扫描的是模组 插件类型与模组不一样 扫描到的参数 直接应用到全局即可 插件只关注拦截器 中间件
-
+    /// <summary>
+    /// <para>zh-cn:模组扫描类型</para>
+    /// <para>en-us: Module Scanning Type</para>
+    /// </summary>
     static Func<Type, bool> ModuleScanningType = (t =>
     {
         var instances = t.GetInterfaces();
@@ -53,7 +57,10 @@ public static  class DynamicAppExtensions
         return false;
     });
 
-
+    /// <summary>
+    /// <para>zh-cn:插件扫描类型</para>
+    /// <para>en-us: Plugin Scanning Type</para>
+    /// </summary>
     static Func<Type, bool> PluginScanningType = (t =>
     {
         if (t.IsDefined(typeof(PluginInjectAttribute)))
@@ -67,16 +74,27 @@ public static  class DynamicAppExtensions
         }
         return false;
     });
-
-    private  static IServiceCollection UseDynamicModules(IServiceCollection services)
+    /// <summary>
+    /// <para>zh-cn:使用动态模组</para>
+    /// <para>en-us: Use Dynamic Modules</para>
+    /// </summary>
+    /// <param name="services">
+    ///  <para>zh-cn:服务集合</para>
+    ///  <para>en-us: Service Collection</para>
+    /// </param>
+    /// <returns>
+    ///  <para>zh-cn:返回服务集合</para>
+    ///  <para>en-us: Returns the Service Collection</para>
+    /// </returns>
+    private static IServiceCollection UseDynamicModules(IServiceCollection services)
     {
         //扫描 加载模组
-        var Modules = AppRealization.DynamicAppLoader.TryLoadModules();
+        var Modules = AppRealization.DynamicAppStore.TryLoadApplication(DynamicAppType.Mod);
         IEnumerable<Type> AllModuleCrucialTypes = new List<Type>();
         foreach (var module in Modules)
         {
             //扫描出所有的控制器 中间件 拦截器
-            var loadContext = AppRealization.DynamicAppLoader.GetAssemblyLoadContext(module);
+            var loadContext = AppRealization.DynamicAppStore.GetAssemblyLoadContext(module);
             var ModuleAssemblies = loadContext.Assemblies.ToList();
             ModuleAssemblies.ForEach(a =>
             {
@@ -93,7 +111,7 @@ public static  class DynamicAppExtensions
                         if (type.IsDefined(typeof(PluginInjectAttribute)))
                         {
                             var attr = type.GetCustomAttribute<PluginInjectAttribute>();
-                            IDynamicAppLoaderStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
+                            IDynamicAppStoreStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
                             {
                                 OrderType = attr.OrderType,
                                 OrderNumber = attr.Order,
@@ -106,11 +124,11 @@ public static  class DynamicAppExtensions
                         if (instances.Contains(typeof(IAsyncActionFilter)))
                         {
                             //过滤器
-                            IDynamicAppLoaderStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
+                            IDynamicAppStoreStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
                             {
-                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.PluginOrderEnum.Earliest,
+                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicPluginOrder.Earliest,
                                 OrderNumber = 0,
-                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Filter,
+                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Filter,
                                 Type = type,
                                 Assembly = a.GetName()
                             });
@@ -118,11 +136,11 @@ public static  class DynamicAppExtensions
                         if (type.Name.EndsWith("MiddleWare"))
                         {
                             //中间件
-                            IDynamicAppLoaderStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
+                            IDynamicAppStoreStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
                             {
-                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.PluginOrderEnum.Earliest,
+                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicPluginOrder.Earliest,
                                 OrderNumber = 0,
-                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Middleware,
+                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Middleware,
                                 Type = type,
                                 Assembly = a.GetName()
                             });
@@ -138,15 +156,27 @@ public static  class DynamicAppExtensions
         return services;
     }
 
+    /// <summary>
+    /// <para>zh-cn:使用动态插件</para>
+    /// <para>en-us: Use Dynamic Plugins</para>
+    /// </summary>
+    /// <param name="services">
+    ///  <para>zh-cn:服务集合</para>
+    ///  <para>en-us: Service Collection</para>
+    /// </param>
+    /// <returns>
+    ///  <para>zh-cn:返回服务集合</para>
+    ///  <para>en-us: Returns the Service Collection</para>
+    /// </returns>
     private static IServiceCollection UseDynamicPlugins(IServiceCollection services)
     {
         //扫描 加载插件
-        var Plugins = AppRealization.DynamicAppLoader.TryLoadPlugins();
+        var Plugins = AppRealization.DynamicAppStore.TryLoadApplication(DynamicAppType.Plugin);
         IList<Type> AllPluginCrucialTypes = new List<Type>();
         foreach (var plugin in Plugins)
         {
             //扫描出所有的控制器 中间件 拦截器
-            var loadContext = AppRealization.DynamicAppLoader.GetAssemblyLoadContext(plugin);
+            var loadContext = AppRealization.DynamicAppStore.GetAssemblyLoadContext(plugin);
             loadContext.Assemblies.ToList().ForEach(a =>
             {
                 var types = a.LoadTypes(PluginScanningType).ToList();
@@ -155,7 +185,7 @@ public static  class DynamicAppExtensions
                     if (type.IsDefined(typeof(PluginInjectAttribute)))
                     {
                         var attr = type.GetCustomAttribute<PluginInjectAttribute>();
-                        IDynamicAppLoaderStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
+                        IDynamicAppStoreStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
                         {
                             OrderType = attr.OrderType,
                             OrderNumber = attr.Order,
@@ -170,11 +200,11 @@ public static  class DynamicAppExtensions
                         if (instances.Contains(typeof(IAsyncActionFilter)))
                         {
                             //过滤器
-                            IDynamicAppLoaderStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
+                            IDynamicAppStoreStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
                             {
-                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.PluginOrderEnum.Earliest,
+                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicPluginOrder.Earliest,
                                 OrderNumber = 0,
-                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Filter,
+                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Filter,
                                 Type = type,
                                 Assembly = a.GetName()
                             });
@@ -182,11 +212,11 @@ public static  class DynamicAppExtensions
                         else
                         {
                             //中间件
-                            IDynamicAppLoaderStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
+                            IDynamicAppStoreStandard.DynamicAppScanningResult.Add(new DynamicAppInformation
                             {
-                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.PluginOrderEnum.Earliest,
+                                OrderType = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicPluginOrder.Earliest,
                                 OrderNumber = 0,
-                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Middleware,
+                                Usage = Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Middleware,
                                 Type = type,
                                 Assembly = a.GetName()
                             });
@@ -201,6 +231,18 @@ public static  class DynamicAppExtensions
     }
 
 
+    /// <summary>
+    /// <para>zh-cn:添加动态应用支持</para>
+    /// <para>en-us: Add dynamic application support</para>
+    /// </summary>
+    /// <param name="services">
+    ///  <para>zh-cn:服务集合</para>
+    ///  <para>en-us: Service Collection</para>
+    /// </param>
+    /// <returns>
+    ///  <para>zh-cn:返回服务集合</para>
+    ///  <para>en-us: Returns the Service Collection</para>
+    /// </returns>
     public static IServiceCollection AddDynamicApp(this IServiceCollection services)
     {
 
@@ -208,15 +250,52 @@ public static  class DynamicAppExtensions
 
         UseDynamicPlugins(services);
 
+        services.AddDynamicAppPart();
+
         return services;
 
     }
 
-    public static IApplicationBuilder UseDynamicApp(this IApplicationBuilder app)
+    /// <summary>
+    /// <para>zh-cn:添加动态应用部件</para>
+    /// <para>en-us: Add dynamic application parts</para>
+    /// </summary>
+    /// <param name="services">
+    ///  <para>zh-cn:服务集合</para>
+    ///  <para>en-us: Service Collection</para>
+    /// </param>
+    /// <returns>
+    ///  <para>zh-cn:返回服务集合</para>
+    ///  <para>en-us: Returns the Service Collection</para>
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    ///  <para>zh-cn:如果未能找到 ApplicationPartManager 实例，则抛出此异常，提示必须在调用 AddControllers 之后调用此方法。</para>
+    ///  <para>en-us: If the ApplicationPartManager instance cannot be found, this exception is thrown, indicating that this method must be called after AddControllers.</para>
+    /// </exception>
+    private static IServiceCollection AddDynamicAppPart(this IServiceCollection services)
     {
-        IDynamicAppLoaderStandard.DynamicAppScanningResult = IDynamicAppLoaderStandard.DynamicAppScanningResult.OrderBy(s => s.OrderNumber).ThenBy(s => s.OrderType).ToList();
+        var partManager = services.FirstOrDefault(s => s.ServiceType == typeof(ApplicationPartManager))?.ImplementationInstance as ApplicationPartManager
+            ?? throw new InvalidOperationException($"`{nameof(AddDynamicAppPart)}` must be invoked after `{nameof(MvcServiceCollectionExtensions.AddControllers)}`.");
+        
+        AppCore.ApplicationPart= partManager;
 
-        var Middlewares = IDynamicAppLoaderStandard.DynamicAppScanningResult.Where(s => s.Usage == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Middleware).ToList();
+        AppRealization.DynamicAppStore.InjectDynamicAppPartManager().FeatureProviders.Add(new DynamicApiControllerFeatureProvider());
+
+        return services;
+    }
+
+
+    /// <summary>
+    /// <para>zh-cn:使用动态应用中间件</para>
+    /// <para>en-us: Use Dynamic Application Middleware</para>
+    /// </summary>
+    /// <param name="app"></param>
+    /// <returns></returns>
+    public static IApplicationBuilder UseDynamicAppMiddleware(this IApplicationBuilder app)
+    {
+        IDynamicAppStoreStandard.DynamicAppScanningResult = IDynamicAppStoreStandard.DynamicAppScanningResult.OrderBy(s => s.OrderNumber).ThenBy(s => s.OrderType).ToList();
+
+        var Middlewares = IDynamicAppStoreStandard.DynamicAppScanningResult.Where(s => s.Usage == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Middleware).ToList();
 
         foreach (var item in Middlewares)
         {
@@ -226,14 +305,33 @@ public static  class DynamicAppExtensions
         }
         return app;
     }
-
+    /// <summary>
+    /// <para>zh-cn:添加应用控制器</para>
+    /// <para>en-us: Add Application Controllers</para>
+    /// </summary>
+    /// <remarks>
+    ///  <para>zh-cn:此方法是适配动态应用程序的控制器方法</para>
+    ///  <para>en-us: This method is an adaptation of the controller method for dynamic applications</para>
+    /// </remarks>
+    /// <param name="services">
+    /// <para>zh-cn:服务集合</para>
+    /// <para>en-us: Service Collection</para>
+    /// </param>
+    /// <param name="configure">
+    ///  <para>zh-cn:配置选项</para>
+    ///  <para>en-us: Configuration options</para>
+    /// </param>
+    /// <returns>
+    ///  <para>zh-cn:返回 MVC 构建器</para>
+    ///  <para>en-us: Returns the MVC Builder</para>
+    /// </returns>
     public static IMvcBuilder AddAppControllers(this IServiceCollection services, Action<MvcOptions> configure = null)
     {
         return services.AddControllers(s =>
         {
-            var EarliestFilters = IDynamicAppLoaderStandard.DynamicAppScanningResult
-                         .Where(s => s.Usage == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Filter
-                                     && s.OrderType == Air.Cloud.Core.Modules.DynamicApp.Enums.PluginOrderEnum.Earliest)
+            var EarliestFilters = IDynamicAppStoreStandard.DynamicAppScanningResult
+                         .Where(s => s.Usage == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Filter
+                                     && s.OrderType == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicPluginOrder.Earliest)
                          .OrderBy(s => s.OrderNumber)
                          .ThenBy(s => s.OrderType)
                          .ToList();
@@ -243,9 +341,9 @@ public static  class DynamicAppExtensions
                 AddFilterMethod.Invoke(s.Filters, null);
             }
             configure.Invoke(s);
-            var LatestFilters = IDynamicAppLoaderStandard.DynamicAppScanningResult
-               .Where(s => s.Usage == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsageEnum.Filter
-                           && s.OrderType == Air.Cloud.Core.Modules.DynamicApp.Enums.PluginOrderEnum.Latest)
+            var LatestFilters = IDynamicAppStoreStandard.DynamicAppScanningResult
+               .Where(s => s.Usage == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicAppUsage.Filter
+                           && s.OrderType == Air.Cloud.Core.Modules.DynamicApp.Enums.DynamicPluginOrder.Latest)
                .OrderBy(s => s.OrderNumber)
                .ThenBy(s => s.OrderType)
                .ToList();

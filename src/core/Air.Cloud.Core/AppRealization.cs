@@ -131,7 +131,7 @@ namespace Air.Cloud.Core
         /// <para>zh-cn:动态应用加载标准实现</para>
         /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
         /// </summary>
-        public static IDynamicAppLoaderStandard DynamicAppLoader => InternalRealization.DynamicAppLoader ?? DefaultRealization.DynamicAppLoader;
+        public static IDynamicAppStoreStandard DynamicAppStore => InternalRealization.DynamicAppStore ?? DefaultRealization.DynamicAppStore;
 
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:动态应用加载标准实现</para>
             /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
             /// </summary>
-            public static readonly IDynamicAppLoaderStandard DynamicAppLoader = new DynamicAppLoaderDependency();
+            public static readonly IDynamicAppStoreStandard DynamicAppStore = new DynamicAppStoreDependency();
             /// <summary>
             /// 压缩与解压缩标准实现
             /// </summary>
@@ -314,7 +314,7 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:动态应用加载标准实现</para>
             /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
             /// </summary>
-            public static  IDynamicAppLoaderStandard DynamicAppLoader => AppCore.GetService<IDynamicAppLoaderStandard>();
+            public static  IDynamicAppStoreStandard DynamicAppStore => AppCore.GetService<IDynamicAppStoreStandard>();
 
             /// <summary>
             /// <para>zh-cn:压缩与解压缩标准实现</para>

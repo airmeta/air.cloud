@@ -1,7 +1,17 @@
-﻿using Air.Cloud.Core.Modules.DynamicApp.Enums;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.Core.Modules.DynamicApp.Enums;
 using Air.Cloud.Core.Modules.DynamicApp.Model;
 
-using System.Drawing;
 using System.Xml.Linq;
 
 namespace Air.Cloud.Core.Modules.DynamicApp.Extensions
@@ -39,8 +49,8 @@ namespace Air.Cloud.Core.Modules.DynamicApp.Extensions
                                        ?.Elements("Assembly")
                                        .Select(a =>
                                        {
-                                           DynamicModAssemblyUseTypeEnum[] Types = a.Attribute("Type")?.Value?.Split(",").Select(x =>
-                                           (DynamicModAssemblyUseTypeEnum)Enum.Parse(typeof(DynamicModAssemblyUseTypeEnum), x)).ToArray();
+                                           DynamicModAssemblyUseType[] Types = a.Attribute("Type")?.Value?.Split(",").Select(x =>
+                                           (DynamicModAssemblyUseType)Enum.Parse(typeof(DynamicModAssemblyUseType), x)).ToArray();
                                            return new ModAssemblyInformation
                                            {
                                                Name = a.Attribute("Name")?.Value,

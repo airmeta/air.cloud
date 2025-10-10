@@ -9,15 +9,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Modules.DynamicApp.Extensions
+
+namespace Air.Cloud.Core.Modules.DynamicApp.Attributes;
+
+/// <summary>
+/// 动态 WebApi 特性
+/// </summary>
+[IgnoreScanning, AttributeUsage(AttributeTargets.Class)]
+public sealed class DynamicApiControllerAttribute : Attribute
 {
-    /// <summary>
-    /// 动态模组扩展
-    /// </summary>
-    public static class DynamicModExtensions
-    {
 
 
-
-    }
 }
