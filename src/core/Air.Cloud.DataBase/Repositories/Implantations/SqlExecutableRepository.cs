@@ -6,6 +6,8 @@
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 // See the Mulan PSL v2 for more details.
 
+using Air.Cloud.Core.Exceptions;
+using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.DataBase.Enums;
 using Air.Cloud.DataBase.Extensions;
 using Air.Cloud.DataBase.Helpers;
@@ -1038,8 +1040,10 @@ public partial class PrivateSqlRepository
     /// <param name="sql">sql 语句</param>
     /// <param name="parameters">命令参数</param>
     /// <returns>int</returns>
+    [Aspect(typeof(IfParamIsNullOrEmptyExceptionHandler))]
     public virtual int SqlNonQuery(string sql, params DbParameter[] parameters)
     {
+        if (sql.IsNullOrEmpty()) throw new IfParamIsNullOrEmptyException("SQL 语句为空,无法执行");
         return Database.ExecuteNonQuery(sql, parameters);
     }
 
@@ -1049,8 +1053,10 @@ public partial class PrivateSqlRepository
     /// <param name="sql">sql 语句</param>
     /// <param name="model">参数模型</param>
     /// <returns>int</returns>
+    [Aspect(typeof(IfParamIsNullOrEmptyExceptionHandler))]
     public virtual int SqlNonQuery(string sql, object model)
     {
+        if (sql.IsNullOrEmpty()) throw new IfParamIsNullOrEmptyException("SQL 语句为空,无法执行");
         return Database.ExecuteNonQuery(sql, model).rowEffects;
     }
 
@@ -1060,8 +1066,10 @@ public partial class PrivateSqlRepository
     /// <param name="sql">sql 语句</param>
     /// <param name="parameters">命令参数</param>
     /// <returns>int</returns>
+    [Aspect(typeof(IfParamIsNullOrEmptyExceptionHandler))]
     public virtual Task<int> SqlNonQueryAsync(string sql, params DbParameter[] parameters)
     {
+        if (sql.IsNullOrEmpty()) throw new IfParamIsNullOrEmptyException("SQL 语句为空,无法执行");
         return Database.ExecuteNonQueryAsync(sql, parameters);
     }
 

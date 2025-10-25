@@ -55,7 +55,7 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard.Pool
                     AdditionalParams = null,
                     Content = "Current scheduler object is locked",
                     Title = "SchedulerPool Notice",
-                    Level = AppPrintLevel.Warning,
+                    Level = AppPrintLevel.Warn,
                     Type=AppPrintConstType.DEFAULT_TYPE
                 });
                 return false;

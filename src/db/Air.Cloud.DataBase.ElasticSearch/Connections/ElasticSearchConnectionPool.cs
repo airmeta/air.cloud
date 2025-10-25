@@ -55,7 +55,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                     AdditionalParams = null,
                     Content = "Current es client is locked",
                     Title = "ElasticSearchConnectionPool Notice",
-                    Level = AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warn
                 });
                 return false;
             }

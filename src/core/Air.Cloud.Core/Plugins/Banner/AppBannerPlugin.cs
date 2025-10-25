@@ -10,6 +10,11 @@
  * acknowledged.
  */
 
+using System;
+using System.IO;
+using System.Linq;
+using System.Runtime;
+
 namespace Air.Cloud.Core.Plugins.Banner
 {
     /// <summary>
@@ -22,42 +27,45 @@ namespace Air.Cloud.Core.Plugins.Banner
         public void PrintOrganizationName()
         {
             string[] lines = {
-                        "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
-                        @":::::  █████╗ ██╗██████╗     ██████╗██╗      ██████╗ ██╗   ██╗██████╗  :::::",
-                        @"::::: ██╔══██╗██║██╔══██╗   ██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗ :::::",
-                        @"::::: ███████║██║██████╔╝   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::",
-                        @"::::: ██╔══██║██║██╔══██╗   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::",
-                        @"::::: ██║  ██║██║██║  ██║   ╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝ :::::",
-                        "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+                        "    ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
+                        @"    :::::  █████╗ ██╗██████╗     ██████╗██╗      ██████╗ ██╗   ██╗██████╗  :::::",
+                        @"    ::::: ██╔══██╗██║██╔══██╗   ██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗ :::::",
+                        @"    ::::: ███████║██║██████╔╝   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::",
+                        @"    ::::: ██╔══██║██║██╔══██╗   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::",
+                        @"    ::::: ██║  ██║██║██║  ██║   ╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝ :::::",
+                        "    ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
             };
+            Console.WriteLine("  ");
             for (int i = 0; i < lines.Length; i++)
             {
                 Console.WriteLine(lines[i]);
             }
+            Console.WriteLine("  ");
         }
         /// <inheritdoc/>
         public void PrintSystemModuleInformation(IList<string> Paths)
         {
-            Console.WriteLine("----------------------------------------");
-            Console.WriteLine($"系统完成模块扫描 共加载了 {Paths.Count} 个模块");
-            foreach (string path in Paths)
+            Dictionary<string, object> dic = new Dictionary<string, object>();
+            foreach (var s in Paths)
             {
-                var dirInfo = new DirectoryInfo(path);
-                Console.WriteLine($"模块名: {dirInfo.Name}    模块安装地址: {path}");
+                var dirInfo = new DirectoryInfo(s);
+                dic.Add($"模块名: {dirInfo.Name}", $"模块安装地址: {s}");
             }
-            Console.WriteLine("----------------------------------------");
+            AppRealization.Output.Print("系统初始化", $"系统完成模块扫描 共加载了 {Paths.Count} 个模块", AppPrintLevel.Information,
+                AdditionalParams: dic);
         }
         /// <inheritdoc/>
         public void PrintSystemPluginInformation(IList<string> Paths)
         {
-            Console.WriteLine("----------------------------------------");
-            Console.WriteLine($"系统完成插件扫描 共加载了 {Paths.Count} 个插件");
-            foreach (string path in Paths)
+
+            Dictionary<string, object> dic = new Dictionary<string, object>();
+            foreach (var s in Paths)
             {
-                var dirInfo = new DirectoryInfo(path);
-                Console.WriteLine($"插件名: {dirInfo.Name}    插件安装地址: {path}");
+                var dirInfo = new DirectoryInfo(s);
+                dic.Add($"插件名: {dirInfo.Name}", $"插件安装地址: {s}");
             }
-            Console.WriteLine("----------------------------------------");
+            AppRealization.Output.Print("系统初始化", $"系统完成插件扫描 共加载了 {Paths.Count} 个模块", AppPrintLevel.Information,
+                AdditionalParams: dic);
         }
     }
 }

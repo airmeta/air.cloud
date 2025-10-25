@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Aspects;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Modules.DynamicApp;
 using Air.Cloud.Core.Plugins;
@@ -45,54 +45,66 @@ namespace Air.Cloud.Core
     public class AppRealization
     {
         /// <summary>
-        /// 内容输出标准实现
+        /// <para>zh-cn:内容输出标准实现</para>
+        /// <para>en-us:Content output standard implementation</para>
         /// </summary>
         public static IAppOutputStandard Output => InternalRealization.Output ?? DefaultRealization.Output;
         /// <summary>
-        /// 容器标准实现
+        /// <para>zh-cn:容器标准实现</para>
+        /// <para>en-us:Container standard implementation</para>
         /// </summary>
         public static IContainerStandard Container => InternalRealization.Container ?? DefaultRealization.Container;
         /// <summary>
-        /// 系统注入标准实现
+        /// <para>zh-cn:系统配置文件标准实现</para>
+        /// <para>en-us:System configuration file standard implementation</para>
         /// </summary>
         public static IAppConfigurationStandard Configuration => InternalRealization.Configuration ?? DefaultRealization.Configuration;
         /// <summary>
-        /// 全局异常标准实现
+        /// <para>zh-cn:全局异常标准实现</para>
+        /// <para>en-us:Global exception standard implementation</para>
         /// </summary>
         public static IAppDomainExceptionHandlerStandard DomainExceptionHandler => InternalRealization.DomainExceptionHandler ?? DefaultRealization.DomainExceptionHandler;
         /// <summary>
-        /// 类库扫描标准实现
+        /// <para>zh-cn:类库扫描标准实现</para>
+        /// <para>en-us:Assembly scanning standard implementation</para>
         /// </summary>
         public static IAssemblyScanningStandard AssemblyScanning => InternalRealization.AssemblyScanning ?? DefaultRealization.AssemblyScanning;
         /// <summary>
-        /// JSON Web Token 标准实现
+        /// <para>zh-cn:JSON Web Token 标准实现</para>
+        /// <para>en-us:JSON Web Token standard implementation</para>
         /// </summary>
         public static IJwtHandlerStandard Jwt => InternalRealization.Jwt ?? DefaultRealization.Jwt;
         /// <summary>
-        /// 缓存标准实现
+        /// <para>zh-cn:缓存标准实现</para>
+        /// <para>en-us:Cache standard implementation</para>
         /// </summary>
         /// <remarks>
-        /// 如果无实现,则使用Redis缓存标准实现中的String模块,如果无Redis缓存标准实现,则抛出异常信息
+        ///  <para>zh-cn:如果无实现,则使用Redis缓存标准实现中的String模块,如果无Redis缓存标准实现,则抛出异常信息</para>
+        ///  <para>en-us:If there is no implementation, the String module in the Redis cache standard implementation is used. If there is no Redis cache standard implementation, an exception is thrown.</para>
         /// </remarks>
         public static IAppCacheStandard Cache => InternalRealization.Cache ?? DefaultRealization.Cache;
         /// <summary>
-        /// Redis缓存标准实现
+        /// <para>zh-cn:Redis缓存标准实现</para>
+        /// <para>en-us:Redis cache standard implementation</para>
         /// </summary>
         public static IRedisCacheStandard RedisCache => InternalRealization.RedisCache ?? DefaultRealization.RedisCache;
         /// <summary>
-        /// 压缩与解压缩标准实现
+        /// <para>zh-cn:压缩与解压缩标准实现</para>
+        /// <para>en-us:Compression and decompression standard implementation</para>
         /// </summary>
         public static ICompressStandard Compress => InternalRealization.Compress ?? DefaultRealization.Compress;
         /// <summary>
-        /// JSON序列化标准实现
+        /// <para>zh-cn:JSON序列化标准实现</para>
+        /// <para>en-us:JSON serialization standard implementation</para>
         /// </summary>
         public static IJsonSerializerStandard JSON => InternalRealization.JSON ?? DefaultRealization.JSON;
         /// <summary>
-        /// 应用程序PID信息 
+        ///  <para>zh-cn:应用程序PID信息 </para>
+        ///  <para>en-us:Application PID information </para>
         /// </summary>
         /// <remarks>
-        ///  与linux 系统的不同的是,这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称
-        ///  (暂时只在Windows 环境下进行测试)
+        ///   <para>这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一</para>
+        ///   <para>This PID is for the unified registration of multiple nodes in a microservice architecture, where each instance name is unique for each different path running instance</para>
         /// </remarks>
         public static IPIDPlugin PID => InternalRealization.PID ?? DefaultRealization.PID;
 
@@ -102,7 +114,8 @@ namespace Air.Cloud.Core
         /// </summary>
         public static IAppPluginFactory AppPlugin => InternalRealization.AppPlugin ?? DefaultRealization.AppPlugin;
         /// <summary>
-        /// 系统注入标准
+        /// <para>zh-cn:系统注入标准实现</para>
+        /// <para>en-us:System injection standard implementation</para>
         /// </summary>
         public static IAppInjectStandard Injection=> InternalRealization.Injection ?? DefaultRealization.Injection;
         /// <summary>
@@ -150,7 +163,7 @@ namespace Air.Cloud.Core
         ///  <para>zh-cn:注意,此方法在设置标准实现时,需要放在Startup中使用,在Program.cs中使用时,可能会带来空指针异常,这是因为Program.cs中的代码执行时间会比框架内置的资源加载要早</para>
         ///  <para>en-us:Note that this method needs to be used in Startup when setting standard implementations. When used in Program.cs, it may cause a null pointer exception, because the code execution time in Program.cs is earlier than the built-in resource loading of the framework.</para>
         /// </remarks>
-        [Aspect(typeof(ExecuteMethodPrinterAspect))]
+        [Aspect(typeof(ExecuteMethodPrinterAspectHandler))]
         public static void SetDependency<TStandard>(TStandard standard) 
                 where TStandard : class, IStandard
         {
@@ -184,7 +197,7 @@ namespace Air.Cloud.Core
         ///  <para>zh-cn:注意,此方法在设置标准实现时,需要放在Startup中使用,在Program.cs中使用时,可能会带来空指针异常,这是因为Program.cs中的代码执行时间会比框架内置的资源加载要早</para>
         ///  <para>en-us:Note that this method needs to be used in Startup when setting standard implementations. When used in Program.cs, it may cause a null pointer exception, because the code execution time in Program.cs is earlier than the built-in resource loading of the framework.</para>
         /// </remarks>
-        [Aspect(typeof(ExecuteMethodPrinterAspect))]
+        [Aspect(typeof(ExecuteMethodPrinterAspectHandler))]
         public static bool SetPlugin<TPlugin>(TPlugin plugin,string PluginName=null)
                 where TPlugin : class,IPlugin
         {
@@ -211,9 +224,10 @@ namespace Air.Cloud.Core
                 var Instance = Activator.CreateInstance(Types[0]);
                 item.SetValue(null, Instance);
             }
-        }  
+        }
         /// <summary>
-        /// 默认标准实现
+        /// <para>zh-cn:默认标准实现</para>
+        /// <para>en-us:Default standard implementation</para>
         /// </summary>
         protected static class DefaultRealization
         {
@@ -223,49 +237,60 @@ namespace Air.Cloud.Core
             /// </summary>
             public static readonly IDynamicAppStoreStandard DynamicAppStore = new DynamicAppStoreDependency();
             /// <summary>
-            /// 压缩与解压缩标准实现
+            /// <para>zh-cn:压缩与解压缩标准实现</para>
+            /// <para>en-us: Compression and decompression standard implementation</para>
             /// </summary>
             public static readonly ICompressStandard Compress = new DefaultCompressStandardDependency();
 
             /// <summary>
-            /// 内容输出标准实现
+            /// <para>zh-cn:内容输出标准实现</para>
+            /// <para>en-us: Content output standard implementation</para>
             /// </summary>
             public static readonly IAppOutputStandard Output = new DefaultAppOutputDependency();
             /// <summary>
-            /// 容器标准实现
+            /// <para>zh-cn:容器标准实现</para>
+            /// <para>en-us: Container standard implementation</para>
             /// </summary>
             public static  IContainerStandard Container => throw new NotImplementedException("未查询到容器标准的实现");
             /// <summary>
-            /// 系统配置标准实现
+            /// <para>zh-cn:系统配置文件标准实现</para>
+            /// <para>en-us:System configuration file standard implementation</para>
             /// </summary>
             public static readonly IAppConfigurationStandard Configuration = new DefaultAppConfigurationDependency();
             /// <summary>
-            /// 全局异常标准实现
+            /// <para>zh-cn:全局异常标准实现</para>
+            /// <para>en-us:Global exception standard implementation</para>
             /// </summary>
             public static readonly IAppDomainExceptionHandlerStandard DomainExceptionHandler = new DefaultAppDomainExcepetionHandlerDependency();
             /// <summary>
-            /// 类库扫描标准实现
+            /// <para>zh-cn:类库扫描标准实现</para>
+            /// <para>en-us:Assembly scanning standard implementation</para>
             /// </summary>
             public static readonly IAssemblyScanningStandard AssemblyScanning = new DefaultAssemblyScanningDependency();
             /// <summary>
-            /// JSON Web Token 标准实现
+            /// <para>zh-cn:JSON Web Token 标准实现</para>
+            /// <para>en-us:JSON Web Token standard implementation</para>
             /// </summary>
             public static readonly IJwtHandlerStandard Jwt = new DefaultJwtHandlerDependency();
             /// <summary>
-            /// 缓存标准实现
+            /// <para>zh-cn:缓存标准实现</para>
+            /// <para>en-us:Cache standard implementation</para>
             /// </summary>
             public static  IAppCacheStandard Cache => throw new NotImplementedException("未引入任何关于Cache的模组或插件,如果引入,则检查你的代码是否注入该实现");
             /// <summary>
-            /// Redis缓存标准实现
+            /// <para>zh-cn:Redis缓存标准实现</para>
+            /// <para>en-us:Redis cache standard implementation</para>
             /// </summary>
             public static IRedisCacheStandard RedisCache => throw new NotImplementedException("未引入任何关于Redis的模组或插件,如果引入,则检查你的代码是否注入该实现");
             /// <summary>
-            /// JSON序列化标准实现
+            /// <para>zh-cn:JSON序列化标准实现</para>
+            /// <para>en-us:JSON serialization standard implementation</para>
             /// </summary>
             public static IJsonSerializerStandard JSON => new DefaultJsonSerializerStandardDependency();
 
             /// <summary>
-            /// 应用程序PID信息 
+            ///  <para>zh-cn:应用程序PID信息 </para>
+            ///  <para>en-us:Application PID information </para>
             /// </summary>
             /// <remarks>
             ///  这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一
@@ -279,7 +304,8 @@ namespace Air.Cloud.Core
             public static readonly IAppPluginFactory AppPlugin =new AppPluginFactory();
 
             /// <summary>
-            /// 系统注入标准默认实现
+            /// <para>zh-cn:系统注入标准实现</para>
+            /// <para>en-us:System injection standard implementation</para>
             /// </summary>
             public static IAppInjectStandard Injection => throw new NotImplementedException("系统未实现注入标准");
             /// <summary>
@@ -306,7 +332,8 @@ namespace Air.Cloud.Core
             public static IMessageQueueStandard Queue => throw new NotImplementedException("系统未实现队列标准");
         }
         /// <summary>
-        /// 自定义标准实现
+        /// <para>zh-cn:内部标准实现</para>
+        /// <para>en-us:Internal standard implementation</para>
         /// </summary>
         protected static class InternalRealization
         {
@@ -332,36 +359,44 @@ namespace Air.Cloud.Core
             /// </summary>
             public static IContainerStandard Container => AppCore.GetService<IContainerStandard>();
             /// <summary>
-            /// 系统配置标准实现
+            /// <para>zh-cn:系统配置文件标准实现</para>   
+            /// <para>en-us: System configuration file standard implementation</para>   
             /// </summary>
             public static IAppConfigurationStandard Configuration = null;
             /// <summary>
-            /// 全局异常标准实现
+            /// <para>zh-cn:全局异常标准实现</para>
+            /// <para>en-us: Global exception standard implementation</para>
             /// </summary>
             public static IAppDomainExceptionHandlerStandard DomainExceptionHandler = null;
             /// <summary>
-            /// 类库扫描标准实现
+            ///  <para>zh-cn:类库扫描标准实现</para>
+            ///  <para>en-us: Assembly scanning standard implementation</para>
             /// </summary>
             public static IAssemblyScanningStandard AssemblyScanning = null;
             /// <summary>
-            /// JSON Web Token 标准实现
+            /// <para>zh-cn:JSON Web Token 标准实现</para>
+            /// <para>en-us: JSON Web Token standard implementation</para>
             /// </summary>
             public static IJwtHandlerStandard Jwt = null;
             /// <summary>
-            /// 缓存缓存标准实现
+            /// <para>zh-cn:缓存标准实现</para>
+            /// <para>en-us: Cache standard implementation</para>
             /// </summary>
             public static IAppCacheStandard Cache => AppCore.GetService<IAppCacheStandard>();
             /// <summary>
-            /// Redis缓存缓存标准实现
+            ///  <para>zh-cn:Redis缓存标准实现</para>
+            ///  <para>en-us:Redis cache standard implementation</para>
             /// </summary>
             public static IRedisCacheStandard RedisCache => AppCore.GetService<IRedisCacheStandard>();
             /// <summary>
-            /// JSON序列化标准实现
+            ///  <para>zh-cn:JSON序列化标准实现</para>
+            ///  <para>en-us:JSON serialization standard implementation</para>
             /// </summary>
             public static IJsonSerializerStandard JSON => AppCore.GetService<IJsonSerializerStandard>()??null;
 
             /// <summary>
-            /// 应用程序PID信息 
+            /// <para>zh-cn:应用程序PID信息 </para>
+            /// <para>en-us:Application PID information </para>
             /// </summary>
             /// <remarks>
             ///  这个PID是为了在微服务架构下,多节点的统一注册时,每个实例的名称 每个不同路径运行的实例唯一
@@ -373,9 +408,9 @@ namespace Air.Cloud.Core
             /// </summary>
             public static IAppPluginFactory AppPlugin => AppCore.GetService<IAppPluginFactory>();
 
-
             /// <summary>
-            /// 系统注入标准实现
+            /// <para>zh-cn:系统注入标准实现</para>
+            /// <para>en-us:System injection standard implementation</para>
             /// </summary>
             public static IAppInjectStandard Injection = null;
 

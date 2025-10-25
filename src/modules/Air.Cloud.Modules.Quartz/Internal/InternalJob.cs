@@ -45,7 +45,7 @@ namespace Air.Cloud.Modules.Quartz.Internal
                         AppRealization.Output.Print(new AppPrintInformation
                         {
                             Title = "air.cloud.scheduler",
-                            Level = AppPrintLevel.Warning,
+                            Level = AppPrintLevel.Warn,
                             Content = $"当前调度任务未挂载,本次调度将会正常执行,并使其完成挂载",
                             State = true
                         });

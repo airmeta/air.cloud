@@ -10,13 +10,12 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Aspects;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.Repositories;
 
-using System.Data.Common;
 using System.Linq.Expressions;
 
 using unit.webapp.model.Domains;
@@ -43,7 +42,7 @@ namespace unit.webapp.domain.Domains
             var result = await _repository.InsertAsync(entity);
             return false;
         }
-        [Aspect(typeof(ExecuteMethodPrinterAspect))]
+        [Aspect(typeof(ExecuteMethodPrinterAspectHandler))]
         public IEnumerable<IEntity> Search(string id)
         {
             var data = _repository.AsQueryable();

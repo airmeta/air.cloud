@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Aspects;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 
 using Microsoft.Extensions.Configuration;
@@ -20,7 +20,7 @@ namespace Air.Cloud.Core.Standard.Configuration.Defaults
     [IgnoreScanning]
     public class DefaultAppConfigurationDependency : IAppConfigurationStandard
     {
-        [Aspect(typeof(IfHttpRequestException))]
+        [Aspect(typeof(IfHttpRequestExceptionHandler))]
         public IConfiguration LoadConfiguration(string ConfigurationName, bool IsCommonConfiguration)
         {
             IConfiguration config = null;

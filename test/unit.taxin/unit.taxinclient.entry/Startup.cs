@@ -15,8 +15,6 @@ using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.WebApp.DynamicApiController.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
-
-using unit.taxinclient.entry.TraceLogDependency;
 namespace unit.taxinclient.entry
 {
     public class Startup : AppStartup
@@ -24,7 +22,7 @@ namespace unit.taxinclient.entry
         public override void ConfigureServices(IServiceCollection services)
         {
             //services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
-            AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
+           // AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
             ////注入
             services.AddControllers(a =>
             {
@@ -36,7 +34,7 @@ namespace unit.taxinclient.entry
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseMiddleware<TraceLogMiddleware>();
+            //app.UseMiddleware<TraceLogMiddleware>();
         }
     }
 }

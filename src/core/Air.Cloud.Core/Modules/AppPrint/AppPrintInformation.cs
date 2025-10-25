@@ -65,7 +65,26 @@ namespace Air.Cloud.Core.Modules.AppPrint
             AdditionalParams = additionalParams;
             Type = type;
         }
-    }
+
+        /// <summary>
+        /// <para>zh-cn:获取输出等级标记</para>
+        /// <para>en-us:Get the output level tag</para>
+        /// </summary>
+        /// <returns>
+        ///  <para>zh-cn:等级标记字符串</para>
+        ///  <para>en-us:Level tag string</para>
+        /// </returns>
+        public string GetLevelTag() => Level switch
+            {
+                AppPrintLevel.Information => "info",
+                AppPrintLevel.Warn => "warn",
+                AppPrintLevel.Error => "error",
+                AppPrintLevel.Debug => "debug",
+                AppPrintLevel.Trace => "trace"
+            };
+
+
+}
 
 
 }

@@ -20,11 +20,21 @@ namespace Air.Cloud.Core.Standard.TraceLog.Defaults
         /// <inheritdoc/>
         public void Write(string logContent, IDictionary<string, string> Tag = null)
         {
-            AppRealization.Output.Print(new AppPrintInformation()
+            try
             {
-                Content = logContent,
-                Title = "default trace log output events"
-            });
+
+                AppPrintInformation information = AppRealization.JSON.Deserialize<AppPrintInformation>(logContent);
+
+                AppRealization.Output.Print(information);
+            }
+            catch (Exception)
+            {
+                AppRealization.Output.Print(new AppPrintInformation()
+                {
+                    Content = logContent,
+                    Title = "default trace log output events"
+                });
+            }
         }
         /// <inheritdoc/>
         public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()

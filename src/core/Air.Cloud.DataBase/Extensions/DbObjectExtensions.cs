@@ -255,7 +255,7 @@ public static class DbObjectExtensions
         AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
         {
             Title = "数据库链接状态更新",
-            Level = AppPrintLevel.Information,
+            Level = AppPrintLevel.Debug,
             Content = $"已读取到数据库链接信息",
             AdditionalParams = new Dictionary<string, object>()
             {
@@ -295,7 +295,7 @@ public static class DbObjectExtensions
             if (i < parameters.Count - 1) sqlLogBuilder.Append(", ");
         }
         sqlLogBuilder.Append(@$"], CommandType='{dbCommand.CommandType}', CommandTimeout='{dbCommand.CommandTimeout}']");
-        sqlLogBuilder.Append("\r\n");
+        sqlLogBuilder.Append("  ");
         sqlLogBuilder.Append(dbCommand.CommandType == CommandType.StoredProcedure ? "EXEC " + dbCommand.CommandText : dbCommand.CommandText);
         
         var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
@@ -303,13 +303,14 @@ public static class DbObjectExtensions
         {
 
             Title = "数据库语句执行监听",
-            Level = AppPrintLevel.Information,
+            Level = AppPrintLevel.Debug,
             Content = $"已读取到数据库语句执行记录",
             AdditionalParams = new Dictionary<string, object>()
             {
                 {"connection_id",connectionId},
                 {"connection_str", dbCommand.Connection.ConnectionString},
-                {"sql_str",sqlLogBuilder.ToString() }
+                {"sql_str",sqlLogBuilder.ToString() },
+
             },
             State = true,
             Type = AppPrintConstType.ORM_EXEC_TYPE

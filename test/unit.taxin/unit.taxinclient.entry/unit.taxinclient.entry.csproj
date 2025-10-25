@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="TraceLogDependency\TraceLogMiddleware.cs" />
+    <Compile Remove="TraceLogDependency\TraceLogStandardDependency.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
     <ProjectReference Include="..\..\unit.webapp\unit.webapp.common\unit.webapp.common.csproj" />
     <ProjectReference Include="..\..\unit.webapp\unit.webapp.service\unit.webapp.service.csproj" />
@@ -27,6 +32,7 @@
 
   <ItemGroup>
     <Folder Include="Plugins\" />
+    <Folder Include="TraceLogDependency\" />
   </ItemGroup>
 
 </Project>

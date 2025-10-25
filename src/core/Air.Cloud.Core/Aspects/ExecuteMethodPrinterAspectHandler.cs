@@ -13,12 +13,12 @@ using Air.Cloud.Core.Modules.AppAspect.Handler;
 
 using System.Reflection;
 
-namespace Air.Cloud.Core.Extensions.Aspect
+namespace Air.Cloud.Core.Aspects
 {
     /// <summary>
     /// <para>zh-cn:方法执行打印切面</para>
     /// </summary>
-    public class ExecuteMethodPrinterAspect : IAspectExecuteHandler
+    public class ExecuteMethodPrinterAspectHandler : IAspectExecuteHandler
     {
         /// <inheritdoc/>
         public void Execute_After(MethodInfo methodInfo,object retValue)

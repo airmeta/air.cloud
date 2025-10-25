@@ -10,14 +10,13 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Extensions.Aspect;
+using Air.Cloud.Core.Aspects;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Modules.RedisCache.Options;
 
 using StackExchange.Redis;
 
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 namespace Air.Cloud.Modules.RedisCache.Provider
 {
@@ -54,7 +53,7 @@ namespace Air.Cloud.Modules.RedisCache.Provider
         /// <para>en-us:Get Redis Connection</para>
         /// </summary>
         /// <returns></returns>
-        [Aspect(typeof(IfNullReferenceException))]
+        [Aspect(typeof(IfNullReferenceExceptionHandler))]
         [Description("获取Redis链接")]
         private static ConnectionMultiplexer Connect()
         {

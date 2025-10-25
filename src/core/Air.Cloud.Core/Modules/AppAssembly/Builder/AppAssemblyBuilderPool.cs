@@ -44,7 +44,7 @@ namespace Air.Cloud.Core.Modules.AppAssembly.Builder
                     AdditionalParams = null,
                     Content = "Current IAppAssemblyBuilder is locked",
                     Title = "IAppAssemblyBuilder Notice",
-                    Level = AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warn
                 });
                 return false;
             }

@@ -1,6 +1,4 @@
-﻿using Air.Cloud.Core.Extensions.Aspect;
-using Air.Cloud.Core.Extensions.IEnumerables;
-using Air.Cloud.Core.Modules.AppAspect.Attributes;
+﻿using Air.Cloud.Core.Extensions.IEnumerables;
 
 using System.Reflection;
 

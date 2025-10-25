@@ -12,8 +12,10 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
+using Air.Cloud.DataBase.BackgroundServices;
 using Air.Cloud.DataBase.Extensions;
 using Air.Cloud.DataBase.Extensions.DatabaseProvider;
+using Air.Cloud.DataBase.Options;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -22,11 +24,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using unit.webapp.repository;
 using unit.webapp.repository.DbContexts;
-
-using DbContextSaveChangesInterceptor = unit.webapp.repository.DbContexts.DbContextSaveChangesInterceptor;
-
 namespace unit.webapp.model
 {
+
     public class Startup : AppStartup
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -55,6 +55,7 @@ namespace unit.webapp.model
                         new SqlCommandAuditInterceptor()
                        });
             }, "Air.Database.Migrations");
+
 
             //使用EF的分析工具
             HibernatingRhinos.Profiler.Appender.EntityFramework.EntityFrameworkProfiler.Initialize();

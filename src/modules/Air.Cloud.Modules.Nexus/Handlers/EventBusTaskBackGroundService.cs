@@ -170,7 +170,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
         // 空检查
         if (string.IsNullOrWhiteSpace(eventSource?.EventName))
         {
-            AppRealization.Output.Print("EventBus Output", "Invalid EventName, EventName cannot be <null> or an empty string.", AppPrintLevel.Warning);
+            AppRealization.Output.Print("EventBus Output", "Invalid EventName, EventName cannot be <null> or an empty string.", AppPrintLevel.Warn);
 
             return;
         }
@@ -183,7 +183,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
         // 空订阅
         if (!eventHandlersThatShouldRun.Any() && !eventSource.IgnoreNotFound)
         {
-            AppRealization.Output.Print("EventBus Output", "Subscriber with event MainAssemblyName <{EventName}> was not found.", AppPrintLevel.Warning, AdditionalParams: new Dictionary<string, object>()
+            AppRealization.Output.Print("EventBus Output", "Subscriber with event MainAssemblyName <{EventName}> was not found.", AppPrintLevel.Warn, AdditionalParams: new Dictionary<string, object>()
             {
                 { "event-name",eventSource.EventName}
             });

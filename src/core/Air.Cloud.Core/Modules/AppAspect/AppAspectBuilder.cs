@@ -79,13 +79,17 @@ namespace Air.Cloud.Core.Modules.AppAspect
                         }
                         else
                         {
-                            AppRealization.Output.Print(new AppPrintInformation("错误的Aspect切入设置", $"切入类:{item.AppAspectDependencies.FullName} 未实现IAspectAroundHandler 或 IAspectExecuteHandler,已为你排除该项"));
+                            AppRealization.Output.Print(new AppPrintInformation("错误的Aspect切入设置", $"切入类:{item.AppAspectDependencies.FullName} 未实现IAspectAroundHandler 或 IAspectExecuteHandler,已为你排除该项",AppPrintLevel.Warn));
                         }
                     }
+
+                    string ParamContent = string.Join(",", method.GetParameters().Select(s => s.Name.ToString().ToLower()));
+
+
                     aspectMetadata.Add(new AspectMetadata
                     {
                         AspectTargetType = type,
-                        MethodName = MD5Encryption.GetMd5By32($"{type.FullName}.{method.Name}"),
+                        MethodName = MD5Encryption.GetMd5By32($"{type.FullName}.{method.Name}.Param:{ParamContent}"),
                         Aspects = attributes
                     });
                 }

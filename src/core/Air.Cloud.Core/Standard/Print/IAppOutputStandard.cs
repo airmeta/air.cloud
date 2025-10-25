@@ -9,8 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using System.Data;
-using Air.Cloud.Core.Modules.AppPrint;
+using System.Text;
 
 namespace Air.Cloud.Core.Standard.Print
 {
@@ -19,6 +18,11 @@ namespace Air.Cloud.Core.Standard.Print
     /// </summary>
     public interface IAppOutputStandard : IStandard
     {
+        /// <summary>
+        /// <para>zh-cn:制表符</para>
+        /// <para>en-us:TabCharacter</para>
+        /// </summary>
+        public static string TabCharacter = " ";
         /// <summary>
         /// 输出对象
         /// </summary>
@@ -47,6 +51,7 @@ namespace Air.Cloud.Core.Standard.Print
         /// <param name="pairs">附加参数</param>
         public void Error(Exception exception, Dictionary<string, object> pairs = default);
     }
+
     /// <summary>
     /// 默认的输出标准实现
     /// </summary>
@@ -69,26 +74,106 @@ namespace Air.Cloud.Core.Standard.Print
         /// <inheritdoc/>
         public void Print(AppPrintInformation Content)
         {
-            Console.WriteLine(AppRealization.JSON.Serialize(Content));
+            Print<AppPrintInformation>(Content);
         }
+
         /// <inheritdoc/>
         public void Print<T>(T Content) where T : AppPrintInformation, new()
         {
-            Console.WriteLine(AppRealization.JSON.Serialize(Content));
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            stringBuilder.Append(IAppOutputStandard.TabCharacter);
+            string Info = Content.GetLevelTag();
+            stringBuilder.Append($"[{Info.ToUpper()}]".PadLeft(5, ' ').ToLower());
+            stringBuilder.Append(IAppOutputStandard.TabCharacter);
+            stringBuilder.Append("Title:" + Content.Title);
+            stringBuilder.Append("\n");
+            stringBuilder.Append("    Content:" + Content.Content);
+            stringBuilder.Append(IAppOutputStandard.TabCharacter);
+            if (Content.AdditionalParams != null && Content.AdditionalParams.Keys.Any())
+            {
+                stringBuilder.Append("\n");
+                stringBuilder.Append("    AdditionalParams:");
+                stringBuilder.Append("\n");
+                foreach (var str in Content.AdditionalParams.Keys)
+                {
+                    stringBuilder.Append("        ");
+                    stringBuilder.Append($"[{str}]");
+                    stringBuilder.Append(IAppOutputStandard.TabCharacter);
+                    stringBuilder.Append($"[{Content.AdditionalParams[str]}]");
+                    stringBuilder.Append("\n");
+                }
+            }
+            Console.WriteLine(stringBuilder.ToString());
         }
 
         /// <inheritdoc/>
         public void Print(string title, string content, AppPrintLevel level =AppPrintLevel.Information, string type = AppPrintConstType.DEFAULT_TYPE, bool state = true, Dictionary<string, object> AdditionalParams = null)
         {
-            Print(new AppPrintInformation()
+
+            switch (level)
             {
-                State = state,
-                Title = title,
-                Content = content,
-                Level = level,
-                Type = type,
-                AdditionalParams = AdditionalParams
-            });
+                case AppPrintLevel.Information:
+                    Print(new AppPrintInformation()
+                    {
+                        State = state,
+                        Title = title,
+                        Content = content,
+                        Level = level,
+                        Type = type,
+                        AdditionalParams = AdditionalParams
+                    });
+                    break;
+                case AppPrintLevel.Warn:
+                    Print(new AppPrintInformation()
+                    {
+                        State = state,
+                        Title = title,
+                        Content = content,
+                        Level = level,
+                        Type = type,
+                        AdditionalParams = AdditionalParams
+                    });
+                    break;
+                case AppPrintLevel.Error:
+                    Print(new AppPrintInformation()
+                    {
+                        State = state,
+                        Title = title,
+                        Content = content,
+                        Level = level,
+                        Type = type,
+                        AdditionalParams = AdditionalParams
+                    });
+                    break;
+                case AppPrintLevel.Debug:
+                    if (AppEnvironment.IsDevelopment)
+                    {
+                        Print(new AppPrintInformation()
+                        {
+                            State = state,
+                            Title = title,
+                            Content = content,
+                            Level = level,
+                            Type = type,
+                            AdditionalParams = AdditionalParams
+                        });
+                    }
+                    break;
+                case AppPrintLevel.Trace:
+                    Print(new AppPrintInformation()
+                    {
+                        State = state,
+                        Title = title,
+                        Content = content,
+                        Level = level,
+                        Type = type,
+                        AdditionalParams = AdditionalParams
+                    });
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }

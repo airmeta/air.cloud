@@ -42,7 +42,7 @@ namespace Air.Cloud.Modules.Kafka.Pool
                     AdditionalParams = null,
                     Content = "Current es client is locked",
                     Title = "KafkaProducerPool Notice",
-                    Level = AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warn
                 });
                 return false;
             }

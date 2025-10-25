@@ -27,7 +27,7 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <para>zh-cn:警告消息</para>
         /// <para>en-us:Warning</para>
         /// </summary>
-        Warning,
+        Warn,
         /// <summary>
         /// <para>zh-cn:错误消息</para>
         /// <para>en-us:Error</para>

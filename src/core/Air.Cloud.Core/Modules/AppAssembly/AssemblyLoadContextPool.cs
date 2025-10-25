@@ -44,7 +44,7 @@ namespace Air.Cloud.Core.Modules.AppAssembly
                     AdditionalParams = null,
                     Content = "Current AssemblyLoadContext is locked",
                     Title = "AssemblyLoadContextPool Notice",
-                    Level = AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warn
                 });
                 return false;
             }

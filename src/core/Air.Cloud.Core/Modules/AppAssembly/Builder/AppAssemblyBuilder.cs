@@ -58,7 +58,7 @@ namespace Air.Cloud.Core.Modules.AppAssembly.Builder
                     AdditionalParams = null,
                     Content = $"AssemblyLoadContext {AssemblyFileName} is exists",
                     Title = "AssemblyLoadContextBuilder Notice",
-                    Level = AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warn
                 });
                 MainAssemblyName=AssemblyLoadContext.GetAssemblyName(AssemblyFilePath);
                 return MainAssemblyName;

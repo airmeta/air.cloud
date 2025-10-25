@@ -15,13 +15,13 @@ using Air.Cloud.Core.Standard.TraceLog.Defaults;
 
 using System.Reflection;
 
-namespace Air.Cloud.Core.Extensions.Aspect
+namespace Air.Cloud.Core.Aspects
 {
     /// <summary>
-    /// <para>zh-cn: 网络请求异常环绕</para>
-    /// <para>en-us: Network request exception around</para>
+    /// <para>zh-cn:如果出现异常则进行日志记录</para>
+    /// <para>en-us:If an exception occurs, log it</para>
     /// </summary>
-    public  class IfHttpRequestException : IAspectAroundHandler
+    public class IfExceptionHandler : IAspectAroundHandler
     {
         /// <inheritdoc/>
         public object Around_After(MethodInfo methodInfo, object[] args, object result)
@@ -36,17 +36,15 @@ namespace Air.Cloud.Core.Extensions.Aspect
         /// <inheritdoc/>
         public void Around_Error<TException>(MethodInfo methodInfo, object[] args, TException exception) where TException : Exception, new()
         {
-            if(exception is HttpRequestException)
-            {
-                DefaultTraceLogContent appPrintInformation = new DefaultTraceLogContent(
-                    "网络请求异常",
-                    $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现网络异常",
-                    new Dictionary<string, object>()
-                    {
-                        {"error",exception }
-                    }, DefaultTraceLogContent.EVENT_TAG, DefaultTraceLogContent.ERROR_TAG);
-                AppRealization.TraceLog.Write(appPrintInformation);
-            }
+            DefaultTraceLogContent appPrintInformation = new DefaultTraceLogContent(
+               "Exception Aspect",
+                $"在执行[{methodInfo.DeclaringType}]的方法[{methodInfo.Name}]时出现{exception.GetType().Name}异常",
+               new Dictionary<string, object>()
+               {
+                     {"source",exception.Source },
+                     {"stace",exception.StackTrace }
+               }, DefaultTraceLogContent.EVENT_TAG, DefaultTraceLogContent.ERROR_TAG);
+            AppRealization.TraceLog.Write(appPrintInformation);
         }
     }
 }

@@ -164,7 +164,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                     AdditionalParams = null,
                     Content = "无法读取ES索引信息",
                     Title = "ElasticSearchConnectionPool Notice",
-                    Level = AppPrintLevel.Warning
+                    Level = AppPrintLevel.Warn
                 });
                 throw new Exception("无法读取ES索引信息");
             }
