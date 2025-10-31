@@ -30,16 +30,10 @@ namespace Air.Cloud.WebApp.App
         /// <returns></returns>
         public static WebApplication WebInjectInFile(this WebApplicationBuilder builder,Assembly assembly=null)
         {
-
-
-
-
             var Configuration = AppRealization.Configuration.LoadConfiguration(AppConst.SystemEnvironmentConfigFileFullName, false);
             var CommonConfiguration = AppRealization.Configuration.LoadConfiguration(AppConst.CommonEnvironmentConfigFileFullName, true);
             builder.Configuration.AddConfiguration(Configuration).AddConfiguration(CommonConfiguration);
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.File;
-
-
             AppConst.ApplicationName = assembly!=null? assembly.GetName().Name : Assembly.GetCallingAssembly().GetName().Name;
             AppCore.AppStartType = AppStartupTypeEnum.WEB;
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";

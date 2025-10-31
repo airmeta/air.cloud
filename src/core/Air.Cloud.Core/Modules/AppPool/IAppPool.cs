@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Modules.StandardPool
+namespace Air.Cloud.Core.Modules.AppPool
 {
     /// <summary>
     /// <para>zh-cn:对象池模块</para>

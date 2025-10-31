@@ -12,7 +12,7 @@
 
 using System.ComponentModel;
 
-namespace Air.Cloud.Core.Dependencies.Enums;
+namespace Air.Cloud.Core.Standard.DynamicServer.Enums;
 
 /// <summary>
 /// 服务注册方式

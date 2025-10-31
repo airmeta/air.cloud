@@ -12,7 +12,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
 using Air.Cloud.Modules.Quartz.Options;

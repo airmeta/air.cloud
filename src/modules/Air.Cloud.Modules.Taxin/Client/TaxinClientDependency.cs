@@ -14,12 +14,13 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Http.Extensions;
-using Air.Cloud.Core.Plugins.InternalRequest;
+using Air.Cloud.Core.Plugins.InternalAccess;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Store;
-using Air.Cloud.Core.Standard.Taxin;
 using Air.Cloud.Core.Standard.Taxin.Client;
+using Air.Cloud.Core.Standard.Taxin.Enums;
 using Air.Cloud.Core.Standard.Taxin.Model;
+using Air.Cloud.Core.Standard.Taxin.Options;
 using Air.Cloud.Core.Standard.Taxin.Result;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 using Air.Cloud.Modules.Taxin.Extensions;
@@ -79,8 +80,8 @@ namespace Air.Cloud.Modules.Taxin.Client
         {
             switch (Options.PersistenceMethod)
             {
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                case PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Cache:
                     try
                     {
                         using (var client = HttpClientFactory.CreateClient())
@@ -116,7 +117,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                         });
                     }
                     break;
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                case PersistenceMethodEnum.KVCenter:
                     AppRealization.Output.Print(new AppPrintInformation()
                     {
                         Title = "Taxin Notice",
@@ -131,8 +132,8 @@ namespace Air.Cloud.Modules.Taxin.Client
         {
             switch (Options.PersistenceMethod)
             {
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                case PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Cache:
                     using (var client = HttpClientFactory.CreateClient())
                     {
                         client.Timeout = new TimeSpan(0, 0, 30);
@@ -144,7 +145,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                         await ITaxinStoreStandard.SetStoreAsync(ITaxinStoreStandard.Packages);
                     }
                     break;
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                case PersistenceMethodEnum.KVCenter:
                     var AllData = await AppRealization.KVCenter.QueryAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVDataBasePath(Options.PersistencePath));
                     foreach (var item in AllData)
                     {
@@ -173,8 +174,8 @@ namespace Air.Cloud.Modules.Taxin.Client
         {
             switch (Options.PersistenceMethod)
             {
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                case PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Cache:
                     try
                     {
                         using (var client = HttpClientFactory.CreateClient())
@@ -201,7 +202,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                         });
                     }
                     break;
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                case PersistenceMethodEnum.KVCenter:
                      await AppRealization.KVCenter.AddOrUpdateAsync(ITaxinStoreStandard.GetPersistenceKVDataPath(Options.PersistencePath),AppRealization.JSON.Serialize(ITaxinStoreStandard.Current));
                     break;
             }
@@ -212,8 +213,8 @@ namespace Air.Cloud.Modules.Taxin.Client
         {
             switch (Options.PersistenceMethod)
             {
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Folder:
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.Cache:
+                case PersistenceMethodEnum.Folder:
+                case PersistenceMethodEnum.Cache:
                     using (var client = HttpClientFactory.CreateClient())
                     {
                         client.Timeout = new TimeSpan(0, 3, 0);
@@ -248,7 +249,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                         }
                     }
                     break;
-                case Core.Standard.Taxin.Server.PersistenceMethodEnum.KVCenter:
+                case PersistenceMethodEnum.KVCenter:
                     await PullAsync();
                     break;
 

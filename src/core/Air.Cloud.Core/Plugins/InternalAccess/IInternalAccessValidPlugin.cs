@@ -10,9 +10,10 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
 
-namespace Air.Cloud.Core.Plugins.InternalRequest
+using Air.Cloud.Core.Standard.DynamicServer;
+
+namespace Air.Cloud.Core.Plugins.InternalAccess
 {
     /// <summary>
     /// 内部访问插件接口

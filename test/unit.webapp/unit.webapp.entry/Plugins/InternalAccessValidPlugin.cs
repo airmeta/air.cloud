@@ -1,5 +1,5 @@
 ﻿using Air.Cloud.Core;
-using Air.Cloud.Core.Plugins.InternalRequest;
+using Air.Cloud.Core.Plugins.InternalAccess;
 using Air.Cloud.Core.Plugins.Security.RSA;
 
 namespace unit.webapp.entry.Plugins

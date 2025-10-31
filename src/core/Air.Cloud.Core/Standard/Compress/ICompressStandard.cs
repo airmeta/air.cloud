@@ -10,7 +10,7 @@
  * acknowledged.
  */
 
-namespace Air.Cloud.Core.Standard.UtilStandard
+namespace Air.Cloud.Core.Standard.Compress
 {
     /// <summary>
     /// 压缩与解压缩标准

@@ -1,4 +1,5 @@
 ﻿using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Standard.DistributedLock;
 using Air.Cloud.Modules.RedisCache.Dependencies;
 using Air.Cloud.Modules.RedisCache.Extensions;
 using Air.Cloud.Modules.RedisCache.Options;
@@ -25,6 +26,8 @@ namespace Air.Cloud.Modules.RedisCache
                .PostConfigure(options =>
                {});
             services.AddRedisCacheService<RedisCacheDependency>();
+            //增加锁
+            services.AddSingleton<IDistributedLockStandard, RedisLockDependency>();
         }
     }
 }

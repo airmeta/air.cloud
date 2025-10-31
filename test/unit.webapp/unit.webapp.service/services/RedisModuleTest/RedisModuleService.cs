@@ -13,6 +13,7 @@
 
 using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Core.Standard.DistributedLock.Attributes;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,29 @@ namespace unit.webapp.service.services.RedisModuleTest
 
             string? Value5 = redis.Set.Elements<string>("Set123").FirstOrDefault();
 
+            return true;
+        }
+
+
+        [HttpGet("lock")]
+        [AllowAnonymous]
+        [DistributedLock(3000,FailMessage = "拿锁失败",LockKey ="Lock")]
+        public bool RedisCacheTest1()
+        {
+            AppRealization.Cache.SetCache("123", "456");
+            string Value1 = AppRealization.Cache.GetCache("123");
+            Thread.Sleep(10000);
+            return true;
+        }
+
+        [HttpPost("lock")]
+        [AllowAnonymous]
+        [DistributedLock(3000, FailMessage = "拿锁失败")]
+        public bool RedisCacheTest1(object Key)
+        {
+            AppRealization.Cache.SetCache("123", "456");
+            string Value1 = AppRealization.Cache.GetCache("123");
+            Thread.Sleep(10000);
             return true;
         }
     }

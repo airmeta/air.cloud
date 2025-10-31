@@ -11,9 +11,8 @@
  */
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.Standard.Taxin.Enums;
-using Air.Cloud.Core.Standard.Taxin.Server;
 
-namespace Air.Cloud.Core.Standard.Taxin
+namespace Air.Cloud.Core.Standard.Taxin.Options
 {
     /// <summary>
     /// <para>zh-cn:Taxin客户端配置项</para>

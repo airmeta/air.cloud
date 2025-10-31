@@ -11,7 +11,6 @@
  */
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.AppInject;
 
 using Microsoft.Extensions.Configuration;
@@ -268,7 +267,9 @@ namespace Air.Cloud.Core.App
         /// <param name="loadConfigurationTypeEnum">
         /// <para>zh-cn:加载配置文件的方式</para>
         /// <para>en-us:Method of loading configuration files</para>
+        /// </param>
         /// <returns></returns>
+
         public static ConfigurationManager AppDefaultInjectConfiguration<TAppInjectImplementation>(
             AppStartupTypeEnum AppStartupTypeEnum,
             LoadConfigurationTypeEnum loadConfigurationTypeEnum,

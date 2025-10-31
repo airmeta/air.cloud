@@ -47,11 +47,16 @@ public static class GrpcServerInject1Extensions
         builder.WebHost.ConfigureKestrel(options =>
         {
             GrpcServiceOptions grpcServiceOptions = AppConfigurationLoader.InnerConfiguration.GetConfig<GrpcServiceOptions>();
-            options.Listen(IPAddress.Any, grpcServiceOptions.Port, listenOptions =>
+            string RpcUrls = string.Empty;
+            if (grpcServiceOptions!=null)
             {
-                listenOptions.Protocols = HttpProtocols.Http2;
-            });
-            string RpcUrls = $"{Scheme}://{IPAddress.Any}:{grpcServiceOptions.Port}";
+                options.Listen(IPAddress.Any, grpcServiceOptions.Port, listenOptions =>
+                {
+                    listenOptions.Protocols = HttpProtocols.Http2;
+                });
+                RpcUrls = $"{Scheme}://{IPAddress.Any}:{grpcServiceOptions.Port}";
+                AppRealization.Output.Print("启动通知", $"当前服务已启用Grpc服务支持,Grpc服务期望运行地址:{RpcUrls}",AppPrintLevel.Information);
+            }
             if (ServiceAddress != null)
             {
                 string ServiceAddressStr = ServiceAddress.Invoke(builder);
@@ -63,12 +68,21 @@ public static class GrpcServerInject1Extensions
                         listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
                     });
                 }
-                builder.WebHost.UseUrls(RpcUrls, ServiceAddressStr);
+                //如果RpcUrls不为空,则追加
+                if (!RpcUrls.IsNullOrEmpty())
+                {
+                    builder.WebHost.UseUrls(RpcUrls, ServiceAddressStr);
+                }
+                else
+                {
+                    AppRealization.Output.Print("启动通知", $"已从配置文件中读取到系统运行地址信息{ServiceAddressStr}", AppPrintLevel.Information);
+                    builder.WebHost.UseUrls(ServiceAddressStr);
+                }
             }
             else
             {
                 string Urls = AppConst.GetApplicationUrls();
-                AppRealization.Output.Print("检测到文件路径绑定信息", Urls);
+                AppRealization.Output.Print("启动通知", $"已从配置文件或环境变量中读取到系统运行地址信息{Urls}", AppPrintLevel.Information);
                 IList<string> UrlArr = Urls.Split(";").ToList();
                 foreach (string Url in UrlArr)
                 {
@@ -88,7 +102,6 @@ public static class GrpcServerInject1Extensions
                         });
                     }
                 }
-                UrlArr.Add(RpcUrls);
             }
         });
         return builder;

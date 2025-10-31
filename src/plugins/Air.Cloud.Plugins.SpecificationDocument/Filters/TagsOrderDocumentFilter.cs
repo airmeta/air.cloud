@@ -10,7 +10,7 @@
  * acknowledged.
  */
 
-using Air.Cloud.WebApp.DynamicApiController.Internal;
+using Air.Cloud.Core.Modules.DynamicApp.Internal;
 
 using Microsoft.OpenApi.Models;
 

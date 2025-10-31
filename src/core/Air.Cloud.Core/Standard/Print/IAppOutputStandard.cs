@@ -87,8 +87,7 @@ namespace Air.Cloud.Core.Standard.Print
             stringBuilder.Append($"[{Info.ToUpper()}]".PadLeft(5, ' ').ToLower());
             stringBuilder.Append(IAppOutputStandard.TabCharacter);
             stringBuilder.Append("Title:" + Content.Title);
-            stringBuilder.Append("\n");
-            stringBuilder.Append("    Content:" + Content.Content);
+            stringBuilder.Append("  Content:" + Content.Content);
             stringBuilder.Append(IAppOutputStandard.TabCharacter);
             if (Content.AdditionalParams != null && Content.AdditionalParams.Keys.Any())
             {

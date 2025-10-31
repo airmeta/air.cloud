@@ -9,13 +9,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
-
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
 
-namespace Air.Cloud.WebApp.Dependencies.Providers;
+namespace Air.Cloud.Core.Standard.DynamicServer.Providers;
 
 /// <summary>
 /// 命名服务提供器默认实现

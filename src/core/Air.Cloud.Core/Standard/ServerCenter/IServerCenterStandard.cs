@@ -10,7 +10,7 @@
  * acknowledged.
  */
 
-using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DynamicServer;
 
 namespace Air.Cloud.Core.Standard.ServerCenter
 {

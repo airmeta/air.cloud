@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.WebApp.DynamicApiController.Internal;
+using Air.Cloud.Core.Modules.DynamicApp.Internal;
 
 using Microsoft.AspNetCore.Mvc.Controllers;
 

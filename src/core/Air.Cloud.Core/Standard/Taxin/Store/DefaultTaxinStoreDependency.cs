@@ -12,8 +12,9 @@
 using Air.Cloud.Core.Standard.Taxin.Events;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 using Air.Cloud.Core.Standard.Taxin.Model;
-using Air.Cloud.Core.Standard.Taxin.Server;
 using Air.Cloud.Core.Standard.Store;
+using Air.Cloud.Core.Standard.Taxin.Options;
+using Air.Cloud.Core.Standard.Taxin.Enums;
 
 namespace Air.Cloud.Core.Standard.Taxin.Store
 {

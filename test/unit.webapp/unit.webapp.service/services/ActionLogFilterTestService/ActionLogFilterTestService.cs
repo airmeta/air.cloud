@@ -11,7 +11,6 @@
  * acknowledged.
  */
 
-using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Standard.DynamicServer;
 
 using Microsoft.AspNetCore.Mvc;

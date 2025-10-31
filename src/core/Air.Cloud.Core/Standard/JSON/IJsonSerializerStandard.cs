@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
+using Air.Cloud.Core.Standard.DynamicServer;
 
 namespace Air.Cloud.Core.Standard.JSON
 {

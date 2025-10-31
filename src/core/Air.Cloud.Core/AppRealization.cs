@@ -20,10 +20,12 @@ using Air.Cloud.Core.Standard.Assemblies;
 using Air.Cloud.Core.Standard.Authentication.Jwt;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Core.Standard.Compress;
 using Air.Cloud.Core.Standard.Compress.Defaults;
 using Air.Cloud.Core.Standard.Configuration;
 using Air.Cloud.Core.Standard.Configuration.Defaults;
 using Air.Cloud.Core.Standard.Container;
+using Air.Cloud.Core.Standard.DistributedLock;
 using Air.Cloud.Core.Standard.Exceptions;
 using Air.Cloud.Core.Standard.Exceptions.Defaults;
 using Air.Cloud.Core.Standard.JSON;
@@ -33,7 +35,6 @@ using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.TraceLog.Defaults;
-using Air.Cloud.Core.Standard.UtilStandard;
 
 using System.Reflection;
 
@@ -145,6 +146,12 @@ namespace Air.Cloud.Core
         /// <para>en-us: Dynamic Application Loading Standard Implementation</para>
         /// </summary>
         public static IDynamicAppStoreStandard DynamicAppStore => InternalRealization.DynamicAppStore ?? DefaultRealization.DynamicAppStore;
+
+        /// <summary>
+        /// <para>zh-cn:分布式锁标准实现</para>
+        /// <para>en-us:Distributed lock standard implementation</para>
+        /// </summary>
+        public static IDistributedLockStandard Lock => InternalRealization.Lock ?? DefaultRealization.Lock;
 
 
         /// <summary>
@@ -282,6 +289,13 @@ namespace Air.Cloud.Core
             /// <para>en-us:Redis cache standard implementation</para>
             /// </summary>
             public static IRedisCacheStandard RedisCache => throw new NotImplementedException("未引入任何关于Redis的模组或插件,如果引入,则检查你的代码是否注入该实现");
+
+            /// <summary>
+            /// <para>zh-cn:锁标准实现</para>
+            /// <para>en-us:Lock standard implementation</para>
+            /// </summary>
+            public static IDistributedLockStandard Lock => throw new NotImplementedException("未查询到锁标准的实现");
+
             /// <summary>
             /// <para>zh-cn:JSON序列化标准实现</para>
             /// <para>en-us:JSON serialization standard implementation</para>
@@ -362,7 +376,7 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:系统配置文件标准实现</para>   
             /// <para>en-us: System configuration file standard implementation</para>   
             /// </summary>
-            public static IAppConfigurationStandard Configuration = null;
+            public static IAppConfigurationStandard Configuration =null;
             /// <summary>
             /// <para>zh-cn:全局异常标准实现</para>
             /// <para>en-us: Global exception standard implementation</para>
@@ -437,6 +451,13 @@ namespace Air.Cloud.Core
             /// <para>en-us:queue dependency</para>
             /// </summary>
             public static IMessageQueueStandard Queue => AppCore.GetService<IMessageQueueStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:锁标准实现</para>
+            /// <para>en-us:Lock standard implementation</para>
+            /// </summary>
+            public static IDistributedLockStandard Lock => AppCore.GetService<IDistributedLockStandard>();
+
         }
     }
 }

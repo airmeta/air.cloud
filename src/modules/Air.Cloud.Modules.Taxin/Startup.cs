@@ -1,5 +1,5 @@
 ﻿using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Taxin.Options;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

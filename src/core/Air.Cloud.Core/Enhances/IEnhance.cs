@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Enhance
+namespace Air.Cloud.Core.Enhances
 {
     /// <summary>
     /// 增强接口 所有增强都必须实现此接口

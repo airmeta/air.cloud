@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace Air.Cloud.WebApp.DynamicApiController.Internal;
+namespace Air.Cloud.Core.Modules.DynamicApp.Internal;
 
 /// <summary>
 /// 常量、公共方法配置类

@@ -10,11 +10,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Modules.AppAspect.Handler;
 using Air.Cloud.Core.Modules.AppAspect.Model;
 using Air.Cloud.Core.Plugins.Security.MD5;
+using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 
 using Microsoft.Extensions.DependencyInjection;

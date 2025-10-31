@@ -10,7 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
-using Air.Cloud.Core.Enhance;
+using Air.Cloud.Core.Enhances;
 using Air.Cloud.Core.Modules;
 using Air.Cloud.Core.Modules.DynamicApp;
 using Air.Cloud.Core.Modules.DynamicApp.Attributes;
@@ -18,7 +18,6 @@ using Air.Cloud.Core.Modules.DynamicApp.Enums;
 using Air.Cloud.Core.Modules.DynamicApp.Model;
 using Air.Cloud.Core.Modules.DynamicApp.Provider;
 using Air.Cloud.Core.Plugins;
-using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DynamicServer;

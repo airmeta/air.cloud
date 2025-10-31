@@ -17,10 +17,10 @@ using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.Store;
-using Air.Cloud.Core.Standard.Taxin;
+using Air.Cloud.Core.Standard.Taxin.Enums;
 using Air.Cloud.Core.Standard.Taxin.Events;
 using Air.Cloud.Core.Standard.Taxin.Model;
-using Air.Cloud.Core.Standard.Taxin.Server;
+using Air.Cloud.Core.Standard.Taxin.Options;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 
 namespace Air.Cloud.Modules.Taxin.Store

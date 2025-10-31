@@ -13,6 +13,7 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
+using Air.Cloud.WebApp.Filters;
 using Air.Cloud.WebApp.FriendlyException.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
 
@@ -32,6 +33,8 @@ namespace Air.Cloud.WebApp
             services.AddCorsAccessor();
             //领域注册
             services.AddEntityDomainInject();
+            // 添加全局锁
+            services.AddMvcFilter<DistributedLockFilter>();
             // 控制器和规范化结果
             services.AddControllers();
           

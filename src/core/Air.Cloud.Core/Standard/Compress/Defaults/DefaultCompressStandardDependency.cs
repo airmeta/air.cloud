@@ -9,7 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.UtilStandard;
 using System.IO.Compression;
 using System.Text;
 

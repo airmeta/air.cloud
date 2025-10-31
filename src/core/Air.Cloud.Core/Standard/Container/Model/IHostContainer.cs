@@ -9,15 +9,13 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.Container.Model;
-
 using Microsoft.VisualBasic;
 
 using System.Collections.Concurrent;
 using System.Net;
 using System.Runtime.InteropServices;
 
-namespace Air.Cloud.Core.Standard.Container
+namespace Air.Cloud.Core.Standard.Container.Model
 {
     /// <summary>
     /// <para>zh-cn:容器宿主机信息</para>

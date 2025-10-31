@@ -11,7 +11,7 @@
  */
 using Air.Cloud.Core.App.Options;
 using Air.Cloud.Core.App.Startups;
-using Air.Cloud.Core.Enhance;
+using Air.Cloud.Core.Enhances;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Modules;
 using Air.Cloud.Core.Modules.AppAssembly;

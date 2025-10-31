@@ -14,7 +14,7 @@ using Air.Cloud.Core.Modules.DynamicApp.Model;
 
 using System.Xml.Linq;
 
-namespace Air.Cloud.Core.Modules.DynamicApp.Extensions
+namespace Air.Cloud.Core.Modules.DynamicApp.Utils
 {
     /// <summary>
     /// <para>zh-cn:动态模组工具类</para>

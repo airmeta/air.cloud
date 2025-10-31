@@ -10,11 +10,11 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App.Options;
-using Air.Cloud.WebApp.Dependencies.Internal;
+using Air.Cloud.Core.Standard.DynamicServer.Internal;
 
 using Microsoft.Extensions.Configuration;
 
-namespace Air.Cloud.WebApp.Dependencies.Options;
+namespace Air.Cloud.Core.Standard.DynamicServer.Options;
 
 /// <summary>
 /// 依赖注入配置选项

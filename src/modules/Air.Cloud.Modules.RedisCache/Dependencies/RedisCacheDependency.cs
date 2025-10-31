@@ -18,6 +18,10 @@ using StackExchange.Redis;
 
 namespace Air.Cloud.Modules.RedisCache.Dependencies
 {
+    /// <summary>
+    /// <para>zh-cn:Redis缓存依赖</para>
+    /// <para>en-us:Redis cache dependency</para>
+    /// </summary>
     public class RedisCacheDependency : IRedisCacheStandard
     {
         /// <summary>

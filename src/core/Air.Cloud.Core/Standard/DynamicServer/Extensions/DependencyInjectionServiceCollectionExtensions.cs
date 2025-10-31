@@ -9,12 +9,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
-using Air.Cloud.Core.Dependencies.Enums;
 using Air.Cloud.Core.Plugins.Reflection;
 using Air.Cloud.Core.Plugins.Reflection.Proxies;
-using Air.Cloud.WebApp.Dependencies.Options;
-using Air.Cloud.WebApp.Dependencies.Providers;
+using Air.Cloud.Core.Standard.DynamicServer.Enums;
+using Air.Cloud.Core.Standard.DynamicServer.Options;
+using Air.Cloud.Core.Standard.DynamicServer.Providers;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

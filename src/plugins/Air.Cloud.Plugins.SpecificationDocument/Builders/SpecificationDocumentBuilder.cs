@@ -10,11 +10,11 @@
  * acknowledged.
  */
 
+using Air.Cloud.Core.Modules.DynamicApp.Internal;
 using Air.Cloud.Plugins.SpecificationDocument.Attributes;
 using Air.Cloud.Plugins.SpecificationDocument.Filters;
 using Air.Cloud.Plugins.SpecificationDocument.Internal;
 using Air.Cloud.Plugins.SpecificationDocument.Options;
-using Air.Cloud.WebApp.DynamicApiController.Internal;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;

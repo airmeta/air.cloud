@@ -9,7 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Modules.AppAssembly.Builder;
 using Air.Cloud.Core.Modules.DynamicApp.Enums;
 using Air.Cloud.Core.Modules.DynamicApp.Model;

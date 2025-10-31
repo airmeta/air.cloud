@@ -21,23 +21,24 @@ namespace unit.webapp.entry.TraceLogDependency
         }
         public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()
         {
-            if (logContent is TraceLogDocument)
-            {
-                repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
-                try
-                {
-                    var documents = repository.Save(logContent as TraceLogDocument);
-                }
-                catch (Exception)
-                {
-                    throw Oops.Oh("系统异常,请稍后再试");
-                }
+            Write(AppRealization.JSON.Serialize(logContent), Tag);
+            //if (logContent is TraceLogDocument)
+            //{
+            //    repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
+            //    try
+            //    {
+            //        var documents = repository.Save(logContent as TraceLogDocument);
+            //    }
+            //    catch (Exception)
+            //    {
+            //        throw Oops.Oh("系统异常,请稍后再试");
+            //    }
 
-            }
-            else
-            {
-                Write(AppRealization.JSON.Serialize(logContent), Tag);
-            }
+            //}
+            //else
+            //{
+               
+            //}
           
         }
     }

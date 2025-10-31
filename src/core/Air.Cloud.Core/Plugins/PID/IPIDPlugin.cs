@@ -9,8 +9,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Dependencies;
 using Air.Cloud.Core.Plugins.DefaultDependencies;
+using Air.Cloud.Core.Standard.DynamicServer;
 
 namespace Air.Cloud.Core.Plugins.PID
 {
@@ -24,19 +24,34 @@ namespace Air.Cloud.Core.Plugins.PID
     /// </remarks>
     public interface IPIDPlugin:IPlugin,ISingleton
     {
-        public static string PID_FILE_PATH = "start.pid";
-        public static string StartPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "/" + PID_FILE_PATH;
-        
         /// <summary>
-        /// 获取PID
+        /// <para>zh-cn:PID文件路径</para>
+        /// <para>en-us:PID file path</para>
         /// </summary>
-        /// <returns></returns>
+        public static string PID_FILE_PATH = "start.pid";
+        /// <summary>
+        /// <para>zh-cn:PID文件完整路径</para>
+        /// <para>en-us:Full path of PID file</para>
+        /// </summary>
+        public static string StartPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "/" + PID_FILE_PATH;
+
+        /// <summary>
+        /// <para>zh-cn:获取PID</para>
+        /// <para>en-us:Get PID</para>
+        /// </summary>
+        /// <returns>
+        ///  <para>zh-cn:PID</para>
+        ///  <para>en-us:PID</para>
+        /// </returns>
         public string Get();
 
         /// <summary>
-        /// 设置PID
+        /// <para>zh-cn:设置PID</para>
+        /// <para>en-us:Set PID</para>
         /// </summary>
-        /// <param name="PID">PID内容 允许你手动指定</param>
+        /// <param name="PID">
+        ///  <para>zh-cn:要设置的PID, 如果为null则由系统生成</para>
+        /// </param>
         /// <returns></returns>
         public string Set(string PID = null);
     }

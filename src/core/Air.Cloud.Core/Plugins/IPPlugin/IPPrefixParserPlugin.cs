@@ -12,11 +12,12 @@
 using System;
 using System.Net;
 using System.Linq;
+using Air.Cloud.Core.Plugins;
 /// <summary>
 /// <para>zh-cn: 前缀解析工具类</para>
 /// <para>en-us: Prefix parsing utility class</para>
 /// </summary>
-public static class IPPrefixParserPlugin
+public class IPPrefixParserPlugin:IPlugin
 {
     /// <summary>
     /// <para>zh-cn: 从HTTP前缀中解析出IP地址</para>

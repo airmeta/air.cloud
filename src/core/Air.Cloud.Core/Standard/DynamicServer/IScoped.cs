@@ -9,7 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Dependencies;
+namespace Air.Cloud.Core.Standard.DynamicServer;
 
 /// <summary>
 /// 作用域服务注册依赖

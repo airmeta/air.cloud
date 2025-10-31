@@ -8,7 +8,6 @@
 
 using Air.Cloud.WebApp.DataValidation.Filters;
 using Air.Cloud.WebApp.DataValidation.Internal;
-using Air.Cloud.WebApp.DynamicApiController.Internal;
 using Air.Cloud.WebApp.FriendlyException.Exceptions;
 using Air.Cloud.WebApp.FriendlyException.Handlers;
 using Air.Cloud.WebApp.UnifyResult;
@@ -23,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using Air.Cloud.Core;
 using Air.Cloud.Core.Modules.AppPrint;
+using Air.Cloud.Core.Modules.DynamicApp.Internal;
 
 namespace Air.Cloud.WebApp.FriendlyException.Filters;
 
