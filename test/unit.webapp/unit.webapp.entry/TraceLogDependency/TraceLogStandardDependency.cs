@@ -1,11 +1,12 @@
-﻿using Air.Cloud.Core.App;
+﻿using Air.Cloud.Core;
+using Air.Cloud.Core.App;
+using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
 using Air.Cloud.Core.Standard.TraceLog;
-using Air.Cloud.Core;
-using Air.Cloud.WebApp.FriendlyException;
-using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.DataBase.ElasticSearch.Attributes;
 using Air.Cloud.DataBase.ElasticSearch.Enums;
+using Air.Cloud.WebApp.FriendlyException;
 
 namespace unit.webapp.entry.TraceLogDependency
 {
@@ -40,6 +41,11 @@ namespace unit.webapp.entry.TraceLogDependency
                
             //}
           
+        }
+
+        public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
+        {
+            AppRealization.Output.Print(logContent);
         }
     }
     [ElasticSearchIndex(

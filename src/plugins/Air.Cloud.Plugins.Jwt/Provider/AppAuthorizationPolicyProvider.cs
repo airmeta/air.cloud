@@ -10,7 +10,7 @@
  * acknowledged.
  */
 
-using Air.Cloud.Plugins.Jwt.Internal;
+using Air.Cloud.Core.Standard.Authentication;
 using Air.Cloud.Plugins.Jwt.Requirement;
 
 using Microsoft.AspNetCore.Authorization;
@@ -61,10 +61,10 @@ namespace Air.Cloud.Plugins.Jwt.Provider
         public Task<AuthorizationPolicy> GetPolicyAsync(string policyName)
         {
             // 判断是否是包含授权策略前缀
-            if (policyName.StartsWith(Penetrates.AppAuthorizePrefix))
+            if (policyName.StartsWith(ISecurityHandlerStandard.AuthenticationSchemeName))
             {
                 // 解析策略名并获取策略参数
-                var policies = policyName[Penetrates.AppAuthorizePrefix.Length..].Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var policies = policyName[ISecurityHandlerStandard.AuthenticationSchemeName.Length..].Split(',', StringSplitOptions.RemoveEmptyEntries);
 
                 // 添加策略需求
                 var policy = new AuthorizationPolicyBuilder();

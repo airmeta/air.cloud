@@ -34,10 +34,6 @@ public static class SpecificationDocumentApplicationBuilderExtensions
         // 载入中间件配置选项
         var configureOptions = new SpecificationDocumentInjectConfigureOptions();
         configure?.Invoke(configureOptions);
-
-        // 判断是否启用规范化文档
-        if (AppCore.Settings.InjectSpecificationDocument != true) return app;
-
         // 载入服务配置选项
         var specificationDocumentConfigureOptions = new SpecificationDocumentConfigureOptions();
         configureOptions?.SpecificationDocumentConfigure?.Invoke(specificationDocumentConfigureOptions);

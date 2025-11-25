@@ -9,11 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Plugins.Jwt.Provider;
+using Air.Cloud.Core.Standard.Authentication;
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -29,24 +27,26 @@ namespace Air.Cloud.Plugins.Jwt.Extensions
         /// <param name="configure">自定义配置</param>
         /// <param name="enableGlobalAuthorize">是否启用全局授权</param>
         /// <returns>服务集合</returns>
-        public static IServiceCollection AddAppAuthorization<TAuthorizationHandler>(this IServiceCollection services, Action<IServiceCollection> configure = null, bool enableGlobalAuthorize = false, bool IsDebugState = false)
+        public static IServiceCollection AddAuthorizationPolicy<TAuthorizationHandler, TAuthorizationPolicyProvider>(this IServiceCollection services, Action<IServiceCollection> configure = null, bool enableGlobalAuthorize = false, bool IsDebugState = false)
             where TAuthorizationHandler : class, IAuthorizationHandler
+            where TAuthorizationPolicyProvider : class, IAuthorizationPolicyProvider
         {
             // 注册授权策略提供器
-            services.TryAddSingleton<IAuthorizationPolicyProvider, AppAuthorizationPolicyProvider>();
-
+            services.TryAddSingleton<IAuthorizationPolicyProvider, TAuthorizationPolicyProvider>();
             // 注册策略授权处理程序
             services.TryAddSingleton<IAuthorizationHandler, TAuthorizationHandler>();
 
-            //启用全局授权
-            if (enableGlobalAuthorize)
-            {
-                services.Configure<MvcOptions>(options =>
-                {
-                    options.Filters.Add(new AuthorizeFilter());
-                });
-            }
-
+            services.AddAuthorization(option =>
+             {
+                 option.AddPolicy("123312132", policy => policy
+                        .RequireAuthenticatedUser()
+                        .AddAuthenticationSchemes("123312132")
+                        );
+                 option.AddPolicy(ISecurityHandlerStandard.AuthenticationSchemeName, policy => policy
+                         .RequireAuthenticatedUser()
+                         .AddAuthenticationSchemes(ISecurityHandlerStandard.AuthenticationSchemeName)
+                         );
+             });
             configure?.Invoke(services);
             return services;
         }

@@ -10,12 +10,18 @@
  * acknowledged.
  */
 using Microsoft.AspNetCore.Authorization;
-namespace Air.Cloud.Core.Standard.Authentication.Jwt
+namespace Air.Cloud.Core.Standard.Jwt
 {
     /// <summary>
-    /// JWT身份认证标准
+    /// <para>zh-cn:Jwt处理标准</para>
+    /// <para>en-us:JwtHandlerStandard</para>
     /// </summary>
-    public interface IJwtHandlerStandard:IAuthenticationStandard
+    /// <remarks>
+    ///  <para>zh-cn:该标准定义了JWT验证处理的基本方法，包括验证成功和失败的处理逻辑。不过,在分布式场景下或微服务场景下我们建议使用IAuthenticationStandard相关服务来处理身份认证</para>
+    /// </remarks>
+    ///
+    ///
+    public interface IJwtHandlerStandard:IStandard
     {
         /// <summary>
         /// 验证成功

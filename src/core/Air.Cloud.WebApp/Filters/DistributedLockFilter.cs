@@ -24,10 +24,31 @@ using Newtonsoft.Json.Linq;
 
 namespace Air.Cloud.WebApp.Filters
 {
-    public  class DistributedLockFilter : IAsyncActionFilter
+    /// <summary>
+    /// <para>zh-cn:分布式锁过滤器</para>
+    /// <para>en-us:Distributed Lock Filter</para>
+    /// </summary>
+    public class DistributedLockFilter : IAsyncActionFilter
     {
+
+        /// <summary>
+        /// <para>zh-cn:默认请求内容</para>
+        /// <para>en-us:Default Request Content</para>
+        /// </summary>
         private static string DefaultRequestContent = AppRealization.JSON.Serialize(new { });
 
+        /// <summary>
+        /// <para>zh-cn:动作执行异步方法</para>
+        /// <para>en-us:Action Execution Async Method</para>
+        /// </summary>
+        /// <param name="context">
+        ///   <para>zh-cn:动作执行上下文</para>
+        ///   <para>en-us:Action Executing Context</para>
+        /// </param>
+        /// <param name="next">
+        ///  <para>zh-cn:下一个动作执行委托</para>
+        ///  <para>en-us:Next Action Execution Delegate</para>
+        /// </param>
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var IsNetworkService = context.HttpContext.GetControllerActionDescriptor();
@@ -83,7 +104,18 @@ namespace Air.Cloud.WebApp.Filters
                 await next.Invoke();
             }
         }
-
+        /// <summary>
+        /// <para>zh-cn:获取请求内容异步方法</para>
+        /// <para>en-us:Get Request Content Async Method</para>
+        /// </summary>
+        /// <param name="context">
+        ///  <para>zh-cn:HTTP上下文</para>
+        ///  <para>en-us:HTTP Context</para>
+        /// </param>
+        /// <returns>
+        ///  <para>zh-cn:请求内容字符串</para>
+        ///  <para>en-us:Request Content String</para>
+        /// </returns>
         private static async Task<string> GetRequestContentAsync(HttpContext context)
         {
             string requestData = string.Empty;

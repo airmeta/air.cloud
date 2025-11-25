@@ -24,7 +24,13 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <summary>
         /// <para>zh-cn:默认日志</para>
         /// </summary>
-        public const string DEFAULT_TYPE= "default";
+        public const string DEFAULT_TYPE = "default";
+
+        /// <summary>
+        /// <para>zh-cn:系统日志</para>
+        /// <para>en-us:System log</para>
+        /// </summary>
+        public const string SYSTEM_TYPE = "system";
         /// <summary>
         /// <para>zh-cn:方法执行日志</para>
         /// <para>en-us:Method execution log</para>

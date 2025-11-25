@@ -14,8 +14,8 @@ using Air.Cloud.Core.Plugins;
 namespace Air.Cloud.Core.Standard.DistributedLock.Plugins
 {
     /// <summary>
-    /// <para>zh-cn:分布式锁定键工厂插件接口</para>
-    /// <para>en-us:Distributed Lock Key Factory Plugin Interface</para>
+    /// <para>zh-cn:分布式锁定键工厂插件</para>
+    /// <para>en-us:Distributed Lock Key Factory Plugin</para>
     /// </summary>
     public interface IDistributedLockKeyFactoryPlugin : IPlugin
     {

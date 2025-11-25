@@ -20,22 +20,28 @@ namespace Air.Cloud.Plugins.SpecificationDocument.Extensions
               .FirstOrDefault(mi => mi.Name == "OperationFilter");
             if (OperationFilterMethod != null)
             {
-                AppRealization.AssemblyScanning.Add(new KeyValuePair<string, Action<Type>>(nameof(IOperationFilter), (x) =>
+                AppRealization.AssemblyScanning.Add(new Core.Standard.Assemblies.Model.AssemblyScanningEvent()
                 {
-                    services.AddSwaggerGen(options =>
+                    Key=nameof(IOperationFilter),
+                    Description="Swagger Operation Filter 注入",
+                    TargetType=typeof(IOperationFilter),
+                    Action= (x) =>
                     {
-                        try
+                        services.AddSwaggerGen(options =>
                         {
-                            var methods = OperationFilterMethod.MakeGenericMethod(x).Invoke(null, new object[] { options, new object[] { } });
-                        }
-                        catch (Exception ex)
-                        {
+                            try
+                            {
+                                var methods = OperationFilterMethod.MakeGenericMethod(x).Invoke(null, new object[] { options, new object[] { } });
+                            }
+                            catch (Exception ex)
+                            {
 
-                            throw;
-                        }
+                                throw;
+                            }
 
-                    });
-                }));
+                        });
+                    }
+                });
             }
             return services;
         }

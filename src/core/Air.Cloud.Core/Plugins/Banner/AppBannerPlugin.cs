@@ -10,11 +10,6 @@
  * acknowledged.
  */
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Runtime;
-
 namespace Air.Cloud.Core.Plugins.Banner
 {
     /// <summary>
@@ -27,20 +22,27 @@ namespace Air.Cloud.Core.Plugins.Banner
         public void PrintOrganizationName()
         {
             string[] lines = {
-                        "    ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
-                        @"    :::::  █████╗ ██╗██████╗     ██████╗██╗      ██████╗ ██╗   ██╗██████╗  :::::",
-                        @"    ::::: ██╔══██╗██║██╔══██╗   ██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗ :::::",
-                        @"    ::::: ███████║██║██████╔╝   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::",
-                        @"    ::::: ██╔══██║██║██╔══██╗   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::",
-                        @"    ::::: ██║  ██║██║██║  ██║   ╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝ :::::",
-                        "    ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+                        "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
+                        @":::::::::  █████╗ ██╗██████╗     ██████╗██╗      ██████╗ ██╗   ██╗██████╗  :::::::::",
+                        @"::::::::: ██╔══██╗██║██╔══██╗   ██╔════╝██║     ██╔═══██╗██║   ██║██╔══██╗ :::::::::",
+                        @"::::::::: ███████║██║██████╔╝   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::::::",
+                        @"::::::::: ██╔══██║██║██╔══██╗   ██║     ██║     ██║   ██║██║   ██║██║  ██║ :::::::::",
+                        @"::::::::: ██║  ██║██║██║  ██║   ╚██████╗███████╗╚██████╔╝╚██████╔╝██████╔╝ :::::::::",
+                        "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
             };
             Console.WriteLine("  ");
             for (int i = 0; i < lines.Length; i++)
             {
                 Console.WriteLine(lines[i]);
             }
+            Console.WriteLine("::::::::: 框架名称: Air.Cloud                                              :::::::::");
+            Console.WriteLine("::::::::: 目标平台: .NET6.0                                                :::::::::");
+            Console.WriteLine("::::::::: 开源协议: MPL 2.0                                                :::::::::");
+            Console.WriteLine("::::::::: 文档地址: http://airmeta.org.cn/                                 :::::::::");
+            Console.WriteLine("::::::::: Github仓库: https://github.com/airmeta/air.cloud                 :::::::::");
+            Console.WriteLine("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
             Console.WriteLine("  ");
+
         }
         /// <inheritdoc/>
         public void PrintSystemModuleInformation(IList<string> Paths)
@@ -64,7 +66,7 @@ namespace Air.Cloud.Core.Plugins.Banner
                 var dirInfo = new DirectoryInfo(s);
                 dic.Add($"插件名: {dirInfo.Name}", $"插件安装地址: {s}");
             }
-            AppRealization.Output.Print("系统初始化", $"系统完成插件扫描 共加载了 {Paths.Count} 个模块", AppPrintLevel.Information,
+            AppRealization.Output.Print("系统初始化", $"系统完成插件扫描 共加载了 {Paths.Count} 个插件", AppPrintLevel.Information,
                 AdditionalParams: dic);
         }
     }

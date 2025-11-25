@@ -13,7 +13,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Standard.Authentication.Jwt;
+using Air.Cloud.Core.Standard.Jwt;
 using Air.Cloud.Plugins.Jwt;
 
 using Microsoft.AspNetCore.Authorization;

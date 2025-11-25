@@ -53,18 +53,27 @@ namespace unit.webapp.service.services.RedisModuleTest
             return true;
         }
 
-
+        /// <summary>
+        /// 加锁测试
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("lock")]
-        [AllowAnonymous]
+        [Authorize("123312")]
+        //[AllowAnonymous]
         [DistributedLock(3000,FailMessage = "拿锁失败",LockKey ="Lock")]
         public bool RedisCacheTest1()
         {
             AppRealization.Cache.SetCache("123", "456");
             string Value1 = AppRealization.Cache.GetCache("123");
-            Thread.Sleep(10000);
+            //Thread.Sleep(10000);
             return true;
         }
 
+        /// <summary>
+        /// 加锁测试
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <returns></returns>
         [HttpPost("lock")]
         [AllowAnonymous]
         [DistributedLock(3000, FailMessage = "拿锁失败")]

@@ -12,7 +12,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
-namespace Air.Cloud.Core.Standard.Authentication.Jwt
+namespace Air.Cloud.Core.Standard.Jwt
 {
     /// <summary>
     /// <para>zh-cn:默认的Jwt处理依赖</para>

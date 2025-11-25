@@ -9,14 +9,13 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Standard.Authentication
+namespace Air.Cloud.Core.Standard.Security.Model
 {
-    /// <summary>
-    /// 身份认证标准
-    /// </summary>
-    public interface IAuthenticationStandard : IStandard
+    public  class SecurityPushResult
     {
+        public bool IsSuccess { get; set; }
 
+        public string Message { get; set; }
 
     }
 }

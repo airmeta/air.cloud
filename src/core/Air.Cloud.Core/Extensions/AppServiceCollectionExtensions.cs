@@ -88,7 +88,7 @@ public static class AppServiceCollectionExtensions
         // 自定义服务
         configure?.Invoke(services);
         //进行最终的扫描
-        AppRealization.AssemblyScanning.Scanning();
+        AppRealization.AssemblyScanning.Execute();
         return services;
     }
 

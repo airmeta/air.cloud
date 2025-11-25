@@ -9,17 +9,23 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-
-namespace Air.Cloud.Plugins.Jwt.Internal
+namespace Air.Cloud.Core.Standard.Jwt.Attributes
 {
     /// <summary>
-    /// 常量、公共方法配置类
+    /// Cliam及其描述信息 一般用于Token的Cliam描述
     /// </summary>
-    internal class Penetrates
+    /// <remarks>
+    /// 标记Cliam的描述信息
+    /// </remarks>
+    public class CliamDescriptionAttribute
     {
         /// <summary>
-        /// 授权策略前缀
+        /// 标签
         /// </summary>
-        internal const string AppAuthorizePrefix = "<Air.Auth.AppAuthorizeRequirement>";
+        public string Label { get; set; }
+        /// <summary>
+        /// 描述信息
+        /// </summary>
+        public string Description { get; set; }
     }
 }

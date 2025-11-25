@@ -9,6 +9,9 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.Collections;
+using Air.Cloud.Core.Standard.Assemblies.Model;
+
 using System.Collections.Concurrent;
 
 namespace Air.Cloud.Core.Standard.Assemblies
@@ -19,16 +22,19 @@ namespace Air.Cloud.Core.Standard.Assemblies
     public interface IAssemblyScanningStandard
     {
         /// <summary>
-        /// 扫描程序集类型时的动作
+        /// <para>zh-cn:扫描事件集合</para>
+        /// <para>en-us:Assembly scanning event collection</para>
         /// </summary>
-        public static ConcurrentDictionary<string, Action<Type>> Evensts = new ConcurrentDictionary<string, Action<Type>>();
+        public static ConcurrentList<AssemblyScanningEvent> Evensts = new ConcurrentList<AssemblyScanningEvent>();
         /// <summary>
-        /// 开始执行扫描
+        /// <para>zh-cn:执行扫描</para>
+        /// <para>en-us:Execute scanning</para>
         /// </summary>
-        public void Scanning();
+        public void Execute();
         /// <summary>
-        /// 添加动作
+        /// <para>zh-cn:添加扫描事件</para>
+        /// <para>en-us:Add assembly scanning event</para>
         /// </summary>
-        public void Add(KeyValuePair<string,Action<Type>> keyValuePair);
+        public void Add(AssemblyScanningEvent Event);
     }
 }

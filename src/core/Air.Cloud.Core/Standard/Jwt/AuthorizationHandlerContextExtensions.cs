@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace Air.Cloud.Core.Standard.Authentication.Jwt
+namespace Air.Cloud.Core.Standard.Jwt
 {
     public static class AuthorizationHandlerContextExtensions
     {

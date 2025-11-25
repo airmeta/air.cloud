@@ -30,7 +30,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
     {
         /// <summary>
         /// <para>zh-cn:扫描类库信息</para>
-        /// <para>en-us:Scanning assembly service information</para>
+        /// <para>en-us:Execute assembly service information</para>
         /// </summary>
         /// <returns>
         /// <para>zh-cn:服务信息</para>
@@ -103,6 +103,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
                         if (!Template.IsNullOrEmpty())
                         {
                             var Parameters = item.GetParameters().ToList();
+                            if (Parameters.Any(s => s.ParameterType.IsInterface)) break;
                             taxinRoutes.Add(new TaxinRouteInformation
                             {
                                 ServiceName = attr.ServiceName,
@@ -110,7 +111,12 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
                                 HttpMethod = new HttpMethod(HttpMethods.HttpMethods.First()),
                                 MethodName = v.Name + "." + item.Name,
                                 Route = (InterfaceTemplate.IsNullOrEmpty() ? string.Empty : (InterfaceTemplate + "/")) + Template,
-                                Parameters = Parameters
+                                Parameters = Parameters.Select(s => new TaxinRouteParameter
+                                {
+                                    Name = s.Name,
+                                    ParameterType = s.ParameterType.FullName,
+                                    IsOptional = s.IsOptional
+                                }).ToList()
                             });
                         }
                     }

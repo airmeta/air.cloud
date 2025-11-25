@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34414.90
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11201.2 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "core", "core", "{CB796284-E5F8-4096-9505-C9EDAD65DFBB}"
 EndProject
@@ -109,6 +109,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Plugins.CodeGenerator", "src\plugins\Air.Cloud.Plugins.CodeGenerator\Air.Cloud.Plugins.CodeGenerator.csproj", "{E3FC0874-2E94-4F19-B2DE-8BB6DA596870}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.UnitTest", "test\Air.Cloud.UnitTest\Air.Cloud.UnitTest.csproj", "{00865320-1E31-42B7-8BD5-CBB230C57CD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Extensions.Security", "src\extensions\Air.Cloud.Extensions.Security\Air.Cloud.Extensions.Security.csproj", "{A2C489BA-D381-4B90-A469-76AB3BC977F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -268,6 +270,10 @@ Global
 		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{00865320-1E31-42B7-8BD5-CBB230C57CD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2C489BA-D381-4B90-A469-76AB3BC977F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2C489BA-D381-4B90-A469-76AB3BC977F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2C489BA-D381-4B90-A469-76AB3BC977F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2C489BA-D381-4B90-A469-76AB3BC977F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -317,6 +323,7 @@ Global
 		{E1C0D164-0990-4DF4-B1B5-0773342CC010} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{E3FC0874-2E94-4F19-B2DE-8BB6DA596870} = {AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}
 		{00865320-1E31-42B7-8BD5-CBB230C57CD5} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
+		{A2C489BA-D381-4B90-A469-76AB3BC977F9} = {CB796284-E5F8-4096-9505-C9EDAD65DFBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

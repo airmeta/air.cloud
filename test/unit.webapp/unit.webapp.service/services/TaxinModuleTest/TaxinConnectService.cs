@@ -47,9 +47,22 @@ namespace unit.webapp.service.services.TaxinModuleTest
         [HttpGet("test")]
         [AllowAnonymous]
         [TaxinService("taxin.service.test")]
-        public object ClientB()
+        public object ClientB(TaxinResponseModel taxinResponseModel)
         {
             return new { name = "TaxinServiceTest" };
         }
+    }
+
+    public class TaxinResponseModel
+    {
+        public string name { get; set; }
+
+        public MethodAccessException Exception { get; set; }
+        public string Name { get; set; }
+
+        public List<string> Description { get; set; }
+
+
+        public IList<RouteValueDictionary> Routes { get; set; }
     }
 }

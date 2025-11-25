@@ -22,7 +22,6 @@ namespace Air.Cloud.Core.Standard.TraceLog.Defaults
         {
             try
             {
-
                 AppPrintInformation information = AppRealization.JSON.Deserialize<AppPrintInformation>(logContent);
 
                 AppRealization.Output.Print(information);
@@ -51,6 +50,9 @@ namespace Air.Cloud.Core.Standard.TraceLog.Defaults
             });
         }
 
-       
+        public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
+        {
+            AppRealization.Output.Print(logContent);
+        }
     }
 }
