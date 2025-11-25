@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿/*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -10,6 +11,9 @@
  * acknowledged.
  */
 namespace Air.Cloud.Core.Standard.Taxin.Model
+=======
+﻿namespace Air.Cloud.Core.Standard.Taxin.Model
+>>>>>>> aeba4aab7dcf969688fd35ab1ea3ac980b15307d
 {
     /// <summary>
     /// <para>zh-cn:参数数据</para>

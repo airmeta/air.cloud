@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿/*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -10,6 +11,9 @@
  * acknowledged.
  */
 using Microsoft.AspNetCore.Authentication;
+=======
+﻿using Microsoft.AspNetCore.Authentication;
+>>>>>>> aeba4aab7dcf969688fd35ab1ea3ac980b15307d
 using Microsoft.AspNetCore.Http;
 
 namespace Air.Cloud.Core.Standard.Authentication

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿/*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -10,6 +11,9 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Plugins.Http.Extensions;
+=======
+﻿using Air.Cloud.Core.Plugins.Http.Extensions;
+>>>>>>> aeba4aab7dcf969688fd35ab1ea3ac980b15307d
 using Air.Cloud.Core.Plugins.InternalAccess;
 using Air.Cloud.Core.Standard.Security.Model;
 using Air.Cloud.Core.Standard.Security.Options;

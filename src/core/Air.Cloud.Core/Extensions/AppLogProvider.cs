@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿/*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -10,6 +11,9 @@
  * acknowledged.
  */
 using Microsoft.Extensions.Logging;
+=======
+﻿using Microsoft.Extensions.Logging;
+>>>>>>> aeba4aab7dcf969688fd35ab1ea3ac980b15307d
 namespace Air.Cloud.Core.Extensions
 {
         /// <summary>
