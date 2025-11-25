@@ -64,18 +64,22 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
     /// <param name="eventData">数据库连接事件数据</param>
     private void PrintConnectionToMiniProfiler(DbConnection connection, ConnectionEventData eventData)
     {
-        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
+        if (AppEnvironment.IsDevelopment)
         {
-            Title = "数据库链接状态更新",
-            Level = AppPrintLevel.Information,
-            Content = $"已读取到数据库链接信息",
-            AdditionalParams=new Dictionary<string, object>()
+            AppRealization.TraceLog.Write(new AppPrintInformation
             {
-                  {"connection_id", eventData.ConnectionId},
-                  {"connection_str", connection.ConnectionString},
-            },
-            State = true,
-            Type = AppPrintConstType.ORM_EXEC_TYPE
-        }), Db.TraceLogTags);
+                Title = "数据库链接状态",
+                Level = AppPrintLevel.Information,
+                Content = $"已读取到数据库链接信息",
+                AdditionalParams = new Dictionary<string, object>()
+                {
+                      {"connection_id", eventData.ConnectionId},
+                      {"connection_str", connection.ConnectionString},
+                },
+                State = true,
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }, Db.TraceLogTags);
+        }
+       
     }
 }

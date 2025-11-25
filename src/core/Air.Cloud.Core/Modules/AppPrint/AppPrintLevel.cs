@@ -42,6 +42,11 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <para>zh-cn:追踪消息</para>
         /// <para>en-us:Trace</para>
         /// </summary>
-        Trace
+        Trace,
+        /// <summary>
+        ///  <para>zh-cn:严重错误消息</para>
+        ///  <para>en-us:Critical</para>
+        /// </summary>
+        Critical
     }
 }

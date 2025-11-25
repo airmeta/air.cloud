@@ -32,6 +32,19 @@ namespace Air.Cloud.Core.Standard.TraceLog
         /// <para>en-us:Tag information</para>
         /// </param>
         public void Write(string logContent, IDictionary<string, string> Tag = null);
+        /// <summary>
+        /// <para>zh-cn:写入日志信息</para>
+        /// <para>en-us:Write log data</para>
+        /// </summary>
+        /// <param name="logContent">
+        /// <para>zh-cn:日志信息</para>
+        /// <para>en-us:TraceLog content</para>
+        /// </param>
+        /// <param name="Tag">
+        /// <para>zh-cn:标签信息</para>
+        /// <para>en-us:Tag information</para>
+        /// </param>
+        public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null);
 
         /// <summary>
         /// <para>zh-cn:写入日志信息</para>

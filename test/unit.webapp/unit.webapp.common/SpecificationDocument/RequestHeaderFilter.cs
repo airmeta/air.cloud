@@ -20,18 +20,19 @@ namespace unit.webapp.common.SpecificationDocument
     {
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            var actionAllowAnonymous = context.MethodInfo.GetCustomAttributes(true).OfType<AllowAnonymousAttribute>().Any();
-            if (!actionAllowAnonymous )
+            //var actionAllowAnonymous = context.MethodInfo.GetCustomAttributes(true).OfType<AllowAnonymousAttribute>().Any();
+            //if (!actionAllowAnonymous )
+            //{
+                
+            //}
+            operation.Parameters.Add(new OpenApiParameter
             {
-                operation.Parameters.Add(new OpenApiParameter
-                {
-                    AllowEmptyValue = true,
-                    Description = "身份令牌",
-                    Name = "Authorization",
-                    Required = true,
-                    In = ParameterLocation.Header
-                });
-            }
+                AllowEmptyValue = true,
+                Description = "身份令牌",
+                Name = "Authorization",
+                Required = true,
+                In = ParameterLocation.Header
+            });
         }
     }
 }

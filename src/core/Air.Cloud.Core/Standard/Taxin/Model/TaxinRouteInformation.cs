@@ -64,6 +64,8 @@ namespace Air.Cloud.Core.Standard.Taxin.Model
         /// <para>zh-cn:参数</para>
         /// <para>en-us:Parameters</para>
         /// </summary>
-        public List<ParameterInfo> Parameters { get; set; }
+        public List<TaxinRouteParameter> Parameters { get; set; }
     }
+
+
 }

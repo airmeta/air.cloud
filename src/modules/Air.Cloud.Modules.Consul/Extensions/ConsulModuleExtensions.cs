@@ -12,8 +12,6 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Plugins;
-using Air.Cloud.Core.Plugins.Banner;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.Modules.Consul.Dependencies;
@@ -28,7 +26,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using System;
 using System.Reflection;
 namespace Air.Cloud.Modules.Consul.Extensions
 {

@@ -20,6 +20,6 @@ namespace unit.webapp.service.services.TaxinModuleTest
         Task<object> ClientA();
 
 
-        object ClientB();
+        object ClientB(TaxinResponseModel taxinResponseModel);
     }
 }

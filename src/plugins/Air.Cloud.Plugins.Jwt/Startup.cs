@@ -11,7 +11,9 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard;
+using Air.Cloud.Core.Standard.Authentication;
+using Air.Cloud.Core.Standard.Security.Handler;
+using Air.Cloud.Plugins.Jwt.Options;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -24,12 +26,19 @@ namespace Air.Cloud.Plugins.Jwt
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseAuthentication();
-            app.UseAuthorization();
+
         }
         public override void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddSingleton<ISecurityHandlerStandard, DefaultAuthenticationHandler>();
+            services.AddOptions<JWTSettingsOptions>()
+              .BindConfiguration("JWTSettings")
+              .ValidateDataAnnotations()
+              .PostConfigure(options =>
+              {
+                  _ = JWTEncryption.SetDefaultJwtSettings(options);
+              });
+           
         }
     }
 }

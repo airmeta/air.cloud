@@ -25,6 +25,8 @@ using Air.Cloud.Modules.Taxin.Store;
 using Air.Cloud.Plugins.Jwt.Extensions;
 using Air.Cloud.WebApp.Extensions;
 
+using Microsoft.OpenApi.Models;
+
 using unit.webapp.common.Filters;
 using unit.webapp.common.JwtHandler;
 using unit.webapp.entry.TraceLogDependency;
@@ -35,13 +37,14 @@ namespace unit.webapp.entry
     {
         public override void ConfigureServices(IServiceCollection services)
         {
+           
             AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
             services.AddTaxinClient<TaxinClientDependency,TaxinStoreDependency>();
-            services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
+            //services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
             services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();
             //注入
-            services.AddAppControllers(a =>
+            services.AddMicroServiceSecurity().AddAppControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();

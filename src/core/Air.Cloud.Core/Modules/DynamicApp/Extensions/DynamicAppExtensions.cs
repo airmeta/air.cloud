@@ -37,7 +37,7 @@ public static  class DynamicAppExtensions
 {
     /// <summary>
     /// <para>zh-cn:模组扫描类型</para>
-    /// <para>en-us: Module Scanning Type</para>
+    /// <para>en-us: Module Execute Type</para>
     /// </summary>
     static Func<Type, bool> ModuleScanningType = (t =>
     {
@@ -58,7 +58,7 @@ public static  class DynamicAppExtensions
 
     /// <summary>
     /// <para>zh-cn:插件扫描类型</para>
-    /// <para>en-us: Plugin Scanning Type</para>
+    /// <para>en-us: Plugin Execute Type</para>
     /// </summary>
     static Func<Type, bool> PluginScanningType = (t =>
     {

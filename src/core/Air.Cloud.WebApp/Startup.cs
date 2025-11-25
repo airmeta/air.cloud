@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Plugins.Http;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.Filters;
@@ -28,7 +29,19 @@ namespace Air.Cloud.WebApp
         {
             services.AddFriendlyException();
             //HttpClientFactory
-            services.AddHttpClient();
+            services.AddHttpClient("Default", client =>
+            {
+
+            }).ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler();
+                // 无需额外配置，日志会通过全局日志工厂获取
+                return handler;
+            }).AddHttpMessageHandler(provider =>
+            {
+                // 可选：添加自定义日志处理程序（增强 HttpClient 日志内容）
+                return new HttpClientLoggingHandler();
+            });
             // 配置跨域
             services.AddCorsAccessor();
             //领域注册
@@ -56,8 +69,17 @@ namespace Air.Cloud.WebApp
             // 配置静态
             app.UseStaticFiles();
 
+            string ConfigEnovriment = AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
+
+            if (AppEnvironment.IsTest)
+            {
+
+            }
+
+            //app.UseAuthentication();
             // 配置路由
             app.UseRouting();
+           // app.UseAuthorization();
 
             // 配置跨域
             app.UseCorsAccessor();

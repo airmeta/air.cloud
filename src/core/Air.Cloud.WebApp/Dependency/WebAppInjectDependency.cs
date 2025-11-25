@@ -89,10 +89,15 @@ namespace Air.Cloud.WebApp.Dependency
 
                 // 注册 HttpContextAccessor 服务
                 services.AddHttpContextAccessor();
-
+                builder.ConfigureLogging((log) =>
+                {
+                    log.AddCustomConsole();
+                });
                 // 初始化应用服务
                 services.AddApplication();
             });
+
+           
         }
     }
 }

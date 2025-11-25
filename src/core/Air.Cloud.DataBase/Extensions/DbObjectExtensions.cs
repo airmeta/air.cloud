@@ -252,19 +252,22 @@ public static class DbObjectExtensions
     private static void PrintDataBaseConnectionInformation(DatabaseFacade databaseFacade, DbConnection dbConnection, bool isAsync)
     {
         var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
-        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
+        if (AppEnvironment.IsDevelopment)
         {
-            Title = "数据库链接状态更新",
-            Level = AppPrintLevel.Debug,
-            Content = $"已读取到数据库链接信息",
-            AdditionalParams = new Dictionary<string, object>()
+            AppRealization.TraceLog.Write(new AppPrintInformation
+            {
+                Title = "数据库链接状态",
+                Level = AppPrintLevel.Debug,
+                Content = $"已读取到数据库链接信息",
+                AdditionalParams = new Dictionary<string, object>()
             {
                   {"connection_id", connectionId},
                   {"connection_str", dbConnection.ConnectionString},
             },
-            State = true,
-            Type = AppPrintConstType.ORM_EXEC_TYPE
-        }), Db.TraceLogTags);
+                State = true,
+                Type = AppPrintConstType.ORM_EXEC_TYPE
+            }, Db.TraceLogTags);
+        }
     }
 
     /// <summary>
@@ -299,7 +302,7 @@ public static class DbObjectExtensions
         sqlLogBuilder.Append(dbCommand.CommandType == CommandType.StoredProcedure ? "EXEC " + dbCommand.CommandText : dbCommand.CommandText);
         
         var connectionId = databaseFacade.GetService<IRelationalConnection>()?.ConnectionId;
-        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation()
+        AppRealization.TraceLog.Write(new AppPrintInformation()
         {
 
             Title = "数据库语句执行监听",
@@ -314,6 +317,6 @@ public static class DbObjectExtensions
             },
             State = true,
             Type = AppPrintConstType.ORM_EXEC_TYPE
-        }), Db.TraceLogTags);
+        }, Db.TraceLogTags);
     }
 }

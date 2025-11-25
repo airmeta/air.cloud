@@ -32,20 +32,20 @@ namespace Air.Cloud.Modules.Taxin.Client
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             string A = AppCore.Configuration["AppSettings:GateWayAddress"];
-            AppRealization.Output.Print(new AppPrintInformation()
-            {
-                Title = "The Taxin service is being launched",
-                Content = "The Taxin service is being launched"
-            });
             //client online
             await TaxinClient.OnLineAsync();
             AppRealization.Output.Print(new AppPrintInformation()
             {
-                Title = "The Taxin client is successfully launched",
-                Content = "Start loading the instance state and transferring it"
+                Title = "Taxin远程调用",
+                Content = "Taxin远程调用客户端已检查完毕,正在上线..."
             });
             //push current client data
             await TaxinClient.PushAsync();
+            AppRealization.Output.Print(new AppPrintInformation()
+            {
+                Title = "Taxin远程调用",
+                Content = "Taxin客户端开始接收来自其他服务的网络调用."
+            });
             await Task.Factory.StartNew(async () =>
             {
                 while (!stoppingToken.IsCancellationRequested)
@@ -54,6 +54,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                     {
                         //client check
                         await TaxinClient.CheckAsync();
+                     
                         await Task.Delay(TimeSpan.FromSeconds(Options.CheckRate), stoppingToken);
                     }
                     catch (OperationCanceledException) { }
@@ -64,8 +65,8 @@ namespace Air.Cloud.Modules.Taxin.Client
         {
             AppRealization.Output.Print(new AppPrintInformation()
             {
-                Title = "The Taxin service is stopped",
-                Content = "The Taxin service is stopped"
+                Title = "Taxin 远程调用",
+                Content = "Taxin 客户端已下线",
             });
             try
             {

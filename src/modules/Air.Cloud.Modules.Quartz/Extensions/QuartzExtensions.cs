@@ -47,7 +47,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                 AdditionalParams = null,
                 Content = "定时任务开始挂载",
                 Level = AppPrintLevel.Information,
-                Title = "air.cloud.scheduler"
+                Title = "定时任务"
             });
             // 解析你的作用域服务
             IEnumerable<ISchedulerStandard<TSchedulerOption>> servicelist = _provider.GetServices<ISchedulerStandard<TSchedulerOption>>();
@@ -65,7 +65,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                             AdditionalParams = null,
                             Content = "定时任务挂载成功",
                             Level = AppPrintLevel.Information,
-                            Title = "air.cloud.scheduler"
+                            Title = "定时任务"
                         });
                     }
                 }
@@ -80,7 +80,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                             },
                         Content = "定时任务挂载失败",
                         Level = AppPrintLevel.Error,
-                        Title = "air.cloud.scheduler"
+                        Title = "定时任务"
                     });
                 }
             }
@@ -169,7 +169,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                     AdditionalParams = null,
                     Content = "未查询到定时任务信息",
                     Level = AppPrintLevel.Information,
-                    Title = "air.cloud.scheduler"
+                    Title = "定时任务"
                 });
                 return null;
             }
@@ -183,7 +183,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
                     AdditionalParams = null,
                     Content = "未查询到定时任务触发器信息",
                     Level = AppPrintLevel.Information,
-                    Title = "air.cloud.scheduler"
+                    Title = "定时任务"
                 });
                 return null;
             }

@@ -46,7 +46,7 @@
 //                            AdditionalParams = null,
 //                            Content = AppRealization.JSON.Serialize(data),
 //                            Level = AppPrintLevel.Information,
-//                            Title = "air.cloud.scheduler"
+//                            Title = "定时任务"
 //                        });
 //                        AppRealization.Output.Print(new AppPrintInformation()
 //                        {
@@ -54,7 +54,7 @@
 //                            AdditionalParams = null,
 //                            Content = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]定时任务执行成功",
 //                            Level = AppPrintLevel.Information,
-//                            Title = "air.cloud.scheduler"
+//                            Title = "定时任务"
 //                        });
 //                        this.CancellationToken = stoppingToken;
 //                    }
@@ -76,7 +76,7 @@
 //                    AdditionalParams = null,
 //                    Content = "定时任务Job1开始运行",
 //                    Level = AppPrintLevel.Information,
-//                    Title = "air.cloud.scheduler"
+//                    Title = "定时任务"
 //                });
 
 //                await Task.CompletedTask;
@@ -90,7 +90,7 @@
 //                    AdditionalParams = null,
 //                    Content = "定时任务Job1结束运行",
 //                    Level = AppPrintLevel.Information,
-//                    Title = "air.cloud.scheduler"
+//                    Title = "定时任务"
 //                });
 //                File.WriteAllText($"{AppConst.ApplicationPath}/job_stop_log.txt", AppRealization.JSON.Serialize(new AppPrintInformation()
 //                {
@@ -98,7 +98,7 @@
 //                    AdditionalParams = null,
 //                    Content = "定时任务Job1结束运行",
 //                    Level = AppPrintLevel.Information,
-//                    Title = "air.cloud.scheduler"
+//                    Title = "定时任务"
 //                }));
 //                await Task.CompletedTask;
 //            }

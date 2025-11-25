@@ -15,7 +15,6 @@ using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.Core.Standard.KVCenter;
-using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin.Enums;
 using Air.Cloud.Core.Standard.Taxin.Events;
@@ -93,11 +92,11 @@ namespace Air.Cloud.Modules.Taxin.Store
             //默认事件处理程序
             if (AppEnvironment.IsDevelopment || Options.PersistenceOutput)
             {
-                AppRealization.Output.Print(new AppPrintInformation()
-                {
-                    Title = "Get Taxin data storage",
-                    Content = AppRealization.JSON.Serialize(classInfoEvent.Packages)
-                });
+                //AppRealization.Output.Print(new AppPrintInformation()
+                //{
+                //    Title = "Get Taxin data storage",
+                //    Content = AppRealization.JSON.Serialize(classInfoEvent.Packages)
+                //});
             }
         }
         #endregion
@@ -146,8 +145,10 @@ namespace Air.Cloud.Modules.Taxin.Store
                         foreach (var item in Keys)
                         {
                             DefaultKVCenterServiceOptions Values = await AppRealization.KVCenter.GetAsync<DefaultKVCenterServiceOptions>(ITaxinStoreStandard.GetPersistenceKVStorePath(Options.PersistencePath, MD5Encryption.GetMd5By32(item)));
-
-                            data.Add(item, AppRealization.JSON.Deserialize<IEnumerable<TaxinRouteDataPackage>>(Values.Value));
+                            if (Values != null)
+                            {
+                                data.Add(item, AppRealization.JSON.Deserialize<IEnumerable<TaxinRouteDataPackage>>(Values.Value));
+                            }
                         }
                     }
                     break;

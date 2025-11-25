@@ -134,5 +134,21 @@ namespace Air.Cloud.Core.App
 
             return Urls;
         }
+
+
+        #region  V1.2.6 新增功能
+
+        /// <summary>
+        /// <para>zh-cn:是否启用集中式身份认证</para>
+        /// <para>en-us:Whether to enable centralized identity authentication</para>
+        /// </summary>
+        public const string ENABLE_Concentration_Authentication_SERVICE = "EnableConcentrationAuthentication";
+
+
+
+
+
+
+        #endregion
     }
 }

@@ -49,11 +49,9 @@ public static class Inject
         // 添加默认控制台日志处理程序
         services.AddLogging(loggingBuilder =>
         {
-            loggingBuilder.AddConfiguration(configuration.GetSection("Logging"));
-            loggingBuilder.AddConsole(); // 将日志输出到控制台
+            loggingBuilder.AddCustomConsole();
             configureLogging?.Invoke(loggingBuilder);
         });
-
         // 初始化应用服务
         services.AddApplication();
 

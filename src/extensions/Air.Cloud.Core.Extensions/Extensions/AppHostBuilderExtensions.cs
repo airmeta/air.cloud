@@ -44,6 +44,10 @@ namespace Air.Cloud.Core.Extensions
 
             // 实现假的 Starup，解决泛型主机启动问题
             hostBuilder.UseStartup<Startup>();
+            hostBuilder.ConfigureLogging((log) =>
+            {
+                log.AddCustomConsole();
+            });
             return hostBuilder;
         }
 
@@ -55,7 +59,11 @@ namespace Air.Cloud.Core.Extensions
         /// <returns>IWebHostBuilder</returns>
         public static IHostBuilder Inject(this IHostBuilder hostBuilder, bool autoRegisterBackgroundService = true)
         {
-             //AppCore.ConfigureApplication(hostBuilder, autoRegisterBackgroundService);
+            //AppCore.ConfigureApplication(hostBuilder, autoRegisterBackgroundService);
+            hostBuilder.ConfigureLogging((log) =>
+            {
+                log.AddCustomConsole();
+            });
             return hostBuilder;
         }
     }

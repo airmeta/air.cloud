@@ -11,10 +11,13 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.TraceLog;
 
 using SkyApm.Tracing;
 using SkyApm.Tracing.Segments;
+
+using System.ComponentModel;
 
 namespace Air.Cloud.Modules.SkyWalking.Dependency
 {
@@ -58,6 +61,11 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
             {
                 _segContext.Context.Span.AddTag("event", "event");
             }
+        }
+
+        public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
+        {
+            Write(AppRealization.JSON.Serialize(logContent),Tag);
         }
     }
 }

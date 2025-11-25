@@ -27,8 +27,11 @@ namespace Air.Cloud.Plugins.SpecificationDocument
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            app.UseSwaggerDocumentPlugin();
+        { // 判断是否启用规范化文档
+            if (AppCore.Settings.InjectSpecificationDocument==true)
+            {
+                app.UseSwaggerDocumentPlugin();
+            }
         }
     }
 }

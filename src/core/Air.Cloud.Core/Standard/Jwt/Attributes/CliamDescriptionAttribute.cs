@@ -9,14 +9,23 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-namespace Air.Cloud.Core.Standard.Authentication
+namespace Air.Cloud.Core.Standard.Jwt.Attributes
 {
     /// <summary>
-    /// 身份认证标准
+    /// Cliam及其描述信息 一般用于Token的Cliam描述
     /// </summary>
-    public interface IAuthenticationStandard : IStandard
+    /// <remarks>
+    /// 标记Cliam的描述信息
+    /// </remarks>
+    public class CliamDescriptionAttribute
     {
-
-
+        /// <summary>
+        /// 标签
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
+        /// 描述信息
+        /// </summary>
+        public string Description { get; set; }
     }
 }

@@ -17,7 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 using System.Reflection;
-
+using Air.Cloud.Core.Extensions;
 namespace Air.Cloud.HostApp.Dependency
 {
     public static class HostAppInjectExtensions
@@ -40,6 +40,10 @@ namespace Air.Cloud.HostApp.Dependency
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 a.AddConfiguration(AppConfigurationLoader.Configurations);
+            });
+            builder.ConfigureLogging((log) =>
+            {
+                log.AddCustomConsole();
             });
             builder = AppRealization.Injection.Inject(builder, true);
             return builder;

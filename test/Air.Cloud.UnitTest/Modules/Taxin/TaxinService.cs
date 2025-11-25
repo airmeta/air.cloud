@@ -28,7 +28,7 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
                     ServiceName = "unit.webapp.entry",
                     HttpMethod = HttpMethod.Get,
                     MethodName = "test001",
-                    Parameters = new List<System.Reflection.ParameterInfo>(),
+                    Parameters = new List<TaxinRouteParameter>(),
                     Route = "/test/data/query"
                 });
             }
