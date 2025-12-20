@@ -11,9 +11,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core;
-=======
-﻿using Air.Cloud.Core;
->>>>>>> aeba4aab7dcf969688fd35ab1ea3ac980b15307d
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Security;
