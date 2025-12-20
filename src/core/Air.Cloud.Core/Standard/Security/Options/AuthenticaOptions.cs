@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ﻿/*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -11,9 +11,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core.App.Options;
-=======
-﻿using Air.Cloud.Core.App.Options;
->>>>>>> aeba4aab7dcf969688fd35ab1ea3ac980b15307d
 
 namespace Air.Cloud.Core.Standard.Security.Options
 {
