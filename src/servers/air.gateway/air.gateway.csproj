@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Ocelot" Version="17.0.1" />
+		<PackageReference Include="Ocelot.Cache.CacheManager" Version="17.0.1" />
+		<PackageReference Include="Ocelot.Provider.Consul" Version="17.0.1" />
+		<PackageReference Include="Ocelot.Provider.Polly" Version="17.0.1" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+	  <ProjectReference Include="..\..\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
+	  <ProjectReference Include="..\..\db\Air.Cloud.DataBase.ElasticSearch\Air.Cloud.DataBase.ElasticSearch.csproj" />
+	  <ProjectReference Include="..\..\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
+	  <ProjectReference Include="..\..\modules\Air.Cloud.Modules.RedisCache\Air.Cloud.Modules.RedisCache.csproj" />
+	  <ProjectReference Include="..\..\modules\Air.Cloud.Modules.SkyMirrorShield\Air.Cloud.Modules.SkyMirrorShield.csproj" />
+	  <ProjectReference Include="..\..\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj" />
+	</ItemGroup>
+</Project>

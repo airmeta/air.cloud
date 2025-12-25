@@ -134,30 +134,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
         /// <returns></returns>
         public static void SetPackages(IEnumerable<IEnumerable<TaxinRouteDataPackage>> Result)
         {
-            IList<TaxinRouteDataPackage> ItemValues = null;
-            foreach (var item in Result)
-            {
-                foreach (var s in item)
-                {
-                    string Key = s.UniqueKey;
-                    //ignore current
-                    if (Key == ITaxinStoreStandard.Current.UniqueKey) continue;
-                    if (ITaxinStoreStandard.Packages.ContainsKey(Key))
-                    {
-                        ItemValues = ITaxinStoreStandard.Packages[Key].ToList();
-                    }
-                    else
-                    {
-                        ItemValues = new List<TaxinRouteDataPackage>();
-                    }
-                    if (ItemValues.Any(x => x.InstancePId == s.InstancePId))
-                    {
-                        ItemValues = ItemValues.Where(x => x.InstancePId != s.InstancePId).ToList();
-                    }
-                    ItemValues.Add(s);
-                    ITaxinStoreStandard.Packages[Key] = ItemValues;
-                }
-            }
+            foreach (var item in Result) SetPackages(item,false);
             _ = SortRoutes(ITaxinStoreStandard.Packages);
         }
 
@@ -167,7 +144,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
         /// </summary>
         /// <param name="Result"></param>
         /// <returns></returns>
-        public static void SetPackages(IEnumerable<TaxinRouteDataPackage> Result)
+        public static void SetPackages(IEnumerable<TaxinRouteDataPackage> Result,bool EnableSort=true)
         {
             IList<TaxinRouteDataPackage> ItemValues = null;
             foreach (var item in Result)
@@ -189,7 +166,10 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
                 ItemValues.Add(item);
                 ITaxinStoreStandard.Packages[Key] = ItemValues;
             }
-            _ = SortRoutes(ITaxinStoreStandard.Packages);
+            if (EnableSort)
+            {
+                _ = SortRoutes(ITaxinStoreStandard.Packages);
+            }
         }
         /// <summary>
         /// <para>zh-cn:复杂数据结构处理与分析</para>
@@ -200,22 +180,23 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
         /// <para>en-us:Data</para>
         /// </param>
         /// <returns>
-        ///  <para>zh-cn:排序处理后的结果</para>
+        ///  <para>zh-cn:排序处理后的结果</para> 
         ///  <para>en-us:result</para>
         /// </returns>
         private static IDictionary<string, IDictionary<Version, TaxinRouteInformation>> SortRoutes(IDictionary<string, IEnumerable<TaxinRouteDataPackage>> Packages)
         {
             //结果
             IDictionary<string, IDictionary<Version, TaxinRouteInformation>> KeyValues = new Dictionary<string, IDictionary<Version, TaxinRouteInformation>>();
-            IDictionary<Version, TaxinRouteInformation> VersionRoutes = new Dictionary<Version, TaxinRouteInformation>();
+            IDictionary<Version, TaxinRouteInformation> VersionRoutes = null;
             foreach (var item in Packages)
             {
                 // 路由 版本 路由信息
-                var AllRoutes = item.Value.Where(s => s.Routes != null && s.Routes.Any()).Select(s => new { s.Routes, s.InstanceVersion }).SelectMany(s => s.Routes.Select(x => new Tuple<string, Version, TaxinRouteInformation>(x.ServiceName, s.InstanceVersion, x))).ToList();
+                var AllRoutes = item.Value.Where(s => s.Routes != null && s.Routes.Any()).Select(s => new { s.Routes, s.InstanceVersion })
+                    .SelectMany(s => s.Routes.Select(x => new Tuple<string, Version, TaxinRouteInformation>(x.ServiceName, s.InstanceVersion, x))).ToList();
                 var AllRouteKeys = AllRoutes.GroupBy(s => s.Item1).ToList();
+                VersionRoutes = new Dictionary<Version, TaxinRouteInformation>();
                 foreach (var Route in AllRouteKeys)
                 {
-                    VersionRoutes.Clear();
                     var Versions = AllRoutes.Where(s => s.Item1 == Route.Key).GroupBy(s => s.Item2).ToList();
                     foreach (var item1 in Versions)
                     {

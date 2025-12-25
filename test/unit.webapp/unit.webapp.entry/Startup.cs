@@ -44,7 +44,7 @@ namespace unit.webapp.entry
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
             services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();
             //注入
-            services.AddMicroServiceSecurity().AddAppControllers(a =>
+            services.AddSkyMirrorShieldClient().AddAppControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();

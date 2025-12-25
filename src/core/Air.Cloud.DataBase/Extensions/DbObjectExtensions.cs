@@ -260,10 +260,10 @@ public static class DbObjectExtensions
                 Level = AppPrintLevel.Debug,
                 Content = $"已读取到数据库链接信息",
                 AdditionalParams = new Dictionary<string, object>()
-            {
-                  {"connection_id", connectionId},
-                  {"connection_str", dbConnection.ConnectionString},
-            },
+                {
+                      {"connection_id", connectionId},
+                      {"connection_str", dbConnection.ConnectionString},
+                },
                 State = true,
                 Type = AppPrintConstType.ORM_EXEC_TYPE
             }, Db.TraceLogTags);

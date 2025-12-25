@@ -182,7 +182,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                         {
                             client.Timeout = new TimeSpan(0, 5, 0);
                             string Url = (new Uri(new Uri(Options.GetServerAddress()), Options.PushRoute)).ToString();
-                            var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(AppRealization.JSON.Serialize(ITaxinStoreStandard.Current)));
+                            var result = await client.PostAsync(Url, client.SetHeaders(Headers).SetBody(ITaxinStoreStandard.Current));
                             string Content = await result.Content.ReadAsStringAsync();
                             var Result = AppRealization.JSON.Deserialize<IEnumerable<IEnumerable<TaxinRouteDataPackage>>>(Content);
                             TaxinTools.SetPackages(Result);

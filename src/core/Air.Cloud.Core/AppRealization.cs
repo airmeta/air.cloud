@@ -33,6 +33,7 @@ using Air.Cloud.Core.Standard.Jwt;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.MessageQueue;
 using Air.Cloud.Core.Standard.ServerCenter;
+using Air.Cloud.Core.Standard.SkyMirror;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.TraceLog.Defaults;
 
@@ -152,6 +153,18 @@ namespace Air.Cloud.Core
         /// <para>en-us:Distributed lock standard implementation</para>
         /// </summary>
         public static IDistributedLockStandard Lock => InternalRealization.Lock ?? DefaultRealization.Lock;
+
+        /// <summary>
+        /// <para>zh-cn:SkyMirrorShield客户端标准实现</para>
+        /// <para>en-us:SkyMirrorShield client standard implementation</para>
+        /// </summary>
+        public static ISkyMirrorShieldClientStandard SkyMirrorShieldClient => InternalRealization.SkyMirrorShieldClient ?? DefaultRealization.SkyMirrorShieldClient;
+
+        /// <summary>
+        /// <para>zh-cn:SkyMirrorShield服务端标准实现</para>
+        /// <para>en-us:SkyMirrorShield server standard implementation</para>
+        /// </summary>
+        public static ISkyMirrorShieldServerStandard SkyMirrorShieldServer => InternalRealization.SkyMirrorShieldServer ?? DefaultRealization.SkyMirrorShieldServer;
 
 
         /// <summary>
@@ -344,6 +357,20 @@ namespace Air.Cloud.Core
             /// <para>en-us:Default queue dependency</para>
             /// </summary>
             public static IMessageQueueStandard Queue => throw new NotImplementedException("系统未实现队列标准");
+
+
+            /// <summary>
+            /// <para>zh-cn:SkyMirrorShield客户端标准实现</para>
+            /// <para>en-us:SkyMirrorShield client standard implementation</para>
+            /// </summary>
+            public static ISkyMirrorShieldClientStandard SkyMirrorShieldClient => throw new NotImplementedException("未能获取到SkyMirrorShield客户端标准实现");
+
+            /// <summary>
+            /// <para>zh-cn:SkyMirrorShield服务端标准实现</para>
+            /// <para>en-us:SkyMirrorShield server standard implementation</para>
+            /// </summary>
+            public static ISkyMirrorShieldServerStandard SkyMirrorShieldServer => throw new NotImplementedException("未能获取到SkyMirrorShield服务端标准实现");
+
         }
         /// <summary>
         /// <para>zh-cn:内部标准实现</para>
@@ -457,6 +484,18 @@ namespace Air.Cloud.Core
             /// <para>en-us:Lock standard implementation</para>
             /// </summary>
             public static IDistributedLockStandard Lock => AppCore.GetService<IDistributedLockStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:SkyMirrorShield客户端标准实现</para>
+            /// <para>en-us:SkyMirrorShield client standard implementation</para>
+            /// </summary>
+            public static ISkyMirrorShieldClientStandard SkyMirrorShieldClient => AppCore.GetService<ISkyMirrorShieldClientStandard>();
+
+            /// <summary>
+            /// <para>zh-cn:SkyMirrorShield服务端标准实现</para>
+            /// <para>en-us:SkyMirrorShield server standard implementation</para>
+            /// </summary>
+            public static ISkyMirrorShieldServerStandard SkyMirrorShieldServer => AppCore.GetService<ISkyMirrorShieldServerStandard>();
 
         }
     }

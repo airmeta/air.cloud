@@ -111,7 +111,11 @@ namespace Air.Cloud.Core.Plugins
             where TPlugin : class,IPlugin
         {
             PluginName = PluginName ?? typeof(TPlugin).FullName;
-
+            if (IAppPluginFactory.Plugins.ContainsKey(PluginName))
+            {
+                 IAppPluginFactory.Plugins[PluginName] = plugin;
+                return true;
+            }
             return IAppPluginFactory.Plugins.TryAdd(PluginName,plugin);
         }
     }

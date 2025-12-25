@@ -12,6 +12,7 @@
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Modules.AppAspect.Extensions;
 using Air.Cloud.Core.Plugins;
+using Air.Cloud.Core.Plugins.Router;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -25,6 +26,7 @@ namespace Air.Cloud.Core
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDynamicAppMiddleware();
+            AppRealization.SetPlugin<IRouterMatcherPlugin>(new UniversalRouteMatcherCore());
         }
 
         public override void ConfigureServices(IServiceCollection services)

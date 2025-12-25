@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.Store;
 using Air.Cloud.Core.Standard.Taxin.Client;
@@ -21,6 +22,8 @@ using Air.Cloud.Modules.Taxin.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+
+using System.Text;
 
 namespace Air.Cloud.Modules.Taxin.Extensions
 {
@@ -153,12 +156,14 @@ namespace Air.Cloud.Modules.Taxin.Extensions
                     {
                         try
                         {
-                            var package = await context.Request.ReadFromJsonAsync<TaxinRouteDataPackage>();
+                            string body = await ReadBodyAsStringAsync(context.Request);
+                            TaxinRouteDataPackage package = AppRealization.JSON.Deserialize<TaxinRouteDataPackage>(body);
                             var result = await taxinServer.ReceiveAsync(package);
                             await context.Response.WriteAsJsonAsync(result);
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
+                            AppRealization.Output.Print("Taxin远程调用", ex.Message);
                             await context.Response.WriteAsJsonAsync(Array.Empty<string>());
                         }
                     };
@@ -186,5 +191,18 @@ namespace Air.Cloud.Modules.Taxin.Extensions
             });
             return app;
         }
+        /// <summary>
+        /// 读取请求Body为字符串（UTF-8）
+        /// </summary>
+        private static async Task<string> ReadBodyAsStringAsync(HttpRequest request)
+        {
+            request.EnableBuffering();
+            request.Body.Position = 0;
+            using var reader = new StreamReader(request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+            var body = await reader.ReadToEndAsync();
+            request.Body.Position = 0;
+            return body ?? string.Empty;
+        }
     }
+
 }

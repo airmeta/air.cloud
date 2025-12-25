@@ -1,0 +1,117 @@
+﻿using air.gateway.Middleware;
+using air.gateway.Modules.TraceLogModules;
+using air.gateway.Options;
+
+using Air.Cloud.Core;
+using Air.Cloud.Core.App;
+using Air.Cloud.Core.App.Startups;
+using Air.Cloud.Core.Attributes;
+using Air.Cloud.Core.Standard.TraceLog;
+using Air.Cloud.Modules.Consul.Model;
+using Air.Cloud.Modules.Consul.Util;
+using Air.Cloud.Modules.SkyMirrorShield.Middleware;
+using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Server;
+using Air.Cloud.Modules.Taxin.Store;
+using Air.Cloud.WebApp.Extensions;
+
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+using Ocelot.Cache.CacheManager;
+using Ocelot.DependencyInjection;
+using Ocelot.Middleware;
+using Ocelot.Provider.Consul;
+using Ocelot.Provider.Polly;
+
+using AuthorizationMiddleware = air.gateway.Middleware.AuthorizationMiddleware;
+namespace air.gateway
+{
+
+    [AppStartup(Order=3000)]
+    public class Startup : AppStartup
+    {
+        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            app.UseCors("CorsPolicy");
+            app.UseWebSockets();
+            app.UseSkyMirrorShieldServer();
+            //app.UseTaxinServer<TaxinServerDependency>();
+            app.UseMiddleware<TraceLogMiddleware>();
+            app.UseMiddleware<SkyMirrorShieldMiddleware>();
+            app.UseMiddleware<SignatureMiddleware>();
+            app.UseMiddleware<WhiteListRequestMiddleware>();
+            app.UseMiddleware<AuthorizationMiddleware>();
+            app.UseMiddleware<IPMiddleware>();
+            app.UseOcelot().Wait();
+        }
+
+        public override void ConfigureServices(IServiceCollection services)
+        {
+            // services.AddGateWayPlugins();
+            #region 加载配置信息
+            var options = AppConfigurationLoader.InnerConfiguration.GetConfig<ConsulServiceOptions>();
+            var Config = ConfigurationLoader.LoadRemoteConfiguration(options);
+            ConfigurationManager configurationManager = new ConfigurationManager();
+            configurationManager.AddConfiguration(Config.Item1);
+            configurationManager.AddConfiguration(Config.Item2);
+            #endregion
+            //services.AddControllers().AddInjectWithUnifyResult().AddNewtonsoftJson(o =>
+            //{
+            //    //全局设置json 序列化enum int 转string
+            //    o.SerializerSettings.Converters.Add(new IsoDateTimeConverter()
+            //    { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" });
+            //    //序列化属性名大写
+            //    //o.SerializerSettings.ContractResolver = new DefaultContractResolver();
+            //    //忽略循环引用
+            //    o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            //});
+            //注入网关配置文件
+            services.AddOcelot(configurationManager).AddCacheManager(x =>
+            {
+                x.WithDictionaryHandle();
+            })
+                .AddConsul()
+                .AddPolly();
+            AppConfigurationLoader.Configurations.AddConfiguration(AppConfigurationLoader.InnerConfiguration);
+            #region  跨域配置
+            string AllowCors = AppConfigurationLoader.InnerConfiguration["AllowCors"];
+            services.AddCors(options => options.AddPolicy("CorsPolicy",
+                builde =>
+                {
+                    builde.AllowAnyMethod()
+                    .WithOrigins(AllowCors.Split(","))
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+                }));
+            #endregion
+            services.AddOptions<TraceLogSettings>()
+                .BindConfiguration("TraceLogSettings")
+                .ValidateDataAnnotations()
+                .PostConfigure(options =>
+                {
+                    _ = TraceLogSettings.SetDefaultSettings(options);
+                });
+            //services.AddTaxinServer<TaxinServerDependency, TaxinStoreDependency>();
+            services.AddSkyMirrorShieldServer();
+            #region  表单上传配置
+            services.Configure<FormOptions>(x =>
+            {
+                x.ValueLengthLimit = int.MaxValue;
+                x.MultipartBodyLengthLimit = int.MaxValue; // if don't set default value is: 128 MB
+                x.MultipartHeadersLengthLimit = int.MaxValue;
+            });
+            services.Configure<KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = int.MaxValue;
+            });
+            #endregion
+            AppRealization.SetDependency<ITraceLogStandard>(new TraceLogStandardDependency());
+
+
+        }
+    }
+}

@@ -9,9 +9,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Plugins.Http;
+using Air.Cloud.Core.Plugins.Router;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.Filters;
@@ -50,7 +52,8 @@ namespace Air.Cloud.WebApp
             services.AddMvcFilter<DistributedLockFilter>();
             // 控制器和规范化结果
             services.AddControllers();
-          
+            AppRealization.AppPlugin.SetPlugin<IRouterMatcherPlugin>(new UniversalRouteMatcherCore());
+
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

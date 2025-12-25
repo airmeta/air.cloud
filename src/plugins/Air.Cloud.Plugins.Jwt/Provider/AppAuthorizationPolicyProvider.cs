@@ -10,7 +10,7 @@
  * acknowledged.
  */
 
-using Air.Cloud.Core.Standard.Authentication;
+using Air.Cloud.Core.Standard.SkyMirror;
 using Air.Cloud.Plugins.Jwt.Requirement;
 
 using Microsoft.AspNetCore.Authorization;

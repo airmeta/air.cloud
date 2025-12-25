@@ -11,8 +11,8 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Standard.Authentication;
-using Air.Cloud.Core.Standard.Security.Handler;
+using Air.Cloud.Core.Standard.SkyMirror;
+using Air.Cloud.Core.Standard.SkyMirror.Handler;
 using Air.Cloud.Plugins.Jwt.Options;
 using Air.Cloud.Plugins.Jwt.Provider;
 

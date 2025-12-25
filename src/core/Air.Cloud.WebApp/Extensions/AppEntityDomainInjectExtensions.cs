@@ -41,21 +41,6 @@ namespace Air.Cloud.WebApp.Extensions
             {
                 var lifetimes = new[] { typeof(ITransient), typeof(IScoped), typeof(ISingleton) };
                 Type[] AllDomains = AppCore.LoadSpecifyTypes(typeof(IEntityDomain)).Where(s=>s.IsClass).ToArray();
-                #region 调试模式检查
-                    #if DEBUG
-                        if (AllDomains.Length == 0)
-                        {
-                            AppRealization.Output.Print(new AppPrintInformation
-                            {
-                                Title = "domain-warning",
-                                Level = AppPrintLevel.Error,
-                                Content = $"[code:aircloud_000001]看起来你正在调试一个不具有Domain的服务,你需要检查你的类库引用关系,并确保Domain类库被正常引入",
-                                State = true,
-                                Type = AppPrintConstType.DEBUG_LOG_TYPE
-                            });
-                        }
-                    #endif
-                #endregion
                 foreach (var t in AllDomains)
                 {
                     var instances = t.GetInterfaces();
