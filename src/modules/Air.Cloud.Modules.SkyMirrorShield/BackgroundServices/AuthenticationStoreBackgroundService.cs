@@ -42,19 +42,19 @@ namespace Air.Cloud.Modules.SkyMirrorShield.BackgroundServices
 
                         foreach (var item in ISkyMirrorShieldServerStandard.ServerEndpointDatas)
                         {
-                            if (item.IsAllowAnonymous)
+                            if (item.Value.IsAllowAnonymous)
                             {
-                                AllowAnonymousPaths.Add(item.Path);
+                                AllowAnonymousPaths.Add(item.Value.Path);
                                 continue;
                             }
-                            if (item.RequiresAuthorization)
+                            if (item.Value.RequiresAuthorization)
                             {
-                                RequireAuthorization.Add(item.Path);
+                                RequireAuthorization.Add(item.Value.Path);
                                 continue;
                             }
-                            if (item.AuthorizeData != null)
+                            if (item.Value.AuthorizeData != null)
                             {
-                                AuthorizeData.Add(item);
+                                AuthorizeData.Add(item.Value);
                             }
                         }
                         File.WriteAllText("security/AuthData.json", AppRealization.JSON.Serialize(AuthorizeData));

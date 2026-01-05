@@ -9,17 +9,15 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Newtonsoft.Json.Serialization;
 
-namespace Air.Cloud.Modules.SkyMirrorShield.Headers
+namespace Air.Cloud.Modules.SkyMirrorShield.Utils
 {
-    public static  class HeaderConst
+    public class LowercaseContractResolver : DefaultContractResolver
     {
-
-        public const string IS_ALLOW_ANONYMOUS = "IsAllowAnonymous";
-
-
-        public const string IS_REQUIRE_TICKIT = "IsRequire";
-
-
+        protected override string ResolvePropertyName(string propertyName)
+        {
+            return propertyName.ToLower();
+        }
     }
 }

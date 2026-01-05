@@ -1,4 +1,15 @@
-﻿using air.gateway.Middleware;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using air.gateway.Middleware;
 using air.gateway.Modules.TraceLogModules;
 using air.gateway.Options;
 
@@ -10,24 +21,15 @@ using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Modules.Consul.Model;
 using Air.Cloud.Modules.Consul.Util;
 using Air.Cloud.Modules.SkyMirrorShield.Middleware;
-using Air.Cloud.Modules.Taxin.Extensions;
-using Air.Cloud.Modules.Taxin.Server;
-using Air.Cloud.Modules.Taxin.Store;
-using Air.Cloud.WebApp.Extensions;
 
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 using Ocelot.Cache.CacheManager;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 using Ocelot.Provider.Consul;
 using Ocelot.Provider.Polly;
-
-using AuthorizationMiddleware = air.gateway.Middleware.AuthorizationMiddleware;
 namespace air.gateway
 {
 
@@ -44,7 +46,6 @@ namespace air.gateway
             app.UseMiddleware<SkyMirrorShieldMiddleware>();
             app.UseMiddleware<SignatureMiddleware>();
             app.UseMiddleware<WhiteListRequestMiddleware>();
-            app.UseMiddleware<AuthorizationMiddleware>();
             app.UseMiddleware<IPMiddleware>();
             app.UseOcelot().Wait();
         }

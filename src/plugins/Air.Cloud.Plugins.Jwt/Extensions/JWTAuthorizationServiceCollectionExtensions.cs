@@ -11,8 +11,6 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Standard.SkyMirror;
-using Air.Cloud.Core.Standard.SkyMirror.Handler;
 using Air.Cloud.Plugins.Jwt.Options;
 using Air.Cloud.Plugins.Jwt.Provider;
 
@@ -51,8 +49,8 @@ public static class JWTAuthorizationServiceCollectionExtensions
        
         var authenticationBuilder=services.AddAuthentication(options =>
         {
-            options.AddScheme<InternalAuthenticationHandler>(ISecurityHandlerStandard.AuthenticationSchemeName, ISecurityHandlerStandard.AuthenticationSchemeName);
-            options.AddScheme<InternalAuthenticationHandler>("123312132", "123312132");
+            //options.AddScheme<InternalAuthenticationHandler>(ISecurityHandlerStandard.AuthenticationSchemeName, ISecurityHandlerStandard.AuthenticationSchemeName);
+            //options.AddScheme<InternalAuthenticationHandler>("123312132", "123312132");
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             // 添加自定义配置

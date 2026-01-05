@@ -42,10 +42,10 @@ namespace Air.Cloud.Plugins.Jwt.Extensions
                         .RequireAuthenticatedUser()
                         .AddAuthenticationSchemes("123312132")
                         );
-                 option.AddPolicy(ISecurityHandlerStandard.AuthenticationSchemeName, policy => policy
-                         .RequireAuthenticatedUser()
-                         .AddAuthenticationSchemes(ISecurityHandlerStandard.AuthenticationSchemeName)
-                         );
+                 //option.AddPolicy(ISecurityHandlerStandard.AuthenticationSchemeName, policy => policy
+                 //        .RequireAuthenticatedUser()
+                 //        .AddAuthenticationSchemes(ISecurityHandlerStandard.AuthenticationSchemeName)
+                 //        );
              });
             configure?.Invoke(services);
             return services;

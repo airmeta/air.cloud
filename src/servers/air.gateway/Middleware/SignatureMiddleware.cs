@@ -1,4 +1,15 @@
-﻿using air.gateway.Const;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using air.gateway.Const;
 using air.gateway.Model;
 
 using Air.Cloud.Core;
@@ -9,6 +20,8 @@ using Air.Cloud.Core.Plugins.Security.RSA;
 using Air.Cloud.Core.Standard.SkyMirror.Model;
 using Air.Cloud.WebApp.UnifyResult.Internal;
 
+using Nest;
+
 using System.Configuration;
 using System.Text;
 
@@ -17,36 +30,25 @@ namespace air.gateway.Middleware
     public class SignatureMiddleware
     {
         private readonly RequestDelegate next;
-
-        /// <summary>
-        ///  是否启用授权验证
-        /// </summary>
-        public static bool? InjectAuthValidateService = AppConfigurationLoader.InnerConfiguration["AppSettings:InjectAuthValidateService"]?.ToBool();
-
         /// <summary>
         /// 路由验证白名单
         /// </summary>
-        public IList<string>? RouteValidateWhiteList => (AppConfigurationLoader.InnerConfiguration["GatewaySettings:RouteValidateWhiteList"])?.Split(",");
+        public IList<string>? RouteValidateWhiteList => (AppConfigurationLoader.InnerConfiguration["SkyMirrorShieldSettings:RouteValidateWhiteList"])?.Split(",");
 
         /// <summary>
         /// 查询应用
         /// </summary>
-        public string? AppQueryUrl => AppConfigurationLoader.InnerConfiguration["SecuritySettings:AppQueryUrl"];
+        public string? AppQueryUrl => AppConfigurationLoader.InnerConfiguration["SkyMirrorShieldSettings:SkyMirrorShieldHeaderValid:AppQueryUrl"];
 
         /// <summary>
         /// 应用路由查询
         /// </summary>
-        public string? RouteQueryUrl => AppConfigurationLoader.InnerConfiguration["SecuritySettings:RouteQueryUrl"];
+        public string? RouteQueryUrl => AppConfigurationLoader.InnerConfiguration["SkyMirrorShieldSettings:SkyMirrorShieldHeaderValid:RouteQueryUrl"];
 
         /// <summary>
-        /// 签名限流次数 默认为1次 意思是每个签名只能用1次
+        /// 票据验证
         /// </summary>
-        public int SignLimitCount=> AppConfigurationLoader.InnerConfiguration["SecuritySettings:SignLimitCount"]?.ToInt()??1;
-
-        /// <summary>
-        /// 签名限流时间 秒 默认180秒
-        /// </summary>
-        public int SignLimitSeconds=> AppConfigurationLoader.InnerConfiguration["SecuritySettings:SignLimitSeconds"]?.ToInt() ?? 180;
+        public string? TickitValidUrl => AppConfigurationLoader.InnerConfiguration["SkyMirrorShieldSettings:SkyMirrorShieldHeaderValid:TickitValidUrl"];
 
         private readonly IHttpClientFactory httpClientFactory;
 
@@ -59,15 +61,8 @@ namespace air.gateway.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            //为null 则进行验证
-            if (InjectAuthValidateService.HasValue && !InjectAuthValidateService.Value)
-            {
-                await next(context);
-                return;
-            }
             var ValidateRouteMetadata = new
             {
-                Route = "/",
                 Path = context.Request.Path,
                 AppId = context.Request.Headers["APPID"],
                 Tickit = context.Request.Headers["Tickit"],
@@ -97,38 +92,58 @@ namespace air.gateway.Middleware
                     return;
                 }
             }
-            //if (ValidateRouteMetadata.Tickit.IsNullOrEmpty())
-            //{
-            //    context.Response.StatusCode = 200;
-            //    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Tickit参数缺失")));
-            //    return;
-            //}
-            if (ValidateRouteMetadata.TimeStamp.IsNullOrEmpty())
+            else
             {
-                context.Response.StatusCode = 200;
-                _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "TimeStamp参数缺失")));
-                return;
+                if (ValidateRouteMetadata.TimeStamp.IsNullOrEmpty())
+                {
+                    context.Response.StatusCode = 200;
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "TimeStamp参数缺失")));
+                    return;
+                }
+                //校验TimeStamp与现在时间差值是否在允许范围内
+                try
+                {
+                    Int64 begtime = Convert.ToInt64(ValidateRouteMetadata.TimeStamp) * 10000000;
+                    DateTime dt_1970 = new DateTime(1970, 1, 1, 8, 0, 0);
+                    long tricks_1970 = dt_1970.Ticks;//1970年1月1日刻度
+                    long time_tricks = tricks_1970 + begtime;//日志日期刻度
+                    DateTime dt = new DateTime(time_tricks);//转化为DateTime
+                    
+                    TimeSpan timeDifference = DateTime.Now - dt;
+                    if (timeDifference.TotalSeconds > 300)
+                    {
+                        string D = string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, $"时间戳校验失败,服务时间:{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")}");
+                        context.Response.StatusCode = 200;
+                        _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(D));
+                        return;
+                    }
+                }
+                catch (Exception)
+                {
+                    context.Response.StatusCode = 200;
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "时间戳转换失败,请检查是否为有效时间戳(精确到秒)")));
+                    return;
+                }
+                if (ValidateRouteMetadata.AppId.IsNullOrEmpty())
+                {
+                    context.Response.StatusCode = 200;
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "AppId参数缺失")));
+                    return;
+                }
+                if (ValidateRouteMetadata.Sign.IsNullOrEmpty())
+                {
+                    context.Response.StatusCode = 200;
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Sign参数缺失")));
+                    return;
+                }
+                if (ValidateRouteMetadata.Nonce.IsNullOrEmpty())
+                {
+                    context.Response.StatusCode = 200;
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "UKey参数缺失")));
+                    return;
+                }
             }
-
-            if (ValidateRouteMetadata.AppId.IsNullOrEmpty())
-            {
-                context.Response.StatusCode = 200;
-                _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "AppId参数缺失")));
-                return;
-            }
-            if (ValidateRouteMetadata.Sign.IsNullOrEmpty())
-            {
-                context.Response.StatusCode = 200;
-                _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Sign参数缺失")));
-                return;
-            }
-            if (ValidateRouteMetadata.Nonce.IsNullOrEmpty())
-            {
-                context.Response.StatusCode = 200;
-                _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "UKey参数缺失")));
-                return;
-            }
-
+           
             #region 读取请求信息 并生成签名
             string requestData = GetRequestData(context, ValidateRouteMetadata.TimeStamp, ValidateRouteMetadata.Tickit);
             requestData = requestData.Replace("\\u0022", "\\\"");
@@ -187,7 +202,7 @@ namespace air.gateway.Middleware
             #region 2.签名限流验证
             int Count = AppRealization.RedisCache.String.Get($"App:SignUse:{ValidateRouteMetadata.Sign}")?.ToInt()??0;
             //根据配置次数限流
-            if (Count > SignLimitCount)
+            if (Count > 1)
             {
                 context.Response.StatusCode = 200;
                 _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.REREQUEST));
@@ -202,7 +217,7 @@ namespace air.gateway.Middleware
                 return;
             }
             #endregion
-            _ = await AppRealization.RedisCache.String.SetAsync($"App:SignUse:{ValidateRouteMetadata.Sign}", Count + 1, new TimeSpan(0, 0, SignLimitSeconds));
+            _ = await AppRealization.RedisCache.String.SetAsync($"App:SignUse:{ValidateRouteMetadata.Sign}", Count + 1, new TimeSpan(0, 10, 0));
             //放行-----继续进行后续操作
             await next(context);
         }
@@ -316,7 +331,8 @@ namespace air.gateway.Middleware
             using (HttpClient client= httpClientFactory.CreateClient())
             {
                 client.Timeout = new TimeSpan(0, 3, 0);
-                var result = await client.GetAsync(AppQueryUrl.Replace("{AppId}", AppId));
+                string Url = AppQueryUrl.Replace("{AppId}", AppId);
+                var result = await client.GetAsync(Url);
                
                 if (result.StatusCode==System.Net.HttpStatusCode.OK)
                 {

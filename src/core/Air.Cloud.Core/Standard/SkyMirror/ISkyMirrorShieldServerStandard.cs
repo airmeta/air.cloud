@@ -1,15 +1,4 @@
-﻿/*
- * Copyright (c) 2024-2030 星曳数据
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- *
- * This file is provided under the Mozilla Public License Version 2.0,
- * and the "NO WARRANTY" clause of the MPL is hereby expressly
- * acknowledged.
- */
-
+﻿
 /*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -32,7 +21,7 @@ namespace Air.Cloud.Core.Standard.SkyMirror
     public interface ISkyMirrorShieldServerStandard : IStandard
     {
 
-        public static IList<EndpointData> ServerEndpointDatas = new List<EndpointData>();
+        public static IDictionary<string, EndpointData> ServerEndpointDatas = new Dictionary<string,EndpointData>();
 
         /// <summary>
         /// <para>zh-cn:检查当前用户是否具有给定权限的授权</para>
@@ -63,5 +52,20 @@ namespace Air.Cloud.Core.Standard.SkyMirror
         /// </param>
         /// <returns></returns>
         Task<bool> SaveClientEndPointDataAsync(SkyMirrorShieldClientData clientData);
+
+        /// <summary>
+        /// <para>zh-cn:存储客户端端点数据</para>
+        /// <para>en-us:Store client endpoint data.</para>
+        /// </summary>
+        /// <returns></returns>
+        Task StoreClientEndPointDataAsync();
+
+        /// <summary>
+        /// <para>zh-cn:加载客户端端点数据</para>
+        /// <para>en-us:Load client endpoint data.</para>
+        /// </summary>
+        /// <returns></returns>
+        Task LoadClientEndPointDataAsync(); 
+
     }
 }

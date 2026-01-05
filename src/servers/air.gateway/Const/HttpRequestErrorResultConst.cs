@@ -1,4 +1,15 @@
-﻿using Air.Cloud.WebApp.UnifyResult;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.WebApp.UnifyResult;
 using Air.Cloud.WebApp.UnifyResult.Internal;
 
 using Newtonsoft.Json;
@@ -22,7 +33,7 @@ namespace air.gateway.Const
         /// </summary>
         public static readonly string UNAUTH = JsonConvert.SerializeObject(new RESTfulResult<string>()
         {
-            Code = 600,
+            Code = 500,
             Data = "",
             Extras = UnifyContext.Take(),
             Succeeded = true,
@@ -35,7 +46,7 @@ namespace air.gateway.Const
         /// </summary>
         public static readonly string UNACCEPT = JsonConvert.SerializeObject(new RESTfulResult<string>()
         {
-            Code = 601,
+            Code = 500,
             Data = "",
             Extras = UnifyContext.Take(),
             Succeeded = true,
@@ -48,7 +59,7 @@ namespace air.gateway.Const
         /// </summary>
         public static readonly string HEADERLOSE = JsonConvert.SerializeObject(new RESTfulResult<string>()
         {
-            Code = 602,
+            Code = 500,
             Data = "",
             Extras = UnifyContext.Take(),
             Succeeded = true,
@@ -61,7 +72,7 @@ namespace air.gateway.Const
         /// </summary>
         public static readonly string HEADERLOSE_ITEM = JsonConvert.SerializeObject(new RESTfulResult<string>()
         {
-            Code = 602,
+            Code = 500,
             Data = "",
             Extras = UnifyContext.Take(),
             Succeeded = true,
@@ -85,7 +96,7 @@ namespace air.gateway.Const
         /// </summary>
         public static readonly string REREQUEST = JsonConvert.SerializeObject(new RESTfulResult<string>()
         {
-            Code = 603,
+            Code = 500,
             Data = "",
             Extras = UnifyContext.Take(),
             Succeeded = true,
@@ -98,7 +109,7 @@ namespace air.gateway.Const
         /// </summary>
         public static readonly string UNDOMAIN = JsonConvert.SerializeObject(new RESTfulResult<string>()
         {
-            Code = 604,
+            Code = 500,
             Data = "",
             Extras = UnifyContext.Take(),
             Succeeded = true,

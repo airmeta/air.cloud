@@ -88,67 +88,66 @@ public static class SecurityExtensions
                 MethodInfo[] methods = type.GetMethods().Where(s => s.IsPublic && s.IsStatic == false).ToArray();
                 foreach (MethodInfo method in methods)
                 {
-                    var HttpMethods = method.GetCustomAttribute<HttpMethodAttribute>();
-                    var Route = method.GetCustomAttribute<RouteAttribute>();
-                    if (HttpMethods != null || Route != null)
+                    var AllMethods = method.GetCustomAttributes<HttpMethodAttribute>();
+                    if ((AllMethods != null && AllMethods.Any()))
                     {
-                        if (HttpMethods == null)
+                        foreach (var item in AllMethods)
                         {
-                            continue;
-                        }
-                        string? Template = HttpMethods != null ?
-                                   HttpMethods.Template.IsNullOrEmpty() ?
-                                       Route?.Template : HttpMethods?.Template
-                                    : Route?.Template;
+                            var Route = method.GetCustomAttribute<RouteAttribute>();
+                            string? Template = item != null ?
+                                  item.Template.IsNullOrEmpty() ?
+                                      Route?.Template : item?.Template
+                                   : Route?.Template;
 
-                        string Method = HttpMethods == null ? "GET" : string.Join(",", HttpMethods.HttpMethods);
-                        string Path = (InterfaceTemplate.IsNullOrEmpty() ? string.Empty : (InterfaceTemplate + "/")) + Template;
-                        //找到授权特性
-                        var AllowAnonymous = method.GetCustomAttribute<AllowAnonymousAttribute>();
-                        var Authorize = method.GetCustomAttribute<AuthorizeAttribute>();
-                        var DescriptionAttributes = method.GetCustomAttribute<DescriptionAttribute>();
-                        if (AllowAnonymous == null && Authorize == null)
-                        {
-                            endpointData = new EndpointData()
+                            string Method = item == null ? "GET" : string.Join(",", item.HttpMethods);
+                            string Path = (InterfaceTemplate.IsNullOrEmpty() ? string.Empty : (InterfaceTemplate + "/")) + Template;
+                            //找到授权特性
+                            var AllowAnonymous = method.GetCustomAttribute<AllowAnonymousAttribute>();
+                            var Authorize = method.GetCustomAttribute<AuthorizeAttribute>();
+                            var DescriptionAttributes = method.GetCustomAttribute<DescriptionAttribute>();
+                            if (AllowAnonymous == null && Authorize == null)
                             {
-                                IsAllowAnonymous = false,
-                                RequiresAuthorization = true,
-                                AuthorizeData = null,
-                                Method = Method,
-                                Path = Path,
-                                Description = DescriptionAttributes?.Description
-                            };
-                        }
-                        else if (AllowAnonymous != null)
-                        {
-                            endpointData = new EndpointData()
-                            {
-                                IsAllowAnonymous = true,
-                                RequiresAuthorization = false,
-                                AuthorizeData = null,
-                                Method = Method,
-                                Path = Path,
-                                Description = DescriptionAttributes?.Description
-                            };
-                        }
-                        else
-                        {
-                            endpointData = new EndpointData()
-                            {
-                                IsAllowAnonymous = false,
-                                RequiresAuthorization = true,
-                                AuthorizeData = new EndPointAuthorizeData()
+                                endpointData = new EndpointData()
                                 {
-                                    AuthenticationSchemes = Authorize?.AuthenticationSchemes,
-                                    Policy = Authorize?.Policy,
-                                    Roles = Authorize?.Roles,
-                                },
-                                Method = Method,
-                                Path = Path,
-                                Description = DescriptionAttributes?.Description
-                            };
+                                    IsAllowAnonymous = false,
+                                    RequiresAuthorization = true,
+                                    AuthorizeData = null,
+                                    Method = Method,
+                                    Path = Path,
+                                    Description = DescriptionAttributes?.Description
+                                };
+                            }
+                            else if (AllowAnonymous != null)
+                            {
+                                endpointData = new EndpointData()
+                                {
+                                    IsAllowAnonymous = true,
+                                    RequiresAuthorization = false,
+                                    AuthorizeData = null,
+                                    Method = Method,
+                                    Path = Path,
+                                    Description = DescriptionAttributes?.Description
+                                };
+                            }
+                            else
+                            {
+                                endpointData = new EndpointData()
+                                {
+                                    IsAllowAnonymous = false,
+                                    RequiresAuthorization = true,
+                                    AuthorizeData = new EndPointAuthorizeData()
+                                    {
+                                        AuthenticationSchemes = Authorize?.AuthenticationSchemes,
+                                        Policy = Authorize?.Policy,
+                                        Roles = Authorize?.Roles,
+                                    },
+                                    Method = Method,
+                                    Path = Path,
+                                    Description = DescriptionAttributes?.Description
+                                };
+                            }
+                            ISkyMirrorShieldClientStandard.ClientEndpointDatas.Add(endpointData);
                         }
-                        ISkyMirrorShieldClientStandard.ClientEndpointDatas.Add(endpointData);
                     }
                 }
             },
@@ -169,8 +168,7 @@ public static class SecurityExtensions
                     using (var client = httpClientFactory.CreateClient())
                     {
                         client.Timeout = TimeSpan.FromSeconds(10);
-                        //string Url= $"{Appsettings.GateWayAddress.TrimEnd('/')}{AppCore.GetOptions<AuthenticaOptions>().PushRoute}";
-                        Uri Url = new Uri(new Uri("http://localhost:5125"), AppCore.GetOptions<AuthenticaOptions>().PushRoute);
+                        string Url = $"{Appsettings.GateWayAddress.TrimEnd('/')}{AppCore.GetOptions<AuthenticaOptions>().PushRoute}";
                         var response = client.PostAsync(Url, client.SetHeaders(Headers).SetBody(new SkyMirrorShieldClientData()
                         {
                             ApplicationName = AppConst.ApplicationName,
@@ -178,7 +176,7 @@ public static class SecurityExtensions
                             EndpointDatas = ISkyMirrorShieldClientStandard.ClientEndpointDatas
                         })).GetAwaiter().GetResult();
                         string Content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                        if (response.StatusCode==System.Net.HttpStatusCode.OK)
+                        if (response.StatusCode == System.Net.HttpStatusCode.OK)
                         {
                             try
                             {
@@ -198,7 +196,7 @@ public static class SecurityExtensions
                         }
                         else
                         {
-                            AppRealization.Output.Print("安全防护", $"服务数据信息上报网关服务失败,状态码:{response.StatusCode}",Air.Cloud.Core.Modules.AppPrint.AppPrintLevel.Error, AdditionalParams: new Dictionary<string, object>()
+                            AppRealization.Output.Print("安全防护", $"服务数据信息上报网关服务失败,状态码:{response.StatusCode}", Air.Cloud.Core.Modules.AppPrint.AppPrintLevel.Error, AdditionalParams: new Dictionary<string, object>()
                                 {
                                      {"message", "上报失败"},
                                      {"Url",Url}
@@ -209,19 +207,18 @@ public static class SecurityExtensions
                 }
                 catch (Exception ex)
                 {
-                    AppRealization.Output.Print("安全防护", $"服务数据上报失败,已强制停止运行!",Air.Cloud.Core.Modules.AppPrint.AppPrintLevel.Error,AdditionalParams:new Dictionary<string, object>()
+                    AppRealization.Output.Print("安全防护", $"服务数据上报失败,已强制停止运行!", Air.Cloud.Core.Modules.AppPrint.AppPrintLevel.Error, AdditionalParams: new Dictionary<string, object>()
                     {
                          {"message",ex.Message },
                          {"StackTrace",ex.StackTrace }
                     });
                     Environment.Exit(1);
                 }
-               
+
             }
         });
         return services;
     }
-
     /// <summary>
     /// <para>zh-cn:注入微服务安全认证服务端服务</para>
     /// <para>en-us:Inject microservice security authentication server services</para>
@@ -231,6 +228,7 @@ public static class SecurityExtensions
     public static IServiceCollection AddSkyMirrorShieldServer(this IServiceCollection services)
     {
         services.AddSingleton<ISkyMirrorShieldServerStandard, SkyMirrorShieldServerDependency>();
+        AppRealization.SkyMirrorShieldServer.LoadClientEndPointDataAsync().GetAwaiter().GetResult();
         return services;    
     }
 

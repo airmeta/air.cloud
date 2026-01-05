@@ -9,17 +9,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-
-namespace Air.Cloud.Modules.SkyMirrorShield.Headers
+namespace air.security.common.Dtos.RequestValidDtos
 {
-    public static  class HeaderConst
+    public  class RequestValidResult
     {
-
-        public const string IS_ALLOW_ANONYMOUS = "IsAllowAnonymous";
-
-
-        public const string IS_REQUIRE_TICKIT = "IsRequire";
-
+        public bool Valid { get; set; }
 
     }
 }

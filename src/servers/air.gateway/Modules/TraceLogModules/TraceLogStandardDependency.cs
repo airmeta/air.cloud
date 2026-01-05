@@ -1,4 +1,15 @@
-﻿using air.gateway.Modules.TraceLogModules.Documents;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using air.gateway.Modules.TraceLogModules.Documents;
 using air.gateway.Options;
 
 using Air.Cloud.Core;
@@ -6,12 +17,10 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
-using Air.Cloud.Core.Standard.Print;
 using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core.Standard.TraceLog.Defaults;
 using Air.Cloud.WebApp.FriendlyException;
 
-using System.Linq;
 using System.Text;
 
 namespace air.gateway.Modules.TraceLogModules
@@ -112,27 +121,7 @@ namespace air.gateway.Modules.TraceLogModules
 
         public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()
         {
-            try
-            {
-                if (IsWriteToLocalFile)
-                {
-                    WriteToLocalFile(AppRealization.JSON.Serialize(logContent)).GetAwaiter().GetResult();
-                    return;
-                }
-                try
-                {
-                    WriteToTraceLogServer(logContent);
-                }
-                catch (Exception ex)
-                {
-                    AppRealization.Output.Print("日志记录", $"日志记录记录到日志存储服务时失败,异常内容:{ex.Message},已计入到指定运行目录或当前运行目录中", AppPrintLevel.Warn);
-                    WriteToLocalFile(AppRealization.JSON.Serialize(logContent)).GetAwaiter().GetResult();
-                }
-            }
-            catch (Exception)
-            {
-                throw Oops.Oh("系统异常,请稍后再试");
-            }
+            Write(AppRealization.JSON.Serialize(logContent), Tag);
         }
 
         public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
