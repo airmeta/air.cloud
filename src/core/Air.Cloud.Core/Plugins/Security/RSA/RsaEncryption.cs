@@ -51,7 +51,7 @@ namespace Air.Cloud.Core.Plugins.Security.RSA
         /// <param name="pubkey">公钥</param>
         /// <param name="prikey">私钥</param>
         /// <returns>密文</returns>
-        public static string Encrypt(string data, string pubkey, string prikey)
+        public static string Encrypt(string data, string pubkey, string prikey=null)
         {
             if (string.IsNullOrEmpty(data)) return string.Empty;
             RsaPkcs1Util rsaPkcs1Util = new RsaPkcs1Util(Encoding.UTF8, pubkey, prikey);

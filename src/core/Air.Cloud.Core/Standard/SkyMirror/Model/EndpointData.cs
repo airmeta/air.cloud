@@ -37,6 +37,11 @@ namespace Air.Cloud.Core.Standard.SkyMirror.Model
         /// <para>zh-cn:授权数据</para>
         /// <para>en-us:Authorization Data</para>
         /// </summary>
+        public IList<EndPointAuthorizeData> AuthorizeDatas { get; set; }
+        /// <summary>
+        /// <para>zh-cn:授权数据</para>
+        /// <para>en-us:Authorization Data</para>
+        /// </summary>
         public EndPointAuthorizeData? AuthorizeData { get; set; }
 
         /// <summary>
@@ -54,11 +59,23 @@ namespace Air.Cloud.Core.Standard.SkyMirror.Model
 
     public struct EndPointAuthorizeData
     {
+        /// <summary>
+        /// <para>zh-cn:认证方案</para>
+        /// <para>en-us:Authentication Schemes</para>
+        /// </summary>
         public string AuthenticationSchemes { get; set; }
 
-        public string Policy { get; set; }
+        /// <summary>
+        /// <para>zh-cn:策略</para>
+        /// <para>en-us:Policy</para>
+        /// </summary>
+        public string? Policy { get; set; }
 
-        public string Roles { get; set; }   
+        /// <summary>
+        /// <para>zh-cn:角色</para>   
+        /// <para>en-us:Roles</para>    
+        /// </summary>
+        public string? Roles { get; set; }   
 
     }
 }

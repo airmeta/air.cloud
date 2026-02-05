@@ -52,7 +52,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Dependencies
                 Directory.CreateDirectory(FilePath);
             }
             FilePath = $"{FilePath}/client.json";
-            File.WriteAllText(FilePath, AppRealization.JSON.Serialize(CurrentStoreDatas));
+            File.WriteAllText(FilePath, CurrentStoreDatas);
             await Task.CompletedTask;
         }
 
@@ -62,6 +62,10 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Dependencies
             if (File.Exists(FilePath))
             {
                 string StoreDatas = File.ReadAllText(FilePath);
+                if (string.IsNullOrEmpty(StoreDatas))
+                {
+                    return;
+                }
                 try
                 {
                     ICollection<EndpointData> CurrentStoreDatas = AppRealization.JSON.Deserialize<ICollection<EndpointData>>(StoreDatas);
@@ -81,7 +85,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Dependencies
                 }
                 catch (Exception ex)
                 {
-                    string BackupFileName = $"{AppCore.Guid()}client.json";
+                    string BackupFileName = $"{AppCore.Guid()}_client.json";
                     string BackUpFile = Path.Combine(AppConst.ApplicationPath, "SkyMirrorShieldStore", BackupFileName);
                     File.Move(FilePath, BackUpFile, true);
                     File.WriteAllText(FilePath, "");

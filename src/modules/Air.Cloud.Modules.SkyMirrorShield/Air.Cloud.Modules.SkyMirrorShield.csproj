@@ -22,7 +22,7 @@
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 		<PackAsTool>False</PackAsTool>
-		<Version>2.0.0.0-alpha-251230</Version>
+		<Version>2.0.0.0-alpha-260131</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

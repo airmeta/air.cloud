@@ -18,7 +18,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Headers
         public const string IS_ALLOW_ANONYMOUS = "IsAllowAnonymous";
 
 
-        public const string IS_REQUIRE_TICKIT = "IsRequire";
+        public const string IS_REQUIRE_Ticket = "IsRequire";
 
 
     }

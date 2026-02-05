@@ -129,7 +129,14 @@ namespace Air.Cloud.Core.Standard.Print
                     }
                 }
             }
-            Console.WriteLine(stringBuilder.ToString());
+
+            if (Content.Level==AppPrintLevel.Debug&&(!AppEnvironment.IsDevelopment))
+            {
+            }
+            else
+            {
+                Console.WriteLine(stringBuilder.ToString());
+            }
         }
 
         /// <inheritdoc/>

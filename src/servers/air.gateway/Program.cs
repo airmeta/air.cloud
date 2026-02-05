@@ -10,8 +10,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.Security.MD5;
 using Air.Cloud.WebApp.App;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseKestrel(options =>
 {

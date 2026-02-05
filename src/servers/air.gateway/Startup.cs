@@ -60,16 +60,6 @@ namespace air.gateway
             configurationManager.AddConfiguration(Config.Item1);
             configurationManager.AddConfiguration(Config.Item2);
             #endregion
-            //services.AddControllers().AddInjectWithUnifyResult().AddNewtonsoftJson(o =>
-            //{
-            //    //全局设置json 序列化enum int 转string
-            //    o.SerializerSettings.Converters.Add(new IsoDateTimeConverter()
-            //    { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" });
-            //    //序列化属性名大写
-            //    //o.SerializerSettings.ContractResolver = new DefaultContractResolver();
-            //    //忽略循环引用
-            //    o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-            //});
             //注入网关配置文件
             services.AddOcelot(configurationManager).AddCacheManager(x =>
             {

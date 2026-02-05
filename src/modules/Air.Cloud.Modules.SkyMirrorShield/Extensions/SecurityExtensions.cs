@@ -131,16 +131,17 @@ public static class SecurityExtensions
                             }
                             else
                             {
+                                var Authorizes= method.GetCustomAttributes<AuthorizeAttribute>();
                                 endpointData = new EndpointData()
                                 {
                                     IsAllowAnonymous = false,
                                     RequiresAuthorization = true,
-                                    AuthorizeData = new EndPointAuthorizeData()
+                                    AuthorizeDatas=Authorizes.Select(s=>new EndPointAuthorizeData()
                                     {
-                                        AuthenticationSchemes = Authorize?.AuthenticationSchemes,
-                                        Policy = Authorize?.Policy,
-                                        Roles = Authorize?.Roles,
-                                    },
+                                        Policy = s.Policy,
+                                        Roles = s.Roles,
+                                        AuthenticationSchemes = s.AuthenticationSchemes
+                                    }).ToList(),
                                     Method = Method,
                                     Path = Path,
                                     Description = DescriptionAttributes?.Description

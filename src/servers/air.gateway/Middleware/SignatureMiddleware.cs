@@ -48,7 +48,7 @@ namespace air.gateway.Middleware
         /// <summary>
         /// 票据验证
         /// </summary>
-        public string? TickitValidUrl => AppConfigurationLoader.InnerConfiguration["SkyMirrorShieldSettings:SkyMirrorShieldHeaderValid:TickitValidUrl"];
+        public string? TicketValidUrl => AppConfigurationLoader.InnerConfiguration["SkyMirrorShieldSettings:SkyMirrorShieldHeaderValid:TicketValidUrl"];
 
         private readonly IHttpClientFactory httpClientFactory;
 
@@ -65,7 +65,7 @@ namespace air.gateway.Middleware
             {
                 Path = context.Request.Path,
                 AppId = context.Request.Headers["APPID"],
-                Tickit = context.Request.Headers["Tickit"],
+                Ticket = context.Request.Headers["Ticket"],
                 AppSecret = context.Request.Headers["APPSECRET"],
                 TimeStamp = context.Request.Headers["TIMESTAMP"],
                 Sign = context.Request.Headers["Signature"],
@@ -112,9 +112,12 @@ namespace air.gateway.Middleware
                     TimeSpan timeDifference = DateTime.Now - dt;
                     if (timeDifference.TotalSeconds > 300)
                     {
-                        string D = string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, $"时间戳校验失败,服务时间:{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")}");
                         context.Response.StatusCode = 200;
-                        _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(D));
+                        _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "时间戳转换失败,请检查是否为有效时间戳(精确到秒)")));
+                        //string m = $"时间戳校验失败,服务时间:{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
+                        //string D = string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM,m);
+                        //context.Response.StatusCode = 200;
+                        //_ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(D));
                         return;
                     }
                 }
@@ -139,13 +142,19 @@ namespace air.gateway.Middleware
                 if (ValidateRouteMetadata.Nonce.IsNullOrEmpty())
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "UKey参数缺失")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Nonce参数缺失")));
+                    return;
+                }
+                if (ValidateRouteMetadata.Nonce.ToString()?.Length<16)
+                {
+                    context.Response.StatusCode = 200;
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Nonce参数长度不得低于16位")));
                     return;
                 }
             }
            
             #region 读取请求信息 并生成签名
-            string requestData = GetRequestData(context, ValidateRouteMetadata.TimeStamp, ValidateRouteMetadata.Tickit);
+            string requestData = GetRequestData(context, ValidateRouteMetadata.AppId,ValidateRouteMetadata.TimeStamp, ValidateRouteMetadata.Ticket, ValidateRouteMetadata.Nonce);
             requestData = requestData.Replace("\\u0022", "\\\"");
             string ApiCreateSign = MD5Encryption.GetMd5By32(requestData).ToUpper();
             #endregion
@@ -173,31 +182,6 @@ namespace air.gateway.Middleware
                 _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.APP_CHECK_ERROR));
                 return;
             }
-            #endregion
-            #region 1.验证应用是否具有接口访问权限
-            //try
-            //{
-            //    IList<AppRouteCacheDto> appRoutes = await QueryAppRouteAsync(ValidateRouteMetadata.AppId);
-            //    var HasRoutePermission = appRoutes.Where(s => s.Route.Contains(ValidateRouteMetadata.Path)).Any();
-            //    if (!HasRoutePermission)
-            //    {
-            //        context.Response.StatusCode = 200;
-            //        _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.UNAUTH));
-            //        return;
-            //    }
-            //}
-            //catch (ConfigurationErrorsException ex)
-            //{
-            //    context.Response.StatusCode = 200;
-            //    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.ERROR_ITEM, ex.Message)));
-            //    return;
-            //}
-            //catch (Exception ex)
-            //{
-            //    context.Response.StatusCode = 200;
-            //    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.APP_CHECK_ERROR));
-            //    return;
-            //}
             #endregion
             #region 2.签名限流验证
             int Count = AppRealization.RedisCache.String.Get($"App:SignUse:{ValidateRouteMetadata.Sign}")?.ToInt()??0;
@@ -228,23 +212,20 @@ namespace air.gateway.Middleware
         /// <param name="TimeStamp">时间戳</param>
         /// <param name="APPID">APPID</param>
         /// <returns></returns>
-        public string GetRequestData(HttpContext context, string TimeStamp, string Tickit)
+        public string GetRequestData(HttpContext context,string AppId, string TimeStamp, string Ticket,string Nonce)
         {
             string requestData = string.Empty;
             var method = context.Request.Method;
             //固定参数为三个": url,appid,timestamp 三个参数
             IDictionary<string, string> dic = new Dictionary<string, string>();
             IDictionary<string, string> keyValuePairs = new Dictionary<string, string>();
+            dic.Add("APPID", AppId);
             dic.Add("URL", context.Request.Path);
-            if (!Tickit.IsNullOrEmpty())
+            if (!Ticket.IsNullOrEmpty())
             {
-                dic.Add("TICKIT", Tickit);
+                dic.Add("Ticket", Ticket);
             }
-            string RandomKey = context.Request.Headers["Nonce"];
-            if (!string.IsNullOrEmpty(RandomKey))
-            {
-                dic.Add("NONCE", RandomKey?.ToString());
-            }
+            dic.Add("NONCE", Nonce);
             switch (method.ToUpper())
             {
                 case "POST":

@@ -63,8 +63,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "skywalking", "skywalking", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unit.skywlking.entry", "test\unit.skywlking.entry\unit.skywlking.entry.csproj", "{BB6D8E0D-A2D5-41D0-B331-6215C17A6C9B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{0DA26B06-315D-46F3-93FB-C5312EACE7BC}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.Modules.Docker", "src\modules\Air.Cloud.Modules.Docker\Air.Cloud.Modules.Docker.csproj", "{B4ED86F3-9CB2-41D0-B69A-EA7F66A27109}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{A3F79E67-47CB-4D8A-8D43-61EE2355A5A2}"
@@ -105,8 +103,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Air.Cloud.UnitTest", "test\Air.Cloud.UnitTest\Air.Cloud.UnitTest.csproj", "{00865320-1E31-42B7-8BD5-CBB230C57CD5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.SkyMirrorShield", "src\modules\Air.Cloud.Modules.SkyMirrorShield\Air.Cloud.Modules.SkyMirrorShield.csproj", "{7EC028A0-E2F0-4B95-B27C-D76132C78432}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "air.gateway", "src\servers\air.gateway\air.gateway.csproj", "{9B718D95-26F7-46F8-99C8-18283900D29B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -258,10 +254,6 @@ Global
 		{7EC028A0-E2F0-4B95-B27C-D76132C78432}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7EC028A0-E2F0-4B95-B27C-D76132C78432}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7EC028A0-E2F0-4B95-B27C-D76132C78432}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9B718D95-26F7-46F8-99C8-18283900D29B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9B718D95-26F7-46F8-99C8-18283900D29B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9B718D95-26F7-46F8-99C8-18283900D29B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9B718D95-26F7-46F8-99C8-18283900D29B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -309,7 +301,6 @@ Global
 		{E3FC0874-2E94-4F19-B2DE-8BB6DA596870} = {AD3B7CC8-BCB3-443E-AD33-FE9E1A4806FB}
 		{00865320-1E31-42B7-8BD5-CBB230C57CD5} = {BC754CD2-0822-4F0B-B082-49E5A60D65CF}
 		{7EC028A0-E2F0-4B95-B27C-D76132C78432} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
-		{9B718D95-26F7-46F8-99C8-18283900D29B} = {0DA26B06-315D-46F3-93FB-C5312EACE7BC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}
