@@ -1,14 +1,13 @@
 [
   {
-    "Name": "\u65B0\u5EFA\u914D\u7F6E\u6587\u4EF6",
+    "Name": "新建配置文件",
     "Projects": [
       {
-        "Name": "test\\unit.webapp\\unit.webapp.entry\\unit.webapp.entry.csproj",
-        "Action": "Start",
-        "DebugTarget": ""
+        "Path": "test\\unit.taxin\\unit.taxinserver.entry\\unit.taxinserver.entry.csproj",
+        "Action": "Start"
       },
       {
-        "Name": "test\\unit.kafaka.client.entry\\unit.kafaka.client.entry.csproj",
+        "Path": "test\\unit.taxin\\unit.taxinclient.entry\\unit.taxinclient.entry.csproj",
         "Action": "Start"
       }
     ]

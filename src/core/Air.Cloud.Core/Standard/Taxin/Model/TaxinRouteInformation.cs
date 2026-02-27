@@ -54,7 +54,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Model
         /// <para>zh-cn:请求方法</para>
         /// <para>en-us:Request method</para>
         /// </summary>
-        public HttpMethod HttpMethod { get; set; } = HttpMethod.Get;
+        public string HttpMethod { get; set; } = "GET";
         /// <summary>
         /// <para>zh-cn:路由</para>
         /// <para>en-us:Route</para>

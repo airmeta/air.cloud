@@ -310,7 +310,7 @@ namespace Air.Cloud.Modules.Taxin.Client
                     HttpRequestMessage httpRequestMessage = new HttpRequestMessage()
                     {
                         RequestUri = new Uri(new Uri(Options.GetServerAddress()), RouteInfo.Route),
-                        Method = RouteInfo.HttpMethod,
+                        Method = new HttpMethod(RouteInfo.HttpMethod),
                         Content = client.SetBody(Data)
                     };
                     var response = await client.SetHeaders(Headers).SendAsync(httpRequestMessage);

@@ -108,7 +108,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
                             {
                                 ServiceName = attr.ServiceName,
                                 ServiceFullName = v.FullName,
-                                HttpMethod = new HttpMethod(HttpMethods.HttpMethods.First()),
+                                HttpMethod = HttpMethods.HttpMethods.First(),
                                 MethodName = v.Name + "." + item.Name,
                                 Route = (InterfaceTemplate.IsNullOrEmpty() ? string.Empty : (InterfaceTemplate + "/")) + Template,
                                 Parameters = Parameters.Select(s => new TaxinRouteParameter

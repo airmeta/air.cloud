@@ -17,6 +17,6 @@ using Air.Cloud.WebApp.DataValidation.Attributes;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.WebInjectInConsul();
+var app = builder.WebInjectInFile();
 //var validationTypes = AppCore.CrucialTypes.Where(u => u.IsDefined(typeof(ValidationTypeAttribute), true) && u.IsEnum);
 app.Run();
