@@ -53,5 +53,15 @@ namespace unit.webapp.service.services.DataBaseModuleTest
             var Result = (await kVCenterStandard.QueryAsync<ConsulKvCenterServiceInformation>()).OrderBy(s => s.Value).ToList();
             return Result;
         }
+
+        [HttpGet("batch"), AllowAnonymous]
+        public async Task<bool> Batch()
+        {
+            return await Domain.BatchInsertAsync();
+        }
+
+
+
+
     }
 }

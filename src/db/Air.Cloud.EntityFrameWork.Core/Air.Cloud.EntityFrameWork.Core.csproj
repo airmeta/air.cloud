@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<NoWarn>CS8625</NoWarn>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Authors>AC</Authors>
+		<Company>合肥星曳数据科技有限公司</Company>
+		<Product>air.cloud</Product>
+		<Description>Air.Cloud.EntityFrameWork.Core为EFCore的封装库</Description>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+		<PackAsTool>False</PackAsTool>
+		<Version>2.0.0.0-alpha-251223</Version>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	</PropertyGroup>
+	<ItemGroup>
+	  <None Include="..\..\..\assets\logo.png" Link="logo.png">
+	    <PackagePath>\</PackagePath>
+	    <Pack>True</Pack>
+	  </None>
+	  <None Include="..\..\..\LICENSE" Link="LICENSE">
+	    <PackagePath>\</PackagePath>
+	    <Pack>True</Pack>
+	  </None>
+	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="7.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+  </ItemGroup>
+
+</Project>

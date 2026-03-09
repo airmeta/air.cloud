@@ -27,5 +27,9 @@ namespace unit.webapp.model.Domains
         public IEnumerable<IEntity> Search(string id);
         public (int, List<Test>) Page(Expression<Func<Test, bool>>? filter, int Page, int Limit);
         public IEntity Update(IEntity entity);
+
+
+        public Task<bool> BatchInsertAsync();
+
     }
 }

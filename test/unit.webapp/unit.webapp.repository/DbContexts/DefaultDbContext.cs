@@ -10,9 +10,8 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.DataBase.Contexts;
-using Air.Cloud.DataBase.Contexts.Attributes;
-using Air.Cloud.DataBase.Internal;
+using Air.Cloud.EntityFrameWork.Core.Contexts;
+using Air.Cloud.EntityFrameWork.Core.Contexts.Attributes;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -22,7 +21,7 @@ namespace unit.webapp.repository.DbContexts
     /// <summary>
     /// 系统数据库配置
     /// </summary>
-    [AppDbContext("OracleConnectionString", DbProvider.Oracle)]
+    [AppDbContext("OracleConnectionString")]
     public class DefaultDbContext : AppDbContext<DefaultDbContext>
     {
         public DefaultDbContext(DbContextOptions<DefaultDbContext> options) : base(options)

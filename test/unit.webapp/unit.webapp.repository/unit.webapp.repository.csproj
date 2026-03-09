@@ -8,11 +8,10 @@
   <ItemGroup>
     <PackageReference Include="DM.Microsoft.EntityFrameworkCore" Version="6.0.0.33671" />
     <PackageReference Include="EntityFrameworkProfiler.Appender" Version="6.0.6031" />
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="7.21.13" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\core\Air.Cloud.DataBase\Air.Cloud.DataBase.csproj" />
+    <ProjectReference Include="..\..\..\src\db\Air.Cloud.EntityFrameWork.Oracle\Air.Cloud.EntityFrameWork.Oracle.csproj" />
   </ItemGroup>
 
 </Project>

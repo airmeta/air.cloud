@@ -10,16 +10,10 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.App;
-using Air.Cloud.Core.Plugins.Security.SM2;
 using Air.Cloud.Modules.Consul.Extensions;
-using Air.Cloud.Modules.Consul.Model;
-
-using Org.BouncyCastle.Utilities.Encoders;
-
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.InjectGrpcServer().WebInjectInConsul();
+//var app = builder.InjectGrpcServer().WebInjectInConsul();
+var app = builder.WebInjectInConsul();
 
 app.Run();

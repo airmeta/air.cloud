@@ -43,8 +43,8 @@ namespace unit.webapp.entry
             //services.WebJwtHandlerInject<AppJwtHandler>(enableGlobalAuthorize: false);
             services.AddTransient<IServerCenterStandard, ConsulServerCenterDependency>();
             services.AddTransient<IKVCenterStandard, ConsulKVCenterDependency>();
-            //注入
-            services.AddSkyMirrorShieldClient().AddAppControllers(a =>
+            //注入   .AddSkyMirrorShieldClient()
+            services.AddAppControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
             }).AddInjectWithUnifyResult();

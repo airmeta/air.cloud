@@ -14,7 +14,8 @@ using Air.Cloud.Core.Aspects;
 using Air.Cloud.Core.Modules.AppAspect.Attributes;
 using Air.Cloud.Core.Standard.Cache;
 using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.DataBase.Repositories;
+using Air.Cloud.EntityFrameWork.Core.Repositories;
+using Air.Cloud.EntityFrameWork.Oracle.Bulk;
 
 using System.Linq.Expressions;
 
@@ -58,6 +59,19 @@ namespace unit.webapp.domain.Domains
         public IEntity Update(IEntity entity)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> BatchInsertAsync()
+        {
+            IList<Test> AllTests= new List<Test>();
+
+            for (int i = 0; i < 10000; i++)
+            {
+                AllTests.Add(new Test() { Id = Guid.NewGuid().ToString(), UserId = "UserId", ServiceNo = "ServiceNo" + i, LoseTime = DateTime.Now });
+            }
+            await _repository.Context.BulkInsertAsync(AllTests);
+
+            return true;    
         }
     }
 }

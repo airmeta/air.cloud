@@ -72,13 +72,6 @@ namespace Air.Cloud.WebApp
             // 配置静态
             app.UseStaticFiles();
 
-            string ConfigEnovriment = AppConfigurationLoader.InnerConfiguration[AppConst.ENVIRONMENT];
-
-            if (AppEnvironment.IsTest)
-            {
-
-            }
-
             //app.UseAuthentication();
             // 配置路由
             app.UseRouting();

@@ -12,10 +12,8 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
-using Air.Cloud.DataBase.BackgroundServices;
-using Air.Cloud.DataBase.Extensions;
-using Air.Cloud.DataBase.Extensions.DatabaseProvider;
-using Air.Cloud.DataBase.Options;
+using Air.Cloud.EntityFrameWork.Core.Extensions;
+using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -38,8 +36,7 @@ namespace unit.webapp.model
         {
             services.AddDatabaseAccessor(options =>
             {
-                options.AddDbPool<DefaultDbContext>(providerName: default,
-                       (services, opt) =>
+                options.AddDbPool<DefaultDbContext>((services, opt) =>
                        {
                            var conn = AppCore.Configuration["ConnectionStrings:OracleConnectionString"];
                            //设置oracle使用的版本

@@ -12,10 +12,7 @@
  */
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Attributes;
-using Air.Cloud.Core.Standard.Store;
-using Air.Cloud.Core.Standard.Taxin.Store;
-using Air.Cloud.DataBase.Filters;
-using Air.Cloud.Modules.Taxin.Client;
+using Air.Cloud.EntityFrameWork.Core.Filters;
 using Air.Cloud.Modules.Taxin.Extensions;
 using Air.Cloud.Modules.Taxin.Server;
 using Air.Cloud.Modules.Taxin.Store;
