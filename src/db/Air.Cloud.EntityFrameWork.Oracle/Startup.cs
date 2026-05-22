@@ -13,7 +13,6 @@ using Air.Cloud.Core.App.Startups;
 using Air.Cloud.EntityFrameWork.Core.BackgroundServices;
 using Air.Cloud.EntityFrameWork.Core.Configure;
 using Air.Cloud.EntityFrameWork.Core.Options;
-using Air.Cloud.EntityFrameWork.Oracle.Bulk;
 using Air.Cloud.EntityFrameWork.Oracle.Configure;
 
 using Microsoft.AspNetCore.Builder;
@@ -41,7 +40,6 @@ namespace Air.Cloud.EntityFrameWork.Oracle
             var Options = AppCore.GetOptions<DataSourceOptions>();
             if (Options.EnableDatabaseStatusCheck())
                 services.AddHostedService<DatabaseStatusCheckBackgroundService>();
-            services.AddBatchEF_Oracle();
         }
     }
 }

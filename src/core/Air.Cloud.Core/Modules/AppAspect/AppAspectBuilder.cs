@@ -57,7 +57,7 @@ namespace Air.Cloud.Core.Modules.AppAspect
             {
                 foreach (var method in type.GetMethods())
                 {
-                    //attributes 为方法上的所有特性 
+                    //attributes 为方法上的所有特性
                     var attributes = method.GetCustomAttributes<AspectAttribute>().DistinctBy(s => MD5Encryption.GetMd5By8(s.AppAspectDependencies.FullName)).OrderByDescending(s => s.Order).ToArray();
                     if (attributes.Count() == 0) continue;
                     //这个时候遍历 attributes 中的信息 并获取到对象中的AppAspectDependencies属性,动态创建对应的AppAspectDependencies 的实例
@@ -65,8 +65,8 @@ namespace Air.Cloud.Core.Modules.AppAspect
                     {
                         if (item.AppAspectDependencies.GetInterfaces().Contains(typeof(IAspectAroundHandler)) || item.AppAspectDependencies.GetInterfaces().Contains(typeof(IAspectExecuteHandler)))
                         {
-                            var instance = AppCore.GetService(item.AppAspectDependencies);
-                            if (instance==null)
+                            var alreadyRegistered = services.Any(s => s.ServiceType == item.AppAspectDependencies);
+                            if (!alreadyRegistered)
                             {
                                 //这里可以使用反射创建对象
                                 var aspectInstance = Activator.CreateInstance(item.AppAspectDependencies);

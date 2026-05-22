@@ -14,7 +14,7 @@ namespace Air.Cloud.Modules.RedisCache
     {
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            
+
 
         }
 

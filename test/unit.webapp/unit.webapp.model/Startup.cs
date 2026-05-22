@@ -14,11 +14,14 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.EntityFrameWork.Core.Extensions;
 using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
+using Air.Cloud.EntityFrameWork.Core.Internal;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
+using Org.BouncyCastle.Crypto.Tls;
 
 using unit.webapp.repository;
 using unit.webapp.repository.DbContexts;
@@ -38,7 +41,7 @@ namespace unit.webapp.model
             {
                 options.AddDbPool<DefaultDbContext>((services, opt) =>
                        {
-                           var conn = AppCore.Configuration["ConnectionStrings:OracleConnectionString"];
+                           var conn = DbProvider.GetConnectionString<DefaultDbContext>();
                            //设置oracle使用的版本
                            opt.EnableSensitiveDataLogging().UseOracle(conn, b =>
                            {

@@ -1,0 +1,16 @@
+{
+  "name": "vuepress-starter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "^1.9.10"
+  },
+  "scripts": {
+    "dev": "vuepress dev docs --temp .temp",
+    "build": "vuepress build docs"
+  },
+  "dependencies": {
+    "vuepress-theme-sidebar": "^0.1.0"
+  }
+}

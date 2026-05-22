@@ -69,7 +69,6 @@ namespace Air.Cloud.HostApp.Dependency
             if (config == null) throw new Exception("加载内部配置文件" + AppConst.DEFAULT_CONFIG_FILE + "失败");
             return builder;
         }
-
         /// <summary>
         /// 配置Host主机应用程序
         /// </summary>
@@ -77,12 +76,19 @@ namespace Air.Cloud.HostApp.Dependency
         /// <param name="autoRegisterBackgroundService">是否注册后台运行任务</param>
         private static void ConfigureHostApplication(IHostBuilder builder, bool autoRegisterBackgroundService = true)
         {
-            // 自动装载配置
+            // 1. 自动装载配置 (这一步通常也是配置 builder，放在外面)
             ConfigureHostAppConfiguration(builder);
-            // 监听全局异常
+
+            // 2. 监听全局异常
             AppDomain.CurrentDomain.UnhandledException += AppRealization.DomainExceptionHandler.OnException;
 
-            // 自动注入 AddApplication() 服务
+            // ✅ 修正：将 ConfigureLogging 移到 ConfigureServices 外部，与它平级
+            builder.ConfigureLogging((hostingContext, logging) =>
+            {
+                logging.AddCustomConsole();
+            });
+
+            // 3. 自动注入 AddApplication() 服务
             builder.ConfigureServices((hostContext, services) =>
             {
                 // 存储配置对象
@@ -93,15 +99,15 @@ namespace Air.Cloud.HostApp.Dependency
 
                 // 存储根服务
                 services.AddHostedService<GenericHostLifetimeEventsHostedService>();
-                builder.ConfigureLogging((log) =>
-                {
-                    log.AddCustomConsole();
-                });
+
                 // 初始化应用服务
                 services.AddApplication();
 
                 // 自动注册 BackgroundService
-                if (autoRegisterBackgroundService) services.AddAppHostedService();
+                if (autoRegisterBackgroundService)
+                {
+                    services.AddAppHostedService();
+                }
             });
         }
     }

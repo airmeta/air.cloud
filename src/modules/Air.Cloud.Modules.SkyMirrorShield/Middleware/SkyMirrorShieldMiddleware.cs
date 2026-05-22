@@ -12,6 +12,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Plugins.InternalAccess;
 using Air.Cloud.Core.Plugins.Router;
 using Air.Cloud.Core.Standard.SkyMirror;
 using Air.Cloud.Core.Standard.SkyMirror.Model;
@@ -27,7 +28,7 @@ using System.Text;
 
 namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
 {
-    public class SkyMirrorShieldMiddlewareRe
+    public class SkyMirrorShieldMiddleware
     {
         private readonly RequestDelegate next;
 
@@ -54,7 +55,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
             }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
 
         }
-        public SkyMirrorShieldMiddlewareRe(RequestDelegate next, IHttpClientFactory httpClientFactory)
+        public SkyMirrorShieldMiddleware(RequestDelegate next, IHttpClientFactory httpClientFactory)
         {
             this.next = next;
             this.httpClientFactory = httpClientFactory;
@@ -65,6 +66,28 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
             //检查当前请求是否在白名单内
             string Method = context.Request.Method;
             string Path = context.Request.Path;
+
+
+            //检查是否为Taxin服务进来的请求 如果是则校验请求头信息
+            string Launcher = context.Request.Headers.ContainsKey("Launcher").ToString();
+            if (!Launcher.IsNullOrEmpty())
+            {
+                //校验Taxin请求
+                IInternalAccessValidPlugin internalAccessValidPlugin = AppRealization.AppPlugin.GetPlugin<IInternalAccessValidPlugin>();
+                if (internalAccessValidPlugin != null)
+                {
+                    var dic = new Dictionary<string, string>();
+                    dic.Add("Launcher", context.Request.Headers["Launcher"].ToString());
+                    var result = internalAccessValidPlugin.ValidInternalAccessToken(dic);
+                    if (result)
+                    {
+                        AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，该请求由Taxin客户端调用,已跳过检查");
+                        await next(context); // 继续处理请求
+                        return;
+                    }
+                }
+            }
+
             if (routerMatcher == null) routerMatcher = AppRealization.AppPlugin.GetPlugin<IRouterMatcherPlugin>();
             string Key = ISkyMirrorShieldServerStandard.ServerEndpointDatas.Keys.Select(s =>
             {

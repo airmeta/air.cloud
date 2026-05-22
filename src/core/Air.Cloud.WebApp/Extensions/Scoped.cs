@@ -10,6 +10,8 @@ using Air.Cloud.Core.App.Internal;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using System.Collections.Generic;
+
 namespace Air.Cloud.WebApp.Extensions;
 
 /// <summary>

@@ -1,6 +1,7 @@
 ﻿using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Standard.AmazonS3;
 using Air.Cloud.Core.Standard.AmazonS3.Options;
+using Air.Cloud.Modules.AmazonS3.ClientFactory;
 using Air.Cloud.Modules.AmazonS3.Dependencies;
 
 using Microsoft.AspNetCore.Builder;
@@ -25,6 +26,7 @@ namespace Air.Cloud.Modules.AmazonS3
                    { }); ;
             services.AddSingleton<IAmazonS3ObjectStandard, AmazonS3ObjectDependency>();
             services.AddSingleton<IAmazonS3BucketStandard, AmazonS3BucketDependency>();
+            services.AddSingleton<IAmazonS3ClientFactory, AmazonS3ClientFactory>();
             services.AddSingleton<IAmazonS3ClientStandard, AmazonS3ClientDependency>();
             services.AddSingleton<IAmazonS3Standard, AmazonS3Dependency>();
         }

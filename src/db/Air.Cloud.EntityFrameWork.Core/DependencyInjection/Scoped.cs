@@ -12,6 +12,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 
+using System.Collections.Generic;
+
 using Air.Cloud.EntityFrameWork.Core.ContextPools;
 
 namespace Air.Cloud.DataBase.Oracle.DependencyInjection;

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,6 +16,7 @@ using Air.Cloud.Core.Standard.DynamicServer.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
@@ -27,7 +28,6 @@ namespace Air.Cloud.Core.Extensions;
 [IgnoreScanning]
 public static class AppServiceCollectionExtensions
 {
-
     /// <summary>
     /// 自动添加主机服务
     /// </summary>
@@ -36,7 +36,9 @@ public static class AppServiceCollectionExtensions
     public static IServiceCollection AddAppHostedService(this IServiceCollection services)
     {
         // 获取所有 BackgroundService 类型，排除泛型主机
-        var backgroundServiceTypes = AppCore.EffectiveTypes.Where(u => typeof(IHostedService).IsAssignableFrom(u) && u.Name != "GenericWebHostService");
+        var backgroundServiceTypes = AppCore.EffectiveTypes
+            .Where(u => typeof(IHostedService).IsAssignableFrom(u) && u.Name != "GenericWebHostService")
+            .ToList();
         var addHostServiceMethod = typeof(ServiceCollectionHostedServiceExtensions).GetMethods(BindingFlags.Static | BindingFlags.Public)
                             .Where(u => u.Name.Equals("AddHostedService") && u.IsGenericMethod && u.GetParameters().Length == 1)
                             .FirstOrDefault();
@@ -103,7 +105,7 @@ public static class AppServiceCollectionExtensions
         var startups = AppCore.StartTypes
             .Where(u => typeof(AppStartup).IsAssignableFrom(u) && u.IsClass && !u.IsAbstract && !u.IsGenericType)
             .OrderByDescending(u => GetStartupOrder(u)).Reverse().ToList();
-       
+
         // 注册自定义 startup
         foreach (var type in startups)
         {
@@ -114,9 +116,10 @@ public static class AppServiceCollectionExtensions
             var serviceMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(u => u.ReturnType == typeof(void)
                     && u.GetParameters().Length > 0
-                    && u.GetParameters().First().ParameterType == typeof(IServiceCollection));
+                    && u.GetParameters().First().ParameterType == typeof(IServiceCollection))
+                .ToList();
 
-            if (!serviceMethods.Any()) continue;
+            if (serviceMethods.Count == 0) continue;
 
             // 自动安装属性调用
             foreach (var method in serviceMethods)
@@ -124,7 +127,7 @@ public static class AppServiceCollectionExtensions
                 method.Invoke(startup, new[] { services });
             }
         }
-      
+
         return services;
     }
 

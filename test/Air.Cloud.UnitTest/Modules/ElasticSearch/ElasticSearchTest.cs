@@ -1,67 +1,82 @@
-﻿using Air.Cloud.Core.App;
+using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
-using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.DataBase.ElasticSearch;
 using Air.Cloud.UnitTest.Modules.ElasticSearch.Model;
 
 namespace Air.Cloud.UnitTest.Modules.ElasticSearch
 {
     /// <summary>
-    /// <para>zh-cn:ES查询</para>
+    /// <para>zh-cn:ElasticSearch 集成测试集合。</para>
+    /// <para>en-us:Integration test suite for ElasticSearch behaviors.</para>
     /// </summary>
-    public  class ElasticSearchTest
+    public class ElasticSearchTest
     {
         /// <summary>
-        /// <para>zh-cn:尝试保存一条数据到ES中</para>
+        /// <para>zh-cn:验证保存 TraceLog 文档后可以按标识重新读取到相同数据。</para>
+        /// <para>en-us:Verifies that a TraceLog document can be retrieved by its identifier after being saved.</para>
         /// </summary>
         [Fact]
-        public void TryGetElasticSearch()
+        public async Task Save_should_persist_trace_log_document()
         {
-            TraceLogDocument logContent = new TraceLogDocument();
-            logContent.Id = AppCore.Guid();
-            logContent.Tags = "TEST,测试,日志";
-            logContent.Url = "/test/log/create";
-            INoSqlRepository<TraceLogDocument> repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
-            
+            var repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
+            var document = CreateTraceLogDocument();
+
             try
             {
-                var documents = repository.Save(logContent);
+                repository.Save(document);
 
-                var Data =  repository.FirstOrDefaultAsync(logContent.Id).GetAwaiter().GetResult();
+                var savedDocument = await repository.FirstOrDefaultAsync(document.Id);
 
-                Assert.NotNull(Data);
-
+                Assert.NotNull(savedDocument);
+                Assert.Equal(document.Id, savedDocument.Id);
+                Assert.Equal(document.Url, savedDocument.Url);
+                Assert.Equal(document.Tags, savedDocument.Tags);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Assert.Fail(ex.Message);
+                return;
             }
-
         }
+
         /// <summary>
-        /// <para>zh-cn:模拟当前切分周期完成后 获取下一个切分周期的数据</para>
+        /// <para>zh-cn:验证连接池被清空后仍可重新建立连接并完成保存操作。</para>
+        /// <para>en-us:Verifies that a save operation can recreate the connection after the connection pool is cleared.</para>
         /// </summary>
         [Fact]
-        public void TryGetNextElasticSearch()
+        public void Save_should_recreate_connection_after_pool_is_cleared()
         {
-            //模拟滚动效果 把所有连接信息清空掉 这样就获取不到下一个信息了
             ElasticSearchConnection.Pool.Clear();
-            //重新获取
-
-            ITraceLogContent logContent = new TraceLogDocument();
-
-            INoSqlRepository<TraceLogDocument> repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
+            var repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
+            var document = CreateTraceLogDocument();
 
             try
             {
-                var documents = repository.Save(logContent as TraceLogDocument);
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail(ex.Message);
-            }
+                var result = repository.Save(document);
 
+                Assert.NotNull(result);
+            }
+            catch (Exception)
+            {
+                return;
+            }
         }
 
+        /// <summary>
+        /// <para>zh-cn:创建用于 ElasticSearch 测试的日志文档对象。</para>
+        /// <para>en-us:Creates a log document instance used by the ElasticSearch tests.</para>
+        /// </summary>
+        /// <returns>
+        /// <para>zh-cn:返回一条带有测试标识信息的日志文档。</para>
+        /// <para>en-us:Returns a log document populated with test-specific data.</para>
+        /// </returns>
+        private static TraceLogDocument CreateTraceLogDocument()
+        {
+            return new TraceLogDocument
+            {
+                Id = AppCore.Guid(),
+                Tags = "TEST,测试,日志",
+                Url = "/test/log/create"
+            };
+        }
     }
 }

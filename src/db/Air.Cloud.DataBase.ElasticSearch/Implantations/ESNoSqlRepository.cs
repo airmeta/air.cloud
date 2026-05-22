@@ -51,27 +51,27 @@ namespace Air.Cloud.DataBase.ElasticSearch.Implantations
         /// <inheritdoc/>
         public INoSqlRepository<TDodument> Change<TDodument>() where TDodument : class,INoSqlEntity, new()
         {
-            return (INoSqlRepository<TDodument>)AppCore.GetService<INoSqlRepository<TDocument>>();
+            return AppCore.GetService<INoSqlRepository<TDodument>>();
         }
         /// <inheritdoc/>
         public TDocument Save(TDocument T)
         {
             IndexResponse response = clientPoolElement?.Client?.IndexDocument<TDocument>(T);
-            if (response!=null&&response?.Result == Result.Created || response?.Result == Result.Updated)
+            if (response != null && (response.Result == Result.Created || response.Result == Result.Updated))
             {
                 return T;
             }
-            throw response.OriginalException;
+            throw response?.OriginalException ?? new ElasticSearchException("ElasticSearch保存失败");
         }
         /// <inheritdoc/>
         public async Task<TDocument> SaveAsync(TDocument T)
         {
             IndexResponse response = await clientPoolElement?.Client?.IndexDocumentAsync<TDocument>(T);
-            if (response != null && response?.Result == Result.Created || response?.Result == Result.Updated)
+            if (response != null && (response.Result == Result.Created || response.Result == Result.Updated))
             {
                 return T;
             }
-            throw response.OriginalException;
+            throw response?.OriginalException ?? new ElasticSearchException("ElasticSearch异步保存失败");
         }
         /// <inheritdoc/>
         public bool Save(IEnumerable<TDocument> T)
@@ -98,8 +98,8 @@ namespace Air.Cloud.DataBase.ElasticSearch.Implantations
         {
             DocumentPath<TDocument> deletePath = new DocumentPath<TDocument>(T.Id);
             var res = clientPoolElement?.Client.Update(deletePath, (p) => p.Doc(T).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex));
-            if (res!=null&& res.IsValid==true) return res.Get.Source;
-            throw res.OriginalException;
+            if (res != null && res.IsValid == true) return res.Get.Source;
+            throw res?.OriginalException ?? new ElasticSearchException($"未找到需要更新的ES文档,Id:{T.Id}");
         }
         /// <inheritdoc/>
         public async Task<TDocument> UpdateAsync(TDocument T)
@@ -110,17 +110,28 @@ namespace Air.Cloud.DataBase.ElasticSearch.Implantations
             {
                 return T;
             }
-            throw res.OriginalException;
+            throw res?.OriginalException ?? new ElasticSearchException($"未找到需要更新的ES文档,Id:{T.Id}");
         }
         /// <inheritdoc/>
         TDocument INoSqlRepository<TDocument>.FirstOrDefault(string Key)
         {
-            return clientPoolElement?.Client.Get(new DocumentPath<TDocument>(new Id(Key))).Source;
+            if (string.IsNullOrWhiteSpace(Key))
+            {
+                return null;
+            }
+
+            var response = clientPoolElement?.Client.Get(new DocumentPath<TDocument>(new Id(Key)));
+            return response?.Source;
         }
         /// <inheritdoc/>
         public async Task<TDocument?> FirstOrDefaultAsync(string Key)
         {
-            return (await clientPoolElement?.Client.GetAsync(new DocumentPath<TDocument>(new Id(Key)))).Source;
+            if (string.IsNullOrWhiteSpace(Key))
+            {
+                return null;
+            }
+
+            return (await clientPoolElement?.Client.GetAsync(new DocumentPath<TDocument>(new Id(Key))))?.Source;
         }
         /// <inheritdoc/>
         public IQueryable<TDocument> Query(Func<INoSqlRepository<TDocument>, IQueryable<TDocument>> Query)
@@ -136,18 +147,28 @@ namespace Air.Cloud.DataBase.ElasticSearch.Implantations
         /// <inheritdoc/>
         public bool Delete(string Id = null)
         {
+            if (string.IsNullOrWhiteSpace(Id))
+            {
+                return false;
+            }
+
             var path = DocumentPath<TDocument>.Id(Id).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex);
             DeleteResponse response = clientPoolElement?.Client.Delete(path);
-            if (response.Result == Result.Deleted) return true;
-            throw response.OriginalException;
+            if (response != null && response.Result == Result.Deleted) return true;
+            throw response?.OriginalException ?? new ElasticSearchException($"未找到需要删除的ES文档,Id:{Id}");
         }
         /// <inheritdoc/>
         public async Task<bool> DeleteAsync(string Id = null)
         {
+            if (string.IsNullOrWhiteSpace(Id))
+            {
+                return false;
+            }
+
             var path = DocumentPath<TDocument>.Id(Id).Index(clientPoolElement?.Client.ConnectionSettings.DefaultIndex);
             DeleteResponse response = await clientPoolElement?.Client.DeleteAsync(path);
-            if (response.Result == Result.Deleted) return true;
-            throw response.OriginalException;
+            if (response != null && response.Result == Result.Deleted) return true;
+            throw response?.OriginalException ?? new ElasticSearchException($"未找到需要删除的ES文档,Id:{Id}");
 
         }
         /// <inheritdoc/>

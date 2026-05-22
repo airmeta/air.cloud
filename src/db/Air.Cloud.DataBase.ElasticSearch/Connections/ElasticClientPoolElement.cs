@@ -112,19 +112,33 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
         /// </param>
         public ElasticClientPoolElement(Type DocumentType)
         {
+            if (DocumentType == null)
+            {
+                throw new ElasticSearchException("未提供ES文档类型");
+            }
+
             ElasticSearchIndexAttribute? noSqlTableAttribute = DocumentType.GetCustomAttribute<ElasticSearchIndexAttribute>();
             if (noSqlTableAttribute==null)
             {
-                throw new Exception($"未检测到\"{DocumentType.Name}\"的NoSqlTable特性");
+                throw new ElasticSearchException($"未检测到\"{DocumentType.Name}\"的ElasticSearchIndex特性");
             }
-            var DataBaseOptions = AppCore.GetOptions<DataBaseOptions>();
+            var DataBaseOptions = AppCore.GetOptions<DataBaseOptions>()
+                ?? throw new ElasticSearchException("未检测到数据库配置");
             var DataBaseOption = DataBaseOptions.Options?.FirstOrDefault(s=>s.Key == noSqlTableAttribute.DbKey);
             if (DataBaseOption == null)
             {
-                throw new Exception($"未检测到名为\"{noSqlTableAttribute.DbKey}\"的数据库配置");
+                throw new ElasticSearchException($"未检测到名为\"{noSqlTableAttribute.DbKey}\"的数据库配置");
+            }
+            if (string.IsNullOrWhiteSpace(DataBaseOption.ConnectionString))
+            {
+                throw new ElasticSearchException($"ElasticSearch数据库\"{noSqlTableAttribute.DbKey}\"缺少连接字符串配置");
             }
             #region 创建ES客户端
-            var nodesStr = DataBaseOption.ConnectionString.Split(',');
+            var nodesStr = DataBaseOption.ConnectionString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (!nodesStr.Any())
+            {
+                throw new ElasticSearchException($"ElasticSearch数据库\"{noSqlTableAttribute.DbKey}\"缺少可用节点配置");
+            }
             var nodes = nodesStr.Select(s => new Uri(s)).ToList();
             var connectionPool = new SniffingConnectionPool(nodes);
             Name = GetTableName(noSqlTableAttribute, DocumentType.Name.ToLower());
@@ -139,12 +153,12 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
             }
             Client = new ElasticClient(settings);
             #endregion
-           
+
         }
 
         public string GetTableName(ElasticSearchIndexAttribute elasticSearchIndex,string DefaultName = null)
         {
-            string Name = elasticSearchIndex?.TableName ?? throw new Exception("索引名称为空,无法创建索引连接信息");
+            string Name = elasticSearchIndex?.TableName ?? throw new ElasticSearchException("索引名称为空,无法创建索引连接信息");
             return GetTableName(Name, elasticSearchIndex.SegmentationPattern, elasticSearchIndex.SegmentationTag, DefaultName);
         }
         public static string GetTableName(string Name, IndexSegmentationPatternEnum SegmentationPattern= IndexSegmentationPatternEnum.None, string SegmentationTag="-",string DefaultName = null)
@@ -166,7 +180,7 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
                     Title = "ElasticSearchConnectionPool Notice",
                     Level = AppPrintLevel.Warn
                 });
-                throw new Exception("无法读取ES索引信息");
+                throw new ElasticSearchException("无法读取ES索引信息");
             }
             switch (SegmentationPattern)
             {

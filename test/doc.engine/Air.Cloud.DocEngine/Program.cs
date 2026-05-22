@@ -26,10 +26,7 @@ using System.Net;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Hosting;
 var x = Host.CreateDefaultBuilder(args);
-var builder = x.InjectGrpcServer(s =>
-{
-    //s.UseStartup<>();
-}).HostInjectInFile(Assembly.GetExecutingAssembly());
+var builder = x.HostInjectInFile();
 var app = builder.Build();
 
 app.Run();

@@ -11,12 +11,14 @@
  */
 using Air.Cloud.Core.Standard.AmazonS3;
 using Air.Cloud.Core.Standard.AmazonS3.Options;
+using Air.Cloud.Modules.AmazonS3.ClientFactory;
 
 using Amazon.S3;
 
 using Microsoft.Extensions.Options;
 
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace Air.Cloud.Modules.AmazonS3.Dependencies
 {
@@ -34,16 +36,24 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         {
         }
 
-        public AmazonS3ClientDependency(IOptions<AmazonS3Options> options)
+        public AmazonS3ClientDependency(IOptions<AmazonS3Options> options, IAmazonS3ClientFactory clientFactory)
         {
             if (options?.Value is null)
             {
                 return;
             }
 
-            foreach (var item in options.Value)
+            foreach (var item in options.Value.Tokens)
             {
                 _tokenOptions[item.Key] = item.Value;
+
+                try
+                {
+                    _clients[item.Key] = clientFactory.CreateClient(item.Key);
+                }
+                catch
+                {
+                }
             }
 
             _currentKey = _tokenOptions.Keys.FirstOrDefault() ?? string.Empty;
@@ -146,7 +156,12 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
                 return null;
             }
 
-            return _tokenOptions.TryGetValue(key, out var option) ? option.Token : null;
+            if (!_tokenOptions.TryGetValue(key, out var option) || option?.Token == null)
+            {
+                return null;
+            }
+
+            return JsonSerializer.Serialize(option.Token);
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -89,7 +89,8 @@ public static class DependencyInjectionServiceCollectionExtensions
         // 查找所有需要依赖注入的类型
         var injectTypes = AppCore.EffectiveTypes
             .Where(u => typeof(IPrivateDependency).IsAssignableFrom(u) && u.IsClass && !u.IsInterface && !u.IsAbstract)
-            .OrderBy(u => GetOrder(u));
+            .OrderBy(u => GetOrder(u))
+            .ToList();
 
         //var projectAssemblies = App.Assemblies;
         var lifetimeInterfaces = new[] { typeof(ITransient), typeof(IScoped), typeof(ISingleton) };
@@ -111,7 +112,8 @@ public static class DependencyInjectionServiceCollectionExtensions
                             && (
                                 !type.IsGenericType && !u.IsGenericType
                                 || type.IsGenericType && u.IsGenericType && type.GetGenericArguments().Length == u.GetGenericArguments().Length)
-                            );
+                            )
+                            .ToList();
 
             // 获取生存周期类型
             var dependencyType = interfaces.Last(u => lifetimeInterfaces.Contains(u));

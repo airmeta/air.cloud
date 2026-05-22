@@ -26,7 +26,7 @@ namespace Air.Cloud.EntityFrameWork.MySQL.Configure
             // 获取数据库上下文特性
             var dbContextAttribute = DbProvider.GetAppDbContextAttribute(typeof(TDbContext));
 
-            dbContextOptionsBuilder = MySQLDbContextOptionsExtensions.UseMySQL(builder, connectionMetadata, (options) =>
+            dbContextOptionsBuilder = dbContextOptionsBuilder.UseMySql(connectionMetadata, ServerVersion.AutoDetect(connectionMetadata), (options) =>
             {
                 options.MigrationsAssembly(Db.MigrationAssemblyName);
             });

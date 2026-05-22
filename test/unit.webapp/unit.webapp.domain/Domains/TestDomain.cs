@@ -17,6 +17,10 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.EntityFrameWork.Core.Repositories;
 using Air.Cloud.EntityFrameWork.Oracle.Bulk;
 
+using Dm.filter;
+
+using Microsoft.EntityFrameworkCore;
+
 using System.Linq.Expressions;
 
 using unit.webapp.model.Domains;
@@ -70,7 +74,6 @@ namespace unit.webapp.domain.Domains
                 AllTests.Add(new Test() { Id = Guid.NewGuid().ToString(), UserId = "UserId", ServiceNo = "ServiceNo" + i, LoseTime = DateTime.Now });
             }
             await _repository.Context.BulkInsertAsync(AllTests);
-
             return true;    
         }
     }

@@ -80,7 +80,8 @@ namespace Air.Cloud.Core.Modules.AppPrint
                 AppPrintLevel.Warn => "warn",
                 AppPrintLevel.Error => "error",
                 AppPrintLevel.Debug => "debug",
-                AppPrintLevel.Trace => "trace"
+                AppPrintLevel.Trace => "trace",
+                AppPrintLevel.Critical => "critical"
             };
 
 

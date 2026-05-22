@@ -76,14 +76,13 @@ public static class DbProvider
         if (connStrOrConnKey.Contains('=')) return connStrOrConnKey;
         else
         {
-            var configuration = AppConfiguration.Configuration;
             // 如果包含 : 符号，那么认为是一个 Key 路径
-            if (connStrOrConnKey.Contains(':')) return configuration[connStrOrConnKey];
+            if (connStrOrConnKey.Contains(':')) return AppConfiguration.Configuration[connStrOrConnKey];
             else
             {
                 // 首先查找 DbConnectionString 键，如果没有找到，则当成 Key 去查找
-                var connStrValue = configuration.GetConnectionString(connStrOrConnKey);
-                return (!string.IsNullOrWhiteSpace(connStrValue) ? connStrValue : configuration[connStrOrConnKey]) ?? connStrOrConnKey;
+                var connStrValue = AppConfiguration.Configuration.GetConnectionString(connStrOrConnKey);
+                return (!string.IsNullOrWhiteSpace(connStrValue) ? connStrValue : AppConfiguration.Configuration[connStrOrConnKey]) ?? connStrOrConnKey;
             }
         }
     }

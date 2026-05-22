@@ -34,7 +34,7 @@ internal static class AppDbContextBuilder
     /// <summary>
     /// 数据库实体相关类型
     /// </summary>
-    private static readonly IEnumerable<Type> EntityCorrelationTypes;
+    private static IEnumerable<Type> EntityCorrelationTypes=>AppCore.EntityTypes;
 
     /// <summary>
     /// 数据库函数方法集合
@@ -51,10 +51,7 @@ internal static class AppDbContextBuilder
     /// </summary>
     static AppDbContextBuilder()
     {
-        var TYPE = AppCore.CrucialTypes;
         // 扫描程序集，获取数据库实体相关类型
-        EntityCorrelationTypes = AppCore.EntityTypes;
-
         if (EntityCorrelationTypes.Any())
         {
             DbContextLocatorCorrelationTypes = new ConcurrentDictionary<Type, DbContextCorrelationType>();

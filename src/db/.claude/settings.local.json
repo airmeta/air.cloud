@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(git:*)",
+      "Bash(python:*)",
+      "Bash(powershell -NoProfile -Command \"Get-Date -Format yyyyMMddHHmmss\")",
+      "Bash(dotnet test:*)",
+      "Bash(\"G:\\\\星曳数据\\\\研究院\\\\air.cloud\\\\test-output-redis-diag.log\")",
+      "Bash(\"G:\\\\星曳数据\\\\研究院\\\\air.cloud\\\\test-output-redis-diag-detailed.log\")",
+      "Bash(\"G:\\\\星曳数据\\\\研究院\\\\air.cloud\\\\test-output-after-aspect-fix.log\")",
+      "Bash(printf '\\\\n---\\\\n')"
+    ]
+  }
+}

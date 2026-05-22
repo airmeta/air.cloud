@@ -37,13 +37,10 @@ namespace Air.Cloud.HostApp.Dependency
                     AppStartupTypeEnum.HOST,
                     LoadConfigurationTypeEnum.File,
                     assembly);
+
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 a.AddConfiguration(AppConfigurationLoader.Configurations);
-            });
-            builder.ConfigureLogging((log) =>
-            {
-                log.AddCustomConsole();
             });
             builder = AppRealization.Injection.Inject(builder, true);
             return builder;

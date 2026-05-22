@@ -32,44 +32,32 @@ namespace Air.Cloud.DataBase.ElasticSearch.Extensions
 
         /// <summary>
         /// <para>zh-cn:注册ES服务</para>
-        /// <para>en-us: Inject app scheduler</para>
+        /// <para>en-us:Inject ElasticSearch repository services</para>
         /// </summary>
         /// <param name="services">
         /// 服务集合
         /// </param>
-        public static void AddElasticSearch(this IServiceCollection services) 
+        public static IServiceCollection AddElasticSearch(this IServiceCollection services)
         {
             foreach (var item in AppCore.Assemblies.ToList())
             {
                 try
                 {
-                    var AllEntities = AssemblyLoadContext.Default.LoadFromAssemblyName(item).GetTypes()
-                            .Where(s => s.IsClass && s.GetInterfaces()
-                                        .Contains(typeof(INoSqlEntity))
-                                   )
-                            .ToList();
-                    foreach (var t in AllEntities)
+                    var allEntities = AssemblyLoadContext.Default.LoadFromAssemblyName(item).GetTypes()
+                        .Where(s => s.IsClass
+                                    && !s.IsAbstract
+                                    && s.GetInterfaces().Contains(typeof(INoSqlEntity))
+                                    && s.GetCustomAttribute<ElasticSearchIndexAttribute>() != null)
+                        .ToList();
+
+                    foreach (var t in allEntities)
                     {
-                        ElasticSearchIndexAttribute? Index = t.GetCustomAttribute<ElasticSearchIndexAttribute>();
-                        if (Index == null)
-                        {
-                            AppRealization.Output.Print(new AppPrintInformation
-                            {
-                                Title = "domain-errors",
-                                Level = AppPrintLevel.Error,
-                                Content = $"未正确配置索引信息,[{t.FullName}]缺少[ElasticSearchIndex]特性",
-                                State = true
-                            });
-                            continue;
-                        }
                         Type genericType = typeof(ESNoSqlRepository<>);
                         Type constructedType = genericType.MakeGenericType(t);
                         AppCore.SetService(
-                            typeof(INoSqlRepository<>).MakeGenericType(t), 
-                            constructedType, 
+                            typeof(INoSqlRepository<>).MakeGenericType(t),
+                            constructedType,
                             DependencyInjectionServiceCollectionExtensions.TryGetServiceLifetime(typeof(ITransient)));
-                        //注册连接池
-                        ElasticSearchConnection.Pool.Set(new ElasticClientPoolElement(t));
                     }
                 }
                 catch (Exception ex)
@@ -83,6 +71,8 @@ namespace Air.Cloud.DataBase.ElasticSearch.Extensions
                     });
                 }
             }
+
+            return services;
         }
     }
 }

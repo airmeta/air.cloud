@@ -1,154 +1,202 @@
-﻿using Air.Cloud.Core;
-using Air.Cloud.Core.Standard.Cache.Redis;
+using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.DistributedLock;
-
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Air.Cloud.UnitTest.Modules.Redis
 {
+    /// <summary>
+    /// <para>zh-cn:Redis 分布式锁相关测试集合。</para>
+    /// <para>en-us:Test suite for Redis distributed lock behaviors.</para>
+    /// </summary>
     public class RedisLockTest
     {
-
+        /// <summary>
+        /// <para>zh-cn:验证同步分布式锁在并发场景下可以让多个任务依次成功执行。</para>
+        /// <para>en-us:Verifies that the synchronous distributed lock allows concurrent workers to execute successfully one after another.</para>
+        /// </summary>
         [Fact]
-        public async Task TestKeyFlush()
+        public async Task TryExecuteWithLock_should_allow_single_successful_owner_at_a_time()
         {
+            const string key = "unit-test:redis:lock:sync";
+            var events = new ConcurrentQueue<string>();
+            var successCounter = 0;
+            var waitCounter = 0;
+            var failCounter = 0;
+            var lockTime = TimeSpan.FromSeconds(3);
 
-            //如果想要直观感受 则使用webapi服务或者控制台程序去运行
+            var tasks = Enumerable.Range(1, 3)
+                .Select(index => Task.Run(() =>
+                    AppRealization.Lock.TryExecuteWithLock(
+                        key,
+                        CreateLockAction(index, events, () => Interlocked.Increment(ref successCounter), () => Interlocked.Increment(ref waitCounter), () => Interlocked.Increment(ref failCounter)),
+                        lockTime,
+                        100)))
+                .ToArray();
 
-            string Key = "test1";
+            await Task.WhenAll(tasks);
 
-            TimeSpan LockTime = new TimeSpan(0, 0, 10);
-            var T1 = Task.Run(() =>
-            {
-                AppRealization.Lock.TryExecuteWithLock(Key, new LockAction()
-                {
-                    Success = () =>
-                    {
-                        Console.WriteLine("T1拿到锁了,开始阻塞后续的执行");
-                        Thread.Sleep(6000);
-                    },
-                    Fail = () =>
-                    {
-                        Console.WriteLine("T1没拿到锁,直接返回");
-                    },
-                    Waiting = () =>
-                    {
-                        Console.WriteLine("T1等待拿锁中");
-                    }
-                }, LockTime, 200);
-            });
-            var T2 = Task.Run(() =>
-            {
-                AppRealization.Lock.TryExecuteWithLock(Key, new LockAction()
-                {
-                    Success = () =>
-                    {
-                        Console.WriteLine("T2拿到锁了,开始阻塞后续的执行");
-                        Thread.Sleep(6000);
-                    },
-                    Fail = () =>
-                    {
-                        Console.WriteLine("T2没拿到锁,直接返回");
-                    },
-                    Waiting = () =>
-                    {
-                        Console.WriteLine("T2等待拿锁中");
-                    }
-                }, LockTime);
-            });
-
-            var T3 = Task.Run(() =>
-            {
-                AppRealization.Lock.TryExecuteWithLock(Key, new LockAction()
-                {
-                    Success = () =>
-                    {
-                        Console.WriteLine("T3拿到锁了,开始阻塞后续的执行");
-                        Thread.Sleep(6000);
-                    },
-                    Fail = () =>
-                    {
-                        Console.WriteLine("T3没拿到锁,直接返回");
-                    },
-                    Waiting = () =>
-                    {
-                        Console.WriteLine("T3等待拿锁中");
-                    }
-                }, LockTime);
-            });
-
-            await Task.WhenAll(T1, T2, T3);
-
+            Assert.Equal(3, successCounter);
+            Assert.True(waitCounter >= 0);
+            Assert.Equal(0, failCounter);
+            Assert.Equal(3, events.Count(entry => entry.Contains(":success", StringComparison.Ordinal)));
         }
 
-        public async Task TestKeyFlushAsync()
+        /// <summary>
+        /// <para>zh-cn:验证异步分布式锁在并发场景下可以让多个任务依次成功执行。</para>
+        /// <para>en-us:Verifies that the asynchronous distributed lock allows concurrent workers to execute successfully one after another.</para>
+        /// </summary>
+        [Fact]
+        public async Task TryExecuteWithLockAsync_should_allow_single_successful_owner_at_a_time()
         {
-            string Key = "test1";
+            const string key = "unit-test:redis:lock:async";
+            var events = new ConcurrentQueue<string>();
+            var successCounter = 0;
+            var waitCounter = 0;
+            var failCounter = 0;
+            var lockTime = TimeSpan.FromSeconds(3);
 
-            TimeSpan LockTime = new TimeSpan(0, 0, 10);
-            var T1 = Task.Run(async () =>
-            {
-                var IsExecuteSuccess = await AppRealization.Lock.TryExecuteWithLockAsync(Key, new LockAsyncAction()
-                {
-                    Success = async () =>
-                    {
-                        await AppRealization.RedisCache.String.SetAsync("test_t1", "T1", new TimeSpan(0, 1, 0));
-                        Console.WriteLine("T1拿到锁了,开始阻塞后续的执行");
-                        Thread.Sleep(6000);
-                    },
-                    Fail = () =>
-                    {
-                        Console.WriteLine("T1没拿到锁,直接返回");
-                    },
-                    Waiting = () =>
-                    {
-                        Console.WriteLine("T1等待拿锁中");
-                    }
-                }, LockTime, 200);
-            });
-            var T2 = Task.Run(async () =>
-            {
-                var IsExecuteSuccess = await AppRealization.Lock.TryExecuteWithLockAsync(Key, new LockAsyncAction()
-                {
-                    Success = async () =>
-                    {
-                        await AppRealization.RedisCache.String.SetAsync("test_t2", "T2", new TimeSpan(0, 1, 0));
-                        Console.WriteLine("T2拿到锁了,开始阻塞后续的执行");
-                        Thread.Sleep(6000);
-                    },
-                    Fail = () =>
-                    {
-                        Console.WriteLine("T2没拿到锁,直接返回");
-                    },
-                    Waiting = () =>
-                    {
-                        Console.WriteLine("T2等待拿锁中");
-                    }
-                }, LockTime);
-            });
+            var tasks = Enumerable.Range(1, 3)
+                .Select(index => ExecuteLockAsync(
+                    key,
+                    lockTime,
+                    CreateLockAsyncAction(index, events, () => Interlocked.Increment(ref successCounter), () => Interlocked.Increment(ref waitCounter), () => Interlocked.Increment(ref failCounter))))
+                .ToArray();
 
-            var T3 = Task.Run(async () =>
-            {
-                var IsExecuteSuccess = await AppRealization.Lock.TryExecuteWithLockAsync(Key, new LockAsyncAction()
-                {
-                    Success = async () =>
-                    {
-                        await AppRealization.RedisCache.String.SetAsync("test_t3", "T3", new TimeSpan(0, 1, 0));
-                        Console.WriteLine("T3拿到锁了,开始阻塞后续的执行");
-                        Thread.Sleep(6000);
-                    },
-                    Fail = () =>
-                    {
-                        Console.WriteLine("T3没拿到锁,直接返回");
-                    },
-                    Waiting = () =>
-                    {
-                        Console.WriteLine("T3等待拿锁中");
-                    }
-                }, LockTime);
-            });
+            var results = await Task.WhenAll(tasks);
 
-            await Task.WhenAll(T1, T2, T3);
+            Assert.All(results, Assert.True);
+            Assert.Equal(3, successCounter);
+            Assert.True(waitCounter >= 0);
+            Assert.Equal(0, failCounter);
+            Assert.Equal(3, events.Count(entry => entry.Contains(":success", StringComparison.Ordinal)));
+        }
+
+        /// <summary>
+        /// <para>zh-cn:创建同步锁执行动作并记录执行结果。</para>
+        /// <para>en-us:Creates a synchronous lock action and records its execution outcome.</para>
+        /// </summary>
+        /// <param name="workerId">
+        /// <para>zh-cn:当前并发工作项编号。</para>
+        /// <para>en-us:The identifier of the current concurrent worker.</para>
+        /// </param>
+        /// <param name="events">
+        /// <para>zh-cn:用于记录锁执行事件的并发队列。</para>
+        /// <para>en-us:The concurrent queue used to record lock execution events.</para>
+        /// </param>
+        /// <param name="onSuccess">
+        /// <para>zh-cn:成功获取锁时执行的回调。</para>
+        /// <para>en-us:The callback invoked when the lock is acquired successfully.</para>
+        /// </param>
+        /// <param name="onWaiting">
+        /// <para>zh-cn:等待获取锁时执行的回调。</para>
+        /// <para>en-us:The callback invoked while waiting for the lock.</para>
+        /// </param>
+        /// <param name="onFail">
+        /// <para>zh-cn:获取锁失败时执行的回调。</para>
+        /// <para>en-us:The callback invoked when lock acquisition fails.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:返回用于同步锁执行的动作对象。</para>
+        /// <para>en-us:Returns the action object used for synchronous lock execution.</para>
+        /// </returns>
+        private static LockAction CreateLockAction(int workerId, ConcurrentQueue<string> events, Action onSuccess, Action onWaiting, Action onFail)
+        {
+            return new LockAction
+            {
+                Success = () =>
+                {
+                    events.Enqueue($"worker-{workerId}:success");
+                    onSuccess();
+                    Task.Delay(300).GetAwaiter().GetResult();
+                },
+                Waiting = () =>
+                {
+                    events.Enqueue($"worker-{workerId}:waiting");
+                    onWaiting();
+                },
+                Fail = () =>
+                {
+                    events.Enqueue($"worker-{workerId}:fail");
+                    onFail();
+                }
+            };
+        }
+
+        /// <summary>
+        /// <para>zh-cn:创建异步锁执行动作并记录执行结果。</para>
+        /// <para>en-us:Creates an asynchronous lock action and records its execution outcome.</para>
+        /// </summary>
+        /// <param name="workerId">
+        /// <para>zh-cn:当前并发工作项编号。</para>
+        /// <para>en-us:The identifier of the current concurrent worker.</para>
+        /// </param>
+        /// <param name="events">
+        /// <para>zh-cn:用于记录锁执行事件的并发队列。</para>
+        /// <para>en-us:The concurrent queue used to record lock execution events.</para>
+        /// </param>
+        /// <param name="onSuccess">
+        /// <para>zh-cn:成功获取锁时执行的回调。</para>
+        /// <para>en-us:The callback invoked when the lock is acquired successfully.</para>
+        /// </param>
+        /// <param name="onWaiting">
+        /// <para>zh-cn:等待获取锁时执行的回调。</para>
+        /// <para>en-us:The callback invoked while waiting for the lock.</para>
+        /// </param>
+        /// <param name="onFail">
+        /// <para>zh-cn:获取锁失败时执行的回调。</para>
+        /// <para>en-us:The callback invoked when lock acquisition fails.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:返回用于异步锁执行的动作对象。</para>
+        /// <para>en-us:Returns the action object used for asynchronous lock execution.</para>
+        /// </returns>
+        private static LockAsyncAction CreateLockAsyncAction(int workerId, ConcurrentQueue<string> events, Action onSuccess, Action onWaiting, Action onFail)
+        {
+            return new LockAsyncAction
+            {
+                Success = async () =>
+                {
+                    events.Enqueue($"worker-{workerId}:success");
+                    onSuccess();
+                    await AppRealization.RedisCache.String.SetAsync($"unit-test:redis:lock:worker:{workerId}", $"T{workerId}", TimeSpan.FromMinutes(1));
+                    await Task.Delay(300);
+                },
+                Waiting = () =>
+                {
+                    events.Enqueue($"worker-{workerId}:waiting");
+                    onWaiting();
+                },
+                Fail = () =>
+                {
+                    events.Enqueue($"worker-{workerId}:fail");
+                    onFail();
+                }
+            };
+        }
+
+        /// <summary>
+        /// <para>zh-cn:执行指定键的异步分布式锁操作。</para>
+        /// <para>en-us:Executes an asynchronous distributed lock operation for the specified key.</para>
+        /// </summary>
+        /// <param name="key">
+        /// <para>zh-cn:分布式锁键。</para>
+        /// <para>en-us:The distributed lock key.</para>
+        /// </param>
+        /// <param name="lockTime">
+        /// <para>zh-cn:锁持有时长。</para>
+        /// <para>en-us:The duration for which the lock should be held.</para>
+        /// </param>
+        /// <param name="action">
+        /// <para>zh-cn:异步锁执行动作。</para>
+        /// <para>en-us:The asynchronous lock action to execute.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:返回表示锁执行是否成功的异步任务。</para>
+        /// <para>en-us:Returns an asynchronous task that indicates whether lock execution succeeded.</para>
+        /// </returns>
+        private static Task<bool> ExecuteLockAsync(string key, TimeSpan lockTime, LockAsyncAction action)
+        {
+            return AppRealization.Lock.TryExecuteWithLockAsync(key, action, lockTime, 100);
         }
     }
 }
