@@ -1,22 +1,28 @@
-using Air.Cloud.Core.Standard.DataBase.Model;
+﻿using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Consul.Model;
 using System.Reflection;
-using unit.webapp.model.Domains;
+using Air.Cloud.UnitTest.Compatibility.Domains;
+using Air.Cloud.UnitTest.Compatibility.Services;
+using Air.Cloud.UnitTest.Compatibility.Entities;
 
 namespace Air.Cloud.UnitTest.Modules.DataBase
 {
     /// <summary>
-    /// <para>zh-cn:数据库查询服务迁移测试集合。</para>
+    /// <para>zh-cn:数据库查询服务行为测试集合。</para>
     /// <para>en-us:Migrated test suite for database query service behaviors.</para>
     /// </summary>
     public class DataBaseQueryServiceTests
     {
         /// <summary>
-        /// <para>zh-cn:验证 Query 会使用固定标识调用领域搜索并返回原始结果。</para>
-        /// <para>en-us:Verifies that Query calls the domain search with the fixed identifier and returns the original result.</para>
+        /// <para>zh-cn:测试固定标识透传场景，确认 Query 始终以内置 id 调用领域 Search 并返回原始结果引用。</para>
+        /// <para>en-us:Tests fixed-identifier forwarding to ensure Query always invokes domain Search with built-in id and returns the original result reference.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：注入校验 id 的领域桩，执行 Query 后断言返回集合引用未变且 LastSearchId 为预期固定值。</para>
+        /// <para>en-us:Process: inject a domain stub that validates id, execute Query, then assert collection reference is unchanged and LastSearchId equals expected constant.</para>
+        /// </remarks>
         [Fact]
         public void Query_should_call_domain_search_with_fixed_identifier()
         {
@@ -40,9 +46,13 @@ namespace Air.Cloud.UnitTest.Modules.DataBase
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Sq 会按服务名称升序返回服务中心查询结果。</para>
-        /// <para>en-us:Verifies that Sq returns server center results ordered by service name in ascending order.</para>
+        /// <para>zh-cn:测试服务中心结果排序场景，确认 Sq 会按 ServiceName 升序输出查询结果。</para>
+        /// <para>en-us:Tests server-center ordering to ensure Sq returns query results sorted by ServiceName ascending.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：构造乱序服务名列表作为查询返回值，执行 Sq 后断言结果顺序为 a-b-c 且仅调用一次查询。</para>
+        /// <para>en-us:Process: provide out-of-order service names, execute Sq, assert a-b-c ordering and single query invocation.</para>
+        /// </remarks>
         [Fact]
         public async Task Sq_should_return_server_center_results_ordered_by_service_name()
         {
@@ -66,9 +76,13 @@ namespace Air.Cloud.UnitTest.Modules.DataBase
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Sq1 会按键值内容升序返回 KV 中心查询结果。</para>
-        /// <para>en-us:Verifies that Sq1 returns KV center results ordered by value in ascending order.</para>
+        /// <para>zh-cn:测试 KV 结果排序场景，确认 Sq1 会按 Value 升序返回键值中心查询数据。</para>
+        /// <para>en-us:Tests KV-center ordering to ensure Sq1 returns items sorted by Value ascending.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：注入乱序 value 列表并执行 Sq1，断言排序结果为 a-b-c 且查询前缀保持默认“/”。</para>
+        /// <para>en-us:Process: inject unordered values, execute Sq1, assert a-b-c order and default prefix "/" usage.</para>
+        /// </remarks>
         [Fact]
         public async Task Sq1_should_return_kv_center_results_ordered_by_value()
         {
@@ -92,9 +106,13 @@ namespace Air.Cloud.UnitTest.Modules.DataBase
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Batch 会透传领域批量插入结果。</para>
-        /// <para>en-us:Verifies that Batch forwards the domain batch insert result.</para>
+        /// <para>zh-cn:测试批量写入结果透传场景，确认 Batch 直接返回领域 BatchInsertAsync 的布尔结果。</para>
+        /// <para>en-us:Tests batch-insert result forwarding to ensure Batch directly returns domain BatchInsertAsync boolean result.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：将领域桩的 BatchInsertAsync 固定为 true，执行 Batch 后断言返回 true 且调用计数为 1。</para>
+        /// <para>en-us:Process: set domain BatchInsertAsync stub to true, execute Batch, then assert true result and one invocation.</para>
+        /// </remarks>
         [Fact]
         public async Task Batch_should_return_domain_batch_insert_result()
         {
@@ -112,31 +130,31 @@ namespace Air.Cloud.UnitTest.Modules.DataBase
         }
 
         /// <summary>
-        /// <para>zh-cn:创建用于数据库查询服务测试的服务实例。</para>
+        /// <para>zh-cn:创建数据库查询服务测试实例。</para>
         /// <para>en-us:Creates a service instance for the database query service tests.</para>
         /// </summary>
         /// <param name="domain">
-        /// <para>zh-cn:领域桩对象。</para>
+        /// <para>zh-cn:领域桩依赖。</para>
         /// <para>en-us:The stub domain dependency.</para>
         /// </param>
         /// <param name="serverCenter">
-        /// <para>zh-cn:服务中心桩对象。</para>
+        /// <para>zh-cn:服务中心桩依赖。</para>
         /// <para>en-us:The stub server center dependency.</para>
         /// </param>
         /// <param name="kvCenter">
-        /// <para>zh-cn:键值中心桩对象。</para>
+        /// <para>zh-cn:键值中心桩依赖。</para>
         /// <para>en-us:The stub key-value center dependency.</para>
         /// </param>
         /// <returns>
         /// <para>zh-cn:返回待测试的数据库查询服务实例。</para>
         /// <para>en-us:Returns the database query service instance under test.</para>
         /// </returns>
-        private static unit.webapp.service.services.DataBaseModuleTest.DataBaseQueryService CreateService(
+        private static DataBaseQueryService CreateService(
             StubTestDomain? domain = null,
             StubServerCenterStandard? serverCenter = null,
             StubKvCenterStandard? kvCenter = null)
         {
-            return new unit.webapp.service.services.DataBaseModuleTest.DataBaseQueryService(
+            return new DataBaseQueryService(
                 domain ?? new StubTestDomain(),
                 serverCenter ?? new StubServerCenterStandard(),
                 kvCenter ?? new StubKvCenterStandard());
@@ -187,13 +205,13 @@ namespace Air.Cloud.UnitTest.Modules.DataBase
             }
 
             /// <inheritdoc />
-            public Task Delete(unit.webapp.model.Entity.Test entity, bool FakeDelete = false) => throw new NotSupportedException();
+            public Task Delete(Test entity, bool FakeDelete = false) => throw new NotSupportedException();
 
             /// <inheritdoc />
-            public Task<bool> Insert(unit.webapp.model.Entity.Test entity) => throw new NotSupportedException();
+            public Task<bool> Insert(Test entity) => throw new NotSupportedException();
 
             /// <inheritdoc />
-            public (int, List<unit.webapp.model.Entity.Test>) Page(System.Linq.Expressions.Expression<Func<unit.webapp.model.Entity.Test, bool>>? filter, int Page, int Limit) => throw new NotSupportedException();
+            public (int, List<Test>) Page(System.Linq.Expressions.Expression<Func<Test, bool>>? filter, int Page, int Limit) => throw new NotSupportedException();
 
             /// <inheritdoc />
             public IEntity Update(IEntity entity) => throw new NotSupportedException();

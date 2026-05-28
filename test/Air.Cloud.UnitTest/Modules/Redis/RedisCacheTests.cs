@@ -1,4 +1,4 @@
-using Air.Cloud.Core;
+﻿using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Standard.Cache.Redis;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 namespace Air.Cloud.UnitTest.Modules.Redis
 {
     /// <summary>
-    /// <para>zh-cn:Redis 缓存能力相关测试集合。</para>
+    /// <para>zh-cn:Redis 缓存能力测试集合。</para>
     /// <para>en-us:Test suite for Redis cache capabilities.</para>
     /// </summary>
     public class RedisCacheTests
@@ -27,9 +27,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         private const string AuthRedisConnectionSection = "RedisAuthTestSettings";
 
         /// <summary>
-        /// <para>zh-cn:验证刷新 Redis 键空间操作能够正常执行。</para>
-        /// <para>en-us:Verifies that flushing the Redis key space can execute successfully.</para>
+        /// <para>zh-cn:测试 Redis 键空间清理场景，确认执行 Flush 不会抛出异常。</para>
+        /// <para>en-us:Tests Redis key-space cleanup behavior to ensure Flush executes without exception.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：获取 Redis 客户端后直接执行 Key.Fulsh，验证调用链可正常完成。</para>
+        /// <para>en-us:Process: obtain Redis client and execute Key.Fulsh directly, verifying invocation completes successfully.</para>
+        /// </remarks>
         [Fact]
         public void Flush_should_execute_without_throwing()
         {
@@ -39,9 +43,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证写入缓存后可以读取到非空结果。</para>
-        /// <para>en-us:Verifies that writing a cache value returns a non-empty result when read back.</para>
+        /// <para>zh-cn:测试缓存写后读场景，确认 SetCache 后可读取到非空字符串结果。</para>
+        /// <para>en-us:Tests write-then-read cache behavior to ensure SetCache returns a non-empty value when read back.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：写入固定 key/value 后读取同一 key，断言读取结果非空。</para>
+        /// <para>en-us:Process: write fixed key/value, read same key, and assert returned value is non-empty.</para>
+        /// </remarks>
         [Fact]
         public void SetCache_should_return_non_empty_value_when_cache_is_available()
         {
@@ -55,9 +63,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证带过期时间的缓存项会在超时后失效。</para>
-        /// <para>en-us:Verifies that a cache entry with expiration becomes unavailable after the timeout.</para>
+        /// <para>zh-cn:测试 TTL 过期场景，确认带过期时间的缓存在超时后不可读。</para>
+        /// <para>en-us:Tests TTL expiration behavior to ensure expiring cache entries become unavailable after timeout.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：写入 2 秒 TTL 的键值后等待 3 秒再读取，断言返回空值。</para>
+        /// <para>en-us:Process: set a 2-second TTL key, wait 3 seconds, read it, and assert empty result.</para>
+        /// </remarks>
         [Fact]
         public async Task SetCache_with_expiration_should_expire_value()
         {
@@ -71,9 +83,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Redis String 结构写入后可以读取到相同值。</para>
-        /// <para>en-us:Verifies that a Redis string value can be read back after being written.</para>
+        /// <para>zh-cn:测试原生 String 结构读写闭环，确认写入后可读回相同值。</para>
+        /// <para>en-us:Tests native Redis String round-trip to ensure written value can be read back unchanged.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：通过 redis.String.Set 写入固定键值，再用 redis.String.Get 读取并断言相等。</para>
+        /// <para>en-us:Process: write fixed key/value via redis.String.Set, read via redis.String.Get, and assert equality.</para>
+        /// </remarks>
         [Fact]
         public void Redis_string_operations_should_round_trip_value()
         {
@@ -88,9 +104,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Redis Hash 结构写入字段后可以读取到相同值。</para>
-        /// <para>en-us:Verifies that a Redis hash field can be read back after being written.</para>
+        /// <para>zh-cn:测试原生 Hash 字段读写闭环，确认写入 field 后可读取到相同值。</para>
+        /// <para>en-us:Tests native Redis Hash field round-trip to ensure written field value can be read back identically.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：调用 redis.Hash.Set 写入 field，再用 redis.Hash.Get 读取并断言一致。</para>
+        /// <para>en-us:Process: write field via redis.Hash.Set, read via redis.Hash.Get, and assert equality.</para>
+        /// </remarks>
         [Fact]
         public void Redis_hash_operations_should_round_trip_value()
         {
@@ -106,9 +126,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Redis Set 结构添加成员后可以在成员集合中查询到该值。</para>
-        /// <para>en-us:Verifies that a Redis set member can be found after it is added.</para>
+        /// <para>zh-cn:测试原生 Set 成员写入场景，确认新增成员可在集合元素中检索到。</para>
+        /// <para>en-us:Tests native Redis Set member insertion to ensure added member can be found in set elements.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：通过 redis.Set.Add 添加成员，再读取 redis.Set.Elements 并断言包含目标值。</para>
+        /// <para>en-us:Process: add member with redis.Set.Add, read redis.Set.Elements, and assert target value is present.</para>
+        /// </remarks>
         [Fact]
         public void Redis_set_operations_should_contain_added_member()
         {
@@ -123,9 +147,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证使用认证配置时可以成功写入并读取 Redis 值。</para>
-        /// <para>en-us:Verifies that values can be written and read when an authenticated Redis configuration is available.</para>
+        /// <para>zh-cn:测试认证连接读写场景，确认提供认证配置后可正常写入并读取 Redis 值。</para>
+        /// <para>en-us:Tests authenticated-connection read/write to ensure values can be set and retrieved when auth config is present.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：读取认证配置创建 Redis 依赖并执行 set/get，若未配置则按用例约定直接返回。</para>
+        /// <para>en-us:Process: load auth configuration, create Redis dependency, execute set/get; return early when configuration is absent by test design.</para>
+        /// </remarks>
         [Fact]
         public void Authenticated_connection_should_set_and_get_value_when_configured()
         {
@@ -146,7 +174,7 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:从配置系统中读取指定名称的 Redis 配置。</para>
+        /// <para>zh-cn:从配置系统读取指定名称的 Redis 配置。</para>
         /// <para>en-us:Reads the Redis settings for the specified section name from configuration.</para>
         /// </summary>
         /// <param name="sectionName">
@@ -154,7 +182,7 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         /// <para>en-us:The name of the target Redis configuration section.</para>
         /// </param>
         /// <returns>
-        /// <para>zh-cn:返回有效的 Redis 配置；如果不存在或无效则返回 null。</para>
+        /// <para>zh-cn:返回有效 Redis 配置；若不存在或无效则返回 null。</para>
         /// <para>en-us:Returns valid Redis settings, or null when the section is missing or invalid.</para>
         /// </returns>
         private static RedisSettingsOptions? GetRedisSettings(string sectionName)

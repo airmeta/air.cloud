@@ -17,10 +17,6 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.EntityFrameWork.Core.Repositories;
 using Air.Cloud.EntityFrameWork.Oracle.Bulk;
 
-using Dm.filter;
-
-using Microsoft.EntityFrameworkCore;
-
 using System.Linq.Expressions;
 
 using unit.webapp.model.Domains;

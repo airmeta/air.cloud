@@ -102,9 +102,9 @@ public static class AppServiceCollectionExtensions
     internal static IServiceCollection AddStartups(this IServiceCollection services)
     {
         // 扫描所有继承 AppStartup 的类
-        var startups = AppCore.StartTypes
-            .Where(u => typeof(AppStartup).IsAssignableFrom(u) && u.IsClass && !u.IsAbstract && !u.IsGenericType)
-            .OrderByDescending(u => GetStartupOrder(u)).Reverse().ToList();
+        var startups = SortStartupsByDependency(
+            AppCore.StartTypes
+                .Where(u => typeof(AppStartup).IsAssignableFrom(u) && u.IsClass && !u.IsAbstract && !u.IsGenericType));
 
         // 注册自定义 startup
         foreach (var type in startups)
@@ -115,7 +115,7 @@ public static class AppServiceCollectionExtensions
             // 获取所有符合依赖注入格式的方法，如返回值void，且第一个参数是 IServiceCollection 类型
             var serviceMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(u => u.ReturnType == typeof(void)
-                    && u.GetParameters().Length > 0
+                    && u.GetParameters().Length == 1
                     && u.GetParameters().First().ParameterType == typeof(IServiceCollection))
                 .ToList();
 
@@ -129,6 +129,90 @@ public static class AppServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// <para>zh-cn:按依赖关系对 Startup 类型进行拓扑排序，并在同层按 Order 与类型全名稳定排序。</para>
+    /// <para>en-us:Topologically sorts Startup types by dependency, then applies stable ordering by Order and full type name within the same layer.</para>
+    /// </summary>
+    /// <param name="startupTypes">
+    /// <para>zh-cn:待排序的 Startup 类型集合。</para>
+    /// <para>en-us:The Startup type collection to sort.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:返回依赖有序的 Startup 类型列表。</para>
+    /// <para>en-us:Returns a dependency-ordered Startup type list.</para>
+    /// </returns>
+    private static IReadOnlyList<Type> SortStartupsByDependency(IEnumerable<Type> startupTypes)
+    {
+        var allTypes = startupTypes
+            .Distinct()
+            .OrderBy(GetStartupOrder)
+            .ThenBy(t => t.FullName, StringComparer.Ordinal)
+            .ToList();
+
+        var typeSet = allTypes.ToHashSet();
+        var inDegree = allTypes.ToDictionary(t => t, _ => 0);
+        var dependents = allTypes.ToDictionary(t => t, _ => new List<Type>());
+
+        foreach (var startupType in allTypes)
+        {
+            var dependType = GetStartupDependType(startupType);
+            if (dependType == null || !typeSet.Contains(dependType))
+            {
+                continue;
+            }
+
+            inDegree[startupType]++;
+            dependents[dependType].Add(startupType);
+        }
+
+        var queue = new Queue<Type>(allTypes.Where(t => inDegree[t] == 0));
+        var ordered = new List<Type>(allTypes.Count);
+
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            ordered.Add(node);
+
+            foreach (var dependent in dependents[node]
+                         .OrderBy(GetStartupOrder)
+                         .ThenBy(t => t.FullName, StringComparer.Ordinal))
+            {
+                inDegree[dependent]--;
+                if (inDegree[dependent] == 0)
+                {
+                    queue.Enqueue(dependent);
+                }
+            }
+        }
+
+        // 如果存在环路或无效依赖，回退到原始稳定顺序，避免中断当前行为。
+        if (ordered.Count != allTypes.Count)
+        {
+            return allTypes;
+        }
+
+        return ordered;
+    }
+
+    /// <summary>
+    /// <para>zh-cn:获取 Startup 的依赖 Startup 类型。</para>
+    /// <para>en-us:Gets the dependent Startup type of the Startup.</para>
+    /// </summary>
+    /// <param name="type">
+    /// <para>zh-cn:Startup 类型。</para>
+    /// <para>en-us:The Startup type.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:返回依赖类型，未配置则返回 null。</para>
+    /// <para>en-us:Returns the dependency type, or null when not configured.</para>
+    /// </returns>
+    private static Type? GetStartupDependType(Type type)
+    {
+        return !type.IsDefined(typeof(AppStartupAttribute), true)
+            ? null
+            : type.GetCustomAttribute<AppStartupAttribute>(true).DependType;
     }
 
     /// <summary>

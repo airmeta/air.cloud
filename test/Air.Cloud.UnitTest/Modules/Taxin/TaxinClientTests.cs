@@ -1,19 +1,25 @@
-using Air.Cloud.Core.Standard.Taxin.Client;
+﻿using Air.Cloud.Core.Standard.Taxin.Client;
 using System.Reflection;
 using Microsoft.AspNetCore.Routing;
+
+using Air.Cloud.UnitTest.Compatibility.Services;
 
 namespace Air.Cloud.UnitTest.Modules.Taxin
 {
     /// <summary>
-    /// <para>zh-cn:Taxin 客户端调用逻辑测试集合。</para>
+    /// <para>zh-cn:Taxin 客户端调用行为测试集合。</para>
     /// <para>en-us:Test suite for Taxin client invocation behaviors.</para>
     /// </summary>
     public class TaxinClientTests
     {
         /// <summary>
-        /// <para>zh-cn:验证客户端调用成功时会返回带有原始结果数据和固定名称的对象。</para>
-        /// <para>en-us:Verifies that a successful client invocation returns an object containing the original data and the fixed name value.</para>
+        /// <para>zh-cn:测试 ClientA 成功调用回包场景，确认返回对象包含固定 name 与原始 data 引用。</para>
+        /// <para>en-us:Tests successful ClientA call payload to ensure returned object contains fixed name and original data reference.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：用桩客户端返回预设对象，调用 ClientA 后通过反射读取匿名对象字段并断言值正确。</para>
+        /// <para>en-us:Process: return a preset object from stub client, call ClientA, read anonymous fields via reflection, and assert values.</para>
+        /// </remarks>
         [Fact]
         public async Task ClientA_should_return_success_payload_when_taxin_call_succeeds()
         {
@@ -28,7 +34,7 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
                 }
             };
 
-            var service = new unit.webapp.service.services.TaxinModuleTest.TaxinConnectService(client);
+            var service = new TaxinConnectService(client);
 
             var result = await service.ClientA();
             var name = ReadProperty<string>(result, "name");
@@ -39,9 +45,13 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         }
 
         /// <summary>
-        /// <para>zh-cn:验证客户端调用抛出异常时会把异常消息包装到返回对象中。</para>
-        /// <para>en-us:Verifies that an exception thrown by the client is wrapped into the returned payload message.</para>
+        /// <para>zh-cn:测试 ClientA 异常兜底场景，确认远端异常会转换为返回数据中的错误消息。</para>
+        /// <para>en-us:Tests ClientA failure fallback to ensure remote exception is converted into returned payload message.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：让桩客户端抛出 InvalidOperationException，调用 ClientA 后断言 name 固定且 data 为异常消息。</para>
+        /// <para>en-us:Process: force stub client to throw InvalidOperationException, call ClientA, and assert fixed name plus exception message in data.</para>
+        /// </remarks>
         [Fact]
         public async Task ClientA_should_return_exception_message_when_taxin_call_fails()
         {
@@ -51,7 +61,7 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
                 Handler = (_, _, _) => Task.FromException<object>(new InvalidOperationException(expectedMessage))
             };
 
-            var service = new unit.webapp.service.services.TaxinModuleTest.TaxinConnectService(client);
+            var service = new TaxinConnectService(client);
 
             var result = await service.ClientA();
             var name = ReadProperty<string>(result, "name");
@@ -62,14 +72,18 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 Taxin 服务方法在收到响应模型时会返回固定的服务名称对象。</para>
-        /// <para>en-us:Verifies that the Taxin service method returns an object with the fixed service name when a response model is provided.</para>
+        /// <para>zh-cn:测试 ClientB 固定服务名输出场景，确认输入响应模型后返回对象的 name 为约定值。</para>
+        /// <para>en-us:Tests fixed service-name output of ClientB to ensure returned name matches the expected constant.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：构造 TaxinResponseModel 调用 ClientB，读取匿名对象 name 字段并断言为 TaxinServiceTest。</para>
+        /// <para>en-us:Process: build TaxinResponseModel, call ClientB, read anonymous name field, and assert it equals TaxinServiceTest.</para>
+        /// </remarks>
         [Fact]
         public void ClientB_should_return_expected_service_name_payload()
         {
-            var service = new unit.webapp.service.services.TaxinModuleTest.TaxinConnectService();
-            var responseModel = new unit.webapp.service.services.TaxinModuleTest.TaxinResponseModel
+            var service = new TaxinConnectService();
+            var responseModel = new TaxinResponseModel
             {
                 name = "input",
                 Name = "InputName",
@@ -153,31 +167,31 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
             }
 
             /// <summary>
-            /// <para>zh-cn:空实现推送动作，供测试桩满足接口约束。</para>
+            /// <para>zh-cn:空实现推送动作，仅用于满足测试桩接口契约。</para>
             /// <para>en-us:No-op push implementation to satisfy the test stub interface contract.</para>
             /// </summary>
             public Task PushAsync() => Task.CompletedTask;
 
             /// <summary>
-            /// <para>zh-cn:空实现拉取动作，供测试桩满足接口约束。</para>
+            /// <para>zh-cn:空实现拉取动作，仅用于满足测试桩接口契约。</para>
             /// <para>en-us:No-op pull implementation to satisfy the test stub interface contract.</para>
             /// </summary>
             public Task PullAsync() => Task.CompletedTask;
 
             /// <summary>
-            /// <para>zh-cn:空实现检查动作，供测试桩满足接口约束。</para>
+            /// <para>zh-cn:空实现检查动作，仅用于满足测试桩接口契约。</para>
             /// <para>en-us:No-op check implementation to satisfy the test stub interface contract.</para>
             /// </summary>
             public Task CheckAsync() => Task.CompletedTask;
 
             /// <summary>
-            /// <para>zh-cn:空实现上线动作，供测试桩满足接口约束。</para>
+            /// <para>zh-cn:空实现上线动作，仅用于满足测试桩接口契约。</para>
             /// <para>en-us:No-op online implementation to satisfy the test stub interface contract.</para>
             /// </summary>
             public Task OnLineAsync() => Task.CompletedTask;
 
             /// <summary>
-            /// <para>zh-cn:空实现下线动作，供测试桩满足接口约束。</para>
+            /// <para>zh-cn:空实现下线动作，仅用于满足测试桩接口契约。</para>
             /// <para>en-us:No-op offline implementation to satisfy the test stub interface contract.</para>
             /// </summary>
             public Task OffLineAsync() => Task.CompletedTask;

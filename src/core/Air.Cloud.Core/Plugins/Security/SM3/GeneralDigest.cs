@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using System;
 using Org.BouncyCastle.Crypto;
 
 namespace Air.Cloud.Core.Plugins.Security.SM3
@@ -164,5 +165,78 @@ namespace Air.Cloud.Core.Plugins.Security.SM3
         /// <param name="outOff"></param>
         /// <returns></returns>
         public abstract int DoFinal(byte[] output, int outOff);
+
+        /// <summary>
+        /// BlockUpdate overload that accepts ReadOnlySpan<byte>
+        /// 无分配实现，尽量以4字节块为单位调用底层 ProcessWord
+        /// </summary>
+        /// <param name="input"></param>
+        public void BlockUpdate(ReadOnlySpan<byte> input)
+        {
+            if (input.Length == 0) return;
+
+            int inOff = 0;
+            int length = input.Length;
+
+            // 如果内部缓冲区有残留，先填充到完整的字（4字节）
+            if (XBufOff != 0)
+            {
+                int toCopy = Math.Min(XBuf.Length - XBufOff, length);
+                input.Slice(inOff, toCopy).CopyTo(new Span<byte>(XBuf, XBufOff, toCopy));
+                XBufOff += toCopy;
+                inOff += toCopy;
+                length -= toCopy;
+
+                if (XBufOff == XBuf.Length)
+                {
+                    ProcessWord(XBuf, 0);
+                    XBufOff = 0;
+                    ByteCount += XBuf.Length;
+                }
+            }
+
+            // 现在按4字节对齐的块处理，直接从 input 复制到 XBuf 并处理，避免中间数组分配
+            while (length >= XBuf.Length)
+            {
+                // 直接把4字节复制到 XBuf 并调用 ProcessWord
+                input.Slice(inOff, XBuf.Length).CopyTo(new Span<byte>(XBuf, 0, XBuf.Length));
+                ProcessWord(XBuf, 0);
+                inOff += XBuf.Length;
+                length -= XBuf.Length;
+                ByteCount += XBuf.Length;
+            }
+
+            // 处理剩余字节
+            if (length > 0)
+            {
+                input.Slice(inOff, length).CopyTo(new Span<byte>(XBuf, XBufOff, length));
+                XBufOff += length;
+            }
+        }
+
+        /// <summary>
+        /// DoFinal overload that accepts Span<byte>
+        /// </summary>
+        /// <param name="output"></param>
+        /// <returns>number of bytes written</returns>
+        public int DoFinal(Span<byte> output)
+        {
+            int size = GetDigestSize();
+            if (output.Length < size) throw new ArgumentException("output too small for digest", nameof(output));
+
+            // 使用 ArrayPool 避免频繁分配
+            var pool = System.Buffers.ArrayPool<byte>.Shared;
+            byte[]? arr = pool.Rent(size);
+            try
+            {
+                int len = DoFinal(arr, 0);
+                new Span<byte>(arr, 0, len).CopyTo(output);
+                return len;
+            }
+            finally
+            {
+                pool.Return(arr);
+            }
+        }
     }
 }

@@ -9,8 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using System.Buffers.Text;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -42,22 +40,23 @@ public class AESEncryption : IPlugin
         if (Key.IsNullOrEmpty()) Key = AppConfiguration.Configuration[AES_KEY];
         using var aesAlg = Aes.Create();
         if (Key.IsNullOrEmpty()) throw new Exception($"未配置AES密钥[{AES_KEY}]");
+
         var iv = Iv.IsNullOrEmpty() ? aesAlg.IV : Encoding.UTF8.GetBytes(Iv);
         var encryptKey = Encoding.UTF8.GetBytes(Key);
         using var encryptor = aesAlg.CreateEncryptor(encryptKey, iv);
         using var msEncrypt = new MemoryStream();
         using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write, true))
-        using (var swEncrypt = new StreamWriter(csEncrypt, leaveOpen: true)) swEncrypt.Write(Text);
-        var dataLength = iv.Length + (int)msEncrypt.Length;
-        var decryptedContent = msEncrypt.GetBuffer();
-        var base64Length = Base64.GetMaxEncodedToUtf8Length(dataLength);
-        var result = new byte[base64Length];
-        Unsafe.CopyBlock(ref result[0], ref iv[0], (uint)iv.Length);
-        Unsafe.CopyBlock(ref result[iv.Length], ref decryptedContent[0], (uint)msEncrypt.Length);
+        using (var swEncrypt = new StreamWriter(csEncrypt, leaveOpen: true))
+        {
+            swEncrypt.Write(Text);
+        }
 
-        Base64.EncodeToUtf8InPlace(result, dataLength, out base64Length);
+        var cipherBytes = msEncrypt.ToArray();
+        var result = new byte[iv.Length + cipherBytes.Length];
+        Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
+        Buffer.BlockCopy(cipherBytes, 0, result, iv.Length, cipherBytes.Length);
 
-        return Encoding.ASCII.GetString(result.AsSpan()[..base64Length]);
+        return Convert.ToBase64String(result);
     }
 
     /// <summary>
@@ -73,12 +72,14 @@ public class AESEncryption : IPlugin
         if (Key.IsNullOrEmpty()) Key = AppConfiguration.Configuration[AES_KEY];
         using var aesAlg = Aes.Create();
         if (Key.IsNullOrEmpty()) throw new Exception($"未配置AES密钥[{AES_KEY}]");
-        var iv = Iv.IsNullOrEmpty() ? aesAlg.IV : Encoding.UTF8.GetBytes(Iv);
-        var cipher = new byte[fullCipher.Length - iv.Length];
-        Unsafe.CopyBlock(ref iv[0], ref fullCipher[0], (uint)iv.Length);
-        Unsafe.CopyBlock(ref cipher[0], ref fullCipher[iv.Length], (uint)(fullCipher.Length - iv.Length));
-        var decryptKey = Encoding.UTF8.GetBytes(Key);
 
+        var iv = Iv.IsNullOrEmpty() ? aesAlg.IV : Encoding.UTF8.GetBytes(Iv);
+        if (fullCipher.Length <= iv.Length) throw new Exception("AES密文长度无效");
+
+        var cipher = new byte[fullCipher.Length - iv.Length];
+        Buffer.BlockCopy(fullCipher, 0, iv, 0, iv.Length);
+        Buffer.BlockCopy(fullCipher, iv.Length, cipher, 0, cipher.Length);
+        var decryptKey = Encoding.UTF8.GetBytes(Key);
 
         using var decryptor = aesAlg.CreateDecryptor(decryptKey, iv);
         using var msDecrypt = new MemoryStream(cipher);

@@ -82,22 +82,17 @@ namespace Air.Cloud.WebApp.Filters
                     LockKey = context.HttpContext.Request.Path;
                 }
                 //执行分布式锁
-                var  r=await AppRealization.Lock.TryExecuteWithLockAsync(LockKey, new LockAsyncAction()
+                await AppRealization.Lock.TryExecuteWithLockAsync(LockKey, new LockAsyncAction()
                 {
                     Success = async () =>
                     {
                         await next.Invoke();
                     },
-                    Fail = () =>{
+                    Fail = (ex) =>{
                         throw Oops.Oh(DistributedLockAttr.FailMessage);
                     },
                     Waiting = () =>{}
                 },new TimeSpan(0,0,0, 0,DistributedLockAttr.WaitLockMilliseconds), DistributedLockAttr.StepWaitMilliseconds,DistributedLockAttr.LockMilliseconds);
-
-                if (!r)
-                {
-                    throw Oops.Oh(DistributedLockAttr.FailMessage);
-                }
             }
             else
             {

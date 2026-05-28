@@ -9,7 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.App.Loader;
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Plugins.Reflection;
 

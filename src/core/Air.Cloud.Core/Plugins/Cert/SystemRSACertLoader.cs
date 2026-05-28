@@ -9,8 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Plugins.Security.RSA;
-
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Air.Cloud.Core.Plugins.Cert
@@ -41,13 +40,12 @@ namespace Air.Cloud.Core.Plugins.Cert
         public Tuple<string, string> LoadRsaCert()
         {
             //读取配置文件里面的证书文件路径
-            var Path = AppConfiguration.Configuration["AppSecurity:RSACertInfo:RSACertPath"];
+            var path = AppConfiguration.Configuration["AppSecurity:RSACertInfo:RSACertPath"];
 
             //读取配置文件里面的证书文件密码
-            var Password = AppConfiguration.Configuration["AppSecurity:RSACertInfo:RSACertPassword"];
+            var password = AppConfiguration.Configuration["AppSecurity:RSACertInfo:RSACertPassword"];
 
-            //return new (GetPublicKey(Path), GetPrivateKey(Path, Password));
-            return new(Path, Password);
+            return new Tuple<string, string>(GetPublicKey(path, password), GetPrivateKey(path, password));
         }
 
         /// <summary>
@@ -59,17 +57,45 @@ namespace Air.Cloud.Core.Plugins.Cert
         {
             try
             {
-                var pc = new X509Certificate2(pubKeyFile, password);
-                if (pc == null) throw new Exception("试图加载错误的公钥或公钥不存在");
-                string PrivateKeys = pc.PrivateKey?.ToXmlString(false);
-                if (PrivateKeys == null) throw new Exception("试图加载错误的公钥或公钥不存在");
-                string PublicKey = RsaTools.XmlPublicKeyToPem(PrivateKeys);
-                return PublicKey;
+                using var certificate = LoadCertificate(pubKeyFile, password);
+                using var rsa = certificate.GetRSAPublicKey() ?? throw new Exception("试图加载错误的公钥或公钥不存在");
+                return NormalizePem(rsa.ExportSubjectPublicKeyInfoPem());
             }
             catch (Exception ex)
             {
                 throw new Exception("试图加载错误的公钥或公钥不存在", ex);
             }
+        }
+
+        private static string GetPrivateKey(string privateKeyFile, string password)
+        {
+            try
+            {
+                using var certificate = LoadCertificate(privateKeyFile, password);
+                using var rsa = certificate.GetRSAPrivateKey() ?? throw new Exception("试图加载错误的私钥或私钥不存在");
+                return NormalizePem(rsa.ExportRSAPrivateKeyPem());
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("试图加载错误的私钥或私钥不存在", ex);
+            }
+        }
+
+        private static X509Certificate2 LoadCertificate(string certificateFile, string password)
+        {
+            if (string.IsNullOrWhiteSpace(certificateFile))
+            {
+                throw new ArgumentException("证书文件路径不能为空", nameof(certificateFile));
+            }
+
+            return string.IsNullOrWhiteSpace(password)
+                ? new X509Certificate2(certificateFile)
+                : new X509Certificate2(certificateFile, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
+        }
+
+        private static string NormalizePem(string pem)
+        {
+            return pem.Replace("\r\n", "\n").Replace("\n", "\r\n\t\t");
         }
     }
 }

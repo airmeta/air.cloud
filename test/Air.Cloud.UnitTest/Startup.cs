@@ -1,4 +1,4 @@
-using Air.Cloud.Core.App;
+﻿using Air.Cloud.Core.App;
 using Air.Cloud.HostApp.Dependency;
 using Air.Cloud.Plugins.Jwt.Options;
 using Air.Cloud.Plugins.Jwt;

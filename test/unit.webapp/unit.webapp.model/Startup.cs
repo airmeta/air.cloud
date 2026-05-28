@@ -55,10 +55,6 @@ namespace unit.webapp.model
                         new SqlCommandAuditInterceptor()
                        });
             }, "Air.Database.Migrations");
-
-
-            //使用EF的分析工具
-            HibernatingRhinos.Profiler.Appender.EntityFramework.EntityFrameworkProfiler.Initialize();
         }
     }
 }

@@ -13,8 +13,6 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Attributes;
 
-using crypto;
-
 namespace Air.Cloud.Modules.Consul.Model
 {
     /// <summary>

@@ -1,4 +1,4 @@
-using Air.Cloud.Core;
+﻿using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.Core.Standard.Taxin.Model;
@@ -7,15 +7,19 @@ using Air.Cloud.Modules.Taxin.Store;
 namespace Air.Cloud.UnitTest.Modules.Taxin
 {
     /// <summary>
-    /// <para>zh-cn:Taxin 存储相关测试集合。</para>
+    /// <para>zh-cn:Taxin 持久化行为测试集合。</para>
     /// <para>en-us:Test suite for Taxin persistence behaviors.</para>
     /// </summary>
     public class TaxinService : IDynamicService
     {
         /// <summary>
-        /// <para>zh-cn:验证写入的 Taxin 路由数据在读回后仍保留相同的服务键集合与路由数量。</para>
-        /// <para>en-us:Verifies that persisted Taxin route data keeps the same service keys and route counts after being read back.</para>
+        /// <para>zh-cn:测试 Taxin 路由持久化回读场景，确认写入后服务键集合与路由数量不变。</para>
+        /// <para>en-us:Tests Taxin route persistence round-trip to ensure service keys and route counts remain unchanged after reload.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：构造两组路由包写入存储，回读后逐项对比键集合和每组路由总数。</para>
+        /// <para>en-us:Process: build two route-package groups, persist them, reload, then compare key set and route totals per group.</para>
+        /// </remarks>
         [Fact]
         public async Task SetPersistenceAsync_should_preserve_service_keys_and_route_counts()
         {
@@ -37,11 +41,11 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         }
 
         /// <summary>
-        /// <para>zh-cn:创建用于 Taxin 存储测试的路由包数据。</para>
+        /// <para>zh-cn:构造 Taxin 持久化测试所需的路由包数据。</para>
         /// <para>en-us:Creates route package data used by the Taxin persistence tests.</para>
         /// </summary>
         /// <returns>
-        /// <para>zh-cn:返回按服务名称分组的路由数据包集合。</para>
+        /// <para>zh-cn:返回按服务名分组的路由包集合。</para>
         /// <para>en-us:Returns a collection of route packages grouped by service name.</para>
         /// </returns>
         private static IDictionary<string, IEnumerable<TaxinRouteDataPackage>> CreatePackages()
@@ -66,15 +70,15 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         }
 
         /// <summary>
-        /// <para>zh-cn:基于给定路由列表构建单个服务实例的路由数据包。</para>
+        /// <para>zh-cn:根据给定路由列表构建单实例路由数据包。</para>
         /// <para>en-us:Builds a route data package for a single service instance from the provided routes.</para>
         /// </summary>
         /// <param name="routes">
-        /// <para>zh-cn:需要写入数据包的路由信息集合。</para>
+        /// <para>zh-cn:要写入数据包的路由信息集合。</para>
         /// <para>en-us:The collection of route information to include in the package.</para>
         /// </param>
         /// <returns>
-        /// <para>zh-cn:返回包含实例元数据和路由列表的数据包集合。</para>
+        /// <para>zh-cn:返回包含实例元数据与路由列表的数据包集合。</para>
         /// <para>en-us:Returns a package collection that contains instance metadata and route entries.</para>
         /// </returns>
         private static List<TaxinRouteDataPackage> CreateRoutePackages(IEnumerable<TaxinRouteInformation> routes)

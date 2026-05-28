@@ -1,4 +1,4 @@
-namespace Air.Cloud.UnitTest.Compatibility.Dto
+﻿namespace Air.Cloud.UnitTest.Compatibility.Dto
 {
     /// <summary>
     /// <para>zh-cn:兼容旧测试服务签名的测试 DTO。</para>

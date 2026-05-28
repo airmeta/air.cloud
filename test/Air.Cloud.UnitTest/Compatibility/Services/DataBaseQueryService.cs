@@ -1,4 +1,4 @@
-using Air.Cloud.Core.Standard.KVCenter;
+﻿using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Consul.Model;
 using Air.Cloud.UnitTest.Compatibility.Domains;

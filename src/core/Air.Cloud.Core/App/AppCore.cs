@@ -72,7 +72,7 @@ namespace Air.Cloud.Core.App
             CrucialTypes = Assemblies.SelectMany(AppAssemblyLoader.GetTypes);
             // 未托管的对象
             UnmanagedObjects = new ConcurrentBag<IDisposable>();
-            AppStartups = new ConcurrentBag<AppStartup>();
+            AppStartups = new List<AppStartup>();
         }
         #region  Types
         /// <summary>
@@ -193,7 +193,7 @@ namespace Air.Cloud.Core.App
         /// <summary>
         /// 应用所有启动类
         /// </summary>
-        public static ConcurrentBag<AppStartup> AppStartups;
+        public static IList<AppStartup> AppStartups;
 
         /// <summary>
         /// <para>zh-cn:应用程序部件管理器</para>

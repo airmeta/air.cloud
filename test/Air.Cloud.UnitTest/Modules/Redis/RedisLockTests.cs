@@ -1,19 +1,23 @@
-using Air.Cloud.Core;
+﻿using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.DistributedLock;
 using System.Collections.Concurrent;
 
 namespace Air.Cloud.UnitTest.Modules.Redis
 {
     /// <summary>
-    /// <para>zh-cn:Redis 分布式锁相关测试集合。</para>
+    /// <para>zh-cn:Redis 分布式锁行为测试集合。</para>
     /// <para>en-us:Test suite for Redis distributed lock behaviors.</para>
     /// </summary>
     public class RedisLockTests
     {
         /// <summary>
-        /// <para>zh-cn:验证同步分布式锁在并发场景下可以让多个任务依次成功执行。</para>
-        /// <para>en-us:Verifies that the synchronous distributed lock allows concurrent workers to execute successfully one after another.</para>
+        /// <para>zh-cn:测试同步分布式锁串行化场景，确认并发竞争下任一时刻只有一个任务进入成功分支。</para>
+        /// <para>en-us:Tests synchronous distributed-lock serialization to ensure only one worker succeeds at a time under contention.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：启动 3 个并发任务竞争同一 key，统计 success/wait/fail 事件并断言最终成功次数与失败次数。</para>
+        /// <para>en-us:Process: run 3 concurrent workers on the same key, collect success/wait/fail events, and assert final success/failure counts.</para>
+        /// </remarks>
         [Fact]
         public async Task TryExecuteWithLock_should_allow_single_successful_owner_at_a_time()
         {
@@ -42,9 +46,13 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:验证异步分布式锁在并发场景下可以让多个任务依次成功执行。</para>
-        /// <para>en-us:Verifies that the asynchronous distributed lock allows concurrent workers to execute successfully one after another.</para>
+        /// <para>zh-cn:测试异步分布式锁串行化场景，确认并发异步任务也遵循单持有者语义。</para>
+        /// <para>en-us:Tests asynchronous distributed-lock serialization to ensure single-owner semantics with concurrent async workers.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：并发执行 3 个异步锁任务，校验 success/wait/fail 统计与成功事件数量符合预期。</para>
+        /// <para>en-us:Process: execute 3 async lock workers concurrently and verify success/wait/fail counters plus success event count.</para>
+        /// </remarks>
         [Fact]
         public async Task TryExecuteWithLockAsync_should_allow_single_successful_owner_at_a_time()
         {
@@ -71,7 +79,7 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:创建同步锁执行动作并记录执行结果。</para>
+        /// <para>zh-cn:创建同步锁动作并记录执行结果。</para>
         /// <para>en-us:Creates a synchronous lock action and records its execution outcome.</para>
         /// </summary>
         /// <param name="workerId">
@@ -122,7 +130,7 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         }
 
         /// <summary>
-        /// <para>zh-cn:创建异步锁执行动作并记录执行结果。</para>
+        /// <para>zh-cn:创建异步锁动作并记录执行结果。</para>
         /// <para>en-us:Creates an asynchronous lock action and records its execution outcome.</para>
         /// </summary>
         /// <param name="workerId">

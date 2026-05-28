@@ -25,11 +25,11 @@ namespace unit.webapp.service.services.DataBaseModuleTest
     [Route("api/db")]
     public class DataBaseQueryService : IDataBaseQueryService
     {
-        private readonly ITestDomain Domain;
+        private readonly ITestDomain? Domain;
         private readonly IServerCenterStandard serverCenterStandard;
         private readonly IKVCenterStandard kVCenterStandard;
 
-        public DataBaseQueryService(ITestDomain domain, IServerCenterStandard serverCenterStandard, IKVCenterStandard kVCenterStandard)
+        public DataBaseQueryService(IServerCenterStandard serverCenterStandard, IKVCenterStandard kVCenterStandard, ITestDomain? domain = null)
         {
             Domain = domain;
             this.serverCenterStandard = serverCenterStandard;
@@ -39,7 +39,7 @@ namespace unit.webapp.service.services.DataBaseModuleTest
         [HttpGet("query"),AllowAnonymous]
         public object Query()
         {
-            return Domain.Search("a09cdb089b7f48498090d1f7f11c0e7b");
+            return Domain?.Search("a09cdb089b7f48498090d1f7f11c0e7b") ?? Enumerable.Empty<object>();
         }
         [HttpGet("server"), AllowAnonymous]
         public async Task<object> Sq()
@@ -57,6 +57,10 @@ namespace unit.webapp.service.services.DataBaseModuleTest
         [HttpGet("batch"), AllowAnonymous]
         public async Task<bool> Batch()
         {
+            if (Domain == null)
+            {
+                return false;
+            }
             return await Domain.BatchInsertAsync();
         }
 

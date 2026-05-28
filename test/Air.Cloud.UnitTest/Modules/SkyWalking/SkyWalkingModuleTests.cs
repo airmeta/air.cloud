@@ -1,9 +1,10 @@
-using Air.Cloud.Core;
+﻿using Air.Cloud.Core;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.Taxin.Client;
 using Air.Cloud.Core.Standard.TraceLog;
 using System.Reflection;
-using unit.webapp.model.Dto;
+using Air.Cloud.UnitTest.Compatibility.Dto;
+using Air.Cloud.UnitTest.Compatibility.Services;
 
 namespace Air.Cloud.UnitTest.Modules.SkyWalking
 {
@@ -14,9 +15,13 @@ namespace Air.Cloud.UnitTest.Modules.SkyWalking
     public class SkyWalkingModuleTests
     {
         /// <summary>
-        /// <para>zh-cn:验证 Test 方法会写入序列化后的 DTO 日志、调用 Taxin 并返回 DTO 与远程结果。</para>
-        /// <para>en-us:Verifies that Test writes the serialized DTO log, invokes Taxin, and returns both the DTO and remote data.</para>
+        /// <para>zh-cn:测试链路日志与 Taxin 联动场景，确认序列化日志写入成功且返回结果同时包含 dto 与远端数据。</para>
+        /// <para>en-us:Tests trace-log and Taxin integration to ensure serialized logging succeeds and result includes both dto and remote payload.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：构造 dto 与两类桩依赖执行 Test，断言日志内容、返回对象字段和 SendAsync 调用次数均符合预期。</para>
+        /// <para>en-us:Process: run Test with dto and stubs, then assert log content, returned fields, and SendAsync invocation count.</para>
+        /// </remarks>
         [Fact]
         public async Task Test_should_write_trace_log_invoke_taxin_and_return_payload()
         {
@@ -37,7 +42,7 @@ namespace Air.Cloud.UnitTest.Modules.SkyWalking
                     return Task.FromResult<object>(expectedPayload);
                 }
             };
-            var service = new unit.webapp.service.services.SkywalkingModuleTest.SkyWalkingModuleService(traceLog, taxinClient);
+            var service = new SkyWalkingModuleService(traceLog, taxinClient);
 
             var result = await service.Test(dto);
             var returnedDto = ReadProperty<TestSDto>(result, "dto");
@@ -77,7 +82,7 @@ namespace Air.Cloud.UnitTest.Modules.SkyWalking
         }
 
         /// <summary>
-        /// <para>zh-cn:TraceLog 最小桩实现。</para>
+        /// <para>zh-cn:TraceLog 依赖的最小桩实现。</para>
         /// <para>en-us:Minimal stub implementation for the trace log dependency.</para>
         /// </summary>
         private sealed class StubTraceLogStandard : ITraceLogStandard
@@ -102,7 +107,7 @@ namespace Air.Cloud.UnitTest.Modules.SkyWalking
         }
 
         /// <summary>
-        /// <para>zh-cn:Taxin 客户端最小桩实现。</para>
+        /// <para>zh-cn:Taxin 客户端依赖的最小桩实现。</para>
         /// <para>en-us:Minimal stub implementation for the Taxin client dependency.</para>
         /// </summary>
         private sealed class StubTaxinClientStandard : ITaxinClientStandard

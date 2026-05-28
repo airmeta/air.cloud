@@ -9,11 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using System.Security.Cryptography;
-using System.Text;
-
-using XC.RSAUtil;
-
 namespace Air.Cloud.Core.Plugins.Security.RSA
 {
     /// <summary>
@@ -32,16 +27,21 @@ namespace Air.Cloud.Core.Plugins.Security.RSA
         public static string Decrypt(string data, string pubkey, string prikey)
         {
             if (string.IsNullOrEmpty(data)) return string.Empty;
-            var rsaPkcs1Util = new RsaPkcs1Util(Encoding.UTF8, pubkey, prikey, 2048);
-            int ciphertextLength = 256;
-            byte[] data1 = Convert.FromBase64String(data);
-            var newData = new List<byte>(data1);
-            while (newData.Count < ciphertextLength)
+
+            using var rsa = System.Security.Cryptography.RSA.Create();
+            ImportKey(rsa, pubkey, prikey);
+
+            var cipherBytes = Convert.FromBase64String(data);
+            var keySizeBytes = rsa.KeySize / 8;
+            if (cipherBytes.Length < keySizeBytes)
             {
-                newData.Insert(0, 0x00);
+                var paddedCipherBytes = new byte[keySizeBytes];
+                Buffer.BlockCopy(cipherBytes, 0, paddedCipherBytes, keySizeBytes - cipherBytes.Length, cipherBytes.Length);
+                cipherBytes = paddedCipherBytes;
             }
-            var content = rsaPkcs1Util.Decrypt(Convert.ToBase64String(newData.ToArray()), RSAEncryptionPadding.Pkcs1);
-            return content;
+
+            var plainBytes = rsa.Decrypt(cipherBytes, System.Security.Cryptography.RSAEncryptionPadding.Pkcs1);
+            return System.Text.Encoding.UTF8.GetString(plainBytes);
         }
 
         /// <summary>
@@ -54,9 +54,30 @@ namespace Air.Cloud.Core.Plugins.Security.RSA
         public static string Encrypt(string data, string pubkey, string prikey=null)
         {
             if (string.IsNullOrEmpty(data)) return string.Empty;
-            RsaPkcs1Util rsaPkcs1Util = new RsaPkcs1Util(Encoding.UTF8, pubkey, prikey);
-            var encrypt = rsaPkcs1Util.Encrypt(data, RSAEncryptionPadding.Pkcs1);
-            return encrypt;
+
+            using var rsa = System.Security.Cryptography.RSA.Create();
+            ImportKey(rsa, pubkey, prikey);
+
+            var plainBytes = System.Text.Encoding.UTF8.GetBytes(data);
+            var encryptBytes = rsa.Encrypt(plainBytes, System.Security.Cryptography.RSAEncryptionPadding.Pkcs1);
+            return Convert.ToBase64String(encryptBytes);
+        }
+
+        private static void ImportKey(System.Security.Cryptography.RSA rsa, string pubkey, string prikey)
+        {
+            if (!string.IsNullOrWhiteSpace(prikey))
+            {
+                rsa.ImportFromPem(prikey);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(pubkey))
+            {
+                rsa.ImportFromPem(pubkey);
+                return;
+            }
+
+            throw new ArgumentException("RSA公钥或私钥不能为空");
         }
 
     }

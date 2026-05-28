@@ -1,5 +1,7 @@
-using Air.Cloud.Core.Standard.Taxin.Attributes;
+﻿using Air.Cloud.Core.Standard.Taxin.Attributes;
 using System.Reflection;
+
+using Air.Cloud.UnitTest.Compatibility.Services;
 
 namespace Air.Cloud.UnitTest.Modules.Taxin
 {
@@ -10,9 +12,13 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
     public class TaxinServiceBindingTests
     {
         /// <summary>
-        /// <para>zh-cn:验证 ClientB 方法声明了预期的 TaxinService 特性与服务名称。</para>
-        /// <para>en-us:Verifies that ClientB declares the expected TaxinService attribute and service name.</para>
+        /// <para>zh-cn:测试 TaxinService 特性绑定场景，确认 ClientB 声明了正确的服务名。</para>
+        /// <para>en-us:Tests TaxinService attribute binding to ensure ClientB declares the expected service name.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：通过反射获取 ClientB 方法与特性，断言特性存在且 ServiceName 等于 taxin.service.test。</para>
+        /// <para>en-us:Process: reflect ClientB method and attribute, then assert attribute exists and ServiceName equals taxin.service.test.</para>
+        /// </remarks>
         [Fact]
         public void ClientB_should_declare_expected_taxin_service_attribute()
         {
@@ -24,9 +30,13 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 ClientB 方法的 TaxinService 特性默认版本调用信息与全局配置一致。</para>
-        /// <para>en-us:Verifies that the default version call information on ClientB matches the global Taxin configuration.</para>
+        /// <para>zh-cn:测试默认版本调用策略，确认未显式配置时使用全局 VersionSerialize 设定。</para>
+        /// <para>en-us:Tests default version-call strategy to ensure global VersionSerialize is used when not explicitly set.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：反射读取 ClientB 的 TaxinService 特性，断言 VersionCalls 与 AppCore.Settings.VersionSerialize 一致。</para>
+        /// <para>en-us:Process: read TaxinService attribute on ClientB via reflection and assert VersionCalls matches AppCore.Settings.VersionSerialize.</para>
+        /// </remarks>
         [Fact]
         public void ClientB_should_use_default_version_calls_when_not_specified()
         {
@@ -38,9 +48,13 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         }
 
         /// <summary>
-        /// <para>zh-cn:验证 ClientB 方法接收的参数类型与原始 Taxin 响应模型一致。</para>
-        /// <para>en-us:Verifies that the ClientB method parameter type matches the original Taxin response model.</para>
+        /// <para>zh-cn:测试方法签名契约，确认 ClientB 仅接收一个 TaxinResponseModel 参数。</para>
+        /// <para>en-us:Tests method signature contract to ensure ClientB accepts exactly one TaxinResponseModel parameter.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:测试过程：反射获取 ClientB 参数列表，断言参数数量为 1 且类型为 TaxinResponseModel。</para>
+        /// <para>en-us:Process: reflect ClientB parameter list and assert exactly one parameter of TaxinResponseModel type.</para>
+        /// </remarks>
         [Fact]
         public void ClientB_should_accept_taxin_response_model_parameter()
         {
@@ -48,7 +62,7 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
             var parameters = method.GetParameters();
 
             Assert.Single(parameters);
-            Assert.Equal(typeof(unit.webapp.service.services.TaxinModuleTest.TaxinResponseModel), parameters[0].ParameterType);
+            Assert.Equal(typeof(TaxinResponseModel), parameters[0].ParameterType);
         }
 
         /// <summary>
@@ -61,7 +75,7 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
         /// </returns>
         private static MethodInfo GetClientBMethod()
         {
-            var method = typeof(unit.webapp.service.services.TaxinModuleTest.TaxinConnectService)
+            var method = typeof(TaxinConnectService)
                 .GetMethod("ClientB", BindingFlags.Public | BindingFlags.Instance);
 
             Assert.NotNull(method);

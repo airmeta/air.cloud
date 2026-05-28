@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DM.Microsoft.EntityFrameworkCore" Version="6.0.0.33671" />
-    <PackageReference Include="EntityFrameworkProfiler.Appender" Version="6.0.6031" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />

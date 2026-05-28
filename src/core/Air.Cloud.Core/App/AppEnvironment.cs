@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Enums;
 
 using Org.BouncyCastle.Asn1;
 
@@ -189,7 +190,7 @@ namespace Air.Cloud.Core.App
         /// </returns>
         public static string GetEnvironmentVariable(string Key)
         {
-            return Environment.GetEnvironmentVariable(Key);
+            return  System.Environment.GetEnvironmentVariable(Key);
         }
         /// <summary>
         /// <para>zh-cn:获取由指定枚举标识的系统特殊文件夹的路径。</para>
@@ -208,7 +209,7 @@ namespace Air.Cloud.Core.App
         ///  <para>zh-cn:如果操作系统未创建该文件夹、删除现有文件夹或文件夹是虚拟目录（如“我的计算机”），则文件夹将不存在于物理路径。</para>
         ///  <para>en-us:If the operating system has not created the folder, the existing folder is deleted, or the folder is a virtual directory (such as "My Computer"), the folder does not exist in a physical path.</para>
         /// </remarks>
-        public static string GetFolderPath(SpecialFolder specialFolder)
+        public static string GetFolderPath(Environment.SpecialFolder specialFolder)
         {
             return Environment.GetFolderPath(specialFolder);
         }
