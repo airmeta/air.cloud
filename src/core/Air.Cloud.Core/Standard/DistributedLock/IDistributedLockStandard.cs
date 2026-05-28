@@ -47,7 +47,7 @@ namespace Air.Cloud.Core.Standard.DistributedLock
         /// <para>zh-cn:如果成功加锁并执行方法则返回true，否则返回false</para>
         /// <para>en-us:Returns true if the lock is successfully acquired and the method is executed, otherwise returns false</para>
         /// </returns>
-        bool TryExecuteWithLock(string key, Action action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200, int LockMilliseconds = 30000);
+        void TryExecuteWithLock(string key, Action action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200, int LockMilliseconds = 30000);
 
         /// <summary>
         ///  <para>zh-cn:尝试加锁并执行方法</para>
@@ -77,7 +77,7 @@ namespace Air.Cloud.Core.Standard.DistributedLock
         /// <para>zh-cn:如果成功加锁并执行方法则返回true，否则返回false</para>
         /// <para>en-us:Returns true if the lock is successfully acquired and the method is executed, otherwise returns false</para>
         /// </returns>
-        bool TryExecuteWithLock(string key, LockAction action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200, int LockMilliseconds = 30000);
+        void TryExecuteWithLock(string key, LockAction action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200, int LockMilliseconds = 30000);
 
         /// <summary>
         ///  <para>zh-cn:尝试加锁并执行方法</para>
@@ -107,7 +107,7 @@ namespace Air.Cloud.Core.Standard.DistributedLock
         /// <para>zh-cn:如果成功加锁并执行方法则返回true，否则返回false</para>
         /// <para>en-us:Returns true if the lock is successfully acquired and the method is executed, otherwise returns false</para>
         /// </returns>
-        Task<bool> TryExecuteWithLockAsync(string key, Func<Task> action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200, int LockMilliseconds = 30000);
+        Task TryExecuteWithLockAsync(string key, Func<Task> action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200, int LockMilliseconds = 30000);
 
         /// <summary>
         ///  <para>zh-cn:尝试加锁并执行方法</para>
@@ -137,7 +137,7 @@ namespace Air.Cloud.Core.Standard.DistributedLock
         /// <para>zh-cn:如果成功加锁并执行方法则返回true，否则返回false</para>
         /// <para>en-us:Returns true if the lock is successfully acquired and the method is executed, otherwise returns false</para>
         /// </returns>
-        Task<bool> TryExecuteWithLockAsync(string key, LockAsyncAction action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200,int LockMilliseconds = 30000);
+        Task TryExecuteWithLockAsync(string key, LockAsyncAction action, TimeSpan WaitMilliseconds, int StepWaitMilliseconds = 200,int LockMilliseconds = 30000);
 
     }
 
@@ -158,7 +158,7 @@ namespace Air.Cloud.Core.Standard.DistributedLock
         /// <para>zh-cn:获取锁失败时执行的操作</para>
         /// <para>en-us:Action to execute when the lock acquisition fails</para>
         /// </summary>
-        public Action Fail { get; set; }
+        public Action<Exception> Fail { get; set; }
 
         /// <summary>
         /// <para>zh-cn:等待获取锁时执行的操作</para>
@@ -184,7 +184,7 @@ namespace Air.Cloud.Core.Standard.DistributedLock
         /// <para>zh-cn:获取锁失败时执行的操作</para>
         /// <para>en-us:Action to execute when the lock acquisition fails</para>
         /// </summary>
-        public Action Fail { get; set; }
+        public Action<Exception> Fail { get; set; }
 
         /// <summary>
         /// <para>zh-cn:等待获取锁时执行的操作</para>

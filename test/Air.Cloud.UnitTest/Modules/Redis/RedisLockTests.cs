@@ -62,9 +62,8 @@ namespace Air.Cloud.UnitTest.Modules.Redis
                     CreateLockAsyncAction(index, events, () => Interlocked.Increment(ref successCounter), () => Interlocked.Increment(ref waitCounter), () => Interlocked.Increment(ref failCounter))))
                 .ToArray();
 
-            var results = await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks);
 
-            Assert.All(results, Assert.True);
             Assert.Equal(3, successCounter);
             Assert.True(waitCounter >= 0);
             Assert.Equal(0, failCounter);
@@ -114,7 +113,7 @@ namespace Air.Cloud.UnitTest.Modules.Redis
                     events.Enqueue($"worker-{workerId}:waiting");
                     onWaiting();
                 },
-                Fail = () =>
+                Fail = (ex) =>
                 {
                     events.Enqueue($"worker-{workerId}:fail");
                     onFail();
@@ -166,7 +165,7 @@ namespace Air.Cloud.UnitTest.Modules.Redis
                     events.Enqueue($"worker-{workerId}:waiting");
                     onWaiting();
                 },
-                Fail = () =>
+                Fail = (ex) =>
                 {
                     events.Enqueue($"worker-{workerId}:fail");
                     onFail();
@@ -194,9 +193,9 @@ namespace Air.Cloud.UnitTest.Modules.Redis
         /// <para>zh-cn:返回表示锁执行是否成功的异步任务。</para>
         /// <para>en-us:Returns an asynchronous task that indicates whether lock execution succeeded.</para>
         /// </returns>
-        private static Task<bool> ExecuteLockAsync(string key, TimeSpan lockTime, LockAsyncAction action)
+        private static async Task ExecuteLockAsync(string key, TimeSpan lockTime, LockAsyncAction action)
         {
-            return AppRealization.Lock.TryExecuteWithLockAsync(key, action, lockTime, 100);
+            await AppRealization.Lock.TryExecuteWithLockAsync(key, action, lockTime, 100);
         }
     }
 }
