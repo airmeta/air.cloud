@@ -36,7 +36,7 @@ namespace Air.Cloud.Core.Plugins.Banner
                 Console.WriteLine(lines[i]);
             }
             Console.WriteLine("::::::::: 框架名称: Air.Cloud                                              :::::::::");
-            Console.WriteLine("::::::::: 目标平台: .NET6.0                                                :::::::::");
+            Console.WriteLine("::::::::: 目标平台: .NET10.0                                                :::::::::");
             Console.WriteLine("::::::::: 开源协议: MPL 2.0                                                :::::::::");
             Console.WriteLine("::::::::: 文档地址: http://airmeta.org.cn/                                 :::::::::");
             Console.WriteLine("::::::::: Github仓库: https://github.com/airmeta/air.cloud                 :::::::::");
