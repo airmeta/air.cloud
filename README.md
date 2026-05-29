@@ -1,2 +1,24 @@
+````markdown
+# Air.Cloud
 
-让你能够快速搭建微服务架构,像搭积木一样简单 [在线文档](http://airmeta.org.cn)
+> A capability-protocol-based modular microservice framework.
+
+- 🇨🇳 中文文档：[/README.zh-CN.md](./README.zh-cn.md)
+- 🇺🇸 English Docs：[/README.en-US.md](./README.en-us.md)
+
+---
+
+## Core Philosophy
+
+```text
+Core defines rules.
+Capabilities evolve freely.
+````
+
+```text
+核心定义规则。
+能力自由演化。
+```
+
+```
+```
