@@ -3,8 +3,8 @@
 
 > A capability-protocol-based modular microservice framework.
 
-- 🇨🇳 中文文档：[/README.zh-CN.md](./README.zh-CN.md)
-- 🇺🇸 English Docs：[/README.en-US.md](./README.en-US.md)
+- 🇨🇳 中文文档：[/README.zh-CN.md](./README.zh-cn.md)
+- 🇺🇸 English Docs：[/README.en-US.md](./README.en-us.md)
 
 ---
 
