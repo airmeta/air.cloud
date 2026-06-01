@@ -1,4 +1,4 @@
-````markdown
+
 # Air.Cloud
 
 > **Air.Cloud 是一个基于“能力协议（Capability Protocol）”设计的模块化微服务框架：核心只定义标准、生命周期与能力边界，具体实现完全解耦，并允许生态自由演化。**
