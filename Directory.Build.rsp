@@ -1,8 +1,0 @@
--m:1
--nr:false
--p:BuildInParallel=false
--p:RestoreDisableParallel=true
--p:NodeReuse=false
--p:UseSharedCompilation=false
--p:GeneratePackageOnBuild=false
--p:PackOnBuild=false
