@@ -63,6 +63,18 @@ namespace Air.Cloud.Modules.SkyWalking.Dependency
             }
         }
 
+        /// <summary>
+        /// <para>zh-cn:将应用打印信息序列化后写入 SkyWalking 当前追踪 Span。</para>
+        /// <para>en-us:Serializes application print information and writes it to the current SkyWalking tracing span.</para>
+        /// </summary>
+        /// <param name="logContent">
+        /// <para>zh-cn:需要写入追踪日志的应用打印信息。</para>
+        /// <para>en-us:The application print information to write to the trace log.</para>
+        /// </param>
+        /// <param name="Tag">
+        /// <para>zh-cn:需要追加到追踪 Span 的标签集合。</para>
+        /// <para>en-us>The tag collection to append to the tracing span.</para>
+        /// </param>
         public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
         {
             Write(AppRealization.JSON.Serialize(logContent),Tag);

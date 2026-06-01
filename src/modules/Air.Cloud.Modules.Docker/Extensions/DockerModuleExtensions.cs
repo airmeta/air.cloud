@@ -17,16 +17,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.Modules.Docker.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:提供 Docker 容器模块服务注册相关的扩展方法。</para>
+    /// <para>en-us:Provides extension methods for registering Docker container module services.</para>
+    /// </summary>
     public static  class DockerModuleExtensions
     {
         /// <summary>
-        /// 添加Docker容器支持
+        /// <para>zh-cn:添加 Docker 容器管理支持。</para>
+        /// <para>en-us:Adds Docker container management support.</para>
         /// </summary>
         /// <remarks>
-        /// 暂时只支持 读取,停机,启动的操作 注意:使用该模组的应用程序必须在Docker容器的宿主机中运行,无法在容器中运行
+        /// <para>zh-cn:当前仅支持读取、停机和启动操作；使用该模块的应用程序必须运行在 Docker 宿主机中。</para>
+        /// <para>en-us:Currently supports only query, stop, and start operations; applications using this module must run on the Docker host.</para>
         /// </remarks>
-        /// <param name="services"></param>
-        /// <returns></returns>
+        /// <param name="services">
+        /// <para>zh-cn:应用服务集合。</para>
+        /// <para>en-us:The application service collection.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:完成 Docker 容器管理服务注册后的服务集合。</para>
+        /// <para>en-us:The service collection after registering Docker container management services.</para>
+        /// </returns>
         public static IServiceCollection AddDockerEngineService(this IServiceCollection services)
         {
             services.AddSingleton<IContainerStandard, DockerContainerDependency>();

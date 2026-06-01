@@ -23,15 +23,30 @@ using System;
 
 namespace Air.Cloud.Modules.Quartz.Internal
 {
+    /// <summary>
+    /// <para>zh-cn:Quartz 内部作业执行器，用于从调度池恢复调度标准并执行任务。</para>
+    /// <para>en-us:Quartz internal job executor that restores the scheduler standard from the scheduler pool and runs the job.</para>
+    /// </summary>
+    /// <typeparam name="TSchedulerOption">
+    /// <para>zh-cn:调度任务使用的配置类型。</para>
+    /// <para>en-us:The configuration type used by the scheduled job.</para>
+    /// </typeparam>
     [DisallowConcurrentExecution]
     [PersistJobDataAfterExecution]
     public class InternalJob<TSchedulerOption> : IJob where TSchedulerOption : class,ISchedulerStandardOptions,new()
     {
         /// <summary>
-        /// <para>zh-cn:执行任务</para>
+        /// <para>zh-cn:执行 Quartz 触发的调度任务，并在异常时写入追踪日志。</para>
+        /// <para>en-us:Executes the scheduled job triggered by Quartz and writes trace logs when exceptions occur.</para>
         /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
+        /// <param name="context">
+        /// <para>zh-cn:Quartz 作业执行上下文，包含任务标识和触发器数据。</para>
+        /// <para>en-us:The Quartz job execution context containing the task identifier and trigger data.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示作业执行流程的异步任务。</para>
+        /// <para>en-us:A task that represents the job execution workflow.</para>
+        /// </returns>
         public async Task Execute(IJobExecutionContext context)
         {
             string JobId = context.MergedJobDataMap.Get("TasksId")?.ToString();

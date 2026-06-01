@@ -18,9 +18,26 @@ using System.Net;
 
 namespace Air.Cloud.Modules.Consul.Service
 {
+    /// <summary>
+    /// <para>zh-cn:Consul 操作辅助类，负责创建 Consul 客户端并校验服务注册信息。</para>
+    /// <para>en-us:Consul operation helper that creates the Consul client and validates service registration information.</para>
+    /// </summary>
     public class ConsulOperatorHelper
     {
+        /// <summary>
+        /// <para>zh-cn:当前 Consul 客户端实例，用于访问 Consul 服务发现和健康检查接口。</para>
+        /// <para>en-us:Current Consul client instance used to access service discovery and health check APIs.</para>
+        /// </summary>
         public static ConsulClient ConsulClient = null;
+
+        /// <summary>
+        /// <para>zh-cn:使用 Consul 集群地址初始化操作辅助类，并创建 Consul 客户端。</para>
+        /// <para>en-us:Initializes the helper with a Consul cluster address and creates the Consul client.</para>
+        /// </summary>
+        /// <param name="ConsulClusterAddress">
+        /// <para>zh-cn:Consul 集群中任意可访问节点的地址。</para>
+        /// <para>en-us:The address of any reachable node in the Consul cluster.</para>
+        /// </param>
         public ConsulOperatorHelper(string ConsulClusterAddress)
         {
             ConsulClient = new ConsulClient(configuration =>
@@ -29,10 +46,32 @@ namespace Air.Cloud.Modules.Consul.Service
                 configuration.Address = new Uri(ConsulClusterAddress);
             });
         }
+
+        /// <summary>
+        /// <para>zh-cn:获取当前 Consul 客户端实例。</para>
+        /// <para>en-us:Gets the current Consul client instance.</para>
+        /// </summary>
+        /// <returns>
+        /// <para>zh-cn:用于访问 Consul 集群的客户端。</para>
+        /// <para>en-us:The client used to access the Consul cluster.</para>
+        /// </returns>
         public ConsulClient GetConsulClient()
         {
             return ConsulClient;
         }
+
+        /// <summary>
+        /// <para>zh-cn:初始化服务注册前的 Consul 检查，验证服务地址和服务标识是否与集群中已有实例冲突。</para>
+        /// <para>en-us:Initializes Consul checks before service registration and validates whether the service address or identifier conflicts with existing cluster instances.</para>
+        /// </summary>
+        /// <param name="serviceOptions">
+        /// <para>zh-cn:待注册服务的 Consul 配置。</para>
+        /// <para>en-us:The Consul options for the service to register.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:检查结果以及可能被修正后的服务配置。</para>
+        /// <para>en-us:The validation result and the service options that may have been adjusted.</para>
+        /// </returns>
         public Tuple<bool, ConsulServiceOptions> InitConsulRegistration(ConsulServiceOptions serviceOptions)
         {
             #region  检查Consul服务集群

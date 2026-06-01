@@ -24,7 +24,16 @@ namespace Air.Cloud.Modules.IIS.Model
     /// </summary>
     public class IISContainerInstance : IContainerInstance
     {
+        /// <summary>
+        /// <para>zh-cn:IIS 站点绑定的对外端口。</para>
+        /// <para>en-us:The public port bound by the IIS site.</para>
+        /// </summary>
         public ushort? Port { get ; set; }
+
+        /// <summary>
+        /// <para>zh-cn:IIS 站点所在主机的 IP 地址。</para>
+        /// <para>en-us:The IP address of the host where the IIS site is running.</para>
+        /// </summary>
         public string IPAddress { get; set; } = AppConfiguration.IPAddress.ToString();
         /// <summary>
         /// <para>zh-cn:简短的站点信息</para>

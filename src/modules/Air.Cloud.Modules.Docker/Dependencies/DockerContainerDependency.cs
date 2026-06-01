@@ -25,8 +25,24 @@ using System.Collections.Concurrent;
 
 namespace Air.Cloud.Modules.Docker.Dependencies
 {
+    /// <summary>
+    /// <para>zh-cn:基于 Docker Engine 的容器标准实现，负责查询、启动和停止 Docker 容器实例。</para>
+    /// <para>en-us:Container standard implementation based on Docker Engine that queries, starts, and stops Docker container instances.</para>
+    /// </summary>
     public class DockerContainerDependency : IContainerStandard
     {
+        /// <summary>
+        /// <para>zh-cn:查询当前 Docker Engine 中的容器实例，并转换为指定的容器实例类型。</para>
+        /// <para>en-us:Queries container instances from the current Docker Engine and converts them to the specified container instance type.</para>
+        /// </summary>
+        /// <typeparam name="TDockerContainerInstance">
+        /// <para>zh-cn:要返回的 Docker 容器实例类型。</para>
+        /// <para>en-us:The Docker container instance type to return.</para>
+        /// </typeparam>
+        /// <returns>
+        /// <para>zh-cn:包含 Docker 容器实例的并发集合。</para>
+        /// <para>en-us:A concurrent collection that contains Docker container instances.</para>
+        /// </returns>
         public async Task<ConcurrentBag<TDockerContainerInstance>> QueryAsync<TDockerContainerInstance>() where TDockerContainerInstance : IContainerInstance, new()
         {
             try

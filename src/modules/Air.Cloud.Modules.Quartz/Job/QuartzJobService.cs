@@ -19,22 +19,47 @@ using Quartz.Spi;
 namespace Air.Cloud.Modules.Quartz.Job
 {
     /// <summary>
-    /// 任务调度服务
+    /// <para>zh-cn:任务调度服务，负责挂载、启动、暂停和移除 Quartz 调度任务。</para>
+    /// <para>en-us:Scheduled job service responsible for mounting, starting, pausing, and removing Quartz scheduled jobs.</para>
     /// </summary>
+    /// <typeparam name="TSchedulerOption">
+    /// <para>zh-cn:调度任务使用的配置类型。</para>
+    /// <para>en-us:The configuration type used by the scheduled jobs.</para>
+    /// </typeparam>
     public class QuartzJobService<TSchedulerOption> where TSchedulerOption:class,ISchedulerStandardOptions,new()
     {
         private readonly ISchedulerFactory _schedulerFactory;
         private readonly IJobFactory _resultfulApiJobFactory;
+
+        /// <summary>
+        /// <para>zh-cn:使用调度器工厂和作业工厂初始化任务调度服务。</para>
+        /// <para>en-us:Initializes the scheduled job service with the scheduler factory and job factory.</para>
+        /// </summary>
+        /// <param name="schedulerFactory">
+        /// <para>zh-cn:用于创建或获取 Quartz 调度器的工厂。</para>
+        /// <para>en-us:The factory used to create or retrieve Quartz schedulers.</para>
+        /// </param>
+        /// <param name="resultfulApiJobFactory">
+        /// <para>zh-cn:用于通过依赖注入创建 Quartz 作业实例的工厂。</para>
+        /// <para>en-us:The factory used to create Quartz job instances through dependency injection.</para>
+        /// </param>
         public QuartzJobService(ISchedulerFactory schedulerFactory, IJobFactory resultfulApiJobFactory)
         {
             _schedulerFactory = schedulerFactory;
             _resultfulApiJobFactory = resultfulApiJobFactory;
         }
         /// <summary>
-        /// 开始运行一个调度器
+        /// <para>zh-cn:开始运行并挂载一个调度任务。</para>
+        /// <para>en-us:Starts and mounts a scheduled job.</para>
         /// </summary>
-        /// <param name="tasks"></param>
-        /// <returns></returns>
+        /// <param name="tasks">
+        /// <para>zh-cn:需要挂载到 Quartz 的调度标准实例。</para>
+        /// <para>en-us:The scheduler standard instance to mount into Quartz.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示挂载是否成功的布尔结果。</para>
+        /// <para>en-us>A Boolean result indicating whether mounting succeeded.</para>
+        /// </returns>
         public async Task<bool> RunAsync(ISchedulerStandard<TSchedulerOption> tasks)
         {
             //1、通过调度工厂获得调度器
@@ -63,10 +88,17 @@ namespace Air.Cloud.Modules.Quartz.Job
             return await Task.FromResult(true);
         }
         /// <summary>
-        /// 关闭调度器
+        /// <para>zh-cn:关闭并移除一个已挂载的调度任务。</para>
+        /// <para>en-us:Closes and removes a mounted scheduled job.</para>
         /// </summary>
-        /// <param name="tasks"></param>
-        /// <returns></returns>
+        /// <param name="tasks">
+        /// <para>zh-cn:需要从 Quartz 中暂停、取消触发并删除的调度标准实例。</para>
+        /// <para>en-us:The scheduler standard instance to pause, unschedule, and delete from Quartz.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示关闭是否成功的布尔结果。</para>
+        /// <para>en-us:A Boolean result indicating whether closing succeeded.</para>
+        /// </returns>
         public async Task<bool> CloseAsync(ISchedulerStandard<TSchedulerOption> tasks)
         {
             IScheduler scheduler = await _schedulerFactory.GetScheduler();
