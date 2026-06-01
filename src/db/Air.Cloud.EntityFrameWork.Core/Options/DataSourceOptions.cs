@@ -37,7 +37,7 @@ namespace Air.Cloud.EntityFrameWork.Core.Options
         /// <para>zh-cn:数据库连接字符串集合</para>
         /// <para>en-us:Database Connection String Collection</para>
         /// </summary>
-        public IDictionary<string,string> ConnectionStrings { get;set; }
+        public IDictionary<string,string> ConnectionStrings { get;set; } = new Dictionary<string, string>();
 
 
         /// <summary>

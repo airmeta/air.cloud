@@ -201,7 +201,10 @@ namespace Air.Cloud.Core.App
         /// </summary>
         public static ApplicationPartManager ApplicationPart;
 
- 
+        /// <summary>
+        /// <para>zh-cn:外部动态应用入口，提供运行时可加载的模块和插件程序集信息。</para>
+        /// <para>en-us:External dynamic application entry that exposes runtime-loadable module and plugin assemblies.</para>
+        /// </summary>
         public static class AppExternal
         {
             /// <summary>

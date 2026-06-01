@@ -115,9 +115,9 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
             {
                 BucketName = Request.BucketName,
                 ObjectKey = Request.ObjectKey,
-                ETag = response.ETag,
-                VersionId = response.VersionId,
-                RequestId = response.ResponseMetadata?.RequestId,
+                ETag = response.ETag ?? string.Empty,
+                VersionId = response.VersionId ?? string.Empty,
+                RequestId = response.ResponseMetadata?.RequestId ?? string.Empty,
                 ObjectUrl = $"s3://{Request.BucketName}/{Request.ObjectKey}"
             };
         }
@@ -161,7 +161,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:删除文件</para>
         /// <para>en-us:Delete object</para>
         /// </summary>
-        public async Task<bool> DeleteObjectAsync(string BucketName, string ObjectKey, string Key = null, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteObjectAsync(string BucketName, string ObjectKey, string? Key = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             var response = await client.DeleteObjectAsync(BucketName, ObjectKey, cancellationToken);
@@ -172,7 +172,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:查询文件是否存在</para>
         /// <para>en-us:Check whether object exists</para>
         /// </summary>
-        public async Task<bool> ObjectExistsAsync(string BucketName, string ObjectKey, string Key = null, CancellationToken cancellationToken = default)
+        public async Task<bool> ObjectExistsAsync(string BucketName, string ObjectKey, string? Key = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
 
@@ -197,7 +197,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取文件元数据</para>
         /// <para>en-us:Get object metadata</para>
         /// </summary>
-        public async Task<AmazonS3ObjectInfo> GetObjectInfoAsync(string BucketName, string ObjectKey, string Key = null, CancellationToken cancellationToken = default)
+        public async Task<AmazonS3ObjectInfo> GetObjectInfoAsync(string BucketName, string ObjectKey, string? Key = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             var request = new GetObjectMetadataRequest
@@ -213,9 +213,9 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
                 BucketName = BucketName,
                 ObjectKey = ObjectKey,
                 Size = response.ContentLength,
-                ETag = response.ETag,
-                VersionId = response.VersionId,
-                ContentType = response.Headers.ContentType,
+                ETag = response.ETag ?? string.Empty,
+                VersionId = response.VersionId ?? string.Empty,
+                ContentType = response.Headers.ContentType ?? string.Empty,
                 LastModified = response.LastModified,
                 Metadata = response.Metadata.Keys.ToDictionary(k => k, k => response.Metadata[k])
             };
@@ -225,7 +225,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取 Bucket 下文件列表</para>
         /// <para>en-us:List objects under bucket</para>
         /// </summary>
-        public async Task<IReadOnlyCollection<AmazonS3ObjectInfo>> ListObjectsAsync(string BucketName, string Prefix = null, string Key = null, int? MaxKeys = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyCollection<AmazonS3ObjectInfo>> ListObjectsAsync(string BucketName, string? Prefix = null, string? Key = null, int? MaxKeys = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             var request = new ListObjectsV2Request
@@ -246,7 +246,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
                     BucketName = BucketName,
                     ObjectKey = x.Key,
                     Size = x.Size ?? 0,
-                    ETag = x.ETag,
+                    ETag = x.ETag ?? string.Empty,
                     LastModified = x.LastModified
                 }));
 

@@ -28,7 +28,7 @@ public static partial class Scoped
     /// </summary>
     /// <param name="handler"></param>
     /// <param name="scopeFactory"></param>
-    public static void CreateUow(Action<IServiceScopeFactory, IServiceScope> handler, IServiceScopeFactory scopeFactory = default)
+    public static void CreateUow(Action<IServiceScopeFactory, IServiceScope> handler, IServiceScopeFactory? scopeFactory = default)
     {
         CreateUow(async (fac, scope) =>
         {
@@ -42,21 +42,21 @@ public static partial class Scoped
     /// </summary>
     /// <param name="handler"></param>
     /// <param name="scopeFactory"></param>
-    public static async Task CreateUow(Func<IServiceScopeFactory, IServiceScope, Task> handler, IServiceScopeFactory scopeFactory = default)
+    public static async Task CreateUow(Func<IServiceScopeFactory, IServiceScope, Task> handler, IServiceScopeFactory? scopeFactory = default)
     {
         // 禁止空调用
         if (handler == null) throw new ArgumentNullException(nameof(handler));
 
         // 创建作用域
-        var (scoped, serviceProvider) = CreateScope(ref scopeFactory);
+        var (scoped, serviceProvider, resolvedScopeFactory) = CreateScope(scopeFactory);
 
         try
         {
             // 创建一个数据库上下文池
-            var dbContextPool = scoped.ServiceProvider.GetService<IDbContextPool>();
+            var dbContextPool = scoped.ServiceProvider.GetRequiredService<IDbContextPool>();
 
             // 执行方法
-            await handler(scopeFactory, scoped);
+            await handler(resolvedScopeFactory, scoped);
 
             // 提交工作单元
             dbContextPool.SavePoolNow();
@@ -73,9 +73,9 @@ public static partial class Scoped
     /// </summary>
     /// <param name="scopeFactory"></param>
     /// <returns></returns>
-    private static (IServiceScope Scoped, ServiceProvider ServiceProvider) CreateScope(ref IServiceScopeFactory scopeFactory)
+    private static (IServiceScope Scoped, ServiceProvider? ServiceProvider, IServiceScopeFactory ScopeFactory) CreateScope(IServiceScopeFactory? scopeFactory)
     {
-        ServiceProvider undisposeServiceProvider = default;
+        ServiceProvider? undisposeServiceProvider = default;
         if (scopeFactory == null)
         {
             // 默认返回根服务
@@ -87,8 +87,12 @@ public static partial class Scoped
                 scopeFactory = undisposeServiceProvider.GetService<IServiceScopeFactory>();
             }
         }
+        if (scopeFactory == null)
+        {
+            throw new InvalidOperationException($"{nameof(IServiceScopeFactory)} was not registered.");
+        }
         // 解析服务作用域工厂
         var scoped = scopeFactory.CreateScope();
-        return (scoped, undisposeServiceProvider);
+        return (scoped, undisposeServiceProvider, scopeFactory);
     }
 }

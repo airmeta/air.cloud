@@ -48,6 +48,10 @@ namespace Air.Cloud.Core.Modules.AppAssembly.Builder
             }
         }
 
+        /// <summary>
+        /// <para>zh-cn:动态应用配置文件路径。</para>
+        /// <para>en-us:Dynamic application configuration file path.</para>
+        /// </summary>
         public string ConfigFilePath
         {
             get

@@ -57,7 +57,7 @@ public class DbContextPool : IDbContextPool
     /// <summary>
     /// 数据库上下文事务
     /// </summary>
-    public IDbContextTransaction DbContextTransaction { get; private set; }
+    public IDbContextTransaction? DbContextTransaction { get; private set; }
 
     /// <summary>
     /// 获取所有数据库上下文
@@ -87,14 +87,13 @@ public class DbContextPool : IDbContextPool
             if (!_failedDbContexts.TryAdd(instanceId, dbContext)) return;
 
             // 当前事务
-            dynamic context = s as DbContext;
-            if(context==null) return;
-            var database = context.Database as DatabaseFacade;
-            var currentTransaction = database?.CurrentTransaction;
+            if (s is not DbContext context) return;
+            dynamic dynamicContext = context;
+            var database = context.Database;
+            var currentTransaction = database.CurrentTransaction;
 
             // 只有事务不等于空且支持自动回滚
-            if (!(currentTransaction != null && context.FailedAutoRollback == true)) return;
-            if (database == null) return;
+            if (!(currentTransaction != null && dynamicContext.FailedAutoRollback == true)) return;
             // 获取数据库连接信息
             var connection = database.GetDbConnection();
             // 回滚事务
@@ -201,12 +200,13 @@ public class DbContextPool : IDbContextPool
             if (DbContextTransaction != null) goto ShareTransaction;
             // 先判断是否已经有上下文开启了事务
             var transactionDbContext = _dbContexts.FirstOrDefault(u => u.Value.Database.CurrentTransaction != null);
-            DbContextTransaction = transactionDbContext.Value != null
-                   ? transactionDbContext.Value.Database.CurrentTransaction
+            DbContextTransaction = transactionDbContext.Value?.Database.CurrentTransaction
                    // 如果没有任何上下文有事务，则将第一个开启事务
-                   : _dbContexts.First().Value.Database.BeginTransaction();
+                   ?? _dbContexts.First().Value.Database.BeginTransaction();
             // 共享事务
-            ShareTransaction: ShareTransaction(DbContextTransaction.GetDbTransaction());
+            ShareTransaction:
+            if (DbContextTransaction == null) return;
+            ShareTransaction(DbContextTransaction.GetDbTransaction());
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
@@ -343,7 +343,11 @@ public class DbContextPool : IDbContextPool
     {
         // 跳过第一个数据库上下文并设置共享事务
         _ = _dbContexts
-               .Where(u => u.Value != null && ((dynamic)u.Value).UseUnitOfWork == true && u.Value.Database.CurrentTransaction == null)
+               .Where(u =>
+               {
+                   dynamic dbContext = u.Value;
+                   return dbContext.UseUnitOfWork == true && u.Value.Database.CurrentTransaction == null;
+               })
                .Select(u => u.Value.Database.UseTransaction(transaction))
                .Count();
     }

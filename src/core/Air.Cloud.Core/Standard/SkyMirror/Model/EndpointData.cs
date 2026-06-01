@@ -9,6 +9,8 @@
 * and the "NO WARRANTY" clause of the MPL is hereby expressly
 * acknowledged.
 */
+#nullable enable annotations
+
 namespace Air.Cloud.Core.Standard.SkyMirror.Model
 {
     /// <summary>
@@ -57,6 +59,10 @@ namespace Air.Cloud.Core.Standard.SkyMirror.Model
         public string Description { get; set; }
     }
 
+    /// <summary>
+    /// <para>zh-cn:端点授权数据。</para>
+    /// <para>en-us:Endpoint authorization data.</para>
+    /// </summary>
     public struct EndPointAuthorizeData
     {
         /// <summary>

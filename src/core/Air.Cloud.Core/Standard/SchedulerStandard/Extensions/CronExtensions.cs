@@ -12,6 +12,10 @@
 
 namespace Air.Cloud.Core.Standard.SchedulerStandard.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:Cron 表达式扩展方法。</para>
+    /// <para>en-us:Extension methods for Cron expressions.</para>
+    /// </summary>
     public static class CronExtensions
     {
         /// <summary>

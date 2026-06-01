@@ -49,6 +49,10 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// </summary>
         public string SourceAssembly { get; set; }
 
+        /// <summary>
+        /// <para>zh-cn:初始化默认输出打印信息。</para>
+        /// <para>en-us:Initializes a default output message object.</para>
+        /// </summary>
         public AppPrintInformation() { }
 
         /// <summary>
@@ -88,7 +92,8 @@ namespace Air.Cloud.Core.Modules.AppPrint
                 AppPrintLevel.Error => "error",
                 AppPrintLevel.Debug => "debug",
                 AppPrintLevel.Trace => "trace",
-                AppPrintLevel.Critical => "critical"
+                AppPrintLevel.Critical => "critical",
+                _ => "info"
             };
 
 

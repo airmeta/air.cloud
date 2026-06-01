@@ -11,6 +11,10 @@
  */
 namespace Air.Cloud.Core.Enums
 {
+    /// <summary>
+    /// <para>zh-cn:应用状态占位类型，预留给后续统一状态定义。</para>
+    /// <para>en-us:Application state placeholder type reserved for future unified state definitions.</para>
+    /// </summary>
     public  class AppStateEnum
     {
 

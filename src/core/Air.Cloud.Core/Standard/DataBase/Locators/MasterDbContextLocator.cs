@@ -12,7 +12,8 @@
 namespace Air.Cloud.Core.Standard.DataBase.Locators;
 
 /// <summary>
-/// 默认数据库上下文定位器
+/// <para>zh-cn:表示默认主数据库上下文定位器。</para>
+/// <para>en-us:Represents the default master database context locator.</para>
 /// </summary>
 [IgnoreScanning]
 public sealed class MasterDbContextLocator : IDbContextLocator

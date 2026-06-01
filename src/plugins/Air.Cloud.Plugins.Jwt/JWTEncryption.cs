@@ -261,7 +261,10 @@ namespace Air.Cloud.Plugins.Jwt
             var tokenHandler = new JsonWebTokenHandler();
             try
             {
-                var tokenValidationResult = tokenHandler.ValidateToken(accessToken, tokenValidationParameters);
+                var tokenValidationResult = tokenHandler
+                    .ValidateTokenAsync(accessToken, tokenValidationParameters)
+                    .GetAwaiter()
+                    .GetResult();
                 if (!tokenValidationResult.IsValid) return (false, null, tokenValidationResult);
 
                 var jsonWebToken = tokenValidationResult.SecurityToken as JsonWebToken;

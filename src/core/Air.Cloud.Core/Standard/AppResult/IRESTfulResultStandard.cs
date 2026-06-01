@@ -12,48 +12,62 @@
 namespace Air.Cloud.Core.Standard.AppResult
 {
     /// <summary>
-    /// REST风格结果集
+    /// <para>zh-cn:定义带数据负载的 REST 风格统一结果标准。</para>
+    /// <para>en-us:Defines the REST-style unified result contract with a data payload.</para>
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">
+    /// <para>zh-cn:结果数据类型。</para>
+    /// <para>en-us:The result data type.</para>
+    /// </typeparam>
     public interface IRESTfulResultStandard<T> : IStandard
     {
         /// <summary>
-        /// 状态码
+        /// <para>zh-cn:获取或设置业务状态码。</para>
+        /// <para>en-us:Gets or sets the business status code.</para>
         /// </summary>
         public int? Code { get; set; }
 
         /// <summary>
-        /// 数据
+        /// <para>zh-cn:获取或设置结果数据。</para>
+        /// <para>en-us:Gets or sets the result data.</para>
         /// </summary>
         public T Data { get; set; }
 
         /// <summary>
-        /// 执行成功
+        /// <para>zh-cn:获取或设置请求是否执行成功。</para>
+        /// <para>en-us:Gets or sets whether the request executed successfully.</para>
         /// </summary>
         public bool Succeeded { get; set; }
 
         /// <summary>
-        /// 错误信息
+        /// <para>zh-cn:获取或设置错误信息。</para>
+        /// <para>en-us:Gets or sets error information.</para>
         /// </summary>
         public object Errors { get; set; }
 
         /// <summary>
-        /// 附加数据
+        /// <para>zh-cn:获取或设置附加数据。</para>
+        /// <para>en-us:Gets or sets additional data.</para>
         /// </summary>
         public object Extras { get; set; }
 
         /// <summary>
-        /// 时间戳
+        /// <para>zh-cn:获取或设置结果生成时间戳。</para>
+        /// <para>en-us:Gets or sets the result generation timestamp.</para>
         /// </summary>
         public long Timestamp { get; set; }
 
         /// <summary>
-        /// 提示内容
+        /// <para>zh-cn:获取或设置提示消息。</para>
+        /// <para>en-us:Gets or sets the prompt message.</para>
         /// </summary>
         public string Message { get; set; }
 
     }
-
+    /// <summary>
+    /// <para>zh-cn:定义不带数据负载的 REST 风格统一结果标准。</para>
+    /// <para>en-us:Defines the REST-style unified result contract without a data payload.</para>
+    /// </summary>
     public interface IRESTfulResultStandard : IStandard
     {
         /// <summary>

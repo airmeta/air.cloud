@@ -284,13 +284,13 @@ public partial class PrivateRepository<TEntity>
         // 判断是非参数只有一个，且是一个匿名类型
         if (propertyPredicates?.Length == 1 && propertyPredicates[0].Body is NewExpression newExpression)
         {
-            var propertyNames = newExpression.Members.Select(u => u.Name);
+            var propertyNames = newExpression.Members?.Select(u => u.Name) ?? Enumerable.Empty<string>();
             return UpdateInclude(entity, propertyNames, ignoreNullValues);
         }
         else
         {
             var entityEntry = ChangeEntityState(entity, EntityState.Detached);
-            foreach (var propertyPredicate in propertyPredicates)
+            foreach (var propertyPredicate in propertyPredicates ?? throw new ArgumentNullException(nameof(propertyPredicates)))
             {
                 EntityPropertyEntry(entity, propertyPredicate).IsModified = true;
             }
@@ -647,13 +647,13 @@ public partial class PrivateRepository<TEntity>
         // 判断是非参数只有一个，且是一个匿名类型
         if (propertyPredicates?.Length == 1 && propertyPredicates[0].Body is NewExpression newExpression)
         {
-            var propertyNames = newExpression.Members.Select(u => u.Name);
+            var propertyNames = newExpression.Members?.Select(u => u.Name) ?? Enumerable.Empty<string>();
             return UpdateExclude(entity, propertyNames, ignoreNullValues);
         }
         else
         {
             var entityEntry = ChangeEntityState(entity, EntityState.Modified);
-            foreach (var propertyPredicate in propertyPredicates)
+            foreach (var propertyPredicate in propertyPredicates ?? throw new ArgumentNullException(nameof(propertyPredicates)))
             {
                 EntityPropertyEntry(entity, propertyPredicate).IsModified = false;
             }

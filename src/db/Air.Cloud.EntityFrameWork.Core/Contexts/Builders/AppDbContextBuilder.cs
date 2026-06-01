@@ -52,13 +52,12 @@ internal static class AppDbContextBuilder
     static AppDbContextBuilder()
     {
         // 扫描程序集，获取数据库实体相关类型
-        if (EntityCorrelationTypes.Any())
-        {
-            DbContextLocatorCorrelationTypes = new ConcurrentDictionary<Type, DbContextCorrelationType>();
+        DbContextLocatorCorrelationTypes = new ConcurrentDictionary<Type, DbContextCorrelationType>();
 
             // 获取模型构建器 Entity<T> 方法
-            ModelBuildEntityMethod = typeof(ModelBuilder).GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(u => u.Name == nameof(ModelBuilder.Entity) && u.GetParameters().Length == 0);
-        }
+        ModelBuildEntityMethod = typeof(ModelBuilder).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(u => u.Name == nameof(ModelBuilder.Entity) && u.GetParameters().Length == 0)
+            ?? throw new InvalidOperationException("未找到 ModelBuilder.Entity<TEntity>() 方法。");
 
         // 查找所有数据库函数，必须是公开静态方法，且所在父类也必须是公开静态方法
         DbFunctionMethods = AppCore.EffectiveTypes
@@ -122,10 +121,11 @@ internal static class AppDbContextBuilder
     /// <param name="dbContextCorrelationType"></param>
     /// <param name="appDbContextAttribute">数据库上下文特性</param>
     /// <returns>EntityTypeBuilder</returns>
-    private static EntityTypeBuilder CreateEntityTypeBuilder(Type type, ModelBuilder modelBuilder, DbContext dbContext, Type dbContextType, Type dbContextLocator, DbContextCorrelationType dbContextCorrelationType, AppDbContextAttribute appDbContextAttribute = null)
+    private static EntityTypeBuilder CreateEntityTypeBuilder(Type type, ModelBuilder modelBuilder, DbContext dbContext, Type dbContextType, Type dbContextLocator, DbContextCorrelationType dbContextCorrelationType, AppDbContextAttribute? appDbContextAttribute = null)
     {
         // 反射创建实体类型构建器
-        var entityTypeBuilder = ModelBuildEntityMethod.MakeGenericMethod(type).Invoke(modelBuilder, null) as EntityTypeBuilder;
+        var entityTypeBuilder = ModelBuildEntityMethod.MakeGenericMethod(type).Invoke(modelBuilder, null) as EntityTypeBuilder
+            ?? throw new InvalidOperationException($"无法为实体 {type.FullName} 创建 EntityTypeBuilder。");
         // 配置实体表名
         ConfigureEntityTableName(type, appDbContextAttribute, entityTypeBuilder, dbContext, dbContextType);
         return entityTypeBuilder;
@@ -139,7 +139,7 @@ internal static class AppDbContextBuilder
     /// <param name="entityTypeBuilder">实体类型构建器</param>
     /// <param name="dbContext">数据库上下文</param>
     /// <param name="dbContextType">数据库上下文类型</param>
-    private static void ConfigureEntityTableName(Type type, AppDbContextAttribute appDbContextAttribute, EntityTypeBuilder entityTypeBuilder, DbContext dbContext, Type dbContextType)
+    private static void ConfigureEntityTableName(Type type, AppDbContextAttribute? appDbContextAttribute, EntityTypeBuilder entityTypeBuilder, DbContext dbContext, Type dbContextType)
     {
         // 获取表是否定义 [Table] 特性
         var tableAttribute = type.IsDefined(typeof(TableAttribute), true) ? type.GetCustomAttribute<TableAttribute>(true) : default;
@@ -166,7 +166,8 @@ internal static class AppDbContextBuilder
         // 配置视图、存储过程、函数无键实体
         entityBuilder.HasNoKey();
 
-        var configure = Activator.CreateInstance(entityType) as IPrivateEntityNotKey;
+        var configure = Activator.CreateInstance(entityType) as IPrivateEntityNotKey
+            ?? throw new InvalidOperationException($"无键实体 {entityType.FullName} 必须实现 {nameof(IPrivateEntityNotKey)}。");
         entityBuilder.ToView(configure.GetName(), configure.GetSchema());
     }
 
@@ -273,8 +274,8 @@ internal static class AppDbContextBuilder
             if (hasDataMethod == null) continue;
 
             var instance = Activator.CreateInstance(entitySeedDataType);
-            var seedData = ((IList)hasDataMethod?.Invoke(instance, new object[] { dbContext, dbContextLocator }))?.Cast<object>();
-            if (seedData == null) continue;
+            if (hasDataMethod.Invoke(instance, new object[] { dbContext, dbContextLocator }) is not IList seedDataList) continue;
+            var seedData = seedDataList.Cast<object>();
 
             data.AddRange(seedData);
         }
@@ -329,6 +330,7 @@ internal static class AppDbContextBuilder
     private static bool IsInThisDbContext(Type dbContextLocator, MethodInfo method)
     {
         var queryableFunctionAttribute = method.GetCustomAttribute<QueryableFunctionAttribute>(true);
+        if (queryableFunctionAttribute == null) return false;
 
         // 如果数据库上下文定位器为默认定位器且该函数没有定义数据库上下文定位器，则返回 true
         if (dbContextLocator == typeof(MasterDbContextLocator) && queryableFunctionAttribute.DbContextLocators.Length == 0) return true;
@@ -398,10 +400,15 @@ internal static class AppDbContextBuilder
                             // 判断是否已经注册了上下文并且是否等于当前上下文
                             if (Penetrates.DbContextDescriptors.Values.Contains(entityCorrelationType) && entityCorrelationType == dbContext.GetType())
                             {
-                                result.ModelBuilderFilterInstances.Add(dbContext as IPrivateModelBuilderFilter);
+                                if (dbContext is IPrivateModelBuilderFilter filter) result.ModelBuilderFilterInstances.Add(filter);
                             }
                         }
-                        else result.ModelBuilderFilterInstances.Add(Activator.CreateInstance(entityCorrelationType) as IPrivateModelBuilderFilter);
+                        else
+                        {
+                            var filter = Activator.CreateInstance(entityCorrelationType) as IPrivateModelBuilderFilter
+                                ?? throw new InvalidOperationException($"模型构建筛选器 {entityCorrelationType.FullName} 必须实现 {nameof(IPrivateModelBuilderFilter)}。");
+                            result.ModelBuilderFilterInstances.Add(filter);
+                        }
                     }
 
                     // 添加种子数据

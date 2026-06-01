@@ -7,6 +7,8 @@ using MongoDB.Driver;
 
 using System.Reflection;
 
+#nullable enable annotations
+
 namespace Air.Cloud.Modules.MongoDB.Implantations
 {
     /// <summary>

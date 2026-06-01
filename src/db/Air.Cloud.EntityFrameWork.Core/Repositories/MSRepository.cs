@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.Core.Standard.DataBase.Model;
+using Air.Cloud.EntityFrameWork.Core.Contexts.Attributes;
 using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 using Air.Cloud.EntityFrameWork.Core.Internal;
 using Air.Cloud.EntityFrameWork.Core.Repositories.Dependencies;
@@ -89,7 +90,8 @@ public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMast
         Penetrates.CheckDbContextLocator(typeof(TMasterDbContextLocator), out var dbContextType);
 
         // 获取主库贴的特性
-        var appDbContextAttribute = DbProvider.GetAppDbContextAttribute(dbContextType);
+        var appDbContextAttribute = DbProvider.GetAppDbContextAttribute(dbContextType)
+            ?? throw new InvalidOperationException($"DbContext {dbContextType.FullName} 未配置 {nameof(AppDbContextAttribute)}。");
 
         // 获取从库列表
         var slaveDbContextLocators = appDbContextAttribute.SlaveDbContextLocators;
@@ -126,6 +128,10 @@ public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMast
 
         // 解析从库定位器
         var repository = _serviceProvider.GetService(typeof(IRepository<,>).MakeGenericType(typeof(TEntity), dbContextLocatorType)) as IPrivateRepository<TEntity>;
+        if (repository == null)
+        {
+            throw new InvalidOperationException($"Repository for entity {typeof(TEntity).FullName} and locator {dbContextLocatorType.FullName} was not registered.");
+        }
 
         // 返回从库仓储
         return repository.Constraint<IPrivateReadableRepository<TEntity>>();

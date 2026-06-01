@@ -2,6 +2,10 @@
 
 namespace Air.Cloud.Core.Plugins.Router
 {
+    /// <summary>
+    /// <para>zh-cn:路由匹配插件标准，用于判断请求路径是否匹配指定路由模板。</para>
+    /// <para>en-us:Route matching plugin standard used to determine whether a request path matches a route template.</para>
+    /// </summary>
     public interface IRouterMatcherPlugin : IPlugin, ISingleton
     {
         /// <summary>

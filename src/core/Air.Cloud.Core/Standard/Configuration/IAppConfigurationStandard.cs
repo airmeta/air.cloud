@@ -18,6 +18,22 @@ namespace Air.Cloud.Core.Standard.Configuration
     /// </summary>
     public interface IAppConfigurationStandard : IStandard
     {
+        /// <summary>
+        /// <para>zh-cn:加载指定名称的配置文件。</para>
+        /// <para>en-us:Loads the configuration file with the specified name.</para>
+        /// </summary>
+        /// <param name="ConfigurationName">
+        /// <para>zh-cn:配置文件名称或配置标识。</para>
+        /// <para>en-us:Configuration file name or configuration identifier.</para>
+        /// </param>
+        /// <param name="IsCommonConfiguration">
+        /// <para>zh-cn:是否按公共配置加载。</para>
+        /// <para>en-us:Indicates whether the configuration is loaded as a common configuration.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:加载后的配置对象。</para>
+        /// <para>en-us:Loaded configuration object.</para>
+        /// </returns>
         public IConfiguration LoadConfiguration(string ConfigurationName, bool IsCommonConfiguration);
 
     }

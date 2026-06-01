@@ -11,6 +11,10 @@
  */
 namespace Air.Cloud.Core.Modules.CommandLine
 {
+    /// <summary>
+    /// <para>zh-cn:应用命令行模块占位类型，预留命令行入口扩展。</para>
+    /// <para>en-us:Application command-line module placeholder reserved for command entry extensions.</para>
+    /// </summary>
     public  class AppCommandLine
     {
 

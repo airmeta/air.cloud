@@ -28,8 +28,11 @@ public class DbContextSaveChangesInterceptor : SaveChangesInterceptor
     /// <returns></returns>
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        dynamic dbContext = eventData.Context;
-        dbContext.SavingChangesEventInner(eventData, result);
+        if (eventData.Context is not null)
+        {
+            dynamic dbContext = eventData.Context;
+            dbContext.SavingChangesEventInner(eventData, result);
+        }
 
         return base.SavingChanges(eventData, result);
     }
@@ -43,8 +46,11 @@ public class DbContextSaveChangesInterceptor : SaveChangesInterceptor
     /// <returns></returns>
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        dynamic dbContext = eventData.Context;
-        dbContext.SavingChangesEventInner(eventData, result);
+        if (eventData.Context is not null)
+        {
+            dynamic dbContext = eventData.Context;
+            dbContext.SavingChangesEventInner(eventData, result);
+        }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -57,8 +63,11 @@ public class DbContextSaveChangesInterceptor : SaveChangesInterceptor
     /// <returns></returns>
     public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
     {
-        dynamic dbContext = eventData.Context;
-        dbContext.SavedChangesEventInner(eventData, result);
+        if (eventData.Context is not null)
+        {
+            dynamic dbContext = eventData.Context;
+            dbContext.SavedChangesEventInner(eventData, result);
+        }
 
         return base.SavedChanges(eventData, result);
     }
@@ -72,8 +81,11 @@ public class DbContextSaveChangesInterceptor : SaveChangesInterceptor
     /// <returns></returns>
     public override ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
     {
-        dynamic dbContext = eventData.Context;
-        dbContext.SavedChangesEventInner(eventData, result);
+        if (eventData.Context is not null)
+        {
+            dynamic dbContext = eventData.Context;
+            dbContext.SavedChangesEventInner(eventData, result);
+        }
 
         return base.SavedChangesAsync(eventData, result, cancellationToken);
     }
@@ -84,8 +96,11 @@ public class DbContextSaveChangesInterceptor : SaveChangesInterceptor
     /// <param name="eventData"></param>
     public override void SaveChangesFailed(DbContextErrorEventData eventData)
     {
-        dynamic dbContext = eventData.Context;
-        dbContext.SaveChangesFailedEventInner(eventData);
+        if (eventData.Context is not null)
+        {
+            dynamic dbContext = eventData.Context;
+            dbContext.SaveChangesFailedEventInner(eventData);
+        }
 
         base.SaveChangesFailed(eventData);
     }
@@ -98,8 +113,11 @@ public class DbContextSaveChangesInterceptor : SaveChangesInterceptor
     /// <returns></returns>
     public override Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
     {
-        dynamic dbContext = eventData.Context;
-        dbContext.SaveChangesFailedEventInner(eventData);
+        if (eventData.Context is not null)
+        {
+            dynamic dbContext = eventData.Context;
+            dbContext.SaveChangesFailedEventInner(eventData);
+        }
 
         return base.SaveChangesFailedAsync(eventData, cancellationToken);
     }

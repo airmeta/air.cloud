@@ -12,10 +12,8 @@
 namespace Air.Cloud.Core.Plugins.Security.SM3
 {
     /// <summary>
-    ///  
-    /// ⊕ 等价于 ^
-    /// ^ 等价于 &
-    /// v 等价于 |
+    /// <para>SM3 摘要算法实现。</para>
+    /// <para>⊕ 等价于 ^，^ 等价于 &amp;，v 等价于 |。</para>
     /// </summary>
     internal class SM3Digest : GeneralDigest
     {

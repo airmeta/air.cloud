@@ -53,7 +53,7 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
     /// <param name="options"></param>
     public AppDbContext(DbContextOptions<TDbContext> options) : base(options)
     {
-        ChangeTrackerEntities ??= new Dictionary<EntityEntry, PropertyValues>();
+        ChangeTrackerEntities ??= new Dictionary<EntityEntry, PropertyValues?>();
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
     /// <summary>
     /// 正在更改并跟踪的数据
     /// </summary>
-    private Dictionary<EntityEntry, PropertyValues> ChangeTrackerEntities { get; set; }
+    private Dictionary<EntityEntry, PropertyValues?> ChangeTrackerEntities { get; set; } = new Dictionary<EntityEntry, PropertyValues?>();
 
     /// <summary>
     /// 内部数据库上下文提交更改之前执行事件
@@ -143,14 +143,14 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
         // 附加实体更改通知
         if (EnabledEntityChangedListener)
         {
-            var dbContext = eventData.Context;
+            if (eventData.Context is not DbContext dbContext) return;
 
             // 获取获取数据库操作上下文，跳过贴了 [NotChangedListener] 特性的实体
             ChangeTrackerEntities = dbContext.ChangeTracker.Entries()
                 .Where(u => !u.Entity.GetType().IsDefined(typeof(SuppressChangedListenerAttribute), true) && (u.State == EntityState.Added || u.State == EntityState.Modified || u.State == EntityState.Deleted))
                 .ToDictionary(u => u, u => u.State == EntityState.Added ? default : u.GetDatabaseValues());
 
-            AttachEntityChangedListener(eventData.Context, "OnChanging", ChangeTrackerEntities);
+            AttachEntityChangedListener(dbContext, "OnChanging", ChangeTrackerEntities);
         }
 
         SavingChangesEvent(eventData, result);
@@ -164,7 +164,7 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
     internal void SavedChangesEventInner(SaveChangesCompletedEventData eventData, int result)
     {
         // 附加实体更改通知
-        if (EnabledEntityChangedListener) AttachEntityChangedListener(eventData.Context, "OnChanged", ChangeTrackerEntities);
+        if (EnabledEntityChangedListener && eventData.Context is DbContext dbContext) AttachEntityChangedListener(dbContext, "OnChanged", ChangeTrackerEntities);
 
         SavedChangesEvent(eventData, result);
 
@@ -179,7 +179,7 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
     internal void SaveChangesFailedEventInner(DbContextErrorEventData eventData)
     {
         // 附加实体更改通知
-        if (EnabledEntityChangedListener) AttachEntityChangedListener(eventData.Context, "OnChangeFailed", ChangeTrackerEntities);
+        if (EnabledEntityChangedListener && eventData.Context is DbContext dbContext) AttachEntityChangedListener(dbContext, "OnChangeFailed", ChangeTrackerEntities);
 
         SaveChangesFailedEvent(eventData);
 
@@ -193,8 +193,10 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
     /// <param name="dbContext"></param>
     /// <param name="triggerMethodName"></param>
     /// <param name="changeTrackerEntities"></param>
-    private static void AttachEntityChangedListener(DbContext dbContext, string triggerMethodName, Dictionary<EntityEntry, PropertyValues> changeTrackerEntities = null)
+    private static void AttachEntityChangedListener(DbContext dbContext, string triggerMethodName, Dictionary<EntityEntry, PropertyValues?>? changeTrackerEntities = null)
     {
+        if (changeTrackerEntities == null || changeTrackerEntities.Count == 0) return;
+
         // 获取所有改变的类型
         var entityChangedTypes = AppDbContextBuilder.DbContextLocatorCorrelationTypes[typeof(TDbContextLocator)].EntityChangedTypes;
         if (!entityChangedTypes.Any()) return;
@@ -230,7 +232,7 @@ public abstract class AppDbContext<TDbContext, TDbContextLocator> : DbContext
                     // 获取实体旧值
                     var oldEntity = trackerEntities.Value?.ToObject();
 
-                    OnChangeMethod.Invoke(instance, new object[] { entity, oldEntity, dbContext, typeof(TDbContextLocator), entryEntity.State });
+                    OnChangeMethod.Invoke(instance, new object?[] { entity, oldEntity, dbContext, typeof(TDbContextLocator), entryEntity.State });
                 }
                 else
                 {

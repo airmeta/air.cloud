@@ -54,7 +54,7 @@ public partial class EFCoreRepository : IRepository
     public virtual IRepository<TEntity> Change<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
-        return _serviceProvider.GetService<IRepository<TEntity>>();
+        return _serviceProvider.GetRequiredService<IRepository<TEntity>>();
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public partial class EFCoreRepository : IRepository
         where TEntity : class, IPrivateEntity, new()
         where TDbContextLocator : class, IDbContextLocator
     {
-        return _serviceProvider.GetService<IRepository<TEntity, TDbContextLocator>>();
+        return _serviceProvider.GetRequiredService<IRepository<TEntity, TDbContextLocator>>();
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public partial class EFCoreRepository : IRepository
         where TEntity : class, IPrivateEntity, new()
     {
         var scoped = _serviceProvider.CreateScope();
-        var repository = scoped.ServiceProvider.GetService<IRepository<TEntity>>();
+        var repository = scoped.ServiceProvider.GetRequiredService<IRepository<TEntity>>();
 
         // 添加未托管对象
         AppCore.UnmanagedObjects.Add(scoped);
@@ -100,7 +100,7 @@ public partial class EFCoreRepository : IRepository
         where TDbContextLocator : class, IDbContextLocator
     {
         var scoped = _serviceProvider.CreateScope();
-        var repository = scoped.ServiceProvider.GetService<IRepository<TEntity, TDbContextLocator>>();
+        var repository = scoped.ServiceProvider.GetRequiredService<IRepository<TEntity, TDbContextLocator>>();
 
         // 添加未托管对象
         AppCore.UnmanagedObjects.Add(scoped);
@@ -114,7 +114,7 @@ public partial class EFCoreRepository : IRepository
     /// <returns>ISqlRepository</returns>
     public virtual ISqlRepository Sql()
     {
-        return _serviceProvider.GetService<ISqlRepository>();
+        return _serviceProvider.GetRequiredService<ISqlRepository>();
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public partial class EFCoreRepository : IRepository
     public virtual ISqlRepository<TDbContextLocator> Sql<TDbContextLocator>()
          where TDbContextLocator : class, IDbContextLocator
     {
-        return _serviceProvider.GetService<ISqlRepository<TDbContextLocator>>();
+        return _serviceProvider.GetRequiredService<ISqlRepository<TDbContextLocator>>();
     }
 
     /// <summary>
@@ -133,8 +133,9 @@ public partial class EFCoreRepository : IRepository
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
     public virtual TService GetService<TService>()
+        where TService : notnull
     {
-        return _serviceProvider.GetService<TService>();
+        return _serviceProvider.GetRequiredService<TService>();
     }
 
     /// <summary>
@@ -143,6 +144,7 @@ public partial class EFCoreRepository : IRepository
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
     public virtual TService GetRequiredService<TService>()
+        where TService : notnull
     {
         return _serviceProvider.GetRequiredService<TService>();
     }
@@ -212,10 +214,10 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
         ServiceProvider = serviceProvider;
 
         // 设置提供器名称
-        ProviderName = Database.ProviderName;
+        ProviderName = Database.ProviderName ?? string.Empty;
 
         // 只有关系型数据库才有连接信息
-        if (Database.IsRelational()) DbConnection = Database.GetDbConnection();
+        DbConnection = Database.IsRelational() ? Database.GetDbConnection() : null;
         ChangeTracker = Context.ChangeTracker;
         Model = Context.Model;
 
@@ -225,10 +227,10 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
         EntityType = Entities.EntityType;
 
         // 初始化数据上下文池
-        _dbContextPool = serviceProvider.GetService<IDbContextPool>();
+        _dbContextPool = serviceProvider.GetRequiredService<IDbContextPool>();
 
         // 非泛型仓储
-        _repository = serviceProvider.GetService<IRepository>();
+        _repository = serviceProvider.GetRequiredService<IRepository>();
     }
 
     /// <summary>
@@ -249,7 +251,7 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
     /// <summary>
     /// 数据库连接对象
     /// </summary>
-    public virtual DbConnection DbConnection { get; }
+    public virtual DbConnection? DbConnection { get; }
 
     /// <summary>
     /// 实体追综器
@@ -416,7 +418,7 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
     /// <param name="entityEntry"></param>
     /// <param name="keyName"></param>
     /// <returns></returns>
-    public virtual bool CheckTrackState(object id, out EntityEntry entityEntry, string keyName = default)
+    public virtual bool CheckTrackState(object id, out EntityEntry entityEntry, string? keyName = default)
     {
         return CheckTrackState<TEntity>(id, out entityEntry, keyName);
     }
@@ -429,18 +431,30 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
     /// <param name="entityEntry"></param>
     /// <param name="keyName"></param>
     /// <returns></returns>
-    public virtual bool CheckTrackState<TTrackEntity>(object id, out EntityEntry entityEntry, string keyName = default)
+    public virtual bool CheckTrackState<TTrackEntity>(object id, out EntityEntry entityEntry, string? keyName = default)
         where TTrackEntity : class, IPrivateEntity, new()
     {
         // 获取主键名
         keyName ??= (typeof(TTrackEntity) == typeof(TEntity) ? EntityType : Context.Set<TTrackEntity>().EntityType)
                     .FindPrimaryKey()?.Properties?.AsEnumerable()?.FirstOrDefault()?.PropertyInfo?.Name;
+        if (string.IsNullOrWhiteSpace(keyName))
+        {
+            entityEntry = default!;
+            return false;
+        }
 
         // 检查是否已经跟踪
-        entityEntry = ChangeTracker.Entries().FirstOrDefault(u => u.Entity.GetType() == typeof(TTrackEntity)
-                                         && u.CurrentValues[keyName].ToString().Equals(id.ToString()));
+        var trackedEntry = ChangeTracker.Entries().FirstOrDefault(u => u.Entity.GetType() == typeof(TTrackEntity)
+                                         && string.Equals(u.CurrentValues[keyName]?.ToString(), id.ToString(), StringComparison.Ordinal));
 
-        return entityEntry != null;
+        if (trackedEntry == null)
+        {
+            entityEntry = default!;
+            return false;
+        }
+
+        entityEntry = trackedEntry;
+        return true;
     }
 
     /// <summary>
@@ -607,6 +621,8 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
     /// <param name="connectionString">连接字符串</param>
     public virtual void ChangeDatabase(string connectionString)
     {
+        if (DbConnection == null) throw new NotSupportedException("当前数据库上下文不是关系型数据库，无法切换数据库连接。");
+
         if (DbConnection.State == ConnectionState.Open) DbConnection.ChangeDatabase(connectionString);
         else DbConnection.ConnectionString = connectionString;
     }
@@ -618,6 +634,8 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
     /// <param name="cancellationToken">异步取消令牌</param>
     public virtual async Task ChangeDatabaseAsync(string connectionString, CancellationToken cancellationToken = default)
     {
+        if (DbConnection == null) throw new NotSupportedException("当前数据库上下文不是关系型数据库，无法切换数据库连接。");
+
         if (DbConnection.State == ConnectionState.Open)
         {
             await DbConnection.ChangeDatabaseAsync(connectionString, cancellationToken);

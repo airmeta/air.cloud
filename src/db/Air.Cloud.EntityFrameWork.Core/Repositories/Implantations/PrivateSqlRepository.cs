@@ -40,7 +40,8 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
         _serviceProvider = serviceProvider;
 
         // 解析数据库上下文
-        var dbContextResolve = serviceProvider.GetService<Func<Type, IScoped, DbContext>>();
+        var dbContextResolve = serviceProvider.GetService<Func<Type, IScoped, DbContext>>()
+            ?? throw new InvalidOperationException("未注册数据库上下文解析委托。");
         var dbContext = dbContextResolve(dbContextLocator, default);
         DynamicContext = Context = dbContext;
 
@@ -71,7 +72,7 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
     public virtual ISqlRepository<TChangeDbContextLocator> Change<TChangeDbContextLocator>()
          where TChangeDbContextLocator : class, IDbContextLocator
     {
-        return _serviceProvider.GetService<ISqlRepository<TChangeDbContextLocator>>();
+        return _serviceProvider.GetRequiredService<ISqlRepository<TChangeDbContextLocator>>();
     }
 
     /// <summary>
@@ -82,7 +83,7 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
     public virtual TService GetService<TService>()
         where TService : class
     {
-        return _serviceProvider.GetService<TService>();
+        return _serviceProvider.GetRequiredService<TService>();
     }
 
     /// <summary>
@@ -110,7 +111,8 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
             throw new InvalidCastException("Invalid type conversion.");
         }
 
-        return this as TRestrainRepository;
+        return this as TRestrainRepository
+            ?? throw new InvalidCastException($"当前仓储无法转换为 {typeof(TRestrainRepository).FullName}。");
     }
 
     /// <summary>

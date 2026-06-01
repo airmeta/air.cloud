@@ -27,7 +27,7 @@ namespace Air.Cloud.Core.Plugins.DefaultDependencies.IdGenerator
         /// <summary>
         /// 生成逻辑
         /// </summary>
-        /// <param name="idGeneratorOptions"></param>
+        /// <param name="options">Guid 生成配置选项。</param>
         /// <returns></returns>
         public object Create<T>(T options) where T : IUniqueGuidCreatOptions, new()
         {

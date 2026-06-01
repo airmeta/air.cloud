@@ -70,7 +70,7 @@ public class StartupFilter : IStartupFilter
     /// </summary>
     /// <param name="app">
     /// <para>zh-cn:应用程序构建器</para>
-    /// <para>en-us:The application builder</para></para>
+    /// <para>en-us:The application builder</para>
     /// </param>
     private static void UseStartups(IApplicationBuilder app)
     {
@@ -83,7 +83,7 @@ public class StartupFilter : IStartupFilter
     /// </summary>
     /// <param name="startups">
     /// <para>zh-cn:AppStartup 类型集合</para>
-    /// <para>en-us>AppStartup type collection</para>
+    /// <para>en-us:AppStartup type collection</para>
     /// </param>
     /// <param name="app">
     /// <para>zh-cn:应用程序构建器</para>

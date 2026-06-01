@@ -34,6 +34,18 @@ public class Startup : AppStartup
         services.AddHostedService<EventBusHostedService>();
     }
 
+    /// <summary>
+    /// <para>zh-cn:配置事件总线模块的 Web 应用管道。</para>
+    /// <para>en-us:Configures the web application pipeline for the event bus module.</para>
+    /// </summary>
+    /// <param name="app">
+    /// <para>zh-cn:应用构建器。</para>
+    /// <para>en-us:Application builder.</para>
+    /// </param>
+    /// <param name="env">
+    /// <para>zh-cn:Web 宿主环境。</para>
+    /// <para>en-us:Web host environment.</para>
+    /// </param>
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
     }

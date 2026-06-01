@@ -16,6 +16,10 @@ using System.Linq.Expressions;
 
 namespace Air.Cloud.Core.Extensions.IEnumerables
 {
+    /// <summary>
+    /// <para>zh-cn:集合与查询条件组合扩展方法。</para>
+    /// <para>en-us:Extension methods for composing collection and query predicates.</para>
+    /// </summary>
     [IgnoreScanning]
     public static class IEnumerableExtensions
     {

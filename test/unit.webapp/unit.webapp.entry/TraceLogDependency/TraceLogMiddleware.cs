@@ -2,6 +2,8 @@
 
 using unit.webapp.entry.TraceLogDependency;
 
+#nullable enable annotations
+
 namespace Air.Cloud.GateWay.Middleware
 {
     public class TraceLogMiddleware

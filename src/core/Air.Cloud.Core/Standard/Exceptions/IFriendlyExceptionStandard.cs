@@ -11,6 +11,10 @@
  */
 namespace Air.Cloud.Core.Standard.Exceptions
 {
+    /// <summary>
+    /// <para>zh-cn:友好异常标准标记接口，用于区分可直接面向调用方返回的业务异常。</para>
+    /// <para>en-us:Marker interface for friendly exceptions that can be returned to callers as business exceptions.</para>
+    /// </summary>
     public interface IFriendlyExceptionStandard : IStandard
     {
     }

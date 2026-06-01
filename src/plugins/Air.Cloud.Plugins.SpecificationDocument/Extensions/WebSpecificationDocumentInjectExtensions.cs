@@ -31,9 +31,9 @@ namespace Air.Cloud.Plugins.SpecificationDocument.Extensions
                         {
                             try
                             {
-                                var methods = OperationFilterMethod.MakeGenericMethod(x).Invoke(null, new object[] { options, new object[] { } });
+                                OperationFilterMethod.MakeGenericMethod(x).Invoke(null, new object[] { options, new object[] { } });
                             }
-                            catch (Exception ex)
+                            catch
                             {
 
                                 throw;

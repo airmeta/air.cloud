@@ -15,6 +15,10 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Air.Cloud.Core.Standard.Jwt
 {
+    /// <summary>
+    /// <para>zh-cn:授权处理上下文扩展方法。</para>
+    /// <para>en-us:Extension methods for authorization handler contexts.</para>
+    /// </summary>
     public static class AuthorizationHandlerContextExtensions
     {
         /// <summary>

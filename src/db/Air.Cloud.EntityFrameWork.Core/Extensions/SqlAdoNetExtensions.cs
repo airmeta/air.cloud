@@ -225,7 +225,7 @@ public static class SqlAdoNetExtensions
     /// <param name="parameters">命令参数</param>
     /// <param name="commandType">命令类型</param>
     /// <returns>单行单列的值</returns>
-    public static object ExecuteScalar(this DatabaseFacade databaseFacade, string sql, DbParameter[] parameters = null, CommandType commandType = CommandType.Text)
+    public static object? ExecuteScalar(this DatabaseFacade databaseFacade, string sql, DbParameter[]? parameters = null, CommandType commandType = CommandType.Text)
     {
         // 初始化数据库连接对象和数据库命令对象
         var (_, dbCommand) = databaseFacade.PrepareDbCommand(sql, parameters, commandType);
@@ -247,7 +247,7 @@ public static class SqlAdoNetExtensions
     /// <param name="model">命令模型</param>
     /// <param name="commandType">命令类型</param>
     /// <returns>(object result, DbParameter[] dbParameters)</returns>
-    public static (object result, DbParameter[] dbParameters) ExecuteScalar(this DatabaseFacade databaseFacade, string sql, object model, CommandType commandType = CommandType.Text)
+    public static (object? result, DbParameter[] dbParameters) ExecuteScalar(this DatabaseFacade databaseFacade, string sql, object model, CommandType commandType = CommandType.Text)
     {
         // 初始化数据库连接对象和数据库命令对象
         var (_, dbCommand, dbParameters) = databaseFacade.PrepareDbCommand(sql, model, commandType);
@@ -270,7 +270,7 @@ public static class SqlAdoNetExtensions
     /// <param name="commandType">命令类型</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>单行单列的值</returns>
-    public static async Task<object> ExecuteScalarAsync(this DatabaseFacade databaseFacade, string sql, DbParameter[] parameters = null, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
+    public static async Task<object?> ExecuteScalarAsync(this DatabaseFacade databaseFacade, string sql, DbParameter[]? parameters = null, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
     {
         // 初始化数据库连接对象和数据库命令对象
         var (_, dbCommand) = await databaseFacade.PrepareDbCommandAsync(sql, parameters, commandType, cancellationToken);
@@ -293,7 +293,7 @@ public static class SqlAdoNetExtensions
     /// <param name="commandType">命令类型</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>(object result, DbParameter[] dbParameters)</returns>
-    public static async Task<(object result, DbParameter[] dbParameters)> ExecuteScalarAsync(this DatabaseFacade databaseFacade, string sql, object model, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
+    public static async Task<(object? result, DbParameter[] dbParameters)> ExecuteScalarAsync(this DatabaseFacade databaseFacade, string sql, object model, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
     {
         // 初始化数据库连接对象和数据库命令对象
         var (_, dbCommand, dbParameters) = await databaseFacade.PrepareDbCommandAsync(sql, model, commandType, cancellationToken);

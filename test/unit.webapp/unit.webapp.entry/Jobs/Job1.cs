@@ -72,10 +72,10 @@ namespace unit.webapp.entry.Jobs
                     this.CancellationToken = stoppingToken;
                 }
             }
-            catch (Exception ex)
+            catch
             {
 
-                throw ex;
+                throw;
             }
 
             return Task.CompletedTask;
@@ -153,10 +153,10 @@ namespace unit.webapp.entry.Jobs
                     CancellationToken = stoppingToken;
                 }
             }
-            catch (Exception ex)
+            catch
             {
 
-                throw ex;
+                throw;
             }
 
             return Task.CompletedTask;

@@ -276,6 +276,7 @@ internal sealed class EventBusTaskBackGroundService : IEventBusExecutor
     /// 构建所有的事件处理器
     /// </summary>
     /// <param name="messageSubscribers"></param>
+    /// <param name="serviceProvider"></param>
     private void BuildEventHandlers(IEnumerable<IMessageSubscriber> messageSubscribers, IServiceProvider serviceProvider)
     {
         var bindingAttr = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;

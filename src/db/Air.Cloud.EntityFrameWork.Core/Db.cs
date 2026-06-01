@@ -43,9 +43,9 @@ public static class Db
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    public static IRepository GetRepository(IServiceProvider serviceProvider = default)
+    public static IRepository GetRepository(IServiceProvider? serviceProvider = default)
     {
-        return AppCore.GetService<IRepository>(serviceProvider);
+        return serviceProvider == null ? AppCore.GetService<IRepository>() : AppCore.GetService<IRepository>(serviceProvider);
     }
 
     /// <summary>
@@ -54,10 +54,10 @@ public static class Db
     /// <typeparam name="TEntity">实体类型</typeparam>
     /// <param name="serviceProvider"></param>
     /// <returns>IRepository{TEntity}</returns>
-    public static IRepository<TEntity> GetRepository<TEntity>(IServiceProvider serviceProvider = default)
+    public static IRepository<TEntity> GetRepository<TEntity>(IServiceProvider? serviceProvider = default)
         where TEntity : class, IPrivateEntity, new()
     {
-        return AppCore.GetService<IRepository<TEntity>>(serviceProvider);
+        return serviceProvider == null ? AppCore.GetService<IRepository<TEntity>>() : AppCore.GetService<IRepository<TEntity>>(serviceProvider);
     }
 
     /// <summary>
@@ -67,11 +67,11 @@ public static class Db
     /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
     /// <param name="serviceProvider"></param>
     /// <returns>IRepository{TEntity, TDbContextLocator}</returns>
-    public static IRepository<TEntity, TDbContextLocator> GetRepository<TEntity, TDbContextLocator>(IServiceProvider serviceProvider = default)
+    public static IRepository<TEntity, TDbContextLocator> GetRepository<TEntity, TDbContextLocator>(IServiceProvider? serviceProvider = default)
         where TEntity : class, IPrivateEntity, new()
         where TDbContextLocator : class, IDbContextLocator
     {
-        return AppCore.GetService<IRepository<TEntity, TDbContextLocator>>(serviceProvider);
+        return serviceProvider == null ? AppCore.GetService<IRepository<TEntity, TDbContextLocator>>() : AppCore.GetService<IRepository<TEntity, TDbContextLocator>>(serviceProvider);
     }
 
     /// <summary>
@@ -81,10 +81,16 @@ public static class Db
     /// <param name="dbContextLocator"></param>
     /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    public static IPrivateRepository<TEntity> GetRepository<TEntity>(Type dbContextLocator, IServiceProvider serviceProvider = default)
+    public static IPrivateRepository<TEntity> GetRepository<TEntity>(Type dbContextLocator, IServiceProvider? serviceProvider = default)
          where TEntity : class, IPrivateEntity, new()
     {
-        return AppCore.GetService(typeof(IRepository<,>).MakeGenericType(typeof(TEntity), dbContextLocator), serviceProvider) as IPrivateRepository<TEntity>;
+        var repositoryServiceType = typeof(IRepository<,>).MakeGenericType(typeof(TEntity), dbContextLocator);
+        var repository = serviceProvider == null
+            ? AppCore.GetService(repositoryServiceType)
+            : AppCore.GetService(repositoryServiceType, serviceProvider);
+
+        return repository as IPrivateRepository<TEntity>
+            ?? throw new InvalidOperationException($"Repository for entity {typeof(TEntity).FullName} and locator {dbContextLocator.FullName} was not registered.");
     }
 
     /// <summary>

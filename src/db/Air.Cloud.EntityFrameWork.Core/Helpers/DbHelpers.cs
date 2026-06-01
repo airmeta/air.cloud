@@ -40,16 +40,18 @@ internal static class DbHelpers
     /// <returns></returns>
     internal static DbParameter[] ConvertToDbParameters(object model, DbCommand dbCommand)
     {
-        var modelType = model?.GetType();
-
         // 处理 JsonElement 类型
-        if (model is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object) return ConvertToDbParameters((Dictionary<string, object>)jsonElement.ToObject(), dbCommand);
+        if (model is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object)
+        {
+            return ConvertToDbParameters(JsonSerializer.Deserialize<Dictionary<string, object>>(jsonElement.GetRawText()) ?? new Dictionary<string, object>(), dbCommand);
+        }
 
         // 处理字典类型参数
-        if (modelType == typeof(Dictionary<string, object>)) return ConvertToDbParameters((Dictionary<string, object>)model, dbCommand);
+        if (model is Dictionary<string, object> keyValues) return ConvertToDbParameters(keyValues, dbCommand);
 
         var dbParameters = new List<DbParameter>();
-        if (model == null || !modelType.IsClass) return dbParameters.ToArray();
+        var modelType = model?.GetType();
+        if (model == null || modelType == null || !modelType.IsClass) return dbParameters.ToArray();
 
         // 获取所有公开实例属性
         var properties = modelType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -82,6 +84,10 @@ internal static class DbHelpers
             if (property.IsDefined(typeof(DbParameterAttribute), true))
             {
                 var dbParameterAttribute = property.GetCustomAttribute<DbParameterAttribute>(true);
+                if (dbParameterAttribute == null)
+                {
+                    continue;
+                }
                 dbParameters.Add(ConfigureDbParameter(property.Name, propertyValue, dbParameterAttribute, dbParameter));
                 continue;
             }
@@ -164,7 +170,7 @@ internal static class DbHelpers
                 if (typeof(DbType).IsAssignableFrom(type)) dbParameter.DbType = (DbType)dbParameterAttribute.DbType;
 
                 // 解决 Oracle 数据库游标类型参数
-                if (type.FullName.Equals("Oracle.ManagedDataAccess.Client.OracleDbType", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(type.FullName, "Oracle.ManagedDataAccess.Client.OracleDbType", StringComparison.OrdinalIgnoreCase))
                 {
                     dbParameter.GetType().GetProperty("OracleDbType")?.SetValue(dbParameter, dbParameterAttribute.DbType);
                 }
@@ -204,14 +210,14 @@ internal static class DbHelpers
     /// <returns>(string sql, DbParameter[] parameters)</returns>
     internal static string GenerateFunctionSql(string providerName, DbFunctionType dbFunctionType, string funcName, object model)
     {
-        var modelType = model?.GetType();
         // 处理字典类型参数
-        if (modelType == typeof(Dictionary<string, object>)) return GenerateFunctionSql(providerName, dbFunctionType, funcName, (Dictionary<string, object>)model);
+        if (model is Dictionary<string, object> keyValues) return GenerateFunctionSql(providerName, dbFunctionType, funcName, keyValues);
 
         // 获取模型所有公开的属性
+        var modelType = model?.GetType();
         var properities = model == null
             ? Array.Empty<PropertyInfo>()
-            : modelType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            : modelType?.GetProperties(BindingFlags.Public | BindingFlags.Instance) ?? Array.Empty<PropertyInfo>();
 
         // 生成数据库表值函数 sql
         return GenerateDbFunctionSql(providerName, dbFunctionType, funcName, properities.Select(u => u.Name).ToArray());
@@ -307,7 +313,8 @@ internal static class DbHelpers
                 .First(u => u.Name == "WrapperProcedureOutput" && u.IsGenericMethod)
                 .MakeGenericMethod(type);
 
-        return wrapperProcedureOutputMethod.Invoke(null, new object[] { providerName, parameters, dataSet });
+        return wrapperProcedureOutputMethod.Invoke(null, new object[] { providerName, parameters, dataSet })
+            ?? throw new InvalidOperationException("Wrapper procedure output returned null.");
     }
 
     /// <summary>
@@ -351,11 +358,11 @@ internal static class DbHelpers
            .Select(u => new ProcedureOutputValue
            {
                Name = FixSqlParameterPlaceholder(providerName, u.ParameterName, false),
-               Value = u.Value
-           });
+                Value = u.Value ?? DBNull.Value
+            });
 
         // 查询返回值
-        returnValue = parameters.FirstOrDefault(u => u.Direction == ParameterDirection.ReturnValue)?.Value;
+        returnValue = parameters.FirstOrDefault(u => u.Direction == ParameterDirection.ReturnValue)?.Value ?? DBNull.Value;
     }
 
     /// <summary>

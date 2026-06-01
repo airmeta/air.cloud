@@ -10,6 +10,7 @@
  * acknowledged.
  */
 using Air.Cloud.EntityFrameWork.Core.Entities.Configures;
+using Air.Cloud.Core.Standard.DataBase.Locators;
 
 namespace Air.Cloud.EntityFrameWork.Core.Contexts.Builders.Models;
 
@@ -28,10 +29,12 @@ internal sealed class DbContextCorrelationType
         EntityTypeBuilderTypes = new List<Type>();
         EntitySeedDataTypes = new List<Type>();
         EntityChangedTypes = new List<Type>();
+        Types = new List<Type>();
         ModelBuilderFilterTypes = new List<Type>();
         EntityMutableTableTypes = new List<Type>();
         ModelBuilderFilterInstances = new List<IPrivateModelBuilderFilter>();
         DbFunctionMethods = new List<MethodInfo>();
+        DbContextLocator = typeof(MasterDbContextLocator);
     }
 
     /// <summary>

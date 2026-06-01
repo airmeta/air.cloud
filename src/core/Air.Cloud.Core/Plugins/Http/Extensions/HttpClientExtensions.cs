@@ -14,6 +14,10 @@ using System.Text;
 
 namespace Air.Cloud.Core.Plugins.Http.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:HttpClient 请求头与请求体构造扩展方法。</para>
+    /// <para>en-us:HttpClient extension methods for constructing request headers and request bodies.</para>
+    /// </summary>
     public static class HttpClientExtensions
     {
         /// <summary>
@@ -31,6 +35,26 @@ namespace Air.Cloud.Core.Plugins.Http.Extensions
             }
             return client;
         }
+        /// <summary>
+        /// <para>zh-cn:根据对象内容创建 HTTP 请求体。</para>
+        /// <para>en-us:Creates HTTP content from the supplied body object.</para>
+        /// </summary>
+        /// <param name="client">
+        /// <para>zh-cn:当前 HttpClient 实例。</para>
+        /// <para>en-us:Current HttpClient instance.</para>
+        /// </param>
+        /// <param name="Body">
+        /// <para>zh-cn:请求体对象；字符串将原样写入，其他对象将序列化为 JSON。</para>
+        /// <para>en-us:Request body object; strings are written directly and other objects are serialized as JSON.</para>
+        /// </param>
+        /// <param name="ContentType">
+        /// <para>zh-cn:请求体媒体类型。</para>
+        /// <para>en-us:Request body media type.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:可用于请求发送的 HttpContent。</para>
+        /// <para>en-us:HttpContent that can be used for sending the request.</para>
+        /// </returns>
         public static HttpContent SetBody(this HttpClient client,object Body,string ContentType= "application/json")
         {
             string Data;

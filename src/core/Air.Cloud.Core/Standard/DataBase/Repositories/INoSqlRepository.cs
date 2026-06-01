@@ -11,6 +11,8 @@
  */
 using Air.Cloud.Core.Standard.DataBase.Model;
 
+#nullable enable annotations
+
 namespace Air.Cloud.Core.Standard.DataBase.Repositories
 {
     /// <summary>

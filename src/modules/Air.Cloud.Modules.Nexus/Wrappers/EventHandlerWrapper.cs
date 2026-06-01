@@ -79,7 +79,7 @@ internal sealed class EventHandlerWrapper
     /// <summary>
     /// 创建
     /// </summary>
-    /// <param name="eventHandlerWrapper"></param>
+    /// <param name="eventHandlerWrappers"></param>
     public static List<EventHandlerWrapper> CreateList(params EventHandlerWrapper[] eventHandlerWrappers)
     {
         return eventHandlerWrappers.Where(e => e != null).ToList();

@@ -22,6 +22,10 @@ using System.Threading.Tasks;
 
 namespace Air.Cloud.Core.Modules.AppAssembly.Builder
 {
+    /// <summary>
+    /// <para>zh-cn:应用程序集构建器对象池，用于按程序集名称缓存并管理构建器实例。</para>
+    /// <para>en-us:Object pool for application assembly builders, cached and managed by assembly name.</para>
+    /// </summary>
     public  class AppAssemblyBuilderPool : IAppPool<IAppAssemblyBuilder>
     {
         /// <summary>

@@ -26,8 +26,9 @@ namespace Air.Cloud.Core.Plugins.Security.SM4
         /// <summary>
         /// 加密ECB模式
         /// </summary>
-        /// <param name="secretKey">密钥</param>
-        /// <param name="plainText">明文</param>
+        /// <param name="Content">明文内容。</param>
+        /// <param name="SecretKey">密钥。</param>
+        /// <param name="Mode">密文输出模式。</param>
         /// <returns>返回Base64密文</returns>
         public static string EncryptECB(string Content, string SecretKey, SM4ResultMode Mode = SM4ResultMode.BASE64)
         {
@@ -41,9 +42,10 @@ namespace Air.Cloud.Core.Plugins.Security.SM4
         /// <summary>
         /// 加密CBC模式
         /// </summary>
+        /// <param name="Content">明文内容。</param>
         /// <param name="secretKey">密钥</param>
         /// <param name="iv">向量</param>
-        /// <param name="plainText">明文</param>
+        /// <param name="Mode">密文输出模式。</param>
         /// <returns>返回密文</returns>
         public static string EncryptCBC(string Content, string secretKey, string iv, SM4ResultMode Mode = SM4ResultMode.BASE64)
         {
@@ -58,8 +60,9 @@ namespace Air.Cloud.Core.Plugins.Security.SM4
         /// <summary>
         /// 解密ECB模式
         /// </summary>
-        /// <param name="secretKey">密钥</param>
-        /// <param name="Content">密文</param>
+        /// <param name="Content">密文内容。</param>
+        /// <param name="SecretKey">密钥。</param>
+        /// <param name="Mode">密文输入模式。</param>
         /// <returns>返回Base64明文</returns>
         public static string DecryptECB(string Content, string SecretKey, SM4ResultMode Mode = SM4ResultMode.BASE64)
         {
@@ -74,11 +77,10 @@ namespace Air.Cloud.Core.Plugins.Security.SM4
         /// <summary>
         /// 解密CBC模式
         /// </summary>
-        /// <param name="Content"></param>
-        /// <param name="SecretKey"></param>
-        /// <param name="Hexstring"></param>
-        /// <param name="Iv"></param>
-        /// <param name="Mode"></param>
+        /// <param name="Content">密文内容。</param>
+        /// <param name="SecretKey">密钥。</param>
+        /// <param name="Iv">向量。</param>
+        /// <param name="Mode">密文输入模式。</param>
         /// <returns></returns>
         public static string DecryptCBC(string Content, string SecretKey, string Iv, SM4ResultMode Mode = SM4ResultMode.BASE64)
         {

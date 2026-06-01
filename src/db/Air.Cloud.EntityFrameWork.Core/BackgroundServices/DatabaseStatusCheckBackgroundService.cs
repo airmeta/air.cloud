@@ -24,7 +24,8 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
     {
 
         private readonly IServiceProvider provider;
-        private  DataSourceOptions options => AppCore.GetOptions<DataSourceOptions>();
+        private DataSourceOptions options => AppCore.GetOptions<DataSourceOptions>()
+            ?? throw new InvalidOperationException($"{nameof(DataSourceOptions)} was not configured.");
 
 
         public DatabaseStatusCheckBackgroundService(IServiceProvider serviceProvider) { 
@@ -42,7 +43,7 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
                         using (var scope = provider.CreateScope())
                         {
                             var services = scope.ServiceProvider;
-                            var repository = services.GetService<IRepository>()?.Sql();
+                            var repository = services.GetRequiredService<IRepository>().Sql();
                             try
                             {
                                 await repository.SqlNonQueryAsync(options.ConnectionValidationSQL);
@@ -55,7 +56,7 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
                                     AdditionalParams: new Dictionary<string, object>()
                                     {
                                         {"message",ex.Message },
-                                        {"StackTrace",ex.StackTrace }
+                                        {"StackTrace",ex.StackTrace ?? string.Empty }
                                     }
                                 );
                             }
@@ -69,7 +70,7 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
                             AdditionalParams:new Dictionary<string, object>()
                             {
                                 {"message",ex.Message },
-                                {"StackTrace",ex.StackTrace }
+                                {"StackTrace",ex.StackTrace ?? string.Empty }
                             }
                         );
                         await Task.Delay(TimeSpan.FromMilliseconds(options.ConnectionValidationIntervalMillis), stoppingToken);

@@ -15,6 +15,10 @@ using System.Linq.Expressions;
 
 namespace Air.Cloud.Core.Extensions.Linqs
 {
+    /// <summary>
+    /// <para>zh-cn:LINQ 表达式创建与组合扩展方法。</para>
+    /// <para>en-us:Extension methods for creating and composing LINQ expressions.</para>
+    /// </summary>
     public static class LinqExpressionExtensions
     {
         /// <summary>

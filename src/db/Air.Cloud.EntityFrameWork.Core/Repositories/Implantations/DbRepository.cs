@@ -46,7 +46,7 @@ public partial class DbRepository<TDbContextLocator> : IDbRepository<TDbContextL
     public virtual IRepository<TEntity, TDbContextLocator> Change<TEntity>()
          where TEntity : class, IPrivateEntity, new()
     {
-        return _serviceProvider.GetService<IRepository<TEntity, TDbContextLocator>>();
+        return _serviceProvider.GetRequiredService<IRepository<TEntity, TDbContextLocator>>();
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public partial class DbRepository<TDbContextLocator> : IDbRepository<TDbContextL
     /// <returns></returns>
     public virtual ISqlRepository<TDbContextLocator> Sql()
     {
-        return _serviceProvider.GetService<ISqlRepository<TDbContextLocator>>();
+        return _serviceProvider.GetRequiredService<ISqlRepository<TDbContextLocator>>();
     }
 
     /// <summary>
@@ -64,8 +64,9 @@ public partial class DbRepository<TDbContextLocator> : IDbRepository<TDbContextL
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
     public virtual TService GetService<TService>()
+        where TService : notnull
     {
-        return _serviceProvider.GetService<TService>();
+        return _serviceProvider.GetRequiredService<TService>();
     }
 
     /// <summary>
@@ -74,6 +75,7 @@ public partial class DbRepository<TDbContextLocator> : IDbRepository<TDbContextL
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
     public virtual TService GetRequiredService<TService>()
+        where TService : notnull
     {
         return _serviceProvider.GetRequiredService<TService>();
     }

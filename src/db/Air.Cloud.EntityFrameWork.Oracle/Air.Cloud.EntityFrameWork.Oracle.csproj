@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>disable</Nullable>
+		<Nullable>annotations</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<NoWarn>CS8625</NoWarn>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -37,7 +37,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.20" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="7.21.13" />
     <PackageReference Include="Zack.EFCore.Batch_NET6" Version="6.1.9" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="4.5.1" />
   </ItemGroup>
 
   <ItemGroup>

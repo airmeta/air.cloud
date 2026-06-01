@@ -12,7 +12,8 @@
 namespace Air.Cloud.Core.Plugins.Map
 {
     /// <summary>
-    /// 地图插件
+    /// <para>zh-cn:提供地图相关工具方法，包括坐标距离计算、短文本相似度计算以及百度坐标和火星坐标转换。</para>
+    /// <para>en-us:Provides map-related utility methods, including coordinate distance calculation, short-text similarity calculation, and conversion between Baidu coordinates and Mars coordinates.</para>
     /// </summary>
     public class MapPlugin : IPlugin
     {
@@ -25,13 +26,14 @@ namespace Air.Cloud.Core.Plugins.Map
         //private static readonly int MULTIPLE_LEVEL = 1000000;
 
         /// <summary>
-        /// 计算两个坐标点之间的距离
+        /// <para>zh-cn:计算两个经纬度坐标点之间的球面距离。</para>
+        /// <para>en-us:Calculates the spherical distance between two latitude/longitude coordinate points.</para>
         /// </summary>
-        /// <param name="firstLatitude">第一个坐标的纬度</param>
-        /// <param name="firstLongitude">第一个坐标的经度</param>
-        /// <param name="secondLatitude">第二个坐标的纬度</param>
-        /// <param name="secondLongitude">第二个坐标的经度</param>
-        /// <returns>返回两点之间的距离，单位：公里/千米</returns>
+        /// <param name="firstLatitude"><para>zh-cn:第一个坐标点的纬度。</para><para>en-us:The latitude of the first coordinate point.</para></param>
+        /// <param name="firstLongitude"><para>zh-cn:第一个坐标点的经度。</para><para>en-us:The longitude of the first coordinate point.</para></param>
+        /// <param name="secondLatitude"><para>zh-cn:第二个坐标点的纬度。</para><para>en-us:The latitude of the second coordinate point.</para></param>
+        /// <param name="secondLongitude"><para>zh-cn:第二个坐标点的经度。</para><para>en-us:The longitude of the second coordinate point.</para></param>
+        /// <returns><para>zh-cn:两个坐标点之间的距离，单位为公里。</para><para>en-us:The distance between the two coordinate points, in kilometers.</para></returns>
         public static double GetDistance(double firstLatitude, double firstLongitude, double secondLatitude, double secondLongitude)
         {
             var firstRadLat = Rad(firstLatitude);
@@ -48,11 +50,12 @@ namespace Air.Cloud.Core.Plugins.Map
         }
 
         /// <summary>
-        /// 计算两个坐标点之间的距离
+        /// <para>zh-cn:根据字符串格式坐标计算两个坐标点之间的距离。</para>
+        /// <para>en-us:Calculates the distance between two coordinate points from string-formatted coordinates.</para>
         /// </summary>
-        /// <param name="firstPoint">第一个坐标点的（纬度,经度）</param>
-        /// <param name="secondPoint">第二个坐标点的（纬度,经度）</param>
-        /// <returns>返回两点之间的距离，单位：公里/千米</returns>
+        /// <param name="firstPoint"><para>zh-cn:第一个坐标点，格式为“纬度,经度”。</para><para>en-us:The first coordinate point in the format "latitude,longitude".</para></param>
+        /// <param name="secondPoint"><para>zh-cn:第二个坐标点，格式为“纬度,经度”。</para><para>en-us:The second coordinate point in the format "latitude,longitude".</para></param>
+        /// <returns><para>zh-cn:两个坐标点之间的距离，单位为公里。</para><para>en-us:The distance between the two coordinate points, in kilometers.</para></returns>
         public static double GetPointDistance(string firstPoint, string secondPoint)
         {
             var firstArray = firstPoint.Split(',');
@@ -75,12 +78,13 @@ namespace Air.Cloud.Core.Plugins.Map
         }
 
         /// <summary>
-        ///  计算文本相似度函数(适用于短文本)
+        /// <para>zh-cn:计算两个短文本之间的相似度百分比。</para>
+        /// <para>en-us:Calculates the similarity percentage between two short text values.</para>
         /// </summary>
-        /// <param name="textX">文本</param>
-        /// <param name="textY">文本</param>
-        /// <param name="isCase">是否忽略大小写</param>
-        /// <returns></returns>
+        /// <param name="textX"><para>zh-cn:第一个文本。</para><para>en-us:The first text.</para></param>
+        /// <param name="textY"><para>zh-cn:第二个文本。</para><para>en-us:The second text.</para></param>
+        /// <param name="isCase"><para>zh-cn:是否区分大小写；为 `false` 时会先转换为小写再比较。</para><para>en-us:Whether comparison is case-sensitive; when `false`, both texts are converted to lowercase before comparison.</para></param>
+        /// <returns><para>zh-cn:文本相似度百分比，范围通常为 0 到 100。</para><para>en-us:The text similarity percentage, usually ranging from 0 to 100.</para></returns>
         public static double ComputeTextSame(string textX, string textY, bool isCase = false)
         {
             if (textX.Length <= 0 || textY.Length <= 0)
@@ -110,13 +114,12 @@ namespace Air.Cloud.Core.Plugins.Map
             return Math.Round((double)dp[textX.Length, textY.Length] / Math.Max(textX.Length, textY.Length) * 100, 2);
         }
 
-        /**
-         * 将火星坐标转变成百度坐标
-         *
-         * @param marsCoordinate 火星坐标（高德、腾讯地图坐标等）
-         * @return 百度坐标
-         */
-
+        /// <summary>
+        /// <para>zh-cn:将火星坐标转换为百度坐标。</para>
+        /// <para>en-us:Converts Mars coordinates to Baidu coordinates.</para>
+        /// </summary>
+        /// <param name="marsCoordinate"><para>zh-cn:火星坐标，例如高德或腾讯地图坐标。</para><para>en-us:The Mars coordinate, such as coordinates used by Amap or Tencent Maps.</para></param>
+        /// <returns><para>zh-cn:转换后的百度坐标。</para><para>en-us:The converted Baidu coordinate.</para></returns>
         public static CoordinateDto MarsToBaidu(CoordinateDto marsCoordinate)
         {
             double x = marsCoordinate.getLongitude;
@@ -127,13 +130,12 @@ namespace Air.Cloud.Core.Plugins.Map
                 dataDigit(6, z * Math.Sin(theta) + 0.006));
         }
 
-        /**
-         * 将百度坐标转变成火星坐标
-         *
-         * @param baiduCoordinate 百度坐标（百度地图坐标）
-         * @return 火星坐标(高德、腾讯地图等)
-         */
-
+        /// <summary>
+        /// <para>zh-cn:将百度坐标转换为火星坐标。</para>
+        /// <para>en-us:Converts Baidu coordinates to Mars coordinates.</para>
+        /// </summary>
+        /// <param name="baiduCoordinate"><para>zh-cn:百度地图坐标。</para><para>en-us:The Baidu map coordinate.</para></param>
+        /// <returns><para>zh-cn:转换后的火星坐标，例如高德或腾讯地图坐标。</para><para>en-us:The converted Mars coordinate, such as coordinates used by Amap or Tencent Maps.</para></returns>
         public static CoordinateDto BaiduToMars(CoordinateDto baiduCoordinate)
         {
             double x = baiduCoordinate.getLongitude - 0.0065;
@@ -143,6 +145,13 @@ namespace Air.Cloud.Core.Plugins.Map
             return new CoordinateDto(dataDigit(6, z * Math.Cos(theta)), dataDigit(6, z * Math.Sin(theta)));
         }
 
+        /// <summary>
+        /// <para>zh-cn:根据百度坐标经纬度转换为火星坐标。</para>
+        /// <para>en-us:Converts Baidu coordinate longitude and latitude to Mars coordinates.</para>
+        /// </summary>
+        /// <param name="longitude"><para>zh-cn:百度坐标经度。</para><para>en-us:The Baidu coordinate longitude.</para></param>
+        /// <param name="latitude"><para>zh-cn:百度坐标纬度。</para><para>en-us:The Baidu coordinate latitude.</para></param>
+        /// <returns><para>zh-cn:转换后的火星坐标。</para><para>en-us:The converted Mars coordinate.</para></returns>
         public static CoordinateDto BaiduToMars(double longitude, double latitude)
         {
             CoordinateDto baiduCoordinate = new CoordinateDto(longitude, latitude);

@@ -133,7 +133,6 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider
         /// <typeparam name="TDbContext">数据库上下文</typeparam>
         /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
         /// <param name="services">服务</param>
-        /// <param name="providerName">数据库提供器</param>
         /// <param name="optionBuilder"></param>
         /// <param name="connectionMetadata">支持数据库连接字符串，配置文件的 ConnectionStrings 中的Key或 配置文件的完整的配置路径，如果是内存数据库，则为数据库名称</param>
         /// <param name="interceptors">拦截器</param>

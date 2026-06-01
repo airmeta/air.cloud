@@ -13,6 +13,10 @@ using System.Linq.Expressions;
 
 namespace Air.Cloud.Core.Extensions.Linqs.Visitor
 {
+    /// <summary>
+    /// <para>zh-cn:表达式参数替换访问器，用于组合 Lambda 表达式时统一参数引用。</para>
+    /// <para>en-us:Expression visitor that replaces parameters so composed lambda expressions share the same parameter references.</para>
+    /// </summary>
     public class ParameterReplaceExpressionVisitor : ExpressionVisitor
     {
         /// <summary>

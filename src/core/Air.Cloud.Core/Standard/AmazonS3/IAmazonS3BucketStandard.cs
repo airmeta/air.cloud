@@ -21,24 +21,24 @@ namespace Air.Cloud.Core.Standard.AmazonS3
         /// <para>zh-cn:查询 Bucket 是否存在</para>
         /// <para>en-us:Check whether bucket exists</para>
         /// </summary>
-        public Task<bool> BucketExistsAsync(string BucketName, string Key = null, CancellationToken cancellationToken = default);
+        public Task<bool> BucketExistsAsync(string BucketName, string? Key = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// <para>zh-cn:获取 Bucket 列表</para>
         /// <para>en-us:Get bucket list</para>
         /// </summary>
-        public Task<IReadOnlyCollection<string>> GetBucketsAsync(string Key = null, CancellationToken cancellationToken = default);
+        public Task<IReadOnlyCollection<string>> GetBucketsAsync(string? Key = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// <para>zh-cn:创建 Bucket</para>
         /// <para>en-us:Create bucket</para>
         /// </summary>
-        public Task<bool> CreateBucketAsync(string BucketName, string Key = null, string Region = null, CancellationToken cancellationToken = default);
+        public Task<bool> CreateBucketAsync(string BucketName, string? Key = null, string? Region = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// <para>zh-cn:删除 Bucket</para>
         /// <para>en-us:Delete bucket</para>
         /// </summary>
-        public Task<bool> DeleteBucketAsync(string BucketName, string Key = null, CancellationToken cancellationToken = default);
+        public Task<bool> DeleteBucketAsync(string BucketName, string? Key = null, CancellationToken cancellationToken = default);
     }
 }

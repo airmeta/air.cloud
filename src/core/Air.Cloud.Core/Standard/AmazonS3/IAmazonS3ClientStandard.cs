@@ -57,18 +57,18 @@ namespace Air.Cloud.Core.Standard.AmazonS3
         /// <para>zh-cn:根据访问键获取令牌</para>
         /// <para>en-us:Get token by key</para>
         /// </summary>
-        public string Token(string Key = null);
+        public string? Token(string? Key = null);
 
         /// <summary>
         /// <para>zh-cn:获取原始 Client</para>
         /// <para>en-us:Get raw client</para>
         /// </summary>
-        public object Client(string Key = null);
+        public object Client(string? Key = null);
 
         /// <summary>
         /// <para>zh-cn:获取原始 Client（强类型）</para>
         /// <para>en-us:Get raw client (strongly typed)</para>
         /// </summary>
-        public TClient Client<TClient>(string Key = null) where TClient : class;
+        public TClient Client<TClient>(string? Key = null) where TClient : class;
     }
 }

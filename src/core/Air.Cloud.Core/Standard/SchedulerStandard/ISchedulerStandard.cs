@@ -99,7 +99,6 @@ namespace Air.Cloud.Core.Standard.SchedulerStandard
         /// <summary>
         /// Triggered when the application host is performing a graceful shutdown.
         /// </summary>
-        /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
         public Task StopAsync();
         //{
         //    // Stop called without start

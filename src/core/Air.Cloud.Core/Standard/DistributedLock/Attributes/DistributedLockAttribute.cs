@@ -61,9 +61,37 @@ namespace Air.Cloud.Core.Standard.DistributedLock.Attributes
         public string LockKey { get; set; } = string.Empty;
 
 
+        /// <summary>
+        /// <para>zh-cn:初始化默认分布式锁特性。</para>
+        /// <para>en-us:Initializes a default distributed lock attribute.</para>
+        /// </summary>
         public DistributedLockAttribute() { }
 
 
+        /// <summary>
+        /// <para>zh-cn:使用指定等待时间、锁定键和失败提示初始化分布式锁特性。</para>
+        /// <para>en-us:Initializes the distributed lock attribute with the specified wait time, lock key, and failure message.</para>
+        /// </summary>
+        /// <param name="WaitLockMilliseconds">
+        /// <para>zh-cn:等待获取锁的总时长，单位毫秒。</para>
+        /// <para>en-us:Total time to wait for acquiring the lock, in milliseconds.</para>
+        /// </param>
+        /// <param name="LockKey">
+        /// <para>zh-cn:锁定键。</para>
+        /// <para>en-us:Lock key.</para>
+        /// </param>
+        /// <param name="FailMessage">
+        /// <para>zh-cn:获取锁失败时返回的提示信息。</para>
+        /// <para>en-us:Message returned when the lock cannot be acquired.</para>
+        /// </param>
+        /// <param name="StepWaitMilliseconds">
+        /// <para>zh-cn:每次重试获取锁前等待的时长，单位毫秒。</para>
+        /// <para>en-us:Delay before each retry for acquiring the lock, in milliseconds.</para>
+        /// </param>
+        /// <param name="LockMilliseconds">
+        /// <para>zh-cn:锁持有时长，单位毫秒。</para>
+        /// <para>en-us:Lock holding duration, in milliseconds.</para>
+        /// </param>
         public DistributedLockAttribute(int WaitLockMilliseconds=10000, string LockKey=null,string FailMessage="系统繁忙,请稍后再试",int StepWaitMilliseconds=200, int LockMilliseconds = 30000) {
             this.WaitLockMilliseconds = WaitLockMilliseconds;
             //如果LockMilliseconds小于WaitLockMilliseconds则赋值为WaitLockMilliseconds+1000

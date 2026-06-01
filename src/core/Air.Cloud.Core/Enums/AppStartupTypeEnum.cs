@@ -17,7 +17,15 @@ namespace Air.Cloud.Core.Enums
     /// </summary>
     public enum AppStartupTypeEnum
     {
+        /// <summary>
+        /// <para>zh-cn:Web 应用启动类型。</para>
+        /// <para>en-us:Web application startup type.</para>
+        /// </summary>
         WEB,
+        /// <summary>
+        /// <para>zh-cn:后台宿主启动类型。</para>
+        /// <para>en-us:Background host startup type.</para>
+        /// </summary>
         HOST
     }
 }

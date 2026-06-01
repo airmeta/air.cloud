@@ -72,8 +72,8 @@ namespace Air.Cloud.Core.Modules.AppAspect.Internal
             }
         }
         /// <summary>
-        ///  <para>zh-cn:方法执行之后</para>
-        ///  <para>en-us:Befor method execute</para>
+        ///  <para>zh-cn:方法执行之后触发切面后置逻辑。</para>
+        ///  <para>en-us:Triggers aspect after logic after the method is executed.</para>
         /// </summary>
         /// <param name="name">
         /// <para>zh-cn:方法名</para>
@@ -102,8 +102,8 @@ namespace Air.Cloud.Core.Modules.AppAspect.Internal
             }
         }
         /// <summary>
-        ///  <para>zh-cn:方法执行之后</para>
-        ///  <para>en-us:Befor method execute</para>
+        ///  <para>zh-cn:围绕方法执行过程触发切面逻辑，可在目标方法前后调整参数、结果或处理异常。</para>
+        ///  <para>en-us:Triggers aspect logic around the method execution process, allowing parameters, results, or exceptions to be adjusted before and after the target method call.</para>
         /// </summary>
         /// <param name="name">
         /// <para>zh-cn:方法名</para>
@@ -121,6 +121,10 @@ namespace Air.Cloud.Core.Modules.AppAspect.Internal
         ///  <para>zh-cn:方法本身</para>
         ///  <para>en-us:Method delegate</para>
         /// </param>
+        /// <returns>
+        /// <para>zh-cn:目标方法或环绕切面处理后的返回值。</para>
+        /// <para>en-us:The return value from the target method or the around-aspect processing.</para>
+        /// </returns>
         [Advice(Kind.Around, Targets = Target.Method)]
         public object Around([Argument(Source.Name)] string name, [Argument(Source.Arguments)] object[] args, [Argument(Source.Type)] Type hostType, [Argument(Source.Target)] Func<object[], object> target)
         {

@@ -10,7 +10,6 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Enums;
-using Air.Cloud.Core.Enums;
 
 using Org.BouncyCastle.Asn1;
 
@@ -95,6 +94,7 @@ namespace Air.Cloud.Core.App
             /// <summary>
             /// <para>zh-cn:当前程序虚拟运行环境标识字符串</para>
             /// <para>en-us:Current program virtual running environment identifier string</para>
+            /// </summary>
             internal static string VirtualEnvironmentKey()
             {
                 if (AppEnvironment.EnvironmentKey.IsNullOrEmpty())
@@ -107,6 +107,7 @@ namespace Air.Cloud.Core.App
             /// <summary>
             /// <para>zh-cn:当前程序虚拟运行环境标识字符串</para>
             /// <para>en-us:Current program virtual running environment identifier string</para>
+            /// </summary>
             internal static string RealEnvironmentKey()
             {
                 EnvironmentEnums environmentEnums = RealEnvironment();

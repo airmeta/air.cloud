@@ -85,46 +85,46 @@ namespace Air.Cloud.Core.Standard.AmazonS3
         /// <para>zh-cn:根据访问键获取令牌</para>
         /// <para>en-us:Get token by key</para>
         /// </summary>
-        public string Token(string Key = null) => Client.Token(Key);
+        public string? Token(string? Key = null) => Client.Token(Key);
 
         /// <summary>
         /// <para>zh-cn:获取原始 Client</para>
         /// <para>en-us:Get raw client</para>
         /// </summary>
-        public object GetClient(string Key = null) => Client.Client(Key);
+        public object GetClient(string? Key = null) => Client.Client(Key);
 
         /// <summary>
         /// <para>zh-cn:获取原始 Client（强类型）</para>
         /// <para>en-us:Get raw client (strongly typed)</para>
         /// </summary>
-        public TClient GetClient<TClient>(string Key = null) where TClient : class => Client.Client<TClient>(Key);
+        public TClient GetClient<TClient>(string? Key = null) where TClient : class => Client.Client<TClient>(Key);
 
         /// <summary>
         /// <para>zh-cn:查询 Bucket 是否存在</para>
         /// <para>en-us:Check whether bucket exists</para>
         /// </summary>
-        public Task<bool> BucketExistsAsync(string BucketName, string Key = null, CancellationToken cancellationToken = default)
+        public Task<bool> BucketExistsAsync(string BucketName, string? Key = null, CancellationToken cancellationToken = default)
             => Bulk.BucketExistsAsync(BucketName, Key, cancellationToken);
 
         /// <summary>
         /// <para>zh-cn:获取 Bucket 列表</para>
         /// <para>en-us:Get bucket list</para>
         /// </summary>
-        public Task<IReadOnlyCollection<string>> GetBucketsAsync(string Key = null, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyCollection<string>> GetBucketsAsync(string? Key = null, CancellationToken cancellationToken = default)
             => Bulk.GetBucketsAsync(Key, cancellationToken);
 
         /// <summary>
         /// <para>zh-cn:创建 Bucket</para>
         /// <para>en-us:Create bucket</para>
         /// </summary>
-        public Task<bool> CreateBucketAsync(string BucketName, string Key = null, string Region = null, CancellationToken cancellationToken = default)
+        public Task<bool> CreateBucketAsync(string BucketName, string? Key = null, string? Region = null, CancellationToken cancellationToken = default)
             => Bulk.CreateBucketAsync(BucketName, Key, Region, cancellationToken);
 
         /// <summary>
         /// <para>zh-cn:删除 Bucket</para>
         /// <para>en-us:Delete bucket</para>
         /// </summary>
-        public Task<bool> DeleteBucketAsync(string BucketName, string Key = null, CancellationToken cancellationToken = default)
+        public Task<bool> DeleteBucketAsync(string BucketName, string? Key = null, CancellationToken cancellationToken = default)
             => Bulk.DeleteBucketAsync(BucketName, Key, cancellationToken);
 
         /// <summary>
@@ -159,28 +159,28 @@ namespace Air.Cloud.Core.Standard.AmazonS3
         /// <para>zh-cn:删除文件</para>
         /// <para>en-us:Delete object</para>
         /// </summary>
-        public Task<bool> DeleteObjectAsync(string BucketName, string ObjectKey, string Key = null, CancellationToken cancellationToken = default)
+        public Task<bool> DeleteObjectAsync(string BucketName, string ObjectKey, string? Key = null, CancellationToken cancellationToken = default)
             => Object.DeleteObjectAsync(BucketName, ObjectKey, Key, cancellationToken);
 
         /// <summary>
         /// <para>zh-cn:查询文件是否存在</para>
         /// <para>en-us:Check whether object exists</para>
         /// </summary>
-        public Task<bool> ObjectExistsAsync(string BucketName, string ObjectKey, string Key = null, CancellationToken cancellationToken = default)
+        public Task<bool> ObjectExistsAsync(string BucketName, string ObjectKey, string? Key = null, CancellationToken cancellationToken = default)
             => Object.ObjectExistsAsync(BucketName, ObjectKey, Key, cancellationToken);
 
         /// <summary>
         /// <para>zh-cn:获取文件元数据</para>
         /// <para>en-us:Get object metadata</para>
         /// </summary>
-        public Task<AmazonS3ObjectInfo> GetObjectInfoAsync(string BucketName, string ObjectKey, string Key = null, CancellationToken cancellationToken = default)
+        public Task<AmazonS3ObjectInfo> GetObjectInfoAsync(string BucketName, string ObjectKey, string? Key = null, CancellationToken cancellationToken = default)
             => Object.GetObjectInfoAsync(BucketName, ObjectKey, Key, cancellationToken);
 
         /// <summary>
         /// <para>zh-cn:获取 Bucket 下文件列表</para>
         /// <para>en-us:List objects under bucket</para>
         /// </summary>
-        public Task<IReadOnlyCollection<AmazonS3ObjectInfo>> ListObjectsAsync(string BucketName, string Prefix = null, string Key = null, int? MaxKeys = null, CancellationToken cancellationToken = default);
+        public Task<IReadOnlyCollection<AmazonS3ObjectInfo>> ListObjectsAsync(string BucketName, string? Prefix = null, string? Key = null, int? MaxKeys = null, CancellationToken cancellationToken = default);
     }
 
    

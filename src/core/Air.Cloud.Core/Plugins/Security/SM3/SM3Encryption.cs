@@ -28,7 +28,8 @@ namespace Air.Cloud.Core.Plugins.Security.SM3
         /// <summary>
         /// 使用自定义密钥加密
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name="data">需要计算 SM3 摘要的原始文本。</param>
+        /// <param name="key">用于 HMAC-SM3 计算的密钥。</param>
         /// <returns>16进制字符串</returns>
         public static string Entrypt(string data, string key)
         {

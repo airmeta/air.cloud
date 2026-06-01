@@ -41,12 +41,14 @@ public partial interface IDbRepository<TDbContextLocator>
     /// </summary>
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
-    TService GetService<TService>();
+    TService GetService<TService>()
+        where TService : notnull;
 
     /// <summary>
     /// 解析服务
     /// </summary>
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
-    TService GetRequiredService<TService>();
+    TService GetRequiredService<TService>()
+        where TService : notnull;
 }

@@ -33,6 +33,10 @@ namespace Air.Cloud.Core.Plugins.Security.SM2
     /// </remarks>
     public sealed class SM2Encryption
     {
+        /// <summary>
+        /// <para>zh-cn:SM2 曲线参数和加解密/签名组件上下文。</para>
+        /// <para>en-us:SM2 curve parameters and encryption/signature component context.</para>
+        /// </summary>
         public static SM2Parameter Parameter;
         static SM2Encryption()
         {
@@ -64,6 +68,7 @@ namespace Air.Cloud.Core.Plugins.Security.SM2
         /// 解密
         /// </summary>
         /// <param name="Content">密文</param>
+        /// <param name="PrivateKey">私钥</param>
         /// <returns></returns>
         public static string Decrypt(string Content, string PrivateKey)
         {
@@ -170,17 +175,65 @@ namespace Air.Cloud.Core.Plugins.Security.SM2
         /// </summary>
         public class SM2Parameter
         {
+            /// <summary>
+            /// <para>zh-cn:SM2 椭圆曲线基础参数。</para>
+            /// <para>en-us:Base SM2 elliptic curve parameters.</para>
+            /// </summary>
             public static string[] ecc_param = { "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF", "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC", "28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93", "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123", "32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7", "BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0" };
+            /// <summary>
+            /// <para>zh-cn:有限域素数 p。</para>
+            /// <para>en-us:Finite field prime p.</para>
+            /// </summary>
             public BigInteger ecc_p;
+            /// <summary>
+            /// <para>zh-cn:椭圆曲线参数 a。</para>
+            /// <para>en-us:Elliptic curve parameter a.</para>
+            /// </summary>
             public BigInteger ecc_a;
+            /// <summary>
+            /// <para>zh-cn:椭圆曲线参数 b。</para>
+            /// <para>en-us:Elliptic curve parameter b.</para>
+            /// </summary>
             public BigInteger ecc_b;
+            /// <summary>
+            /// <para>zh-cn:基点阶 n。</para>
+            /// <para>en-us:Base point order n.</para>
+            /// </summary>
             public BigInteger ecc_n;
+            /// <summary>
+            /// <para>zh-cn:基点 x 坐标。</para>
+            /// <para>en-us:Base point x coordinate.</para>
+            /// </summary>
             public BigInteger ecc_gx;
+            /// <summary>
+            /// <para>zh-cn:基点 y 坐标。</para>
+            /// <para>en-us:Base point y coordinate.</para>
+            /// </summary>
             public BigInteger ecc_gy;
+            /// <summary>
+            /// <para>zh-cn:SM2 椭圆曲线实例。</para>
+            /// <para>en-us:SM2 elliptic curve instance.</para>
+            /// </summary>
             public ECCurve ecc_curve;
+            /// <summary>
+            /// <para>zh-cn:SM2 椭圆曲线域参数。</para>
+            /// <para>en-us:SM2 elliptic curve domain parameters.</para>
+            /// </summary>
             public ECDomainParameters ecc_bc_spec;
+            /// <summary>
+            /// <para>zh-cn:SM2 加解密引擎实例。</para>
+            /// <para>en-us:SM2 encryption and decryption engine instance.</para>
+            /// </summary>
             public static SM2Engine Engine;
+            /// <summary>
+            /// <para>zh-cn:SM2 签名器实例。</para>
+            /// <para>en-us:SM2 signer instance.</para>
+            /// </summary>
             public static SM2Signer Signer;
+            /// <summary>
+            /// <para>zh-cn:初始化 SM2 参数上下文。</para>
+            /// <para>en-us:Initializes the SM2 parameter context.</para>
+            /// </summary>
             public SM2Parameter()
             {
                 ecc_p = new BigInteger(ecc_param[0], 16);
@@ -203,6 +256,18 @@ namespace Air.Cloud.Core.Plugins.Security.SM2
                 Action.Invoke(Engine);
                 return Engine;
             }
+            /// <summary>
+            /// <para>zh-cn:初始化签名器。</para>
+            /// <para>en-us:Initializes the signer.</para>
+            /// </summary>
+            /// <param name="Action">
+            /// <para>zh-cn:签名器初始化动作。</para>
+            /// <para>en-us:Signer initialization action.</para>
+            /// </param>
+            /// <returns>
+            /// <para>zh-cn:已初始化的签名器实例。</para>
+            /// <para>en-us:Initialized signer instance.</para>
+            /// </returns>
             public SM2Signer InitSigner(Action<SM2Signer> Action)
             {
                 Signer = new SM2Signer();

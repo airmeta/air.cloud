@@ -13,16 +13,33 @@ using Microsoft.Extensions.Logging;
 namespace Air.Cloud.Core.Extensions
 {
         /// <summary>
-        /// 自定义控制台日志提供器（负责创建日志实例）
+        /// <para>zh-cn:提供 Air.Cloud 自定义控制台日志实例，将 Microsoft.Extensions.Logging 日志接入框架统一输出管道。</para>
+        /// <para>en-us:Provides Air.Cloud custom console logger instances, connecting Microsoft.Extensions.Logging logs to the framework unified output pipeline.</para>
         /// </summary>
         public class AppLogProvider : ILoggerProvider
         {
+            /// <summary>
+            /// <para>zh-cn:根据日志分类名称创建自定义控制台日志实例。</para>
+            /// <para>en-us:Creates a custom console logger instance by logger category name.</para>
+            /// </summary>
+            /// <param name="categoryName">
+            /// <para>zh-cn:日志分类名称，通常为框架组件或业务类型名称。</para>
+            /// <para>en-us:The logger category name, usually a framework component or business type name.</para>
+            /// </param>
+            /// <returns>
+            /// <para>zh-cn:用于输出指定分类日志的日志实例。</para>
+            /// <para>en-us:A logger instance used to write logs for the specified category.</para>
+            /// </returns>
             public ILogger CreateLogger(string categoryName)
             {
                 // categoryName 是日志分类（如 Microsoft.AspNetCore.Server.Kestrel），作为 Title 一部分
                 return new CustomConsoleLogger(categoryName);
             }
 
+            /// <summary>
+            /// <para>zh-cn:释放日志提供器资源。当前实现没有需要释放的托管资源。</para>
+            /// <para>en-us:Releases logger provider resources. The current implementation has no managed resources to release.</para>
+            /// </summary>
             public void Dispose()
             {
                 // 无需释放资源，空实现
@@ -30,20 +47,54 @@ namespace Air.Cloud.Core.Extensions
         }
 
         /// <summary>
-        /// 自定义控制台日志（实现具体格式化逻辑）
+        /// <para>zh-cn:实现 Air.Cloud 自定义控制台日志格式化逻辑，并将日志内容转换为 `AppPrintInformation` 输出。</para>
+        /// <para>en-us:Implements Air.Cloud custom console log formatting and converts log entries to `AppPrintInformation` output.</para>
         /// </summary>
         public class CustomConsoleLogger : ILogger
         {
             private readonly string _categoryName;
 
+            /// <summary>
+            /// <para>zh-cn:初始化指定分类名称的自定义控制台日志实例。</para>
+            /// <para>en-us:Initializes a custom console logger instance for the specified category name.</para>
+            /// </summary>
+            /// <param name="categoryName">
+            /// <para>zh-cn:日志分类名称。</para>
+            /// <para>en-us:The logger category name.</para>
+            /// </param>
             public CustomConsoleLogger(string categoryName)
             {
                 _categoryName = categoryName;
             }
 
             /// <summary>
-            /// 核心格式化方法：所有日志都会经过这里输出
+            /// <para>zh-cn:写入日志事件，并将日志级别、标题和内容映射到框架统一输出模型。</para>
+            /// <para>en-us:Writes a log event and maps its level, title, and content to the framework unified output model.</para>
             /// </summary>
+            /// <typeparam name="TState">
+            /// <para>zh-cn:日志状态对象类型。</para>
+            /// <para>en-us:The log state object type.</para>
+            /// </typeparam>
+            /// <param name="logLevel">
+            /// <para>zh-cn:日志级别。</para>
+            /// <para>en-us:The log level.</para>
+            /// </param>
+            /// <param name="eventId">
+            /// <para>zh-cn:日志事件标识。</para>
+            /// <para>en-us:The log event identifier.</para>
+            /// </param>
+            /// <param name="state">
+            /// <para>zh-cn:日志状态对象。</para>
+            /// <para>en-us:The log state object.</para>
+            /// </param>
+            /// <param name="exception">
+            /// <para>zh-cn:日志关联异常。</para>
+            /// <para>en-us:The exception associated with the log entry.</para>
+            /// </param>
+            /// <param name="formatter">
+            /// <para>zh-cn:用于格式化日志状态和异常的委托。</para>
+            /// <para>en-us:The delegate used to format the log state and exception.</para>
+            /// </param>
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                     // 1. 过滤掉不需要的日志级别（可选，如只输出 Information 及以上）
@@ -114,12 +165,40 @@ namespace Air.Cloud.Core.Extensions
                     _ => categoryName // 其他分类保留原名
                 };
             }
+            /// <summary>
+            /// <para>zh-cn:判断指定日志级别是否启用。</para>
+            /// <para>en-us:Determines whether the specified log level is enabled.</para>
+            /// </summary>
+            /// <param name="logLevel">
+            /// <para>zh-cn:需要判断的日志级别。</para>
+            /// <para>en-us:The log level to check.</para>
+            /// </param>
+            /// <returns>
+            /// <para>zh-cn:如果该级别日志启用则返回 `true`；否则返回 `false`。</para>
+            /// <para>en-us:Returns `true` when the log level is enabled; otherwise returns `false`.</para>
+            /// </returns>
             public bool IsEnabled(LogLevel logLevel)
             {
                 // 启用所有日志级别（可根据需求调整，如只启用 Information 及以上）
                 return logLevel >= LogLevel.Debug;
             }
 
+            /// <summary>
+            /// <para>zh-cn:开始一个日志作用域。当前实现不记录作用域信息，并返回空释放对象。</para>
+            /// <para>en-us:Begins a log scope. The current implementation does not record scope information and returns a no-op disposable object.</para>
+            /// </summary>
+            /// <typeparam name="TState">
+            /// <para>zh-cn:日志作用域状态类型。</para>
+            /// <para>en-us:The log scope state type.</para>
+            /// </typeparam>
+            /// <param name="state">
+            /// <para>zh-cn:日志作用域状态。</para>
+            /// <para>en-us:The log scope state.</para>
+            /// </param>
+            /// <returns>
+            /// <para>zh-cn:用于结束作用域的释放对象。</para>
+            /// <para>en-us:A disposable object used to end the scope.</para>
+            /// </returns>
             public IDisposable BeginScope<TState>(TState state)
             {
                 // 不需要日志范围，返回空 disposable
@@ -134,10 +213,23 @@ namespace Air.Cloud.Core.Extensions
         }
 
         /// <summary>
-        /// 扩展方法：简化日志配置
+        /// <para>zh-cn:提供自定义日志配置扩展方法，用于将 Air.Cloud 控制台日志提供器注册到日志构建器。</para>
+        /// <para>en-us:Provides custom logging configuration extension methods used to register the Air.Cloud console logger provider on a logging builder.</para>
         /// </summary>
         public static class CustomLoggingExtensions
         {
+            /// <summary>
+            /// <para>zh-cn:清除默认日志提供器并添加 Air.Cloud 自定义控制台日志提供器。</para>
+            /// <para>en-us:Clears default logging providers and adds the Air.Cloud custom console logger provider.</para>
+            /// </summary>
+            /// <param name="builder">
+            /// <para>zh-cn:日志构建器。</para>
+            /// <para>en-us:The logging builder.</para>
+            /// </param>
+            /// <returns>
+            /// <para>zh-cn:完成配置后的日志构建器。</para>
+            /// <para>en-us:The logging builder after configuration.</para>
+            /// </returns>
             public static ILoggingBuilder AddCustomConsole(this ILoggingBuilder builder)
             {
                 // 清除默认控制台日志，避免格式冲突

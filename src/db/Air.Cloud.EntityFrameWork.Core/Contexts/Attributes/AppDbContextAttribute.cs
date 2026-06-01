@@ -26,7 +26,7 @@ public class AppDbContextAttribute : Attribute
     /// <param name="slaveDbContextLocators"></param>
     public AppDbContextAttribute(params Type[] slaveDbContextLocators)
     {
-        SlaveDbContextLocators = slaveDbContextLocators;
+        SlaveDbContextLocators = slaveDbContextLocators ?? Array.Empty<Type>();
     }
 
     /// <summary>
@@ -36,15 +36,15 @@ public class AppDbContextAttribute : Attribute
     /// <param name="slaveDbContextLocators"></param>
     public AppDbContextAttribute(string connectionMetadata, params Type[] slaveDbContextLocators)
     {
-        ConnectionMetadata = connectionMetadata;
-        SlaveDbContextLocators = slaveDbContextLocators;
+        ConnectionMetadata = connectionMetadata ?? string.Empty;
+        SlaveDbContextLocators = slaveDbContextLocators ?? Array.Empty<Type>();
     }
 
     /// <summary>
     /// 数据库连接元数据
     /// </summary>
     /// <remarks>支持数据库连接字符串，配置文件的 ConnectionStrings 中的Key或配置文件的完整的配置路径，如果是内存数据库，则为数据库名称</remarks>
-    public string ConnectionMetadata { get; set; }
+    public string ConnectionMetadata { get; set; } = string.Empty;
 
     /// <summary>
     /// 数据库上下文模式
@@ -55,13 +55,13 @@ public class AppDbContextAttribute : Attribute
     /// 表统一前缀
     /// </summary>
     /// <remarks>前缀不能包含 . 和特殊符号，可使用下划线或短杆线</remarks>
-    public string TablePrefix { get; set; }
+    public string TablePrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// 表统一后缀
     /// </summary>
     /// <remarks>后缀不能包含 . 和特殊符号，可使用下划线或短杆线</remarks>
-    public string TableSuffix { get; set; }
+    public string TableSuffix { get; set; } = string.Empty;
 
     /// <summary>
     /// 指定从库定位器

@@ -45,7 +45,12 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         // 获取动作方法描述器
-        var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
+        if (context.ActionDescriptor is not ControllerActionDescriptor actionDescriptor)
+        {
+            _ = await next();
+            return;
+        }
+
         var method = actionDescriptor.MethodInfo;
 
         // 获取请求上下文
@@ -72,7 +77,8 @@ public sealed class UnitOfWorkFilter : IAsyncActionFilter
         var _unitOfWork = httpContext.RequestServices.GetRequiredService<IUnitOfWork>();
 
         // 获取工作单元特性
-        var unitOfWorkAttribute = method.GetCustomAttribute<UnitOfWorkAttribute>();
+        var unitOfWorkAttribute = method.GetCustomAttribute<UnitOfWorkAttribute>()
+            ?? throw new InvalidOperationException($"方法 {method.DeclaringType?.FullName}.{method.Name} 未找到工作单元配置特性。");
 
         // 调用开启事务方法
         _unitOfWork.BeginTransaction(context, unitOfWorkAttribute);

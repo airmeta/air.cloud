@@ -61,10 +61,22 @@ namespace Air.Cloud.Core.Attributes
         /// </remarks>
         public Type DependType { get; set; }
 
+        /// <summary>
+        /// <para>zh-cn:初始化默认的应用启动配置特性。</para>
+        /// <para>en-us:Initializes a default application startup configuration attribute.</para>
+        /// </summary>
         public AppStartupAttribute()
         {
 
         }
+        /// <summary>
+        /// <para>zh-cn:使用指定执行顺序初始化应用启动配置特性。</para>
+        /// <para>en-us:Initializes the application startup configuration attribute with the specified execution order.</para>
+        /// </summary>
+        /// <param name="Order">
+        /// <para>zh-cn:启动类执行顺序，数值越小越先执行。</para>
+        /// <para>en-us:Startup execution order; smaller values run earlier.</para>
+        /// </param>
         public AppStartupAttribute(int Order)
         {
             this.Order = Order;

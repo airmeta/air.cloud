@@ -45,13 +45,25 @@ namespace Air.Cloud.Core.Plugins.Cert
             //读取配置文件里面的证书文件密码
             var password = AppConfiguration.Configuration["AppSecurity:RSACertInfo:RSACertPassword"];
 
+            return LoadRsaCert(path, password);
+        }
+
+        /// <summary>
+        /// 加载RSA证书内容信息
+        /// </summary>
+        /// <param name="path">证书文件路径</param>
+        /// <param name="password">证书文件密码</param>
+        /// <returns></returns>
+        public static Tuple<string, string> LoadRsaCert(string path, string password)
+        {
             return new Tuple<string, string>(GetPublicKey(path, password), GetPrivateKey(path, password));
         }
 
         /// <summary>
         /// 加载公钥信息
         /// </summary>
-        /// <param name="pubKeyFile"></param>
+        /// <param name="pubKeyFile">证书文件路径。</param>
+        /// <param name="password">证书文件密码。</param>
         /// <returns></returns>
         private static string GetPublicKey(string pubKeyFile, string password)
         {
@@ -88,9 +100,11 @@ namespace Air.Cloud.Core.Plugins.Cert
                 throw new ArgumentException("证书文件路径不能为空", nameof(certificateFile));
             }
 
-            return string.IsNullOrWhiteSpace(password)
-                ? new X509Certificate2(certificateFile)
-                : new X509Certificate2(certificateFile, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
+            return X509CertificateLoader.LoadPkcs12FromFile(
+                certificateFile,
+                password ?? string.Empty,
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet,
+                Pkcs12LoaderLimits.Defaults);
         }
 
         private static string NormalizePem(string pem)

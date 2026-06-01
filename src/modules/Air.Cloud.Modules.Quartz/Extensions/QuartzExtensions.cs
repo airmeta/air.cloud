@@ -237,10 +237,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             services.AddSchedulerStandard<TSchedulerOption>();
             if (configure == null)
             {
-                configure = q =>
-                {
-                    q.UseMicrosoftDependencyInjectionJobFactory();
-                };
+                configure = ConfigureDefaultQuartz;
             }
             if (quartzHostedServiceConfigure == null)
             {
@@ -254,6 +251,18 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             var QuartJobService = AppCore.GetService<QuartzJobService<TSchedulerOption>>();
             var ServiceProvider = AppCore.GetService<IServiceProvider>();
             QuartJobService.StartAsync<TSchedulerOption>(ServiceProvider).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// <para>zh-cn:配置默认 Quartz 选项。</para>
+        /// <para>en-us:Configure default Quartz options.</para>
+        /// </summary>
+        /// <param name="quartz">
+        /// <para>zh-cn:Quartz 配置器。</para>
+        /// <para>en-us:Quartz configurator.</para>
+        /// </param>
+        public static void ConfigureDefaultQuartz(IServiceCollectionQuartzConfigurator quartz)
+        {
         }
     }
 }

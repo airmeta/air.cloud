@@ -21,7 +21,8 @@ namespace Air.Cloud.Core.Plugins.Security.MD5
         /// <summary>
         /// 获得32位的MD5加密
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">需要计算 MD5 的原始文本。</param>
+        /// <param name="upper">是否将结果转换为大写。</param>
         /// <returns></returns>
         public static string GetMd5By32(string input, bool upper = false)
         {
@@ -38,7 +39,8 @@ namespace Air.Cloud.Core.Plugins.Security.MD5
         /// <summary>
         /// 获得16位的MD5加密
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">需要计算 MD5 的原始文本。</param>
+        /// <param name="upper">是否将结果转换为大写。</param>
         /// <returns></returns>
         public static string GetMd5By16(string input, bool upper = false)
         {
@@ -48,7 +50,8 @@ namespace Air.Cloud.Core.Plugins.Security.MD5
         /// <summary>
         /// 获得8位的MD5加密
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">需要计算 MD5 的原始文本。</param>
+        /// <param name="upper">是否将结果转换为大写。</param>
         /// <returns></returns>
         public static string GetMd5By8(string input, bool upper = false)
         {
@@ -58,7 +61,8 @@ namespace Air.Cloud.Core.Plugins.Security.MD5
         /// <summary>
         /// 获得4位的MD5加密
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">需要计算 MD5 的原始文本。</param>
+        /// <param name="upper">是否将结果转换为大写。</param>
         /// <returns></returns>
         public static string GetMd5By4(string input, bool upper = false)
         {

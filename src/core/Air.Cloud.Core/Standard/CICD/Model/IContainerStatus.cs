@@ -12,12 +12,21 @@
 namespace Air.Cloud.Core.Standard.CICD.Model
 {
     /// <summary>
-    /// 容器状态
+    /// <para>zh-cn:定义容器运行状态信息标准。</para>
+    /// <para>en-us:Defines the container runtime status information contract.</para>
     /// </summary>
     public interface IContainerStatus
     {
+        /// <summary>
+        /// <para>zh-cn:获取或设置容器唯一标识。</para>
+        /// <para>en-us:Gets or sets the unique container identifier.</para>
+        /// </summary>
         public string ContainerId { get; set; }
 
+        /// <summary>
+        /// <para>zh-cn:获取或设置容器是否处于正常运行状态。</para>
+        /// <para>en-us:Gets or sets whether the container is in a normal running state.</para>
+        /// </summary>
         public bool ContainerStatus { get; set; }
     }
 }

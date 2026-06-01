@@ -71,7 +71,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取 Bucket 下文件列表</para>
         /// <para>en-us:List objects under bucket</para>
         /// </summary>
-        public Task<IReadOnlyCollection<AmazonS3ObjectInfo>> ListObjectsAsync(string BucketName, string Prefix = null, string Key = null, int? MaxKeys = null, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyCollection<AmazonS3ObjectInfo>> ListObjectsAsync(string BucketName, string? Prefix = null, string? Key = null, int? MaxKeys = null, CancellationToken cancellationToken = default)
             => Object.ListObjectsAsync(BucketName, Prefix, Key, MaxKeys, cancellationToken);
     }
 }

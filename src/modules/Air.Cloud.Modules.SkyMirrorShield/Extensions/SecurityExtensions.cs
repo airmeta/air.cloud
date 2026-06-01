@@ -33,6 +33,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.Reflection;
 
+#nullable enable annotations
+
 public static class SecurityExtensions
 {
 

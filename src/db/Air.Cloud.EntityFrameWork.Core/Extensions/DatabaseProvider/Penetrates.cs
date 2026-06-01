@@ -67,7 +67,8 @@ internal static class Penetrates
     /// <returns></returns>
     internal static void CheckDbContextLocator(Type dbContextLocatorType, out Type dbContextType)
     {
-        if (!DbContextDescriptors.TryGetValue(dbContextLocatorType, out dbContextType)) throw new InvalidCastException($" The dbcontext locator `{dbContextLocatorType.Name}` is not bind.");
+        if (!DbContextDescriptors.TryGetValue(dbContextLocatorType, out var foundDbContextType)) throw new InvalidCastException($" The dbcontext locator `{dbContextLocatorType.Name}` is not bind.");
+        dbContextType = foundDbContextType;
     }
 
     /// <summary>
@@ -80,7 +81,7 @@ internal static class Penetrates
         // 添加拦截器
         var interceptorList = GetDefaultInterceptors();
 
-        if (interceptors != null || interceptors.Length > 0)
+        if (interceptors != null && interceptors.Length > 0)
         {
             interceptorList.AddRange(interceptors);
         }

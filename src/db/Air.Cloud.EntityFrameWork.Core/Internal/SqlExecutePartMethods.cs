@@ -2155,7 +2155,15 @@ public sealed partial class SqlExecutePart
     /// <returns></returns>
     private IPrivateSqlRepository GetSqlRepository()
     {
-        var repository = AppCore.GetService(typeof(ISqlRepository<>).MakeGenericType(DbContextLocator), ContextScoped) as IPrivateSqlRepository;
+        var repositoryType = typeof(ISqlRepository<>).MakeGenericType(DbContextLocator);
+        var repository = (ContextScoped == null
+            ? AppCore.GetService(repositoryType)
+            : AppCore.GetService(repositoryType, ContextScoped)) as IPrivateSqlRepository;
+        if (repository == null)
+        {
+            throw new InvalidOperationException($"SQL repository for locator {DbContextLocator.FullName} was not registered.");
+        }
+
         // 设置超时时间
         if (Timeout > 0)
         {

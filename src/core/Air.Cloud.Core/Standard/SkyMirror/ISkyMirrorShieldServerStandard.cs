@@ -20,7 +20,10 @@ namespace Air.Cloud.Core.Standard.SkyMirror
     /// </summary>
     public interface ISkyMirrorShieldServerStandard : IStandard
     {
-
+        /// <summary>
+        /// <para>zh-cn:服务端端点数据缓存。</para>
+        /// <para>en-us:Server endpoint data cache.</para>
+        /// </summary>
         public static IDictionary<string, EndpointData> ServerEndpointDatas = new Dictionary<string,EndpointData>();
 
         /// <summary>

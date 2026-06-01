@@ -12,6 +12,8 @@
 using System;
 using Org.BouncyCastle.Crypto;
 
+#nullable enable annotations
+
 namespace Air.Cloud.Core.Plugins.Security.SM3
 {
     /// <summary>
@@ -167,7 +169,7 @@ namespace Air.Cloud.Core.Plugins.Security.SM3
         public abstract int DoFinal(byte[] output, int outOff);
 
         /// <summary>
-        /// BlockUpdate overload that accepts ReadOnlySpan<byte>
+        /// BlockUpdate overload that accepts ReadOnlySpan&lt;byte&gt;.
         /// 无分配实现，尽量以4字节块为单位调用底层 ProcessWord
         /// </summary>
         /// <param name="input"></param>
@@ -215,7 +217,7 @@ namespace Air.Cloud.Core.Plugins.Security.SM3
         }
 
         /// <summary>
-        /// DoFinal overload that accepts Span<byte>
+        /// DoFinal overload that accepts Span&lt;byte&gt;.
         /// </summary>
         /// <param name="output"></param>
         /// <returns>number of bytes written</returns>

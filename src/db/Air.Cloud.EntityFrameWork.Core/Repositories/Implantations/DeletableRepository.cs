@@ -322,8 +322,8 @@ public partial class PrivateRepository<TEntity>
     private TEntity BuildDeletedEntity(object key, bool isRealDelete = true)
     {
         // 读取主键
-        var keyProperty = EntityType.FindPrimaryKey().Properties.AsEnumerable().FirstOrDefault()?.PropertyInfo;
-        if (keyProperty == null) return default;
+        var keyProperty = EntityType.FindPrimaryKey()?.Properties.AsEnumerable().FirstOrDefault()?.PropertyInfo
+            ?? throw new InvalidOperationException($"实体 {typeof(TEntity).FullName} 未配置主键，无法构建删除实体。");
 
         // 判断当前主键是否被跟踪了
         var tracking = CheckTrackState(key, out var entityEntry, keyProperty.Name);
@@ -332,7 +332,8 @@ public partial class PrivateRepository<TEntity>
             // 设置实体状态为已删除
             if (isRealDelete) ChangeEntityState(entityEntry, EntityState.Deleted);
 
-            return entityEntry.Entity as TEntity;
+            return entityEntry.Entity as TEntity
+                ?? throw new InvalidOperationException($"被跟踪实体无法转换为 {typeof(TEntity).FullName}。");
         }
 
         // 如果没有被跟踪，创建实体对象并设置主键值

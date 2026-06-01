@@ -50,6 +50,18 @@ namespace Air.Cloud.Core.Standard.TraceLog.Defaults
             });
         }
 
+        /// <summary>
+        /// <para>zh-cn:写入应用打印信息格式的追踪日志。</para>
+        /// <para>en-us:Writes trace logs represented by application print information.</para>
+        /// </summary>
+        /// <param name="logContent">
+        /// <para>zh-cn:应用打印信息。</para>
+        /// <para>en-us:Application print information.</para>
+        /// </param>
+        /// <param name="Tag">
+        /// <para>zh-cn:日志标签集合。</para>
+        /// <para>en-us:Log tag collection.</para>
+        /// </param>
         public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
         {
             AppRealization.Output.Print(logContent);

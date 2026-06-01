@@ -20,6 +20,8 @@ using Microsoft.AspNetCore.Mvc.Routing;
 
 using System.Reflection;
 
+#nullable enable annotations
+
 namespace Air.Cloud.Core.Standard.Taxin.Tools
 {
     /// <summary>
@@ -60,7 +62,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
                 ITaxinStoreStandard.Current = Package;
                 return Package;
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
@@ -143,6 +145,7 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
         /// <para>en-us:Set data packages</para>
         /// </summary>
         /// <param name="Result"></param>
+        /// <param name="EnableSort"></param>
         /// <returns></returns>
         public static void SetPackages(IEnumerable<TaxinRouteDataPackage> Result,bool EnableSort=true)
         {

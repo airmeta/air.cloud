@@ -13,6 +13,10 @@ using Air.Cloud.Core.Modules.DynamicApp.Enums;
 
 namespace Air.Cloud.Core.Modules.DynamicApp.Model
 {
+    /// <summary>
+    /// <para>zh-cn:动态模块程序集信息。</para>
+    /// <para>en-us:Dynamic module assembly information.</para>
+    /// </summary>
     public  class ModAssemblyInformation
     {
         /// <summary>

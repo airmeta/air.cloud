@@ -129,7 +129,8 @@ namespace Air.Cloud.UnitTest.Modules.SkyWalking
             {
                 SendCallCount++;
                 var result = await Handler(Route, Data, Version);
-                return result as TResult;
+                return result as TResult
+                    ?? throw new InvalidCastException($"The handler result cannot be converted to {typeof(TResult).FullName}.");
             }
 
             /// <inheritdoc />

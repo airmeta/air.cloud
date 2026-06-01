@@ -20,10 +20,10 @@ public sealed class ProcedureOutputValue
     /// <summary>
     /// 输出参数名
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// 输出参数值
     /// </summary>
-    public object Value { get; set; }
+    public object Value { get; set; } = DBNull.Value;
 }

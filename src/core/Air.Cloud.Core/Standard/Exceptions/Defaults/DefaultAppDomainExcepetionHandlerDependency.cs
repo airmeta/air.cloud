@@ -13,6 +13,10 @@ using Air.Cloud.Core.Modules.AppPrint;
 
 namespace Air.Cloud.Core.Standard.Exceptions.Defaults
 {
+    /// <summary>
+    /// <para>zh-cn:默认全局异常处理依赖，负责输出非友好异常。</para>
+    /// <para>en-us:Default global exception handler dependency that outputs non-friendly exceptions.</para>
+    /// </summary>
     [IgnoreScanning]
     public class DefaultAppDomainExcepetionHandlerDependency : IAppDomainExceptionHandlerStandard
     {

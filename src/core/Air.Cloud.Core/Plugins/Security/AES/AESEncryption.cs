@@ -64,6 +64,7 @@ public class AESEncryption : IPlugin
     /// </summary>
     /// <param name="Hash">加密后字符串</param>
     /// <param name="Key">密钥</param>
+    /// <param name="Iv">向量</param>
     /// <returns></returns>
     public static string Decrypt(string Hash, string Key = null, string Iv = null)
     {

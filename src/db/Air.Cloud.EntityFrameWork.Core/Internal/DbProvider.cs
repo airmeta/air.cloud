@@ -53,31 +53,31 @@ public static class DbProvider
     /// <typeparam name="TDbContext"></typeparam>
     /// <param name="connectionMetadata">支持数据库连接字符串，配置文件的 ConnectionStrings 中的Key或 配置文件的完整的配置路径，如果是内存数据库，则为数据库名称</param>
     /// <returns></returns>
-    public static string GetConnectionString<TDbContext>(string connectionMetadata = default)
+    public static string GetConnectionString<TDbContext>(string? connectionMetadata = default)
         where TDbContext : DbContext
     {
         // 支持读取配置渲染
-        var connStrOrConnKey = connectionMetadata.Render();
+        var connStrOrConnKey = connectionMetadata?.Render() ?? string.Empty;
 
         // 如果没有配置数据库连接字符串，那么查找特性
         if (string.IsNullOrWhiteSpace(connStrOrConnKey))
         {
             var dbContextAttribute = GetAppDbContextAttribute(typeof(TDbContext));
-            if (dbContextAttribute == null) return default;
+            if (dbContextAttribute == null) return string.Empty;
 
             // 获取特性连接字符串（渲染配置模板）
-            connStrOrConnKey = dbContextAttribute.ConnectionMetadata.Render();
+            connStrOrConnKey = dbContextAttribute.ConnectionMetadata?.Render() ?? string.Empty;
         }
 
         // 如果都没有，则直接返回空
-        if (string.IsNullOrWhiteSpace(connStrOrConnKey)) return default;
+        if (string.IsNullOrWhiteSpace(connStrOrConnKey)) return string.Empty;
 
         // 如果包含 = 符号，那么认为是连接字符串
         if (connStrOrConnKey.Contains('=')) return connStrOrConnKey;
         else
         {
             // 如果包含 : 符号，那么认为是一个 Key 路径
-            if (connStrOrConnKey.Contains(':')) return AppConfiguration.Configuration[connStrOrConnKey];
+            if (connStrOrConnKey.Contains(':')) return AppConfiguration.Configuration[connStrOrConnKey] ?? string.Empty;
             else
             {
                 // 首先查找 DbConnectionString 键，如果没有找到，则当成 Key 去查找
@@ -92,12 +92,23 @@ public static class DbProvider
     /// </summary>
     /// <param name="dbContexType"></param>
     /// <returns></returns>
-    public static AppDbContextAttribute GetAppDbContextAttribute(Type dbContexType)
+    public static AppDbContextAttribute? GetAppDbContextAttribute(Type dbContexType)
     {
-        return DbContextAppDbContextAttributes.GetOrAdd(dbContexType, Function);
+        if (DbContextAppDbContextAttributes.TryGetValue(dbContexType, out var cachedAttribute))
+        {
+            return cachedAttribute;
+        }
+
+        var appDbContextAttribute = Function(dbContexType);
+        if (appDbContextAttribute != null)
+        {
+            DbContextAppDbContextAttributes[dbContexType] = appDbContextAttribute;
+        }
+
+        return appDbContextAttribute;
 
         // 本地静态函数
-        static AppDbContextAttribute Function(Type dbContextType)
+        static AppDbContextAttribute? Function(Type dbContextType)
         {
             if (!dbContextType.IsDefined(typeof(AppDbContextAttribute), true)) return default;
 

@@ -11,9 +11,21 @@
  */
 namespace Air.Cloud.Core.Plugins.Security.SM4
 {
+    /// <summary>
+    /// <para>zh-cn:SM4 分组密码底层工具，提供密钥扩展和 ECB/CBC 分组运算。</para>
+    /// <para>en-us:Low-level SM4 block cipher utility that provides key expansion and ECB/CBC block operations.</para>
+    /// </summary>
     public class SM4Util
     {
+        /// <summary>
+        /// <para>zh-cn:SM4 加密模式标识。</para>
+        /// <para>en-us:SM4 encryption mode flag.</para>
+        /// </summary>
         public const int SM4_ENCRYPT = 1;
+        /// <summary>
+        /// <para>zh-cn:SM4 解密模式标识。</para>
+        /// <para>en-us:SM4 decryption mode flag.</para>
+        /// </summary>
         public const int SM4_DECRYPT = 0;
 
         private long GET_ULONG_BE(byte[] b, int i)
@@ -45,6 +57,10 @@ namespace Air.Cloud.Core.Plugins.Security.SM4
             sk[31 - i] = t;
         }
 
+        /// <summary>
+        /// <para>zh-cn:SM4 S 盒查找表。</para>
+        /// <para>en-us:SM4 S-box lookup table.</para>
+        /// </summary>
         public byte[] SboxTable = new byte[] {  0xd6,  0x90,  0xe9,  0xfe,
          0xcc,  0xe1, 0x3d,  0xb7, 0x16,  0xb6,
         0x14,  0xc2, 0x28,  0xfb, 0x2c, 0x05, 0x2b, 0x67,
@@ -84,7 +100,15 @@ namespace Air.Cloud.Core.Plugins.Security.SM4
          0xc5, 0x6e,  0xc6,  0x84, 0x18,  0xf0,
         0x7d,  0xec, 0x3a,  0xdc, 0x4d, 0x20, 0x79,
          0xee, 0x5f, 0x3e,  0xd7,  0xcb, 0x39, 0x48 };
+        /// <summary>
+        /// <para>zh-cn:SM4 系统参数 FK。</para>
+        /// <para>en-us:SM4 system parameter FK.</para>
+        /// </summary>
         public uint[] FK = { 0xa3b1bac6, 0x56aa3350, 0x677d9197, 0xb27022dc };
+        /// <summary>
+        /// <para>zh-cn:SM4 固定参数 CK，用于轮密钥生成。</para>
+        /// <para>en-us:SM4 fixed parameter CK used for round key generation.</para>
+        /// </summary>
         public uint[] CK = { 0x00070e15,0x1c232a31,0x383f464d,0x545b6269,
                                     0x70777e85,0x8c939aa1,0xa8afb6bd,0xc4cbd2d9,
                                     0xe0e7eef5,0xfc030a11,0x181f262d,0x343b4249,

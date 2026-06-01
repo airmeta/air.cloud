@@ -14,12 +14,16 @@ using Air.Cloud.Core.App.Options;
 
 namespace Air.Cloud.Core.Standard.SkyMirror.Options
 {
+    /// <summary>
+    /// <para>zh-cn:表示 SkyMirror 认证同步配置项，包含服务端地址、推送路由、存储间隔和重试间隔。</para>
+    /// <para>en-us:Represents SkyMirror authentication synchronization options, including server address, push route, store interval, and retry interval.</para>
+    /// </summary>
     [ConfigurationInfo("AuthenticaSettings")]
     public  class AuthenticaOptions
     {
         /// <summary>
-        /// <para>zh-cn:服务端地址</para>
-        /// <para>en-us:Server address</para>
+        /// <para>zh-cn:获取有效服务端地址；未显式配置服务端地址时回退到应用网关地址。</para>
+        /// <para>en-us:Gets the effective server address; when no server address is explicitly configured, falls back to the application gateway address.</para>
         /// </summary>
         public string ServerAddress { get; set; }
 
@@ -32,8 +36,16 @@ namespace Air.Cloud.Core.Standard.SkyMirror.Options
         /// <para>en-us:If the server address is not configured in the configuration file, the gateway address is used</para>
         /// </remarks>
         public string GetServerAddress() => string.IsNullOrEmpty(ServerAddress) ? AppConfiguration.GetConfig<AppSettingsOptions>().GateWayAddress : ServerAddress;
+        /// <summary>
+        /// <para>zh-cn:获取或设置认证端点数据推送路由。</para>
+        /// <para>en-us:Gets or sets the authentication endpoint data push route.</para>
+        /// </summary>
         public string PushRoute { get; set; }="/authenticaton/endpoint/push";
 
+        /// <summary>
+        /// <para>zh-cn:获取或设置认证数据本地存储间隔，单位为毫秒。</para>
+        /// <para>en-us:Gets or sets the local authentication data store interval, in milliseconds.</para>
+        /// </summary>
         public int StoreIntervalMillis{get;set; }= 60000;
 
         /// <summary>

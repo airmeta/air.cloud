@@ -35,7 +35,7 @@ namespace unit.kafaka.client.entry
             {
                 services.AddEventBus(options =>
                 {
-                    options.AddSubscribers(Assembly.GetEntryAssembly());
+                    options.AddSubscribers(typeof(Startup).Assembly);
                     options.ReplaceStorager(services =>
                     {
                         var options = AppCore.GetOptions<KafkaSettingsOptions>();
@@ -57,6 +57,6 @@ namespace unit.kafaka.client.entry
 
     public class Contents
     {
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
     }
 }

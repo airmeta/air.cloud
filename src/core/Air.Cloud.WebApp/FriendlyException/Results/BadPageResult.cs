@@ -79,8 +79,9 @@ public class BadPageResult : StatusCodeResult
         byte[] buffer;
         using (var readStream = thisAssembly.GetManifestResourceStream(errorhtml))
         {
+            ArgumentNullException.ThrowIfNull(readStream);
             buffer = new byte[readStream.Length];
-            readStream.Read(buffer, 0, buffer.Length);
+            readStream.ReadExactly(buffer, 0, buffer.Length);
         }
 
         // 读取内容并替换

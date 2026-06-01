@@ -38,7 +38,7 @@ public static class DbObjectExtensions
     static DbObjectExtensions()
     {
         var appsettings = AppCore.Settings;
-        IsLogEntityFrameworkCoreSqlExecuteCommand = appsettings.OutputOriginalSqlExecuteLog.Value;
+        IsLogEntityFrameworkCoreSqlExecuteCommand = appsettings.OutputOriginalSqlExecuteLog == true;
     }
 
     /// <summary>
@@ -49,11 +49,11 @@ public static class DbObjectExtensions
     /// <param name="parameters">命令参数</param>
     /// <param name="commandType">命令类型</param>
     /// <returns>(DbConnection dbConnection, DbCommand dbCommand)</returns>
-    public static (DbConnection dbConnection, DbCommand dbCommand) PrepareDbCommand(this DatabaseFacade databaseFacade, string sql, DbParameter[] parameters = null, CommandType commandType = CommandType.Text)
+    public static (DbConnection dbConnection, DbCommand dbCommand) PrepareDbCommand(this DatabaseFacade databaseFacade, string sql, DbParameter[]? parameters = null, CommandType commandType = CommandType.Text)
     {
         // 创建数据库连接对象及数据库命令对象
         var (dbConnection, dbCommand) = databaseFacade.CreateDbCommand(sql, commandType);
-        SetDbParameters(databaseFacade.ProviderName, ref dbCommand, parameters);
+        SetDbParameters(databaseFacade.ProviderName ?? string.Empty, ref dbCommand, parameters);
 
         // 打开数据库连接
         OpenConnection(databaseFacade, dbConnection, dbCommand);
@@ -74,7 +74,7 @@ public static class DbObjectExtensions
     {
         // 创建数据库连接对象及数据库命令对象
         var (dbConnection, dbCommand) = databaseFacade.CreateDbCommand(sql, commandType);
-        SetDbParameters(databaseFacade.ProviderName, ref dbCommand, model, out var dbParameters);
+        SetDbParameters(databaseFacade.ProviderName ?? string.Empty, ref dbCommand, model, out var dbParameters);
 
         // 打开数据库连接
         OpenConnection(databaseFacade, dbConnection, dbCommand);
@@ -92,11 +92,11 @@ public static class DbObjectExtensions
     /// <param name="commandType">命令类型</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>(DbConnection dbConnection, DbCommand dbCommand)</returns>
-    public static async Task<(DbConnection dbConnection, DbCommand dbCommand)> PrepareDbCommandAsync(this DatabaseFacade databaseFacade, string sql, DbParameter[] parameters = null, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
+    public static async Task<(DbConnection dbConnection, DbCommand dbCommand)> PrepareDbCommandAsync(this DatabaseFacade databaseFacade, string sql, DbParameter[]? parameters = null, CommandType commandType = CommandType.Text, CancellationToken cancellationToken = default)
     {
         // 创建数据库连接对象及数据库命令对象
         var (dbConnection, dbCommand) = databaseFacade.CreateDbCommand(sql, commandType);
-        SetDbParameters(databaseFacade.ProviderName, ref dbCommand, parameters);
+        SetDbParameters(databaseFacade.ProviderName ?? string.Empty, ref dbCommand, parameters);
 
         // 打开数据库连接
         await OpenConnectionAsync(databaseFacade, dbConnection, dbCommand, cancellationToken);
@@ -118,7 +118,7 @@ public static class DbObjectExtensions
     {
         // 创建数据库连接对象及数据库命令对象
         var (dbConnection, dbCommand) = databaseFacade.CreateDbCommand(sql, commandType);
-        SetDbParameters(databaseFacade.ProviderName, ref dbCommand, model, out var dbParameters);
+        SetDbParameters(databaseFacade.ProviderName ?? string.Empty, ref dbCommand, model, out var dbParameters);
 
         // 打开数据库连接
         await OpenConnectionAsync(databaseFacade, dbConnection, dbCommand, cancellationToken);
@@ -209,7 +209,7 @@ public static class DbObjectExtensions
     /// <param name="providerName"></param>
     /// <param name="dbCommand">数据库命令对象</param>
     /// <param name="parameters">命令参数</param>
-    private static void SetDbParameters(string providerName, ref DbCommand dbCommand, DbParameter[] parameters = null)
+    private static void SetDbParameters(string providerName, ref DbCommand dbCommand, DbParameter[]? parameters = null)
     {
         if (parameters == null || parameters.Length == 0) return;
 
@@ -252,7 +252,7 @@ public static class DbObjectExtensions
                 Content = $"已读取到数据库链接信息",
                 AdditionalParams = new Dictionary<string, object>()
                 {
-                      {"connection_id", connectionId},
+                      {"connection_id", connectionId?.ToString() ?? string.Empty},
                       {"connection_str", dbConnection.ConnectionString},
                 },
                 State = true,
@@ -282,8 +282,8 @@ public static class DbObjectExtensions
             var parameterType = parameter.GetType();
 
             // 处理 OracleParameter 参数打印
-            var dbType = parameterType.FullName.Equals("Oracle.ManagedDataAccess.Client.OracleParameter", StringComparison.OrdinalIgnoreCase)
-                ? parameterType.GetProperty("OracleDbType").GetValue(parameter) : parameter.DbType;
+            var dbType = string.Equals(parameterType.FullName, "Oracle.ManagedDataAccess.Client.OracleParameter", StringComparison.OrdinalIgnoreCase)
+                ? parameterType.GetProperty("OracleDbType")?.GetValue(parameter) ?? parameter.DbType : parameter.DbType;
 
             sqlLogBuilder.Append($"{parameter.ParameterName}='{parameter.Value}' (Size = {parameter.Size}) (DbType = {dbType})");
             if (i < parameters.Count - 1) sqlLogBuilder.Append(", ");
@@ -301,8 +301,8 @@ public static class DbObjectExtensions
             Content = $"已读取到数据库语句执行记录",
             AdditionalParams = new Dictionary<string, object>()
             {
-                {"connection_id",connectionId},
-                {"connection_str", dbCommand.Connection.ConnectionString},
+                {"connection_id", connectionId?.ToString() ?? string.Empty},
+                {"connection_str", dbCommand.Connection?.ConnectionString ?? string.Empty},
                 {"sql_str",sqlLogBuilder.ToString() },
 
             },

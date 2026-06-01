@@ -148,7 +148,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:根据访问键获取令牌</para>
         /// <para>en-us:Get token by key</para>
         /// </summary>
-        public string Token(string Key = null)
+        public string? Token(string? Key = null)
         {
             var key = string.IsNullOrWhiteSpace(Key) ? _currentKey : Key;
             if (string.IsNullOrWhiteSpace(key))
@@ -168,7 +168,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取原始 Client</para>
         /// <para>en-us:Get raw client</para>
         /// </summary>
-        public object Client(string Key = null)
+        public object Client(string? Key = null)
         {
             var key = string.IsNullOrWhiteSpace(Key) ? _currentKey : Key;
 
@@ -184,7 +184,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取原始 Client（强类型）</para>
         /// <para>en-us:Get raw client (strongly typed)</para>
         /// </summary>
-        public TClient Client<TClient>(string Key = null) where TClient : class
+        public TClient Client<TClient>(string? Key = null) where TClient : class
         {
             var client = Client(Key);
             if (client is TClient typedClient)
@@ -199,6 +199,6 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取 AmazonS3 原始客户端</para>
         /// <para>en-us:Get raw AmazonS3 client</para>
         /// </summary>
-        public IAmazonS3 GetAmazonS3Client(string Key = null) => Client<IAmazonS3>(Key);
+        public IAmazonS3 GetAmazonS3Client(string? Key = null) => Client<IAmazonS3>(Key);
     }
 }

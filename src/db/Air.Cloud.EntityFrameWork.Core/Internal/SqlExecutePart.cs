@@ -28,7 +28,7 @@ public sealed partial class SqlExecutePart
     /// <summary>
     /// Sql 字符串
     /// </summary>
-    public string SqlString { get; private set; }
+    public string SqlString { get; private set; } = string.Empty;
 
     /// <summary>
     /// 设置超时时间
@@ -43,5 +43,5 @@ public sealed partial class SqlExecutePart
     /// <summary>
     /// 设置服务提供器
     /// </summary>
-    public IServiceProvider ContextScoped { get; private set; } = AppCore.HttpContext?.RequestServices;
+    public IServiceProvider? ContextScoped { get; private set; } = AppCore.HttpContext?.RequestServices;
 }

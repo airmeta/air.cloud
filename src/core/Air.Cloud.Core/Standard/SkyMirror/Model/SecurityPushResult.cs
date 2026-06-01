@@ -11,10 +11,22 @@
 */
 namespace Air.Cloud.Core.Standard.SkyMirror.Model
 {
+    /// <summary>
+    /// <para>zh-cn:表示 SkyMirror 安全数据推送结果。</para>
+    /// <para>en-us:Represents the SkyMirror security data push result.</para>
+    /// </summary>
     public  class SecurityPushResult
     {
+        /// <summary>
+        /// <para>zh-cn:获取或设置推送是否成功。</para>
+        /// <para>en-us:Gets or sets whether the push succeeded.</para>
+        /// </summary>
         public bool IsSuccess { get; set; }
 
+        /// <summary>
+        /// <para>zh-cn:获取或设置推送结果消息。</para>
+        /// <para>en-us:Gets or sets the push result message.</para>
+        /// </summary>
         public string Message { get; set; }
 
     }

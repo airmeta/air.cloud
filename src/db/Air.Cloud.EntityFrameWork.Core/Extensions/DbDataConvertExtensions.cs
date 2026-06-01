@@ -28,7 +28,7 @@ public static class DbDataConvertExtensions
     /// <returns>List{T}</returns>
     public static List<T> ToList<T>(this DataTable dataTable)
     {
-        return dataTable.ToList(typeof(List<T>)) as List<T>;
+        return dataTable.ToList(typeof(List<T>)) as List<T> ?? new List<T>();
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public static class DbDataConvertExtensions
     public static async Task<List<T>> ToListAsync<T>(this DataTable dataTable)
     {
         var list = await dataTable.ToListAsync(typeof(List<T>));
-        return list as List<T>;
+        return list as List<T> ?? new List<T>();
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public static class DbDataConvertExtensions
     public static List<T1> ToList<T1>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>));
-        return tuple[0] as List<T1>;
+        return GetTypedList<T1>(tuple, 0);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2) ToList<T1, T2>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1));
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2, List<T3> list3) ToList<T1, T2, T3>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>), typeof(List<T3>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>, tuple[2] as List<T3>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1), GetTypedList<T3>(tuple, 2));
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2, List<T3> list3, List<T4> list4) ToList<T1, T2, T3, T4>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>), typeof(List<T3>), typeof(List<T4>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>, tuple[2] as List<T3>, tuple[3] as List<T4>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1), GetTypedList<T3>(tuple, 2), GetTypedList<T4>(tuple, 3));
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2, List<T3> list3, List<T4> list4, List<T5> list5) ToList<T1, T2, T3, T4, T5>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>), typeof(List<T3>), typeof(List<T4>), typeof(List<T5>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>, tuple[2] as List<T3>, tuple[3] as List<T4>, tuple[4] as List<T5>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1), GetTypedList<T3>(tuple, 2), GetTypedList<T4>(tuple, 3), GetTypedList<T5>(tuple, 4));
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2, List<T3> list3, List<T4> list4, List<T5> list5, List<T6> list6) ToList<T1, T2, T3, T4, T5, T6>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>), typeof(List<T3>), typeof(List<T4>), typeof(List<T5>), typeof(List<T6>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>, tuple[2] as List<T3>, tuple[3] as List<T4>, tuple[4] as List<T5>, tuple[5] as List<T6>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1), GetTypedList<T3>(tuple, 2), GetTypedList<T4>(tuple, 3), GetTypedList<T5>(tuple, 4), GetTypedList<T6>(tuple, 5));
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2, List<T3> list3, List<T4> list4, List<T5> list5, List<T6> list6, List<T7> list7) ToList<T1, T2, T3, T4, T5, T6, T7>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>), typeof(List<T3>), typeof(List<T4>), typeof(List<T5>), typeof(List<T6>), typeof(List<T7>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>, tuple[2] as List<T3>, tuple[3] as List<T4>, tuple[4] as List<T5>, tuple[5] as List<T6>, tuple[6] as List<T7>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1), GetTypedList<T3>(tuple, 2), GetTypedList<T4>(tuple, 3), GetTypedList<T5>(tuple, 4), GetTypedList<T6>(tuple, 5), GetTypedList<T7>(tuple, 6));
     }
 
     /// <summary>
@@ -164,7 +164,7 @@ public static class DbDataConvertExtensions
     public static (List<T1> list1, List<T2> list2, List<T3> list3, List<T4> list4, List<T5> list5, List<T6> list6, List<T7> list7, List<T8> list8) ToList<T1, T2, T3, T4, T5, T6, T7, T8>(this DataSet dataSet)
     {
         var tuple = dataSet.ToList(typeof(List<T1>), typeof(List<T2>), typeof(List<T3>), typeof(List<T4>), typeof(List<T5>), typeof(List<T6>), typeof(List<T7>), typeof(List<T8>));
-        return (tuple[0] as List<T1>, tuple[1] as List<T2>, tuple[2] as List<T3>, tuple[3] as List<T4>, tuple[4] as List<T5>, tuple[5] as List<T6>, tuple[6] as List<T7>, tuple[7] as List<T8>);
+        return (GetTypedList<T1>(tuple, 0), GetTypedList<T2>(tuple, 1), GetTypedList<T3>(tuple, 2), GetTypedList<T4>(tuple, 3), GetTypedList<T5>(tuple, 4), GetTypedList<T6>(tuple, 5), GetTypedList<T7>(tuple, 6), GetTypedList<T8>(tuple, 7));
     }
 
     /// <summary>
@@ -310,6 +310,10 @@ public static class DbDataConvertExtensions
         var resultType = typeof(List<>).MakeGenericType(underlyingType);
         var list = Activator.CreateInstance(resultType);
         var addMethod = resultType.GetMethod("Add");
+        if (list == null || addMethod == null)
+        {
+            throw new InvalidOperationException($"Can not create list for type {underlyingType.FullName}.");
+        }
 
         // 将 DataTable 转为行集合
         var dataRows = dataTable.AsEnumerable();
@@ -356,6 +360,10 @@ public static class DbDataConvertExtensions
             foreach (var dataRow in dataRows)
             {
                 var model = Activator.CreateInstance(underlyingType);
+                if (model == null)
+                {
+                    throw new InvalidOperationException($"Can not create instance for type {underlyingType.FullName}.");
+                }
 
                 // 遍历所有属性并一一赋值
                 foreach (var property in properties)
@@ -365,7 +373,7 @@ public static class DbDataConvertExtensions
                     if (property.IsDefined(typeof(ColumnAttribute), true))
                     {
                         var columnAttribute = property.GetCustomAttribute<ColumnAttribute>(true);
-                        if (!string.IsNullOrWhiteSpace(columnAttribute.Name)) columnName = columnAttribute.Name;
+                        if (!string.IsNullOrWhiteSpace(columnAttribute?.Name)) columnName = columnAttribute.Name;
                     }
 
                     // 如果 DataTable 不包含该列名，则跳过
@@ -527,6 +535,12 @@ public static class DbDataConvertExtensions
             .First(u => u.Name == "ToList" && u.IsGenericMethod && u.GetGenericArguments().Length == tupleType.GetGenericArguments().Length)
             .MakeGenericMethod(underlyingTypes.ToArray());
 
-        return toListMethod.Invoke(null, new[] { dataSet });
+        return toListMethod.Invoke(null, new[] { dataSet })
+            ?? throw new InvalidOperationException($"Can not convert DataSet to {tupleType.FullName}.");
+    }
+
+    private static List<T> GetTypedList<T>(IReadOnlyList<object> values, int index)
+    {
+        return values.Count > index && values[index] is List<T> list ? list : new List<T>();
     }
 }

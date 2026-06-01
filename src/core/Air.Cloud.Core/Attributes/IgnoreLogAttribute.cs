@@ -38,6 +38,10 @@ namespace Air.Cloud.Core.Attributes
             PropertyValue = true;
         }
 
+        /// <summary>
+        /// <para>zh-cn:是否忽略日志记录。</para>
+        /// <para>en-us:Indicates whether logging should be ignored.</para>
+        /// </summary>
         public bool PropertyValue { get; set; }
     }
 }

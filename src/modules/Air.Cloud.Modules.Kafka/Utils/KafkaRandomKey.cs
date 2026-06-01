@@ -24,27 +24,7 @@ namespace Air.Cloud.Modules.Kafka.Utils
         /// <returns></returns>
         public static int GetRandom(int min = 111111111, int max = 999999999)
         {
-            return new Random(GetRandomSeed()).Next(min, max);
-        }
-
-
-        /// <summary>
-        /// 加密随机数生成器 生成随机种子
-        /// </summary>
-        /// <returns></returns>
-
-        static int GetRandomSeed()
-
-        {
-
-            byte[] bytes = new byte[4];
-
-            System.Security.Cryptography.RNGCryptoServiceProvider r = new System.Security.Cryptography.RNGCryptoServiceProvider();
-
-            r.GetBytes(bytes);
-
-            return BitConverter.ToInt32(bytes, 0);
-
+            return System.Security.Cryptography.RandomNumberGenerator.GetInt32(min, max);
         }
     }
 }

@@ -9,13 +9,36 @@ using System.Threading.Tasks;
 
 namespace Air.Cloud.Core.Plugins.Http
 {
-    // 自定义 HttpClient 日志处理程序（可选，增强日志内容）
+    /// <summary>
+    /// <para>zh-cn:HttpClient 日志处理程序，用于记录请求、响应内容和耗时。</para>
+    /// <para>en-us:HttpClient logging handler that records request details, response details, and elapsed time.</para>
+    /// </summary>
     public class HttpClientLoggingHandler : DelegatingHandler
     {
+        /// <summary>
+        /// <para>zh-cn:初始化 HttpClient 日志处理程序。</para>
+        /// <para>en-us:Initializes the HttpClient logging handler.</para>
+        /// </summary>
         public HttpClientLoggingHandler()
         {
         }
 
+        /// <summary>
+        /// <para>zh-cn:发送 HTTP 请求并记录请求与响应日志。</para>
+        /// <para>en-us:Sends an HTTP request and records request and response logs.</para>
+        /// </summary>
+        /// <param name="request">
+        /// <para>zh-cn:待发送的 HTTP 请求。</para>
+        /// <para>en-us:HTTP request to send.</para>
+        /// </param>
+        /// <param name="cancellationToken">
+        /// <para>zh-cn:取消令牌。</para>
+        /// <para>en-us:Cancellation token.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:HTTP 响应消息。</para>
+        /// <para>en-us:HTTP response message.</para>
+        /// </returns>
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             // 记录请求详情（包括请求体）

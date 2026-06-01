@@ -23,7 +23,7 @@ public interface IDbContextPool
     /// <summary>
     /// 数据库上下文事务
     /// </summary>
-    IDbContextTransaction DbContextTransaction { get; }
+    IDbContextTransaction? DbContextTransaction { get; }
 
     /// <summary>
     /// 获取所有数据库上下文

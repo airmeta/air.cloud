@@ -59,7 +59,6 @@ namespace unit.webapp.common.Filters
             {
                 requstBody = request.QueryString.ToString();
             }
-            string s = "123132";
         }
     }
 }

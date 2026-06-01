@@ -11,6 +11,10 @@
  */
 namespace Air.Cloud.Core.Modules.DynamicApp.Model
 {
+    /// <summary>
+    /// <para>zh-cn:动态模块配置模型，描述入口程序集、依赖程序集和模块设置。</para>
+    /// <para>en-us:Dynamic module configuration model describing the entry assembly, dependent assemblies, and module settings.</para>
+    /// </summary>
     public class ModInformation
     {
         /// <summary>

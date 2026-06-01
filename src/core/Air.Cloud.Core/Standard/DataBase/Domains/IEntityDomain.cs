@@ -11,6 +11,10 @@
  */
 namespace Air.Cloud.Core.Standard.DataBase.Domains
 {
+    /// <summary>
+    /// <para>zh-cn:定义实体领域标记接口，用于标识数据库实体所属的领域边界。</para>
+    /// <para>en-us:Defines an entity-domain marker interface used to identify the domain boundary to which a database entity belongs.</para>
+    /// </summary>
     public interface IEntityDomain 
     {
 

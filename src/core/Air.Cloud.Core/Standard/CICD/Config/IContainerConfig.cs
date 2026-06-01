@@ -12,10 +12,15 @@
 namespace Air.Cloud.Core.Standard.CICD.Config
 {
     /// <summary>
-    /// 容器配置信息
+    /// <para>zh-cn:定义容器配置信息标准。</para>
+    /// <para>en-us:Defines the container configuration information contract.</para>
     /// </summary>
     public interface IContainerConfig
     {
+        /// <summary>
+        /// <para>zh-cn:获取或设置容器唯一标识。</para>
+        /// <para>en-us:Gets or sets the unique container identifier.</para>
+        /// </summary>
         public string ContainerId { get; set; }
     }
 }

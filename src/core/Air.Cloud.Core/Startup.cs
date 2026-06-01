@@ -20,15 +20,39 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.Core
 {
+    /// <summary>
+    /// <para>zh-cn:Air.Cloud.Core 核心启动模块，负责注册核心切面能力并挂载动态应用中间件。</para>
+    /// <para>en-us:Air.Cloud.Core startup module, responsible for registering core aspect capabilities and mounting dynamic application middleware.</para>
+    /// </summary>
     [AppStartup(AppName = "Air.Cloud.Core", Order = int.MinValue)]
     public  class Startup : AppStartup
     {
+        /// <summary>
+        /// <para>zh-cn:配置核心应用请求管道。</para>
+        /// <para>en-us:Configures the core application request pipeline.</para>
+        /// </summary>
+        /// <param name="app">
+        /// <para>zh-cn:应用构建器。</para>
+        /// <para>en-us:The application builder.</para>
+        /// </param>
+        /// <param name="env">
+        /// <para>zh-cn:Web 主机环境。</para>
+        /// <para>en-us:The web host environment.</para>
+        /// </param>
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDynamicAppMiddleware();
             AppRealization.SetPlugin<IRouterMatcherPlugin>(new UniversalRouteMatcherCore());
         }
 
+        /// <summary>
+        /// <para>zh-cn:配置核心服务集合。</para>
+        /// <para>en-us:Configures the core service collection.</para>
+        /// </summary>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合。</para>
+        /// <para>en-us:The service collection.</para>
+        /// </param>
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddAspect();

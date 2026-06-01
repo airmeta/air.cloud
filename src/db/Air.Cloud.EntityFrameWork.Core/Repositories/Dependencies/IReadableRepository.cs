@@ -88,14 +88,14 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// </summary>
     /// <param name="key">键</param>
     /// <returns>数据库中的实体</returns>
-    TEntity FindOrDefault(object key);
+    TEntity? FindOrDefault(object key);
 
     /// <summary>
     /// 根据多个键查询一条记录
     /// </summary>
     /// <param name="keyValues">多个键</param>
     /// <returns>数据库中的实体</returns>
-    TEntity FindOrDefault(params object[] keyValues);
+    TEntity? FindOrDefault(params object[] keyValues);
 
     /// <summary>
     /// 根据键查询一条记录
@@ -103,14 +103,14 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="key">键</param>
     /// <param name="cancellationToken">取消异步令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> FindOrDefaultAsync(object key, CancellationToken cancellationToken = default);
+    Task<TEntity?> FindOrDefaultAsync(object key, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据多个键查询一条记录
     /// </summary>
     /// <param name="keyValues">多个键</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> FindOrDefaultAsync(params object[] keyValues);
+    Task<TEntity?> FindOrDefaultAsync(params object[] keyValues);
 
     /// <summary>
     /// 根据多个键查询一条记录
@@ -118,7 +118,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="keyValues">多个键</param>
     /// <param name="cancellationToken">取消异步令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> FindOrDefaultAsync(object[] keyValues, CancellationToken cancellationToken = default);
+    Task<TEntity?> FindOrDefaultAsync(object[] keyValues, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 查询一条记录
@@ -140,7 +140,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// </summary>
     /// <param name="tracking">是否跟踪实体</param>
     /// <returns>数据库中的实体</returns>
-    TEntity SingleOrDefault(bool? tracking = null);
+    TEntity? SingleOrDefault(bool? tracking = null);
 
     /// <summary>
     /// 根据表达式查询一条记录
@@ -148,7 +148,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="predicate">表达式</param>
     /// <param name="tracking">是否跟踪实体</param>
     /// <returns>数据库中的实体</returns>
-    TEntity SingleOrDefault(Expression<Func<TEntity, bool>> predicate, bool? tracking = null);
+    TEntity? SingleOrDefault(Expression<Func<TEntity, bool>> predicate, bool? tracking = null);
 
     /// <summary>
     /// 查询一条记录
@@ -173,7 +173,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> SingleOrDefaultAsync(bool? tracking = null, CancellationToken cancellationToken = default);
+    Task<TEntity?> SingleOrDefaultAsync(bool? tracking = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据表达式查询一条记录
@@ -182,7 +182,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool? tracking = null, CancellationToken cancellationToken = default);
+    Task<TEntity?> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool? tracking = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 查询一条记录
@@ -204,7 +204,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// </summary>
     /// <param name="tracking">是否跟踪实体</param>
     /// <returns>数据库中的实体</returns>
-    TEntity FirstOrDefault(bool? tracking = null);
+    TEntity? FirstOrDefault(bool? tracking = null);
 
     /// <summary>
     /// 根据表达式查询一条记录
@@ -212,7 +212,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="predicate">表达式</param>
     /// <param name="tracking">是否跟踪实体</param>
     /// <returns>数据库中的实体</returns>
-    TEntity FirstOrDefault(Expression<Func<TEntity, bool>> predicate, bool? tracking = null);
+    TEntity? FirstOrDefault(Expression<Func<TEntity, bool>> predicate, bool? tracking = null);
 
     /// <summary>
     /// 查询一条记录
@@ -237,7 +237,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> FirstOrDefaultAsync(bool? tracking = null, CancellationToken cancellationToken = default);
+    Task<TEntity?> FirstOrDefaultAsync(bool? tracking = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据表达式查询一条记录
@@ -246,7 +246,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool? tracking = null, CancellationToken cancellationToken = default);
+    Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool? tracking = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 查询一条记录
@@ -268,7 +268,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// </summary>
     /// <param name="tracking">是否跟踪实体</param>
     /// <returns>数据库中的实体</returns>
-    TEntity LastOrDefault(bool? tracking = null);
+    TEntity? LastOrDefault(bool? tracking = null);
 
     /// <summary>
     /// 根据表达式查询一条记录
@@ -276,7 +276,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="predicate">表达式</param>
     /// <param name="tracking">是否跟踪实体</param>
     /// <returns>数据库中的实体</returns>
-    TEntity LastOrDefault(Expression<Func<TEntity, bool>> predicate, bool? tracking = null);
+    TEntity? LastOrDefault(Expression<Func<TEntity, bool>> predicate, bool? tracking = null);
 
     /// <summary>
     /// 查询一条记录
@@ -301,7 +301,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> LastOrDefaultAsync(bool? tracking = null, CancellationToken cancellationToken = default);
+    Task<TEntity?> LastOrDefaultAsync(bool? tracking = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据表达式查询一条记录
@@ -310,7 +310,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="cancellationToken">异步取消令牌</param>
     /// <returns>数据库中的实体</returns>
-    Task<TEntity> LastOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool? tracking = null, CancellationToken cancellationToken = default);
+    Task<TEntity?> LastOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool? tracking = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 根据表达式查询多条记录
@@ -519,7 +519,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="ignoreQueryFilters">是否忽略查询过滤器</param>
     /// <returns>实体</returns>
-    TEntity Min(bool? tracking = null, bool ignoreQueryFilters = false);
+    TEntity? Min(bool? tracking = null, bool ignoreQueryFilters = false);
 
     /// <summary>
     /// 根据表达式查看最小值
@@ -529,7 +529,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="ignoreQueryFilters">是否忽略查询过滤器</param>
     /// <returns>TResult</returns>
-    TResult Min<TResult>(Expression<Func<TEntity, TResult>> predicate, bool? tracking = null, bool ignoreQueryFilters = false);
+    TResult? Min<TResult>(Expression<Func<TEntity, TResult>> predicate, bool? tracking = null, bool ignoreQueryFilters = false);
 
     /// <summary>
     /// 查看最小记录
@@ -557,7 +557,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="ignoreQueryFilters">是否忽略查询过滤器</param>
     /// <returns>实体</returns>
-    TEntity Max(bool? tracking = null, bool ignoreQueryFilters = false);
+    TEntity? Max(bool? tracking = null, bool ignoreQueryFilters = false);
 
     /// <summary>
     /// 根据表达式查看最大值
@@ -567,7 +567,7 @@ public interface IPrivateReadableRepository<TEntity> : IPrivateRootRepository
     /// <param name="tracking">是否跟踪实体</param>
     /// <param name="ignoreQueryFilters">是否忽略查询过滤器</param>
     /// <returns>TResult</returns>
-    TResult Max<TResult>(Expression<Func<TEntity, TResult>> predicate, bool? tracking = null, bool ignoreQueryFilters = false);
+    TResult? Max<TResult>(Expression<Func<TEntity, TResult>> predicate, bool? tracking = null, bool ignoreQueryFilters = false);
 
     /// <summary>
     /// 查看最大记录

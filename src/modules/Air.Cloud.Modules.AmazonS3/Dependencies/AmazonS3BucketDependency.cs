@@ -39,7 +39,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:查询 Bucket 是否存在</para>
         /// <para>en-us:Check whether bucket exists</para>
         /// </summary>
-        public async Task<bool> BucketExistsAsync(string BucketName, string Key = null, CancellationToken cancellationToken = default)
+        public async Task<bool> BucketExistsAsync(string BucketName, string? Key = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             try
@@ -61,7 +61,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:获取 Bucket 列表</para>
         /// <para>en-us:Get bucket list</para>
         /// </summary>
-        public async Task<IReadOnlyCollection<string>> GetBucketsAsync(string Key = null, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyCollection<string>> GetBucketsAsync(string? Key = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             var response = await client.ListBucketsAsync(cancellationToken);
@@ -72,7 +72,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:创建 Bucket</para>
         /// <para>en-us:Create bucket</para>
         /// </summary>
-        public async Task<bool> CreateBucketAsync(string BucketName, string Key = null, string Region = null, CancellationToken cancellationToken = default)
+        public async Task<bool> CreateBucketAsync(string BucketName, string? Key = null, string? Region = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             var request = new PutBucketRequest
@@ -89,7 +89,7 @@ namespace Air.Cloud.Modules.AmazonS3.Dependencies
         /// <para>zh-cn:删除 Bucket</para>
         /// <para>en-us:Delete bucket</para>
         /// </summary>
-        public async Task<bool> DeleteBucketAsync(string BucketName, string Key = null, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteBucketAsync(string BucketName, string? Key = null, CancellationToken cancellationToken = default)
         {
             var client = _clientStandard.Client<IAmazonS3>(Key);
             var response = await client.DeleteBucketAsync(BucketName, cancellationToken);

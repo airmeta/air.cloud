@@ -128,7 +128,7 @@ public class DefaultEventPublisher : IEventPublisher
     /// 延迟发布一条消息
     /// </summary>
     /// <param name="eventName">事件 Id</param>
-    /// <param name="span">延迟数</param>
+    /// <param name="delay">延迟数</param>
     /// <param name="payload">事件承载（携带）数据</param>
     /// <param name="cancellationToken"> 取消任务 Token</param>
     /// <returns><see cref="Task"/> 实例</returns>

@@ -140,6 +140,10 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
 
             // 动态解析数据库上下文
             var dbContext = provider.GetService(dbContextType) as DbContext;
+            if (dbContext == null)
+            {
+                throw new InvalidOperationException($"DbContext {dbContextType.FullName} was not registered.");
+            }
 
             // 实现动态数据库上下文功能，刷新 OnModelCreating
             var dbContextAttribute = DbProvider.GetAppDbContextAttribute(dbContextType);

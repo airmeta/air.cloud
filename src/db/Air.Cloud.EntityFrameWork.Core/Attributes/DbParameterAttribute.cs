@@ -42,7 +42,7 @@ public sealed class DbParameterAttribute : Attribute
     /// <summary>
     /// 数据库对应类型
     /// </summary>
-    public object DbType { get; set; }
+    public object? DbType { get; set; }
 
     /// <summary>
     /// 大小

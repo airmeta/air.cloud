@@ -116,7 +116,7 @@ namespace Air.Cloud.Core.Standard.Compress.Defaults
         {
             stream.Seek(0, SeekOrigin.Begin);
             var buffer = new byte[stream.Length];
-            stream.Read(buffer, 0, buffer.Length);
+            stream.ReadExactly(buffer, 0, buffer.Length);
             return buffer;
         }
     }

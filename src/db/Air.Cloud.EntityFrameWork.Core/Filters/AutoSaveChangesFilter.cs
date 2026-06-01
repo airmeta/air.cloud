@@ -42,7 +42,11 @@ public  sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         // 获取动作方法描述器
-        var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
+        if (context.ActionDescriptor is not ControllerActionDescriptor actionDescriptor)
+        {
+            await next();
+            return;
+        }
         var method = actionDescriptor.MethodInfo;
 
         // 获取请求上下文

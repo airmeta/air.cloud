@@ -14,6 +14,10 @@ using System.Text;
 
 namespace Air.Cloud.Core.Plugins.Security.HmacSHA256
 {
+    /// <summary>
+    /// <para>zh-cn:HMAC-SHA256 签名工具。</para>
+    /// <para>en-us:HMAC-SHA256 signing helper.</para>
+    /// </summary>
     public static class HmacSHA256Helper
     {
 

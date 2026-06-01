@@ -18,6 +18,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Runtime.Loader;
 
+#nullable enable annotations
+
 namespace Air.Cloud.Core.Standard.SchedulerStandard.Extensions
 {
     /// <summary>

@@ -39,6 +39,8 @@ public class ProcedureOutputResult<TResult>
     public ProcedureOutputResult()
     {
         OutputValues = new List<ProcedureOutputValue>();
+        ReturnValue = DBNull.Value;
+        Result = default!;
     }
 
     /// <summary>

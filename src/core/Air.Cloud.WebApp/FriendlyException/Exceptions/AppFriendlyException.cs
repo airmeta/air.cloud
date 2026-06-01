@@ -9,8 +9,6 @@
 using Air.Cloud.Core.Standard.Exceptions;
 using Microsoft.AspNetCore.Http;
 
-using System.Runtime.Serialization;
-
 namespace Air.Cloud.WebApp.FriendlyException.Exceptions;
 
 /// <summary>
@@ -47,15 +45,6 @@ public class AppFriendlyException : Exception, IFriendlyExceptionStandard
     {
         ErrorMessage = message;
         ErrorCode = errorCode;
-    }
-
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="info"></param>
-    /// <param name="context"></param>
-    public AppFriendlyException(SerializationInfo info, StreamingContext context) : base(info, context)
-    {
     }
 
     /// <summary>

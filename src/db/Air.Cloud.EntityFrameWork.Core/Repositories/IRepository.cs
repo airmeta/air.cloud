@@ -84,14 +84,16 @@ public partial interface IRepository
     /// </summary>
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
-    TService GetService<TService>();
+    TService GetService<TService>()
+        where TService : notnull;
 
     /// <summary>
     /// 解析服务
     /// </summary>
     /// <typeparam name="TService"></typeparam>
     /// <returns></returns>
-    TService GetRequiredService<TService>();
+    TService GetRequiredService<TService>()
+        where TService : notnull;
 }
 
 /// <summary>
@@ -148,7 +150,7 @@ public interface IPrivateRepository<TEntity>
     /// <summary>
     /// 数据库连接对象
     /// </summary>
-    DbConnection DbConnection { get; }
+    DbConnection? DbConnection { get; }
 
     /// <summary>
     /// 实体追综器
@@ -272,7 +274,7 @@ public interface IPrivateRepository<TEntity>
     /// <param name="entityEntry"></param>
     /// <param name="keyName"></param>
     /// <returns></returns>
-    bool CheckTrackState(object id, out EntityEntry entityEntry, string keyName = default);
+    bool CheckTrackState(object id, out EntityEntry entityEntry, string? keyName = default);
 
     /// <summary>
     /// 检查实体跟踪状态
@@ -282,7 +284,7 @@ public interface IPrivateRepository<TEntity>
     /// <param name="entityEntry"></param>
     /// <param name="keyName"></param>
     /// <returns></returns>
-    bool CheckTrackState<TTrackEntity>(object id, out EntityEntry entityEntry, string keyName = default)
+    bool CheckTrackState<TTrackEntity>(object id, out EntityEntry entityEntry, string? keyName = default)
          where TTrackEntity : class, IPrivateEntity, new();
 
     /// <summary>

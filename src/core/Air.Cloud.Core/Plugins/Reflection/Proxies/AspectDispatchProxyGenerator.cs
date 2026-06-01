@@ -1077,43 +1077,69 @@ internal static class AspectDispatchProxyGenerator
 }
 
 /// <summary>
-/// 代理分发处理
+/// <para>zh-cn:提供动态代理生成类型调用时使用的分发处理器，将生成代理传入的打包参数转交给 `AspectDispatchProxyGenerator` 执行。</para>
+/// <para>en-us:Provides the dispatch handler used by generated dynamic proxy types, forwarding packed proxy invocation arguments to `AspectDispatchProxyGenerator` for execution.</para>
 /// </summary>
 public class DispatchProxyHandler
 {
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:初始化一个新的代理分发处理器实例。</para>
+    /// <para>en-us:Initializes a new proxy dispatch handler instance.</para>
     /// </summary>
     public DispatchProxyHandler()
     {
     }
 
     /// <summary>
-    /// 同步处理
+    /// <para>zh-cn:处理同步代理方法调用，并返回原始调用结果。</para>
+    /// <para>en-us:Handles a synchronous proxy method invocation and returns the original invocation result.</para>
     /// </summary>
-    /// <param name="args"></param>
-    /// <returns></returns>
+    /// <param name="args">
+    /// <para>zh-cn:由动态代理生成代码传入的打包调用参数。</para>
+    /// <para>en-us:The packed invocation arguments passed by the generated dynamic proxy code.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:同步代理方法调用返回的对象结果。</para>
+    /// <para>en-us:The object result returned by the synchronous proxy method invocation.</para>
+    /// </returns>
     public object InvokeHandle(object[] args)
     {
         return AspectDispatchProxyGenerator.Invoke(args);
     }
 
     /// <summary>
-    /// 异步处理
+    /// <para>zh-cn:处理无返回值的异步代理方法调用。</para>
+    /// <para>en-us:Handles an asynchronous proxy method invocation without a result value.</para>
     /// </summary>
-    /// <param name="args"></param>
-    /// <returns></returns>
+    /// <param name="args">
+    /// <para>zh-cn:由动态代理生成代码传入的打包调用参数。</para>
+    /// <para>en-us:The packed invocation arguments passed by the generated dynamic proxy code.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:表示异步代理调用过程的任务。</para>
+    /// <para>en-us:A task representing the asynchronous proxy invocation.</para>
+    /// </returns>
     public Task InvokeAsyncHandle(object[] args)
     {
         return AspectDispatchProxyGenerator.InvokeAsync(args);
     }
 
     /// <summary>
-    /// 异步带返回值处理
+    /// <para>zh-cn:处理带返回值的异步代理方法调用。</para>
+    /// <para>en-us:Handles an asynchronous proxy method invocation with a result value.</para>
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="args"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">
+    /// <para>zh-cn:异步代理方法的返回值类型。</para>
+    /// <para>en-us:The result type of the asynchronous proxy method.</para>
+    /// </typeparam>
+    /// <param name="args">
+    /// <para>zh-cn:由动态代理生成代码传入的打包调用参数。</para>
+    /// <para>en-us:The packed invocation arguments passed by the generated dynamic proxy code.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:表示异步代理调用过程的任务，结果为代理方法返回值。</para>
+    /// <para>en-us:A task representing the asynchronous proxy invocation, with the proxy method result as the task result.</para>
+    /// </returns>
     public Task<T> InvokeAsyncHandleT<T>(object[] args)
     {
         return AspectDispatchProxyGenerator.InvokeAsync<T>(args);

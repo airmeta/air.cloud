@@ -163,7 +163,8 @@ namespace Air.Cloud.UnitTest.Modules.Taxin
             public async Task<TResult> SendAsync<TResult>(string Route, object Data = null!, Tuple<Version, Version> Version = null!) where TResult : class
             {
                 var result = await Handler(Route, Data, Version);
-                return result as TResult;
+                return result as TResult
+                    ?? throw new InvalidCastException($"The handler result cannot be converted to {typeof(TResult).FullName}.");
             }
 
             /// <summary>

@@ -154,6 +154,10 @@ namespace Air.Cloud.Core.App
         /// <para>zh-cn:配置名称</para>
         /// <para>en-us:Configuration name</para>
         /// </param>
+        /// <param name="configuration">
+        /// <para>zh-cn:配置根对象。</para>
+        /// <para>en-us:The configuration root object.</para>
+        /// </param>
         /// <returns>
         /// <para>zh-cn:多个配置信息</para>
         /// <para>en-us:multiple Configuration information</para>
@@ -174,6 +178,10 @@ namespace Air.Cloud.Core.App
         /// <param name="configName">
         /// <para>zh-cn:配置名称</para>
         /// <para>en-us:Configuration name</para>
+        /// </param>
+        /// <param name="configuration">
+        /// <para>zh-cn:配置根对象。</para>
+        /// <para>en-us:The configuration root object.</para>
         /// </param>
         /// <returns>
         /// <para>zh-cn:配置信息</para>
@@ -267,6 +275,10 @@ namespace Air.Cloud.Core.App
         /// <param name="loadConfigurationTypeEnum">
         /// <para>zh-cn:加载配置文件的方式</para>
         /// <para>en-us:Method of loading configuration files</para>
+        /// </param>
+        /// <param name="EntryAssembly">
+        /// <para>zh-cn:应用入口程序集；为空时使用当前进程入口程序集。</para>
+        /// <para>en-us:The application entry assembly; when null, the current process entry assembly is used.</para>
         /// </param>
         /// <returns></returns>
 

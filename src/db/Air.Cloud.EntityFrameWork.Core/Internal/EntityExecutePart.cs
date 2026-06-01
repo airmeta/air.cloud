@@ -31,7 +31,7 @@ public sealed partial class EntityExecutePart<TEntity>
     /// <summary>
     /// 实体
     /// </summary>
-    public TEntity Entity { get; private set; }
+    public TEntity Entity { get; private set; } = new();
 
     /// <summary>
     /// 数据库上下文定位器
@@ -41,5 +41,5 @@ public sealed partial class EntityExecutePart<TEntity>
     /// <summary>
     /// 数据库上下文执行作用域
     /// </summary>
-    public IServiceProvider ContextScoped { get; private set; } = AppCore.HttpContext?.RequestServices;
+    public IServiceProvider? ContextScoped { get; private set; } = AppCore.HttpContext?.RequestServices;
 }

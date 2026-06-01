@@ -41,6 +41,10 @@ namespace unit.kafaka.client.entry
             {
                 var josn = AppRealization.JSON.Serialize(s);
                 IEventSource eventSource = AppRealization.JSON.Deserialize<DefaultEventSource>(josn);
+                if (eventSource == null)
+                {
+                    throw new InvalidOperationException("Kafka event source deserialization returned null.");
+                }
                 // 写入存储器
                 await _channel.Writer.WriteAsync(eventSource, default);
             }, _groupId);
@@ -59,7 +63,12 @@ namespace unit.kafaka.client.entry
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
-            AppRealization.Queue.Publish<ProducerConfig, DefaultEventSource>(_producerConfigModel, eventSource as DefaultEventSource);
+            if (eventSource is not DefaultEventSource defaultEventSource)
+            {
+                throw new InvalidOperationException($"Kafka storager only supports {nameof(DefaultEventSource)}.");
+            }
+
+            AppRealization.Queue.Publish<ProducerConfig, DefaultEventSource>(_producerConfigModel, defaultEventSource);
             await Task.CompletedTask;
         }
 

@@ -21,10 +21,22 @@ public class EventBusHostedService : BackgroundService
 {
     private IEventBusExecutor _eventBusExecutor;
 
+    /// <summary>
+    /// <para>zh-cn:初始化默认事件总线后台服务。</para>
+    /// <para>en-us:Initializes the default event bus hosted service.</para>
+    /// </summary>
     public EventBusHostedService()
     {
 
     }
+    /// <summary>
+    /// <para>zh-cn:使用事件总线执行器初始化后台服务。</para>
+    /// <para>en-us:Initializes the hosted service with an event bus executor.</para>
+    /// </summary>
+    /// <param name="eventBusExecutor">
+    /// <para>zh-cn:事件总线执行器。</para>
+    /// <para>en-us:Event bus executor.</para>
+    /// </param>
     public EventBusHostedService(IEventBusExecutor eventBusExecutor) : this()
     {
         _eventBusExecutor = eventBusExecutor;

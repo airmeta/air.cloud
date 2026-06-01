@@ -26,6 +26,24 @@ namespace Air.Cloud.EntityFrameWork.Core.Repositories.Implantations;
 /// </summary>
 public partial class PrivateSqlRepository
 {
+    private string CurrentProviderName => Database.ProviderName ?? string.Empty;
+
+    private static object RequireScalarValue(object? value)
+    {
+        return value ?? throw new InvalidOperationException("SQL 标量执行没有返回可用值。");
+    }
+
+    private static async Task<object> RequireScalarValueAsync(Task<object?> valueTask)
+    {
+        return RequireScalarValue(await valueTask);
+    }
+
+    private static TResult ConvertScalarValue<TResult>(object? value)
+        where TResult : class, new()
+    {
+        return RequireScalarValue(value).ChangeType<TResult>();
+    }
+
     /// <summary>
     /// 执行存储过程返回 DataTable
     /// </summary>
@@ -870,7 +888,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual object SqlProcedureScalar(string procName, params DbParameter[] parameters)
     {
-        return Database.ExecuteScalar(procName, parameters, CommandType.StoredProcedure);
+        return RequireScalarValue(Database.ExecuteScalar(procName, parameters, CommandType.StoredProcedure));
     }
 
     /// <summary>
@@ -881,7 +899,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual object SqlProcedureScalar(string procName, object model)
     {
-        return Database.ExecuteScalar(procName, model, CommandType.StoredProcedure).result;
+        return RequireScalarValue(Database.ExecuteScalar(procName, model, CommandType.StoredProcedure).result);
     }
 
     /// <summary>
@@ -892,7 +910,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual Task<object> SqlProcedureScalarAsync(string procName, params DbParameter[] parameters)
     {
-        return Database.ExecuteScalarAsync(procName, parameters, CommandType.StoredProcedure);
+        return RequireScalarValueAsync(Database.ExecuteScalarAsync(procName, parameters, CommandType.StoredProcedure));
     }
 
     /// <summary>
@@ -904,7 +922,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual Task<object> SqlProcedureScalarAsync(string procName, DbParameter[] parameters, CancellationToken cancellationToken = default)
     {
-        return Database.ExecuteScalarAsync(procName, parameters, CommandType.StoredProcedure, cancellationToken: cancellationToken);
+        return RequireScalarValueAsync(Database.ExecuteScalarAsync(procName, parameters, CommandType.StoredProcedure, cancellationToken: cancellationToken));
     }
 
     /// <summary>
@@ -917,7 +935,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<object> SqlProcedureScalarAsync(string procName, object model, CancellationToken cancellationToken = default)
     {
         var (result, _) = await Database.ExecuteScalarAsync(procName, model, CommandType.StoredProcedure, cancellationToken: cancellationToken);
-        return result;
+        return RequireScalarValue(result);
     }
 
     /// <summary>
@@ -928,7 +946,7 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual TResult SqlProcedureScalar<TResult>(string procName, params DbParameter[] parameters) where TResult : class, new()
     {
-        return Database.ExecuteScalar(procName, parameters, CommandType.StoredProcedure).ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(Database.ExecuteScalar(procName, parameters, CommandType.StoredProcedure));
     }
 
     /// <summary>
@@ -939,7 +957,7 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual TResult SqlProcedureScalar<TResult>(string procName, object model) where TResult : class, new()
     {
-        return Database.ExecuteScalar(procName, model, CommandType.StoredProcedure).result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(Database.ExecuteScalar(procName, model, CommandType.StoredProcedure).result);
     }
 
     /// <summary>
@@ -951,7 +969,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<TResult> SqlProcedureScalarAsync<TResult>(string procName, params DbParameter[] parameters) where TResult : class, new()
     {
         var result = await Database.ExecuteScalarAsync(procName, parameters, CommandType.StoredProcedure);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -964,7 +982,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<TResult> SqlProcedureScalarAsync<TResult>(string procName, DbParameter[] parameters, CancellationToken cancellationToken = default) where TResult : class, new()
     {
         var result = await Database.ExecuteScalarAsync(procName, parameters, CommandType.StoredProcedure, cancellationToken: cancellationToken);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -977,7 +995,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<TResult> SqlProcedureScalarAsync<TResult>(string procName, object model, CancellationToken cancellationToken = default) where TResult : class, new()
     {
         var (result, _) = await Database.ExecuteScalarAsync(procName, model, CommandType.StoredProcedure, cancellationToken: cancellationToken);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1110,7 +1128,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual object SqlScalar(string sql, params DbParameter[] parameters)
     {
-        return Database.ExecuteScalar(sql, parameters);
+        return RequireScalarValue(Database.ExecuteScalar(sql, parameters));
     }
 
     /// <summary>
@@ -1121,7 +1139,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual object SqlScalar(string sql, object model)
     {
-        return Database.ExecuteScalar(sql, model).result;
+        return RequireScalarValue(Database.ExecuteScalar(sql, model).result);
     }
 
     /// <summary>
@@ -1132,7 +1150,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual Task<object> SqlScalarAsync(string sql, params DbParameter[] parameters)
     {
-        return Database.ExecuteScalarAsync(sql, parameters);
+        return RequireScalarValueAsync(Database.ExecuteScalarAsync(sql, parameters));
     }
 
     /// <summary>
@@ -1144,7 +1162,7 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual Task<object> SqlScalarAsync(string sql, DbParameter[] parameters, CancellationToken cancellationToken = default)
     {
-        return Database.ExecuteScalarAsync(sql, parameters, cancellationToken: cancellationToken);
+        return RequireScalarValueAsync(Database.ExecuteScalarAsync(sql, parameters, cancellationToken: cancellationToken));
     }
 
     /// <summary>
@@ -1157,7 +1175,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<object> SqlScalarAsync(string sql, object model, CancellationToken cancellationToken = default)
     {
         var (result, _) = await Database.ExecuteScalarAsync(sql, model, cancellationToken: cancellationToken);
-        return result;
+        return RequireScalarValue(result);
     }
 
     /// <summary>
@@ -1168,7 +1186,7 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual TResult SqlScalar<TResult>(string sql, params DbParameter[] parameters) where TResult : class, new()
     {
-        return Database.ExecuteScalar(sql, parameters).ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(Database.ExecuteScalar(sql, parameters));
     }
 
     /// <summary>
@@ -1179,7 +1197,7 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual TResult SqlScalar<TResult>(string sql, object model) where TResult : class, new()
     {
-        return Database.ExecuteScalar(sql, model).result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(Database.ExecuteScalar(sql, model).result);
     }
 
     /// <summary>
@@ -1191,7 +1209,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<TResult> SqlScalarAsync<TResult>(string sql, params DbParameter[] parameters) where TResult : class, new()
     {
         var result = await Database.ExecuteScalarAsync(sql, parameters);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1204,7 +1222,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<TResult> SqlScalarAsync<TResult>(string sql, DbParameter[] parameters, CancellationToken cancellationToken = default) where TResult : class, new()
     {
         var result = await Database.ExecuteScalarAsync(sql, parameters, cancellationToken: cancellationToken);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1217,7 +1235,7 @@ public partial class PrivateSqlRepository
     public virtual async Task<TResult> SqlScalarAsync<TResult>(string sql, object model, CancellationToken cancellationToken = default) where TResult : class, new()
     {
         var (result, _) = await Database.ExecuteScalarAsync(sql, model, cancellationToken: cancellationToken);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1234,7 +1252,7 @@ public partial class PrivateSqlRepository
         var dataSet = Database.DataAdapterFill(procName, parameters, CommandType.StoredProcedure);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1252,7 +1270,7 @@ public partial class PrivateSqlRepository
         var dataSet = await Database.DataAdapterFillAsync(procName, parameters, CommandType.StoredProcedure, cancellationToken: cancellationToken);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1267,7 +1285,7 @@ public partial class PrivateSqlRepository
         var (dataSet, parameters) = Database.DataAdapterFill(procName, model, CommandType.StoredProcedure);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1283,7 +1301,7 @@ public partial class PrivateSqlRepository
         var (dataSet, parameters) = await Database.DataAdapterFillAsync(procName, model, CommandType.StoredProcedure, cancellationToken: cancellationToken);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1301,7 +1319,7 @@ public partial class PrivateSqlRepository
         var dataSet = Database.DataAdapterFill(procName, parameters, CommandType.StoredProcedure);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput<TResult>(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput<TResult>(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1320,7 +1338,7 @@ public partial class PrivateSqlRepository
         var dataSet = await Database.DataAdapterFillAsync(procName, parameters, CommandType.StoredProcedure, cancellationToken: cancellationToken);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput<TResult>(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput<TResult>(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1336,7 +1354,7 @@ public partial class PrivateSqlRepository
         var (dataSet, parameters) = Database.DataAdapterFill(procName, model, CommandType.StoredProcedure);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput<TResult>(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput<TResult>(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1353,7 +1371,7 @@ public partial class PrivateSqlRepository
         var (dataSet, parameters) = await Database.DataAdapterFillAsync(procName, model, CommandType.StoredProcedure, cancellationToken: cancellationToken);
 
         // 包装结果集
-        return DbHelpers.WrapperProcedureOutput<TResult>(Database.ProviderName, parameters, dataSet);
+        return DbHelpers.WrapperProcedureOutput<TResult>(CurrentProviderName, parameters, dataSet);
     }
 
     /// <summary>
@@ -1364,8 +1382,8 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual object SqlFunctionScalar(string funcName, params DbParameter[] parameters)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, parameters);
-        return Database.ExecuteScalar(sql, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, parameters);
+        return RequireScalarValue(Database.ExecuteScalar(sql, parameters));
     }
 
     /// <summary>
@@ -1376,8 +1394,8 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual object SqlFunctionScalar(string funcName, object model)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, model);
-        return Database.ExecuteScalar(sql, model).result;
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, model);
+        return RequireScalarValue(Database.ExecuteScalar(sql, model).result);
     }
 
     /// <summary>
@@ -1388,8 +1406,8 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual Task<object> SqlFunctionScalarAsync(string funcName, params DbParameter[] parameters)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, parameters);
-        return Database.ExecuteScalarAsync(sql, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, parameters);
+        return RequireScalarValueAsync(Database.ExecuteScalarAsync(sql, parameters));
     }
 
     /// <summary>
@@ -1401,8 +1419,8 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual Task<object> SqlFunctionScalarAsync(string funcName, DbParameter[] parameters, CancellationToken cancellationToken = default)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, parameters);
-        return Database.ExecuteScalarAsync(sql, parameters, cancellationToken: cancellationToken);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, parameters);
+        return RequireScalarValueAsync(Database.ExecuteScalarAsync(sql, parameters, cancellationToken: cancellationToken));
     }
 
     /// <summary>
@@ -1414,9 +1432,9 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual async Task<object> SqlFunctionScalarAsync(string funcName, object model, CancellationToken cancellationToken = default)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, model);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, model);
         var (result, _) = await Database.ExecuteScalarAsync(sql, model, cancellationToken: cancellationToken);
-        return result;
+        return RequireScalarValue(result);
     }
 
     /// <summary>
@@ -1428,8 +1446,8 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual TResult SqlFunctionScalar<TResult>(string funcName, params DbParameter[] parameters) where TResult : class, new()
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, parameters);
-        return Database.ExecuteScalar(sql, parameters).ChangeType<TResult>();
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, parameters);
+        return ConvertScalarValue<TResult>(Database.ExecuteScalar(sql, parameters));
     }
 
     /// <summary>
@@ -1441,8 +1459,8 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual TResult SqlFunctionScalar<TResult>(string funcName, object model) where TResult : class, new()
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, model);
-        return Database.ExecuteScalar(sql, model).result.ChangeType<TResult>();
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, model);
+        return ConvertScalarValue<TResult>(Database.ExecuteScalar(sql, model).result);
     }
 
     /// <summary>
@@ -1454,9 +1472,9 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual async Task<TResult> SqlFunctionScalarAsync<TResult>(string funcName, params DbParameter[] parameters) where TResult:class,new()
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, parameters);
         var result = await Database.ExecuteScalarAsync(sql, parameters);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1469,9 +1487,9 @@ public partial class PrivateSqlRepository
     /// <returns>TResult</returns>
     public virtual async Task<TResult> SqlFunctionScalarAsync<TResult>(string funcName, DbParameter[] parameters, CancellationToken cancellationToken = default) where TResult : class, new()
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, parameters);
         var result = await Database.ExecuteScalarAsync(sql, parameters, cancellationToken: cancellationToken);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1484,9 +1502,9 @@ public partial class PrivateSqlRepository
     /// <returns>object</returns>
     public virtual async Task<TResult> SqlFunctionScalarAsync<TResult>(string funcName, object model, CancellationToken cancellationToken = default) where TResult : class, new()
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Scalar, funcName, model);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Scalar, funcName, model);
         var (result, _) = await Database.ExecuteScalarAsync(sql, model, cancellationToken: cancellationToken);
-        return result.ChangeType<TResult>();
+        return ConvertScalarValue<TResult>(result);
     }
 
     /// <summary>
@@ -1497,7 +1515,7 @@ public partial class PrivateSqlRepository
     /// <returns>DataTable</returns>
     public virtual DataTable SqlFunctionQuery(string funcName, params DbParameter[] parameters)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, parameters);
         return Database.ExecuteReader(sql, parameters);
     }
 
@@ -1509,7 +1527,7 @@ public partial class PrivateSqlRepository
     /// <returns>DataTable</returns>
     public virtual DataTable SqlFunctionQuery(string funcName, object model)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, model);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, model);
         return Database.ExecuteReader(sql, model).dataTable;
     }
 
@@ -1521,7 +1539,7 @@ public partial class PrivateSqlRepository
     /// <returns>Task{DataTable}</returns>
     public virtual Task<DataTable> SqlFunctionQueryAsync(string funcName, params DbParameter[] parameters)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, parameters);
         return Database.ExecuteReaderAsync(sql, parameters);
     }
 
@@ -1534,7 +1552,7 @@ public partial class PrivateSqlRepository
     /// <returns>Task{DataTable}</returns>
     public virtual Task<DataTable> SqlFunctionQueryAsync(string funcName, DbParameter[] parameters, CancellationToken cancellationToken = default)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, parameters);
         return Database.ExecuteReaderAsync(sql, parameters, cancellationToken: cancellationToken);
     }
 
@@ -1547,7 +1565,7 @@ public partial class PrivateSqlRepository
     /// <returns>Task{DataTable}</returns>
     public virtual async Task<DataTable> SqlFunctionQueryAsync(string funcName, object model, CancellationToken cancellationToken = default)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, model);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, model);
         var (dataTable, _) = await Database.ExecuteReaderAsync(sql, model, cancellationToken: cancellationToken);
         return dataTable;
     }
@@ -1561,7 +1579,7 @@ public partial class PrivateSqlRepository
     /// <returns>List{T}</returns>
     public virtual List<T> SqlFunctionQuery<T>(string funcName, params DbParameter[] parameters)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, parameters);
         return Database.ExecuteReader(sql, parameters).ToList<T>();
     }
 
@@ -1574,7 +1592,7 @@ public partial class PrivateSqlRepository
     /// <returns>List{T}</returns>
     public virtual List<T> SqlFunctionQuery<T>(string funcName, object model)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, model);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, model);
         return Database.ExecuteReader(sql, model).dataTable.ToList<T>();
     }
 
@@ -1587,7 +1605,7 @@ public partial class PrivateSqlRepository
     /// <returns>Task{List{T}}</returns>
     public virtual async Task<List<T>> SqlFunctionQueryAsync<T>(string funcName, params DbParameter[] parameters)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, parameters);
         var dataTable = await Database.ExecuteReaderAsync(sql, parameters);
         return dataTable.ToList<T>();
     }
@@ -1602,7 +1620,7 @@ public partial class PrivateSqlRepository
     /// <returns>Task{List{T}}</returns>
     public virtual async Task<List<T>> SqlFunctionQueryAsync<T>(string funcName, DbParameter[] parameters, CancellationToken cancellationToken = default)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, parameters);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, parameters);
         var dataTable = await Database.ExecuteReaderAsync(sql, parameters, cancellationToken: cancellationToken);
         return dataTable.ToList<T>();
     }
@@ -1617,7 +1635,7 @@ public partial class PrivateSqlRepository
     /// <returns>Task{List{T}}</returns>
     public virtual async Task<List<T>> SqlFunctionQueryAsync<T>(string funcName, object model, CancellationToken cancellationToken = default)
     {
-        var sql = DbHelpers.GenerateFunctionSql(Database.ProviderName, DbFunctionType.Table, funcName, model);
+        var sql = DbHelpers.GenerateFunctionSql(CurrentProviderName, DbFunctionType.Table, funcName, model);
         var (dataTable, _) = await Database.ExecuteReaderAsync(sql, model, cancellationToken: cancellationToken);
         return dataTable.ToList<T>();
     }
