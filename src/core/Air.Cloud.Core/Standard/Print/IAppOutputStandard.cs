@@ -9,6 +9,7 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using System.Diagnostics;
 using System.Text;
 
 namespace Air.Cloud.Core.Standard.Print
@@ -32,7 +33,8 @@ namespace Air.Cloud.Core.Standard.Print
         /// <param name="type">输出类别</param>
         /// <param name="state">显式输出</param>
         /// <param name="AdditionalParams">附加参数</param>
-        public void Print(string title, string content, AppPrintLevel level = AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null);
+        /// <param name="sourceAssembly">输出来源程序集</param>
+        public void Print(string title, string content, AppPrintLevel level = AppPrintLevel.Information, string type = "default", bool state = true, Dictionary<string, object> AdditionalParams = null, string sourceAssembly = null);
         /// <summary>
         /// 输出对象
         /// </summary>
@@ -80,67 +82,18 @@ namespace Air.Cloud.Core.Standard.Print
         /// <inheritdoc/>
         public void Print<T>(T Content) where T : AppPrintInformation, new()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            stringBuilder.Append(IAppOutputStandard.TabCharacter);
-            string Info = Content.GetLevelTag();
-            stringBuilder.Append($"[{Info.ToUpper()}]".PadLeft(5, ' ').ToLower());
-            stringBuilder.Append(IAppOutputStandard.TabCharacter);
-            stringBuilder.Append("Title:" + Content.Title);
-            stringBuilder.Append("  Content:" + Content.Content);
-            stringBuilder.Append(IAppOutputStandard.TabCharacter);
-            if (Content.Level==AppPrintLevel.Error)
+            if (Content == null || (Content.Level == AppPrintLevel.Debug && !AppEnvironment.IsDevelopment))
             {
-                stringBuilder.Append("\n");
-                stringBuilder.Append("    Exception:");
-                stringBuilder.Append("\n");
-                if (Content.AdditionalParams != null && Content.AdditionalParams.Keys.Any())
-                {
-                    foreach (var str in Content.AdditionalParams.Keys)
-                    {
-                        stringBuilder.Append("        ");
-                        stringBuilder.Append($"{str}:");
-                        stringBuilder.Append(IAppOutputStandard.TabCharacter);
-                        string con = Content.AdditionalParams[str]?.ToString();
-                        int lineCount = 0;
-                        if (IsMultilineText(con,out lineCount))
-                        {
-                            stringBuilder.Append("\n          ");
-                        }
-                        stringBuilder.Append($"{IndentMultilineText(con, "          ")}");
-                        stringBuilder.Append("\n");
-                    }
-                }
-            }
-            else
-            {
-                if (Content.AdditionalParams != null && Content.AdditionalParams.Keys.Any())
-                {
-                    stringBuilder.Append("\n");
-                    stringBuilder.Append("    附加参数:");
-                    stringBuilder.Append("\n");
-                    foreach (var str in Content.AdditionalParams.Keys)
-                    {
-                        stringBuilder.Append("        ");
-                        stringBuilder.Append($"[{str}]");
-                        stringBuilder.Append(IAppOutputStandard.TabCharacter);
-                        stringBuilder.Append($"[{Content.AdditionalParams[str]}]");
-                        stringBuilder.Append("\n");
-                    }
-                }
+                return;
             }
 
-            if (Content.Level==AppPrintLevel.Debug&&(!AppEnvironment.IsDevelopment))
-            {
-            }
-            else
-            {
-                Console.WriteLine(stringBuilder.ToString());
-            }
+            Console.WriteLine(Content.Level == AppPrintLevel.Error
+                ? FormatErrorOutput(Content)
+                : FormatSingleLineOutput(Content));
         }
 
         /// <inheritdoc/>
-        public void Print(string title, string content, AppPrintLevel level =AppPrintLevel.Information, string type = AppPrintConstType.DEFAULT_TYPE, bool state = true, Dictionary<string, object> AdditionalParams = null)
+        public void Print(string title, string content, AppPrintLevel level =AppPrintLevel.Information, string type = AppPrintConstType.DEFAULT_TYPE, bool state = true, Dictionary<string, object> AdditionalParams = null, string sourceAssembly = null)
         {
             Print(new AppPrintInformation()
             {
@@ -149,7 +102,8 @@ namespace Air.Cloud.Core.Standard.Print
                 Content = content,
                 Level = level,
                 Type = type,
-                AdditionalParams = AdditionalParams
+                AdditionalParams = AdditionalParams,
+                SourceAssembly = sourceAssembly
             });
         }
         /// <summary>
@@ -169,6 +123,124 @@ namespace Air.Cloud.Core.Standard.Print
 
             // 多行文本：每行添加缩进，最后合并
             return string.Join($"\n{indent}", lines);
+        }
+
+        private static string FormatSingleLineOutput(AppPrintInformation content)
+        {
+            var stringBuilder = new StringBuilder(256);
+            AppendHeader(stringBuilder, content);
+
+            if (HasAdditionalParams(content))
+            {
+                stringBuilder.Append(IAppOutputStandard.TabCharacter);
+                stringBuilder.Append("Params:{");
+
+                bool isFirst = true;
+                foreach (var pair in content.AdditionalParams)
+                {
+                    if (!isFirst)
+                    {
+                        stringBuilder.Append("; ");
+                    }
+
+                    stringBuilder.Append(pair.Key);
+                    stringBuilder.Append('=');
+                    stringBuilder.Append(ToSingleLine(pair.Value));
+                    isFirst = false;
+                }
+
+                stringBuilder.Append('}');
+            }
+
+            return stringBuilder.ToString();
+        }
+
+        private static string FormatErrorOutput(AppPrintInformation content)
+        {
+            var stringBuilder = new StringBuilder(512);
+            AppendHeader(stringBuilder, content);
+
+            if (!HasAdditionalParams(content))
+            {
+                return stringBuilder.ToString();
+            }
+
+            stringBuilder.Append(Environment.NewLine);
+            stringBuilder.Append("    Exception:");
+            stringBuilder.Append(Environment.NewLine);
+
+            foreach (var pair in content.AdditionalParams)
+            {
+                stringBuilder.Append("        ");
+                stringBuilder.Append(pair.Key);
+                stringBuilder.Append(':');
+                stringBuilder.Append(IAppOutputStandard.TabCharacter);
+
+                string value = pair.Value?.ToString();
+                if (IsMultilineText(value, out _))
+                {
+                    stringBuilder.Append(Environment.NewLine);
+                    stringBuilder.Append("          ");
+                }
+
+                stringBuilder.Append(IndentMultilineText(value, "          "));
+                stringBuilder.Append(Environment.NewLine);
+            }
+
+            return stringBuilder.ToString().TrimEnd();
+        }
+
+        private static void AppendHeader(StringBuilder stringBuilder, AppPrintInformation content)
+        {
+            stringBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            stringBuilder.Append(IAppOutputStandard.TabCharacter);
+            stringBuilder.Append('[');
+            stringBuilder.Append(content.GetLevelTag());
+            stringBuilder.Append(']');
+            stringBuilder.Append(IAppOutputStandard.TabCharacter);
+            stringBuilder.Append('[');
+            stringBuilder.Append(GetOutputSourceAssembly(content));
+            stringBuilder.Append(']');
+            stringBuilder.Append(IAppOutputStandard.TabCharacter);
+
+            string title = ToSingleLine(content.Title);
+            string message = ToSingleLine(content.Content);
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                stringBuilder.Append(title);
+            }
+
+            if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(message))
+            {
+                stringBuilder.Append(" | ");
+            }
+
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                stringBuilder.Append(message);
+            }
+        }
+
+        private static bool HasAdditionalParams(AppPrintInformation content)
+        {
+            return content.AdditionalParams != null && content.AdditionalParams.Count > 0;
+        }
+
+        private static string ToSingleLine(object value)
+        {
+            return value?.ToString()?.Replace("\r\n", " ").Replace("\n", " ") ?? string.Empty;
+        }
+
+        private static string GetOutputSourceAssembly(AppPrintInformation content)
+        {
+            if (!string.IsNullOrWhiteSpace(content.SourceAssembly))
+            {
+                return content.SourceAssembly;
+            }
+
+            content.SourceAssembly = GetOutputCallerAssemblyName();
+            return content.SourceAssembly;
         }
 
         /// <summary>
@@ -191,6 +263,32 @@ namespace Air.Cloud.Core.Standard.Print
 
             lineCount = lines.Length;
             return lineCount > 1; // 行数 > 1 即为多行
+        }
+
+        private static string GetOutputCallerAssemblyName()
+        {
+            var stackTrace = new StackTrace(false);
+
+            foreach (var frame in stackTrace.GetFrames() ?? Array.Empty<StackFrame>())
+            {
+                var method = frame.GetMethod();
+                var declaringType = method?.DeclaringType;
+                var assembly = declaringType?.Assembly;
+
+                if (assembly == null)
+                {
+                    continue;
+                }
+
+                if (declaringType == typeof(DefaultAppOutputDependency))
+                {
+                    continue;
+                }
+
+                return assembly.GetName().Name;
+            }
+
+            return "unknown";
         }
     }
 }

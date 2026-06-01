@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>CS8625</NoWarn>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>AC</Authors>
+    <Company>AC</Company>
+    <Product>air.cloud</Product>
+    <Description>[Alpha] APICatalog plugin for Air.Cloud.Core. It exposes normalized API request and response metadata for external platforms through APIProbe.</Description>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackAsTool>False</PackAsTool>
+		<Version>10.0.0.0-alpha-260601</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

@@ -43,6 +43,11 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <para>en-us: Output content type</para>
         /// </summary>
         public string Type { get; set; } = AppPrintConstType.DEFAULT_TYPE;
+        /// <summary>
+        /// <para>zh-cn: 输出来源程序集</para>
+        /// <para>en-us: Output source assembly</para>
+        /// </summary>
+        public string SourceAssembly { get; set; }
 
         public AppPrintInformation() { }
 
@@ -56,7 +61,8 @@ namespace Air.Cloud.Core.Modules.AppPrint
         /// <param name="state"></param>
         /// <param name="additionalParams"></param>
         /// <param name="type"></param>
-        public AppPrintInformation(string title, string content, AppPrintLevel level = AppPrintLevel.Information, bool state = true, Dictionary<string, object> additionalParams = null, string type = AppPrintConstType.DEFAULT_TYPE)
+        /// <param name="sourceAssembly"></param>
+        public AppPrintInformation(string title, string content, AppPrintLevel level = AppPrintLevel.Information, bool state = true, Dictionary<string, object> additionalParams = null, string type = AppPrintConstType.DEFAULT_TYPE, string sourceAssembly = null)
         {
             Title = title;
             Level = level;
@@ -64,6 +70,7 @@ namespace Air.Cloud.Core.Modules.AppPrint
             State = state;
             AdditionalParams = additionalParams;
             Type = type;
+            SourceAssembly = sourceAssembly;
         }
 
         /// <summary>

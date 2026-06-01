@@ -45,6 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\plugins\Air.Cloud.Plugins.APICatalog\Air.Cloud.Plugins.APICatalog.csproj" />
     <ProjectReference Include="..\..\src\core\Air.Cloud.HostApp\Air.Cloud.HostApp.csproj" />
     <ProjectReference Include="..\..\src\db\Air.Cloud.DataBase.ElasticSearch\Air.Cloud.DataBase.ElasticSearch.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />

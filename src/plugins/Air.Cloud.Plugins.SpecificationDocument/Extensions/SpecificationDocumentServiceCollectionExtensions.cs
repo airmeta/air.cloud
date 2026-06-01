@@ -11,9 +11,13 @@
  */
 
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Plugins.APIProbe;
 using Air.Cloud.Plugins.SpecificationDocument.Builders;
 using Air.Cloud.Plugins.SpecificationDocument.Extensions.Options;
 using Air.Cloud.Plugins.SpecificationDocument.Options;
+using Air.Cloud.Plugins.SpecificationDocument.Providers;
+
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Air.Cloud.Plugins.SpecificationDocument.Extensions;
 
@@ -43,6 +47,9 @@ public static class SpecificationDocumentServiceCollectionExtensions
 
         // 添加Swagger生成器服务
         services.AddSwaggerGen(options => SpecificationDocumentBuilder.BuildGen(options, configureOptions?.SwaggerGenConfigure));
+
+        // 注册 APIProbe 适配器
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IAPIProbeProvider, SwaggerAPIProbeProvider>());
 
         return services;
     }
