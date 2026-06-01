@@ -18,16 +18,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.Modules.IIS.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:提供 IIS 容器模块服务注册相关的扩展方法。</para>
+    /// <para>en-us:Provides extension methods for registering IIS container module services.</para>
+    /// </summary>
     public static  class IISModuleExtensions
     {
         /// <summary>
-        /// 添加IIS容器支持
+        /// <para>zh-cn:添加 IIS 容器管理支持。</para>
+        /// <para>en-us:Adds IIS container management support.</para>
         /// </summary>
         /// <remarks>
-        /// 暂时只支持 读取,停机,启动的操作
+        /// <para>zh-cn:当前仅支持读取、停机和启动操作，并会在注册前检查 IIS 是否存在且正在运行。</para>
+        /// <para>en-us:Currently supports only query, stop, and start operations, and checks whether IIS exists and is running before registration.</para>
         /// </remarks>
-        /// <param name="services"></param>
-        /// <returns></returns>
+        /// <param name="services">
+        /// <para>zh-cn:应用服务集合。</para>
+        /// <para>en-us:The application service collection.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:完成 IIS 容器管理服务注册后的服务集合。</para>
+        /// <para>en-us:The service collection after registering IIS container management services.</para>
+        /// </returns>
         public static IServiceCollection AddIISService(this IServiceCollection services)
         {
             //这里增加IIS运行状态检查

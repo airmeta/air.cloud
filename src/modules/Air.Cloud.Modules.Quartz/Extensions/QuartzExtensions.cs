@@ -29,16 +29,33 @@ using Quartz.Impl.Matchers;
 
 namespace Air.Cloud.Modules.Quartz.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:提供 Quartz 调度服务注册、启动、停止与查询相关的扩展方法。</para>
+    /// <para>en-us:Provides extension methods for registering, starting, stopping, and querying Quartz scheduler services.</para>
+    /// </summary>
     public static  class QuartzExtensions
     {
 
         /// <summary>
-        /// 启动服务
+        /// <para>zh-cn:启动并挂载当前应用中注册的 Quartz 调度任务。</para>
+        /// <para>en-us:Starts and mounts the Quartz scheduled jobs registered in the current application.</para>
         /// </summary>
-        /// <param name="_quartzJob"></param>
-        /// <param name="_provider"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <typeparam name="TSchedulerOption">
+        /// <para>zh-cn:调度任务使用的配置类型。</para>
+        /// <para>en-us:The configuration type used by the scheduled jobs.</para>
+        /// </typeparam>
+        /// <param name="_quartzJob">
+        /// <para>zh-cn:负责执行任务挂载与关闭逻辑的 Quartz 作业服务。</para>
+        /// <para>en-us:The Quartz job service responsible for mounting and closing jobs.</para>
+        /// </param>
+        /// <param name="_provider">
+        /// <para>zh-cn:用于解析调度标准实现的服务提供器。</para>
+        /// <para>en-us:The service provider used to resolve scheduler standard implementations.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示任务启动与挂载流程的异步任务。</para>
+        /// <para>en-us:A task that represents the job startup and mounting workflow.</para>
+        /// </returns>
         public static  async Task StartAsync<TSchedulerOption>(this QuartzJobService<TSchedulerOption> _quartzJob, IServiceProvider _provider) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
             AppRealization.Output.Print(new AppPrintInformation()
@@ -87,12 +104,25 @@ namespace Air.Cloud.Modules.Quartz.Extensions
         }
         
         /// <summary>
-        /// 停止服务
+        /// <para>zh-cn:停止并取消挂载当前应用中注册的 Quartz 调度任务。</para>
+        /// <para>en-us:Stops and unmounts the Quartz scheduled jobs registered in the current application.</para>
         /// </summary>
-        /// <param name="_quartzJob"></param>
-        /// <param name="_provider"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <typeparam name="TSchedulerOption">
+        /// <para>zh-cn:调度任务使用的配置类型。</para>
+        /// <para>en-us:The configuration type used by the scheduled jobs.</para>
+        /// </typeparam>
+        /// <param name="_quartzJob">
+        /// <para>zh-cn:负责执行任务挂载与关闭逻辑的 Quartz 作业服务。</para>
+        /// <para>en-us:The Quartz job service responsible for mounting and closing jobs.</para>
+        /// </param>
+        /// <param name="_provider">
+        /// <para>zh-cn:用于创建服务作用域并解析调度标准实现的服务提供器。</para>
+        /// <para>en-us:The service provider used to create a service scope and resolve scheduler standard implementations.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示任务停止与取消挂载流程的异步任务。</para>
+        /// <para>en-us:A task that represents the job stopping and unmounting workflow.</para>
+        /// </returns>
         public static  async Task StopAsync<TSchedulerOption>(this QuartzJobService<TSchedulerOption> _quartzJob, IServiceProvider _provider) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
             using (var scope = _provider.CreateScope())
@@ -135,6 +165,26 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             }
         }
 
+        /// <summary>
+        /// <para>zh-cn:获取指定名称的 Quartz 调度器；未指定名称时返回默认调度器。</para>
+        /// <para>en-us:Gets the Quartz scheduler with the specified name, or the default scheduler when no name is specified.</para>
+        /// </summary>
+        /// <typeparam name="TSchedulerOption">
+        /// <para>zh-cn:调度任务使用的配置类型。</para>
+        /// <para>en-us:The configuration type used by the scheduled jobs.</para>
+        /// </typeparam>
+        /// <param name="schedulerStandard">
+        /// <para>zh-cn:当前调度标准实例，用于承载扩展方法调用。</para>
+        /// <para>en-us:The current scheduler standard instance that hosts the extension method call.</para>
+        /// </param>
+        /// <param name="Scheduler">
+        /// <para>zh-cn:可选的调度器名称。</para>
+        /// <para>en-us:The optional scheduler name.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:解析得到的 Quartz 调度器实例。</para>
+        /// <para>en-us:The resolved Quartz scheduler instance.</para>
+        /// </returns>
         public static async Task<IScheduler> GetScheduler<TSchedulerOption>(this ISchedulerStandard<TSchedulerOption> schedulerStandard,string Scheduler=null) where TSchedulerOption : class, ISchedulerStandardOptions, new()
         {
             ISchedulerFactory schedulerFactory = AppCore.GetService<ISchedulerFactory>();

@@ -15,6 +15,10 @@ using System.Runtime.Loader;
 
 namespace Air.Cloud.Modules.MongoDB.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:MongoDB 服务注册扩展，扫描 MongoDB 实体并注册对应的 NoSQL 仓储实现。</para>
+    /// <para>en-us:MongoDB service registration extensions that scan MongoDB entities and register the corresponding NoSQL repository implementations.</para>
+    /// </summary>
     public static class MongoDBInjectExtensions
     {
         /// <summary>

@@ -156,11 +156,52 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
 
         }
 
+        /// <summary>
+        /// <para>zh-cn:根据 ElasticSearch 索引特性计算当前可用的索引名称。</para>
+        /// <para>en-us:Calculates the current available index name from the ElasticSearch index attribute.</para>
+        /// </summary>
+        /// <param name="elasticSearchIndex">
+        /// <para>zh-cn:声明索引名称、切分规则与切分标记的索引特性。</para>
+        /// <para>en-us:The index attribute that declares the index name, segmentation pattern, and segmentation tag.</para>
+        /// </param>
+        /// <param name="DefaultName">
+        /// <para>zh-cn:当特性未提供索引名称时使用的默认名称。</para>
+        /// <para>en-us:The default name used when the attribute does not provide an index name.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:按切分规则生成后的索引名称。</para>
+        /// <para>en-us:The index name generated according to the segmentation pattern.</para>
+        /// </returns>
         public string GetTableName(ElasticSearchIndexAttribute elasticSearchIndex,string DefaultName = null)
         {
             string Name = elasticSearchIndex?.TableName ?? throw new ElasticSearchException("索引名称为空,无法创建索引连接信息");
             return GetTableName(Name, elasticSearchIndex.SegmentationPattern, elasticSearchIndex.SegmentationTag, DefaultName);
         }
+
+        /// <summary>
+        /// <para>zh-cn:根据指定名称和索引切分规则计算当前索引名称。</para>
+        /// <para>en-us:Calculates the current index name from the specified name and index segmentation rule.</para>
+        /// </summary>
+        /// <param name="Name">
+        /// <para>zh-cn:索引基础名称。</para>
+        /// <para>en-us:The base index name.</para>
+        /// </param>
+        /// <param name="SegmentationPattern">
+        /// <para>zh-cn:索引切分规则，例如不切分、按年、按月或按日切分。</para>
+        /// <para>en-us:The index segmentation rule, such as none, yearly, monthly, or daily segmentation.</para>
+        /// </param>
+        /// <param name="SegmentationTag">
+        /// <para>zh-cn:索引基础名称与时间片段之间使用的连接标记。</para>
+        /// <para>en-us:The separator tag used between the base index name and the time segment.</para>
+        /// </param>
+        /// <param name="DefaultName">
+        /// <para>zh-cn:当索引基础名称为空时使用的默认名称。</para>
+        /// <para>en-us:The default name used when the base index name is empty.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:按当前时间与切分规则生成的索引名称。</para>
+        /// <para>en-us:The index name generated from the current time and segmentation rule.</para>
+        /// </returns>
         public static string GetTableName(string Name, IndexSegmentationPatternEnum SegmentationPattern= IndexSegmentationPatternEnum.None, string SegmentationTag="-",string DefaultName = null)
         {
             return GetInternalTableName(Name,DateTime.Now,SegmentationPattern,SegmentationTag,DefaultName);
@@ -197,6 +238,30 @@ namespace Air.Cloud.DataBase.ElasticSearch.Connections
             }
         }
 
+        /// <summary>
+        /// <para>zh-cn:根据索引切分规则计算下一个时间片段的索引名称。</para>
+        /// <para>en-us:Calculates the index name for the next time segment according to the segmentation rule.</para>
+        /// </summary>
+        /// <param name="Name">
+        /// <para>zh-cn:索引基础名称。</para>
+        /// <para>en-us:The base index name.</para>
+        /// </param>
+        /// <param name="SegmentationPattern">
+        /// <para>zh-cn:索引切分规则，用于判断下一个年、月或日索引。</para>
+        /// <para>en-us:The index segmentation rule used to determine the next yearly, monthly, or daily index.</para>
+        /// </param>
+        /// <param name="SegmentationTag">
+        /// <para>zh-cn:索引基础名称与时间片段之间使用的连接标记。</para>
+        /// <para>en-us:The separator tag used between the base index name and the time segment.</para>
+        /// </param>
+        /// <param name="DefaultName">
+        /// <para>zh-cn:当索引基础名称为空时使用的默认名称。</para>
+        /// <para>en-us:The default name used when the base index name is empty.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:下一个时间片段对应的索引名称。</para>
+        /// <para>en-us:The index name for the next time segment.</para>
+        /// </returns>
         public static string GetNextSegmentationTableName(string Name,IndexSegmentationPatternEnum SegmentationPattern = IndexSegmentationPatternEnum.None, string SegmentationTag = "-", string DefaultName = null)
         {
             DateTime dateTime = DateTime.Now;

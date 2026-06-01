@@ -27,6 +27,10 @@ using System.Runtime.Loader;
 
 namespace Air.Cloud.DataBase.ElasticSearch.Extensions
 {
+    /// <summary>
+    /// <para>zh-cn:ElasticSearch 服务注册扩展，扫描 ElasticSearch 实体并注册对应的 NoSQL 仓储实现。</para>
+    /// <para>en-us:ElasticSearch service registration extensions that scan ElasticSearch entities and register the corresponding NoSQL repository implementations.</para>
+    /// </summary>
     public static class ElasticSearchInjectExtensions
     {
 

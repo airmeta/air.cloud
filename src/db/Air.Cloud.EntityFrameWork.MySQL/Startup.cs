@@ -22,14 +22,38 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.EntityFrameWork.MySQL
 {
+    /// <summary>
+    /// <para>zh-cn:MySQL Entity Framework 模块启动配置，负责注册 MySQL 数据库配置和状态检查服务。</para>
+    /// <para>en-us:MySQL Entity Framework module startup configuration that registers MySQL database configuration and status check services.</para>
+    /// </summary>
     public class Startup : AppStartup
     {
+        /// <summary>
+        /// <para>zh-cn:配置 MySQL 模块的应用管道。</para>
+        /// <para>en-us:Configures the application pipeline for the MySQL module.</para>
+        /// </summary>
+        /// <param name="app">
+        /// <para>zh-cn:应用程序构建器。</para>
+        /// <para>en-us:The application builder.</para>
+        /// </param>
+        /// <param name="env">
+        /// <para>zh-cn:Web 主机环境。</para>
+        /// <para>en-us:The web host environment.</para>
+        /// </param>
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
 
 
         }
 
+        /// <summary>
+        /// <para>zh-cn:注册 MySQL 数据源选项、数据库配置实现以及可选的数据库状态检查后台服务。</para>
+        /// <para>en-us:Registers MySQL data source options, database configuration implementation, and optional database status check background service.</para>
+        /// </summary>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合。</para>
+        /// <para>en-us:The service collection.</para>
+        /// </param>
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions<DataSourceOptions>()

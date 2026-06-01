@@ -20,6 +20,10 @@ using Microsoft.Extensions.Hosting;
 
 namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
 {
+    /// <summary>
+    /// <para>zh-cn:数据库状态检查后台服务，周期性执行连接验证 SQL 并输出数据库状态日志。</para>
+    /// <para>en-us:Database status check background service that periodically executes connection validation SQL and writes database status logs.</para>
+    /// </summary>
     public  class DatabaseStatusCheckBackgroundService : BackgroundService
     {
 
@@ -28,10 +32,30 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
             ?? throw new InvalidOperationException($"{nameof(DataSourceOptions)} was not configured.");
 
 
+        /// <summary>
+        /// <para>zh-cn:初始化数据库状态检查后台服务。</para>
+        /// <para>en-us:Initializes the database status check background service.</para>
+        /// </summary>
+        /// <param name="serviceProvider">
+        /// <para>zh-cn:应用服务提供器，用于创建作用域并解析数据库仓储。</para>
+        /// <para>en-us:The application service provider used to create scopes and resolve database repositories.</para>
+        /// </param>
         public DatabaseStatusCheckBackgroundService(IServiceProvider serviceProvider) { 
               this.provider=serviceProvider;
         }
 
+        /// <summary>
+        /// <para>zh-cn:启动数据库连接状态检查循环，直到后台服务被取消。</para>
+        /// <para>en-us:Starts the database connection status check loop until the background service is cancelled.</para>
+        /// </summary>
+        /// <param name="stoppingToken">
+        /// <para>zh-cn:用于停止后台检查循环的取消令牌。</para>
+        /// <para>en-us:The cancellation token used to stop the background check loop.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示后台执行过程的任务。</para>
+        /// <para>en-us:A task that represents the background execution process.</para>
+        /// </returns>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Factory.StartNew(async () =>

@@ -11,6 +11,14 @@
  */
 namespace Air.Cloud.Core.Standard.Exceptions
 {
+    /// <summary>
+    /// <para>zh-cn:用于声明异常映射信息的旧版异常特性标准。</para>
+    /// <para>en-us:Legacy exception attribute standard used to declare exception mapping information.</para>
+    /// </summary>
+    /// <remarks>
+    /// <para>zh-cn:该类型当前保留兼容性，不在本次 CS1591 注释补齐中调整异常处理体系。</para>
+    /// <para>en-us:This type is currently retained for compatibility; the exception handling architecture is not changed by this CS1591 documentation update.</para>
+    /// </remarks>
     [Obsolete("这个需要抽成约定")]
     public class IfExceptionAttributeStandard : Attribute
     {

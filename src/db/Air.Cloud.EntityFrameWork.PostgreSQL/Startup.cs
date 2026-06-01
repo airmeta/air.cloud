@@ -22,14 +22,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.EntityFrameWork.PostgreSQL
 {
+    /// <summary>
+    /// <para>zh-cn:PostgreSQL 模块启动类，负责配置 PostgreSQL 数据库相关服务和中间件。</para>
+    /// <para>en-us:PostgreSQL module startup class responsible for configuring PostgreSQL database-related services and middleware.</para>
+    /// </summary>
     public class Startup : AppStartup
     {
+        
+        /// <inheritdoc/>
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
 
 
         }
 
+        /// <inheritdoc/>
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions<DataSourceOptions>()

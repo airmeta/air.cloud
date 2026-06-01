@@ -17,8 +17,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Air.Cloud.EntityFrameWork.MySQL.Configure
 {
+    /// <summary>
+    /// <para>zh-cn:MySQL 数据库配置器，负责为 MySQL 数据库上下文构建 Entity Framework Core 配置。</para>    
+    /// <para>en-us:MySQL database configurator that builds Entity Framework Core configuration for MySQL database contexts.</para>
+    /// </summary>
     public class MySQLDatabaseConfigure : IDatabaseConfigure
     {
+        
+        /// <inheritdoc/>
         public DbContextOptionsBuilder Configure<TDbContext>(DbContextOptionsBuilder builder,string connectionMetadata) 
             where TDbContext : DbContext
         {

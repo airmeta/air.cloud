@@ -17,8 +17,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Air.Cloud.EntityFrameWork.PostgreSQL.Configure
 {
+    /// <summary>
+    /// <para>zh-cn:PostgreSQL 数据库配置器，负责为 PostgreSQL 数据库提供 Entity Framework Core 配置。</para>
+    /// <para>en-us:PostgreSQL database configurator that provides Entity Framework Core configuration for PostgreSQL databases.</para>
+    /// </summary>
     public class PostgreSQLDatabaseConfigure : IDatabaseConfigure
     {
+
+        /// <inheritdoc/>
         public DbContextOptionsBuilder Configure<TDbContext>(DbContextOptionsBuilder builder, string connectionMetadata)
             where TDbContext : DbContext
         {

@@ -44,6 +44,18 @@ namespace Air.Cloud.Modules.MongoDB
         /// </summary>
         public string DatabaseName { get; }
 
+        /// <summary>
+        /// <para>zh-cn:使用文档类型初始化 MongoDB 连接信息，自动解析集合特性和数据库配置。</para>
+        /// <para>en-us:Initializes the MongoDB connection context using the document type, automatically resolving collection attributes and database configuration.</para>
+        /// </summary>
+        /// <param name="documentType">
+        ///  <para>zh-cn:Mongo文档类型，用于解析集合特性和数据库配置。</para>
+        ///  <para>en-us:Mongo document type used to resolve collection attributes and database configuration.</para>
+        /// </param>
+        /// <exception cref="MongoDBException">
+        ///  <para>zh-cn:当文档类型缺失、集合特性未配置、数据库配置缺失或连接字符串无效时抛出。</para>
+        ///  <para>en-us:Thrown when the document type is missing, collection attribute is not configured, database configuration is missing, or the connection string is invalid.</para>
+        /// </exception>
         public MongoDBConnection(Type documentType)
         {
             if (documentType == null)

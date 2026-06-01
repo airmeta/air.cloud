@@ -26,6 +26,10 @@ namespace Air.Cloud.Modules.Consul.Model
     [ConfigurationInfo("ConsulServiceOptions")]
     public class ConsulServiceOptions
     {
+        /// <summary>
+        /// <para>zh-cn:当前服务注册到 Consul 时使用的服务实例标识。</para>
+        /// <para>en-us:The service instance identifier used when the current service is registered in Consul.</para>
+        /// </summary>
         public  static string ServiceId = AppRealization.PID.Get();
 
         #region  Consul配置(ConsulConfig)

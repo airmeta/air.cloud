@@ -24,6 +24,11 @@ namespace Air.Cloud.Modules.MongoDB.Implantations
         private readonly IMongoCollection<TDocument> collection;
         private readonly IQueryable<TDocument> queryable;
 
+        /// <summary>
+        /// <para>zh-cn:初始化 MongoDB 数据仓储，获取文档类型的 MongoCollection 特性，并建立数据库连接和集合访问。</para>
+        /// <para>en-us:Initializes the MongoDB data repository, retrieves the MongoCollection attribute of the document type, and establishes database connection and collection access.</para>
+        /// </summary>
+        /// <exception cref="MongoDBException"></exception>
         public MongoNoSqlRepository()
         {
             Type documentType = typeof(TDocument);

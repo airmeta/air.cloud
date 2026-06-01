@@ -94,6 +94,18 @@ namespace Air.Cloud.Modules.Taxin.Server
             }
            
         }
+        /// <summary>
+        /// <para>zh-cn:停止 Taxin 服务端后台服务，并输出服务停止日志。</para>
+        /// <para>en-us:Stops the Taxin server background service and writes the service stopped log.</para>
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// <para>zh-cn:用于通知停止流程取消的取消标记。</para>
+        /// <para>en-us:The cancellation token used to notify cancellation of the stop workflow.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示服务停止流程的异步任务。</para>
+        /// <para>en-us:A task that represents the service stop workflow.</para>
+        /// </returns>
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
             AppRealization.Output.Print(new AppPrintInformation()

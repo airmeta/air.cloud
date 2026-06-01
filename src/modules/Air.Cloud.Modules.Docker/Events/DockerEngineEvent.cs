@@ -19,8 +19,16 @@ using Docker.DotNet.Models;
 
 namespace Air.Cloud.Modules.Docker.Events
 {
+    /// <summary>
+    /// <para>zh-cn:Docker Engine 事件订阅入口，用于监听容器状态变化并刷新容器缓存。</para>
+    /// <para>en-us:Docker Engine event subscription entry that listens for container state changes and refreshes container cache.</para>
+    /// </summary>
     public static  class DockerEngineEvent
     {
+        /// <summary>
+        /// <para>zh-cn:订阅 Docker Engine 容器事件，收到状态变化后清理缓存并重新查询容器信息。</para>
+        /// <para>en-us:Subscribes to Docker Engine container events, clears cache on state changes, and reloads container information.</para>
+        /// </summary>
         public static void DockerEngineEventSubscription()
         {
             Task.Run(async () =>
