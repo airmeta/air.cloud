@@ -1,4 +1,4 @@
-````markdown
+
 # Air.Cloud
 
 > A capability-protocol-based modular microservice framework.
@@ -18,7 +18,4 @@ Capabilities evolve freely.
 ```text
 核心定义规则。
 能力自由演化。
-```
-
-```
 ```
