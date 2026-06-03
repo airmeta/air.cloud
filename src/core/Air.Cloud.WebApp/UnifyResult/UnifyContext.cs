@@ -1,300 +1,176 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+
+using Air.Cloud.Core.App;
+using Air.Cloud.WebApp.FriendlyException.Internal;
+using Air.Cloud.WebApp.UnifyResult.Internal;
+using Air.Cloud.WebApp.UnifyResult.Options;
+using Air.Cloud.WebApp.UnifyResult.Providers;
 
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+
 using System.Reflection;
-using Air.Cloud.Core.Extensions;
-using Air.Cloud.Core.App;
-using Air.Cloud.WebApp.FriendlyException.Exceptions;
-using Air.Cloud.WebApp.UnifyResult.Options;
-using Air.Cloud.WebApp.UnifyResult.Attributes;
-using Air.Cloud.WebApp.FriendlyException.Internal;
-using Air.Cloud.WebApp.Extensions;
-using Air.Cloud.WebApp.FriendlyException.Attributes;
-using Air.Cloud.WebApp.UnifyResult.Internal;
-using Air.Cloud.WebApp.UnifyResult.Providers;
 
 namespace Air.Cloud.WebApp.UnifyResult;
 
 /// <summary>
-/// 规范化结果上下文
+/// 规范化结果上下文兼容门面。
 /// </summary>
 [IgnoreScanning]
 public static class UnifyContext
 {
     /// <summary>
-    /// 是否启用规范化结果
+    /// 获取统一返回需要的异常元数据。
     /// </summary>
-    internal static bool EnabledUnifyHandler = true;
-
-    /// <summary>
-    /// 规范化结果类型
-    /// </summary>
-    internal static Type RESTfulResultType = typeof(RESTfulResult<>);
-
-    /// <summary>
-    /// 规范化结果额外数据键
-    /// </summary>
-    internal static string UnifyResultExtrasKey = "UNIFY_RESULT_EXTRAS";
-
-    /// <summary>
-    /// 获取异常元数据
-    /// </summary>
-    /// <param name="context"></param>
-    /// <returns></returns>
+    /// <param name="context">动作上下文。</param>
+    /// <returns>异常元数据。</returns>
     public static ExceptionMetadata GetExceptionMetadata(ActionContext context)
     {
-        object errorCode = default;
-        object errors = default;
-        var statusCode = StatusCodes.Status500InternalServerError;
-        var isValidationException = false; // 判断是否是验证异常
-        var isFriendlyException = false;
-
-        // 判断是否是 ExceptionContext 或者 ActionExecutedContext
-        var exception = context is ExceptionContext exContext
-            ? exContext.Exception
-            :
-                context is ActionExecutedContext edContext
-                ? edContext.Exception
-                : default
-            ;
-
-        // 判断是否是友好异常
-        if (exception is AppFriendlyException friendlyException)
-        {
-            isFriendlyException = true;
-            errorCode = friendlyException.ErrorCode;
-            statusCode = friendlyException.StatusCode;
-            isValidationException = friendlyException.ValidationException;
-            errors = friendlyException.ErrorMessage;
-        }
-
-        // 处理验证失败异常
-        if (!isValidationException)
-        {
-            // 判断是否定义了全局类型异常
-            var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
-
-            // 查找所有全局定义异常
-            var ifExceptionAttributes = actionDescriptor?.MethodInfo
-                        .GetCustomAttributes<IfExceptionAttribute>(true)
-                        .Where(u => u.ErrorCode == null);
-
-            // 处理全局异常
-            if (ifExceptionAttributes != null && ifExceptionAttributes.Any())
-            {
-                // 首先判断是否有相同类型的异常
-                var actionIfExceptionAttribute = ifExceptionAttributes.FirstOrDefault(u => u.ExceptionType ==
-                                                (isFriendlyException && exception?.InnerException != null
-                                                                    ? exception?.InnerException.GetType()
-                                                                    : exception?.GetType()))
-                        ?? ifExceptionAttributes.FirstOrDefault(u => u.ExceptionType == null);
-
-                // 支持渲染配置文件
-                errors = actionIfExceptionAttribute?.ErrorMessage;
-            }
-            else errors = exception?.InnerException?.Message ?? exception?.Message;
-        }
-
-        return new ExceptionMetadata
-        {
-            StatusCode = statusCode,
-            ErrorCode = errorCode,
-            Errors = errors
-        };
+        return UnifyExceptionMetadataResolver.GetExceptionMetadata(context);
     }
 
     /// <summary>
-    /// 填充附加信息
+    /// 填充附加信息。
     /// </summary>
-    /// <param name="extras"></param>
+    /// <param name="extras">附加信息。</param>
     public static void Fill(object extras)
     {
-        var items = AppCore.HttpContext?.Items;
-        if (items != null)
-        {
-            if (items.ContainsKey(UnifyResultExtrasKey)) items.Remove(UnifyResultExtrasKey);
-            items.Add(UnifyResultExtrasKey, extras);
-        }
+        UnifyResultExtrasAccessor.Fill(extras);
     }
 
     /// <summary>
-    /// 读取附加信息
+    /// 读取附加信息。
     /// </summary>
+    /// <returns>附加信息。</returns>
     public static object Take()
     {
-        object extras = null;
-        AppCore.HttpContext?.Items?.TryGetValue(UnifyResultExtrasKey, out extras);
-        return extras;
+        return UnifyResultExtrasAccessor.Take();
     }
 
     /// <summary>
-    /// 设置响应状态码
+    /// 设置响应状态码。
     /// </summary>
-    /// <param name="context"></param>
-    /// <param name="statusCode"></param>
-    /// <param name="unifyResultSettings"></param>
+    /// <param name="context">HTTP 上下文。</param>
+    /// <param name="statusCode">原始状态码。</param>
+    /// <param name="unifyResultSettings">统一返回配置。</param>
     public static void SetResponseStatusCodes(HttpContext context, int statusCode, UnifyResultSettingsOptions unifyResultSettings)
     {
-        if (unifyResultSettings == null) return;
-
-        // 篡改响应状态码
-        if (unifyResultSettings.AdaptStatusCodes != null && unifyResultSettings.AdaptStatusCodes.Length > 0)
-        {
-            var adaptStatusCode = unifyResultSettings.AdaptStatusCodes.FirstOrDefault(u => u[0] == statusCode);
-            if (adaptStatusCode != null && adaptStatusCode.Length > 0 && adaptStatusCode[0] > 0)
-            {
-                context.Response.StatusCode = adaptStatusCode[1];
-                return;
-            }
-        }
-
-        // 如果为 null，则所有请求错误的状态码设置为 200
-        if (unifyResultSettings.Return200StatusCodes == null) context.Response.StatusCode = 200;
-        // 否则只有里面的才设置为 200
-        else if (unifyResultSettings.Return200StatusCodes.Contains(statusCode)) context.Response.StatusCode = 200;
-        else { }
+        UnifyResultStatusCodeResolver.SetResponseStatusCodes(context, statusCode, unifyResultSettings);
     }
 
     /// <summary>
-    /// 检查请求成功是否进行规范化处理
+    /// 检查请求成功是否进行规范化处理。
     /// </summary>
-    /// <param name="method"></param>
-    /// <param name="unifyResult"></param>
-    /// <param name="isWebRequest"></param>
-    /// <returns>返回 true 跳过处理，否则进行规范化处理</returns>
+    /// <param name="method">动作方法。</param>
+    /// <param name="unifyResult">统一返回提供器。</param>
+    /// <param name="isWebRequest">是否 Web 请求。</param>
+    /// <returns>返回 true 跳过处理，否则进行规范化处理。</returns>
     internal static bool CheckSucceededNonUnify(MethodInfo method, out IUnifyResultProvider unifyResult, bool isWebRequest = true)
     {
-        // 判断是否跳过规范化处理
-        var isSkip = !EnabledUnifyHandler
-              || method.GetRealReturnType().HasImplementedRawGeneric(RESTfulResultType)
-              || method.CustomAttributes.Any(x => typeof(NonUnifyAttribute).IsAssignableFrom(x.AttributeType) || typeof(ProducesResponseTypeAttribute).IsAssignableFrom(x.AttributeType) || typeof(IApiResponseMetadataProvider).IsAssignableFrom(x.AttributeType))
-              || method.ReflectedType != null && method.ReflectedType.IsDefined(typeof(NonUnifyAttribute), true);
-
-        if (!isWebRequest)
-        {
-            unifyResult = null;
-            return isSkip;
-        }
-
-        unifyResult = isSkip ? null : AppCore.RootServices.GetService<IUnifyResultProvider>();
-        return unifyResult == null || isSkip;
+        return CheckSucceededNonUnify(method, AppCore.RootServices, out unifyResult, isWebRequest);
     }
 
     /// <summary>
-    /// 检查请求失败（验证失败、抛异常）是否进行规范化处理
+    /// 检查请求成功是否进行规范化处理。
     /// </summary>
-    /// <param name="method"></param>
-    /// <param name="unifyResult"></param>
-    /// <returns>返回 true 跳过处理，否则进行规范化处理</returns>
+    /// <param name="method">动作方法。</param>
+    /// <param name="requestServices">当前请求服务提供器。</param>
+    /// <param name="unifyResult">统一返回提供器。</param>
+    /// <param name="isWebRequest">是否 Web 请求。</param>
+    /// <returns>返回 true 跳过处理，否则进行规范化处理。</returns>
+    internal static bool CheckSucceededNonUnify(
+        MethodInfo method,
+        IServiceProvider requestServices,
+        out IUnifyResultProvider unifyResult,
+        bool isWebRequest = true)
+    {
+        return UnifyResultPolicy.CheckSucceededNonUnify(
+            method,
+            requestServices,
+            GetRuntimeOptions(requestServices),
+            out unifyResult,
+            isWebRequest);
+    }
+
+    /// <summary>
+    /// 检查请求失败（验证失败、抛异常）是否进行规范化处理。
+    /// </summary>
+    /// <param name="method">动作方法。</param>
+    /// <param name="unifyResult">统一返回提供器。</param>
+    /// <returns>返回 true 跳过处理，否则进行规范化处理。</returns>
     internal static bool CheckFailedNonUnify(MethodInfo method, out IUnifyResultProvider unifyResult)
     {
-        // 判断是否跳过规范化处理
-        var isSkip = !EnabledUnifyHandler
-                || method.CustomAttributes.Any(x => typeof(NonUnifyAttribute).IsAssignableFrom(x.AttributeType))
-                ||
-                        !method.CustomAttributes.Any(x => typeof(ProducesResponseTypeAttribute).IsAssignableFrom(x.AttributeType) || typeof(IApiResponseMetadataProvider).IsAssignableFrom(x.AttributeType))
-                        && method.ReflectedType != null && method.ReflectedType.IsDefined(typeof(NonUnifyAttribute), true)
-                    ;
-
-        unifyResult = isSkip ? null : AppCore.RootServices.GetService<IUnifyResultProvider>();
-        return unifyResult == null || isSkip;
+        return CheckFailedNonUnify(method, AppCore.RootServices, out unifyResult);
     }
 
     /// <summary>
-    /// 检查短路状态码（>=400）是否进行规范化处理
+    /// 检查请求失败（验证失败、抛异常）是否进行规范化处理。
     /// </summary>
-    /// <param name="context"></param>
-    /// <param name="unifyResult"></param>
-    /// <returns>返回 true 跳过处理，否则进行规范化处理</returns>
+    /// <param name="method">动作方法。</param>
+    /// <param name="requestServices">当前请求服务提供器。</param>
+    /// <param name="unifyResult">统一返回提供器。</param>
+    /// <returns>返回 true 跳过处理，否则进行规范化处理。</returns>
+    internal static bool CheckFailedNonUnify(MethodInfo method, IServiceProvider requestServices, out IUnifyResultProvider unifyResult)
+    {
+        return UnifyResultPolicy.CheckFailedNonUnify(method, requestServices, GetRuntimeOptions(requestServices), out unifyResult);
+    }
+
+    /// <summary>
+    /// 检查短路状态码（>=400）是否进行规范化处理。
+    /// </summary>
+    /// <param name="context">HTTP 上下文。</param>
+    /// <param name="unifyResult">统一返回提供器。</param>
+    /// <returns>返回 true 跳过处理，否则进行规范化处理。</returns>
     internal static bool CheckStatusCodeNonUnify(HttpContext context, out IUnifyResultProvider unifyResult)
     {
-        // 获取终点路由特性
-        var endpointFeature = context.Features.Get<IEndpointFeature>();
-        if (endpointFeature == null) return (unifyResult = null) == null;
-
-        // 判断是否跳过规范化处理
-        var isSkip = !EnabledUnifyHandler
-                || context.GetMetadata<NonUnifyAttribute>() != null
-                || endpointFeature?.Endpoint?.Metadata?.GetMetadata<NonUnifyAttribute>() != null;
-
-        unifyResult = isSkip ? null : context.RequestServices.GetService<IUnifyResultProvider>();
-        return unifyResult == null || isSkip;
+        return UnifyResultPolicy.CheckStatusCodeNonUnify(
+            context,
+            GetRuntimeOptions(context.RequestServices),
+            out unifyResult);
     }
 
     /// <summary>
-    /// 判断是否支持 Mvc 控制器规范化处理
+    /// 判断是否支持 MVC 控制器规范化处理。
     /// </summary>
-    /// <param name="httpContext"></param>
-    /// <param name="actionDescriptor"></param>
-    /// <param name="unifyResultSettings"></param>
-    /// <returns></returns>
-    internal static bool CheckSupportMvcController(HttpContext httpContext, ControllerActionDescriptor actionDescriptor, out UnifyResultSettingsOptions unifyResultSettings)
+    /// <param name="httpContext">HTTP 上下文。</param>
+    /// <param name="actionDescriptor">动作描述。</param>
+    /// <param name="unifyResultSettings">统一返回配置。</param>
+    /// <returns>支持返回 true。</returns>
+    internal static bool CheckSupportMvcController(
+        HttpContext httpContext,
+        ControllerActionDescriptor actionDescriptor,
+        out UnifyResultSettingsOptions unifyResultSettings)
     {
-        // 获取规范化配置选项
-        unifyResultSettings = httpContext.RequestServices.GetService<IOptions<UnifyResultSettingsOptions>>()?.Value;
-
-        // 如果未启用 MVC 规范化处理，则跳过
-        if (unifyResultSettings?.SupportMvcController == false && typeof(Controller).IsAssignableFrom(actionDescriptor.ControllerTypeInfo)) return false;
-
-        return true;
+        return UnifyResultPolicy.CheckSupportMvcController(httpContext, actionDescriptor, out unifyResultSettings);
     }
 
     /// <summary>
-    /// 检查是否是有效的结果（可进行规范化的结果）
+    /// 检查是否是有效的结果（可进行规范化的结果）。
     /// </summary>
-    /// <param name="result"></param>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    internal static bool CheckVaildResult(IActionResult result, out object data)
+    /// <param name="result">动作结果。</param>
+    /// <param name="data">结果数据。</param>
+    /// <returns>可规范化返回 true。</returns>
+    internal static bool CheckValidResult(IActionResult result, out object data)
     {
-        data = default;
+        return UnifyResultDataResolver.CheckValidResult(result, out data);
+    }
 
-        // 排除以下结果，跳过规范化处理
-        var isDataResult = result switch
-        {
-            ViewResult => false,
-            PartialViewResult => false,
-            FileResult => false,
-            ChallengeResult => false,
-            SignInResult => false,
-            SignOutResult => false,
-            RedirectToPageResult => false,
-            RedirectToRouteResult => false,
-            RedirectResult => false,
-            RedirectToActionResult => false,
-            LocalRedirectResult => false,
-            ForbidResult => false,
-            ViewComponentResult => false,
-            PageResult => false,
-            _ => true,
-        };
-
-        // 目前支持返回值 ActionResult
-        if (isDataResult) data = result switch
-        {
-            // 处理内容结果
-            ContentResult content => content.Content,
-            // 处理对象结果
-            ObjectResult obj => obj.Value,
-            // 处理 JSON 对象
-            JsonResult json => json.Value,
-            _ => null,
-        };
-
-        return isDataResult;
+    private static UnifyResultRuntimeOptions GetRuntimeOptions(IServiceProvider services)
+    {
+        return services?.GetService<IOptions<UnifyResultRuntimeOptions>>()?.Value
+               ?? new UnifyResultRuntimeOptions();
     }
 }

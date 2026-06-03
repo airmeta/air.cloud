@@ -9,7 +9,7 @@
 		<Authors>AC</Authors>
 		<Company>合肥星曳数据科技有限公司</Company>
 		<Product>air.cloud</Product>
-		<Description>[Alpha]SkyMirrorShield(天镜盾)安全认证模块</Description>
+		<Description>SkyMirrorShield(天镜盾)安全认证模块</Description>
 		<PackageIcon>logo.png</PackageIcon>
 		<PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>

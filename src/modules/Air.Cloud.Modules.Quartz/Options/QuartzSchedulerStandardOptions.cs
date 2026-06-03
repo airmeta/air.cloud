@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.Standard.SchedulerStandard;
 using Air.Cloud.Core.Standard.SchedulerStandard.Attributes;
+using Air.Cloud.Core.Standard.SchedulerStandard.Coordination;
 
 namespace Air.Cloud.Modules.Quartz.Options
 {
@@ -18,7 +19,7 @@ namespace Air.Cloud.Modules.Quartz.Options
     /// <para>zh-cn:Quartz 调度器标准配置项，保存任务标识、名称、描述、Cron 表达式和分组信息。</para>
     /// <para>en-us:Quartz scheduler standard options that store job identity, name, description, cron expression, and group information.</para>
     /// </summary>
-    public class QuartzSchedulerStandardOptions : ISchedulerStandardOptions
+    public class QuartzSchedulerStandardOptions : ISchedulerStandardOptions, ISchedulerExecutionCoordinationOptions
     {
         /// <summary>
         /// <para>zh-cn:调度任务唯一标识，用于区分不同的调度定义。</para>
@@ -49,6 +50,30 @@ namespace Air.Cloud.Modules.Quartz.Options
         /// <para>en-us:Scheduler job group name used to classify jobs by business domain or runtime scenario.</para>
         /// </summary>
         public string GroupName { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:是否启用分布式执行协调；启用后需要注册 ISchedulerExecutionCoordinatorStandard。</para>
+        /// <para>en-us:Whether distributed execution coordination is enabled; requires ISchedulerExecutionCoordinatorStandard registration.</para>
+        /// </summary>
+        public bool EnableExecutionCoordination { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:分布式唯一执行策略，默认按同一计划触发时间去重。</para>
+        /// <para>en-us:Distributed unique execution policy, deduplicated by scheduled fire time by default.</para>
+        /// </summary>
+        public SchedulerExecutionUniqueMode UniqueMode { get; set; } = SchedulerExecutionUniqueMode.PerFireTime;
+
+        /// <summary>
+        /// <para>zh-cn:执行租约秒数，长任务可通过心跳延长租约。</para>
+        /// <para>en-us:Execution lease seconds; long-running jobs can extend it through heartbeat.</para>
+        /// </summary>
+        public int LeaseSeconds { get; set; } = 300;
+
+        /// <summary>
+        /// <para>zh-cn:执行记录实体类型；为空时由协调器自动扫描唯一实现。</para>
+        /// <para>en-us:Execution record entity type; when empty, the coordinator scans the single implementation automatically.</para>
+        /// </summary>
+        public Type? ExecutionRecordType { get; set; }
 
         /// <summary>
         /// <para>zh-cn:初始化 Quartz 调度器标准配置项。</para>

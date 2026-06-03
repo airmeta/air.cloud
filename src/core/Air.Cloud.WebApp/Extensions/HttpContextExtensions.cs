@@ -1,11 +1,14 @@
-// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 
@@ -14,16 +17,16 @@ using System.Text;
 namespace Air.Cloud.WebApp.Extensions;
 
 /// <summary>
-/// Http 拓展类
+/// Http 鎷撳睍绫?
 /// </summary>
 [IgnoreScanning]
 public static class HttpContextExtensions
 {
     /// <summary>
-    /// 获取请求路由端点的特性信息
+    /// 鑾峰彇璇锋眰璺敱绔偣鐨勭壒鎬т俊鎭?
     /// </summary>
-    /// <typeparam name="TAttribute">特性类型</typeparam>
-    /// <param name="httpContext">请求上下文</param>
+    /// <typeparam name="TAttribute">鐗规€х被鍨?/typeparam>
+    /// <param name="httpContext">璇锋眰涓婁笅鏂?/param>
     /// <returns></returns>
     public static TAttribute GetMetadata<TAttribute>(this HttpContext httpContext)
         where TAttribute : class
@@ -32,7 +35,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取 控制器/Action 描述器
+    /// 鑾峰彇 鎺у埗鍣?Action 鎻忚堪鍣?
     /// </summary>
     /// <param name="httpContext"></param>
     /// <returns></returns>
@@ -42,7 +45,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取本机 IPv4地址
+    /// 鑾峰彇鏈満 IPv4鍦板潃
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
@@ -52,7 +55,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取本机 IPv6地址
+    /// 鑾峰彇鏈満 IPv6鍦板潃
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
@@ -62,7 +65,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取远程 IPv4地址
+    /// 鑾峰彇杩滅▼ IPv4鍦板潃
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
@@ -72,7 +75,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取远程 IPv6地址
+    /// 鑾峰彇杩滅▼ IPv6鍦板潃
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
@@ -82,7 +85,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取完整请求地址
+    /// 鑾峰彇瀹屾暣璇锋眰鍦板潃
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
@@ -99,7 +102,7 @@ public static class HttpContextExtensions
     }
 
     /// <summary>
-    /// 获取来源地址
+    /// 鑾峰彇鏉ユ簮鍦板潃
     /// </summary>
     /// <param name="request"></param>
     /// <param name="refererHeaderKey"></param>

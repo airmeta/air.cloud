@@ -1,4 +1,4 @@
-﻿
+
 /*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -35,7 +35,7 @@ namespace unit.taxinserver.entry
             {
                 a.Filters.Add<ActionLogFilter>();
                 a.Filters.Add<AutoSaveChangesFilter>();
-            }).AddInjectWithUnifyResult().AddNewtonsoftJson(s =>
+            }).AddWebApp().AddNewtonsoftJson(s =>
             {
                 //全局设置json 序列化enum int 转string
                 s.SerializerSettings.Converters.Add(new IsoDateTimeConverter()

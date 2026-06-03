@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -350,7 +350,7 @@ public static class SpecificationDocumentBuilder
                         var memberName = inheritdocElement.Parent.Attribute("name").Value;
 
                         // 处理隐式实现接口的注释
-                        // 注释格式：M:Furion.Application.TestInheritdoc.Furion#Application#ITestInheritdoc#Abc(System.String)
+                        // 注释格式：M:Air.Cloud.Application.TestInheritdoc.Air#Cloud#Application#ITestInheritdoc#Abc(System.String)
                         // 匹配格式：[A-Z]:[a-zA-Z_@\.]+\.
                         // 处理逻辑：直接替换匹配为空，然后讲 # 替换为 . 查找即可
                         if (memberName.Contains('#'))
@@ -358,7 +358,7 @@ public static class SpecificationDocumentBuilder
                             value = $"{memberName[..2]}{regex2.Replace(memberName, "").Replace('#', '.')}";
                         }
                         // 处理带参数的注释
-                        // 注释格式：M:Furion.Application.TestInheritdoc.WithParams(System.String)
+                        // 注释格式：M:Air.Cloud.Application.TestInheritdoc.WithParams(System.String)
                         // 匹配格式：[A-Z]:[a-zA-Z_@\.]+
                         // 处理逻辑：匹配出不带参数的部分，然后获取类型命名空间，最后调用 GenerateInheritdocCref 进行生成
                         else if (memberName.Contains('('))
@@ -368,7 +368,7 @@ public static class SpecificationDocumentBuilder
                             value = GenerateInheritdocCref(xmlDoc, memberName, className);
                         }
                         // 处理不带参数的注释
-                        // 注释格式：M:Furion.Application.TestInheritdoc.WithParams
+                        // 注释格式：M:Air.Cloud.Application.TestInheritdoc.WithParams
                         // 匹配格式：无
                         // 处理逻辑：获取类型命名空间，最后调用 GenerateInheritdocCref 进行生成
                         else

@@ -11,10 +11,12 @@
  */
 
 using Air.Cloud.Core.Standard.DataBase.Locators;
+using Air.Cloud.Core.Standard.DataRepository;
 using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.EntityFrameWork.Core.ContextPools;
 using Air.Cloud.EntityFrameWork.Core.Contexts.Dynamic;
 using Air.Cloud.EntityFrameWork.Core.Contexts.Enums;
+using Air.Cloud.EntityFrameWork.Core.DataRepository;
 using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 using Air.Cloud.EntityFrameWork.Core.Internal;
 using Air.Cloud.EntityFrameWork.Core.Repositories;
@@ -78,6 +80,10 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
 
             // 注册多数据库仓储
             services.TryAddScoped(typeof(IDbRepository<>), typeof(DbRepository<>));
+
+            // 注册 Core 通用数据仓储抽象适配器
+            services.TryAddScoped<IDataRepositoryAccessor, EntityFrameworkDataRepositoryAccessor>();
+            services.TryAddScoped(typeof(IDataRepository<>), typeof(EntityFrameworkDataRepository<>));
 
             // 注册解析数据库上下文委托
             services.TryAddScoped(provider =>

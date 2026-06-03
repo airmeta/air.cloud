@@ -1,12 +1,14 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.Core.Extensions;
 
 using Microsoft.AspNetCore.Http;
@@ -34,7 +36,6 @@ public class UnifyResultAttribute : ProducesResponseTypeAttribute
     /// <param name="type"></param>
     public UnifyResultAttribute(Type type) : base(type, StatusCodes.Status200OK)
     {
-        WrapType(type);
     }
 
     /// <summary>
@@ -44,20 +45,19 @@ public class UnifyResultAttribute : ProducesResponseTypeAttribute
     /// <param name="statusCode"></param>
     public UnifyResultAttribute(Type type, int statusCode) : base(type, statusCode)
     {
-        WrapType(type);
     }
 
     /// <summary>
     /// 包装类型
     /// </summary>
     /// <param name="type"></param>
-    private void WrapType(Type type)
+    internal void ConfigureResultModel(Type resultModelType)
     {
-        if (type != null)
+        if (Type != null)
         {
-            if (!type.HasImplementedRawGeneric(UnifyContext.RESTfulResultType)&&type.Name!="Boolean")
+            if (!Type.HasImplementedRawGeneric(resultModelType))
             {
-                Type = UnifyContext.RESTfulResultType.MakeGenericType(type);
+                Type = resultModelType.MakeGenericType(Type);
             }
             else Type = default;
         }

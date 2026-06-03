@@ -1,32 +1,34 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
-
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 namespace Air.Cloud.WebApp.FriendlyException.Internal;
 
 /// <summary>
-/// 异常元数据
+/// 统一异常返回元数据。
 /// </summary>
 [IgnoreScanning]
 public sealed class ExceptionMetadata
 {
     /// <summary>
-    /// 状态码
+    /// HTTP 状态码。
     /// </summary>
     public int StatusCode { get; internal set; }
 
     /// <summary>
-    /// 错误码
+    /// 业务错误码。
     /// </summary>
     public object ErrorCode { get; internal set; }
 
     /// <summary>
-    /// 错误对象（信息）
+    /// 错误消息或错误对象。
     /// </summary>
     public object Errors { get; internal set; }
 }

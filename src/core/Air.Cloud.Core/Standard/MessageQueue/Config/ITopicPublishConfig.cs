@@ -33,5 +33,15 @@ namespace Air.Cloud.Core.Standard.MessageQueue.Config
         /// <para>en-us:Gets or sets the target topic name to publish to.</para>
         /// </summary>
         public string TopicName { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:获取或设置发布消息使用的 Key 类型；消息队列实现会据此选择对应的 Key 生成器和底层生产者类型。</para>
+        /// <para>en-us:Gets or sets the key type used by published messages. Message-queue implementations use this value to select the corresponding key generator and underlying producer type.</para>
+        /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:当未显式设置时，具体消息队列模块可以使用自身默认值，例如 Kafka 模块默认使用 int。</para>
+        /// <para>en-us:When this value is not explicitly set, a concrete message-queue module may use its own default value, for example int in the Kafka module.</para>
+        /// </remarks>
+        public Type KeyType { get; set; }
     }
 }

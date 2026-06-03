@@ -1,126 +1,202 @@
-### 设计理念
+﻿# 设计理念
 
-在普遍的框架设计中，框架中支持的功能都会具有默认的实现，并且在一定程度上会非常的臃肿不适用于扩展。
+Air.Cloud 的设计目标不是提供一个“全家桶”，而是把框架能力拆成可替换的标准和实现。业务项目只依赖标准，具体能力由模块或插件补齐。
 
-在 Air.Cloud 中，Air.Cloud.Core 仅包含功能接口定义，我们把这部分定义称作为 **Standard（标准）**，除了一些特殊的标准需要默认定义之外，其他标准仅包含接口。
-
-还有一部分是**插件**，框架内提供了一些默认的插件，你可以把它当作为以前我们使用的 Util 类。
+这个设计有一个明确边界：`Air.Cloud.Core` 负责定义规则、加载资源、协调启动；Redis、Kafka、Consul、Web 服务、数据库等具体能力不应该沉淀在 Core 里。
 
 ![架构图](/assets/1.png)
 
-基本上 Air.Cloud 所有模块都是可以从 NuGet 中找寻替换版本或者自行实现相关功能，并且我们也欢迎你贡献独属于你自己的实现。
+---
 
-#### 标准与实现的关系
+## 核心定位
 
+`Air.Cloud.Core` 主要负责：
+
+- 定义标准接口，例如缓存、配置、消息队列、JSON、压缩、追踪日志等。
+- 维护 `AppRealization`，统一暴露标准实现。
+- 维护加载机制，决定应用启动时如何扫描、注入、排序和执行启动项。
+- 提供默认兜底实现，例如输出、配置、JSON、压缩等。
+- 对没有默认实现的能力抛出明确异常，提示需要引入模块或自行实现。
+
+`Air.Cloud.Core` 不应该负责：
+
+- 直接连接 Redis。
+- 直接连接 Kafka。
+- 直接提供 Web 服务。
+- 直接实现 Consul、数据库、远程调用等具体能力。
+
+这些能力应该由对应模块或插件完成。
+
+---
+
+## 分层关系
+
+Air.Cloud 的主体分为三层：
+
+| 层级 | 作用 | 是否建议业务直接依赖 |
+| --- | --- | --- |
+| Core | 定义标准、维护加载机制、提供少量默认实现 | 是 |
+| Module | 实现运行时能力，例如 Kafka、Redis、Consul | 按需依赖 |
+| Plugin | 增强应用能力，例如 JWT、接口文档、API 目录 | 按需依赖 |
+
+关系可以理解为：
+
+```mermaid
+flowchart TB
+    Business["业务代码"] --> Standard["Air.Cloud.Core 标准接口"]
+    Standard --> Module["模块实现 Module"]
+    Standard --> Plugin["插件能力 Plugin"]
+    CoreLoader["Core 加载机制"] --> Standard
+    CoreLoader --> Module
+    CoreLoader --> Plugin
 ```
-┌─────────────────────────────────────────┐
-│            Air.Cloud.Core                │
-│         (定义标准接口 Standard)          │
-│  ┌───────────────────────────────────┐  │
-│  │  IAppCacheStandard                │  │
-│   └───────────────────────────────────┘  │
-└──────────────┬──────────────────────────┘
-               │ 实现
-               ▼
-┌─────────────────────────────────────────┐
-│         Modules (实现标准)               │
-│  ┌───────────────────────────────────┐  │
-│  │  RedisCacheDependency            │  │
-│  │  MemoryCacheDependency            │  │
-│  └───────────────────────────────────┘  │
-└─────────────────────────────────────────┘
-```
 
-### 设计优点
+业务代码应该尽量调用 `AppRealization` 暴露的标准，或者通过 DI 使用标准接口，而不是直接绑定某个具体模块。这样后续切换实现时，业务代码不需要大改。
 
-1. **多态** - 屏蔽了实现对现有业务代码的影响，在多个标准实现之间可以随意切换而不需要调整代码
+---
 
-2. **简洁** - 简化框架核心的臃肿代码，减少了框架对于其他 NuGet 包的引用
+## 为什么 Core 只做核心
 
-3. **快速** - 由于框架核心不实现任何功能，框架的加载速度会非常快
+如果 Core 同时实现 Kafka、Redis、Consul、数据库、Web 服务等能力，会带来几个问题：
 
-4. **轻量** - 发布包的大小随着你对于实现的引用而变化，默认只有十几兆左右即可运行
+- 引用膨胀：一个简单服务也会携带大量无关依赖。
+- 替换困难：默认实现越重，业务越难覆盖。
+- 版本冲突：不同能力依赖不同第三方包，容易互相牵制。
+- 启动复杂：所有能力都在核心中，加载链路会越来越不可控。
 
-5. **自由** - 更好的支持，不必纠结任何实现的问题，实现有问题你就重新编写，自行注入，不需要等作者修复而带来的额外时间消耗
+所以 Air.Cloud 选择让 Core 保持克制：
 
-### 设计缺点
+- 能定义成标准的，放在 Core。
+- 能被替换的，做成 Module。
+- 能增强 Web/API 能力的，做成 Plugin。
+- 能作为兜底基础能力的，才提供默认实现。
 
-1. **历史遗留** - 框架是基于 Furion v3.8.6(MIT) 的部分代码余烬中新生，包含了一部分旧代码，但是该部分已经抽取成单独的类库，后续 v2.0 阶段将会将其优化
+---
 
-2. **发展局限** - 框架目前仅支持对于 WebAPI 方向，后续 v2.0 将会支持更多的功能
+## 标准优先
 
-### 使用场景
-
-#### 场景一：切换缓存实现
-
-假设项目当前使用 Redis 缓存，现在需要切换到内存缓存（用于测试环境）：
+标准是框架能力的契约，例如：
 
 ```csharp
-// 原来的 Redis 缓存实现
-services.AddSingleton<IAppCacheStandard, RedisCacheDependency>();
+IAppCacheStandard
+IMessageQueueStandard
+IAppConfigurationStandard
+IJsonSerializerStandard
+ITraceLogStandard
+```
 
-// 切换到内存缓存（不需要修改业务代码）
-services.AddSingleton<IAppCacheStandard, MemoryCacheDependency>();
+业务侧应该按下面方式理解它们：
 
-// 业务代码保持不变
+```csharp
+// 业务只关心缓存标准，不关心当前到底是 Redis、Memory 还是其他实现。
 var cache = AppRealization.Cache;
-cache.Set("key", "value");
-var value = cache.Get<string>("key");
+cache.SetCache("user:1", "value");
 ```
 
-#### 场景二：自定义日志实现
+如果需要替换实现，优先替换标准实现，而不是修改业务调用点。
+
+---
+
+## 模块承担运行时能力
+
+模块通常承担“服务运行必须连接外部资源”的能力，例如：
+
+- `Air.Cloud.Modules.Kafka`：实现消息队列标准。
+- `Air.Cloud.Modules.RedisCache`：实现 Redis 缓存标准。
+- `Air.Cloud.Modules.Consul`：实现配置中心、注册中心、键值对中心。
+- `Air.Cloud.Modules.Quartz`：实现调度任务能力。
+
+模块一般会提供 `AddXXXService()` 或 `AddXXX()` 之类的注册方法。注册后，模块会把自己的标准实现放入 DI 或 `AppRealization` 的解析链路中。
+
+---
+
+## 插件承担增强能力
+
+插件更适合处理“应用增强”，例如：
+
+- 认证鉴权。
+- OpenAPI / Swagger 文档。
+- API 探针与目录。
+- 代码生成。
+
+插件不应该承担复杂业务流程。复杂流程应该放在业务服务或模块中，插件只负责补齐入口、过滤器、中间件或辅助能力。
+
+---
+
+## 加载机制是 Core 的核心
+
+`Air.Cloud.Core` 的真正核心是加载机制。它解决的问题是：应用启动时，框架如何发现模块、插件、标准实现、启动项，并按正确顺序装配到应用里。
+
+核心链路如下：
+
+```mermaid
+flowchart TD
+    A["进程启动"] --> B["AppConfigurationLoader 加载 appsettings.json"]
+    B --> C["AppEnvironment 计算虚拟环境"]
+    C --> D["加载环境配置与公共配置"]
+    D --> E["AppCore 扫描程序集与关键类型"]
+    E --> F["AppRealization 建立标准解析链"]
+    F --> G["AddApplication 注册选项/DI/Startup"]
+    G --> H["StartupFilter 执行 AppStartup.Configure"]
+```
+
+这里需要注意两个关键点：
+
+1. `AppCore` 的静态构造会扫描程序集，并把类型分成 Standard、Module、Plugin、Enhance、Startup 等集合。
+2. `AppRealization` 会用 `InternalRealization.X ?? DefaultRealization.X` 的方式对外暴露标准实现。
+
+也就是说，Core 不是单纯的接口包，它是“标准 + 加载运行时”。
+
+---
+
+## 替换实现的方式
+
+常见替换方式有三种：
+
+### 1. 注册到 DI
+
+适合大多数模块实现：
 
 ```csharp
-// 定义自定义日志实现
-public class CustomLogDependency : ITraceLogStandard
-{
-    public void Log(string message, LogLevel level)
-    {
-        // 自定义日志逻辑
-        Console.WriteLine($"[{level}] {message}");
-    }
-}
-
-// 注入自定义实现
-AppRealization.SetDependency<ITraceLogStandard>(new CustomLogDependency());
+services.AddSingleton<IAppCacheStandard, MyCacheStandard>();
 ```
 
-#### 场景三：替换消息队列
+`AppRealization.Cache` 会优先尝试从 `AppCore.GetService<IAppCacheStandard>()` 获取实现。
+
+### 2. 使用 SetDependency
+
+适合覆盖 Core 中维护的内部字段，例如输出、配置、注入标准等：
 
 ```csharp
-// 使用 Kafka 消息队列
-services.AddSingleton<IMessageQueueStandard, KafkaMessageQueueDependency>();
-
-// 或者使用 RabbitMQ 消息队列
-services.AddSingleton<IMessageQueueStandard, RabbitMQMessageQueueDependency>();
-
-// 业务代码保持不变
-var messageQueue = AppRealization.Queue;
-messageQueue.Publish(config, message);
+AppRealization.SetDependency<IAppConfigurationStandard>(new MyConfigurationStandard());
 ```
 
-### 实现最佳实践
+建议在 `AppStartup.ConfigureServices` 或模块注册过程中调用，不建议在 `Program.cs` 过早调用。
 
-1. **命名规范**
-   - 标准接口命名：`I{功能名}Standard`
-   - 实现类命名：`{功能名}Dependency`
+### 3. 引入模块包
 
-2. **依赖注入**
-   - 优先使用 `services.AddSingleton` 注册标准实现
-   - 避免使用 `services.AddTransient`，除非有特殊需求
+如果模块类型实现了 `IStandard`，并能被扫描到，框架会把它纳入标准类型集合。对于可反射填充的内部字段，`AppRealization` 会尝试创建实现实例。
 
-3. **扩展性**
-   - 保留标准接口的扩展点
-   - 提供合理的默认值
-   - 支持配置化
+如果同一个标准被扫描出多个实现，框架会输出错误提示。此时应该保留一个默认实现，或者在业务侧明确注册需要使用的实现。
 
-4. **文档**
-   - 为每个标准编写清晰的文档
-   - 提供使用示例
-   - 说明注意事项
+---
 
-### 相关文档
+## 设计收益
 
-- [标准列表](/guide/air-cloud-core/standard) - 查看所有可用的标准接口
-- [模组列表](/guide/air-cloud-core/libs) - 查看所有可用的模组实现
-- [插件列表](/guide/air-cloud-core/plugins) - 查看所有可用的插件
+- 可替换：业务面向标准，不被某个模块锁死。
+- 可裁剪：不用 Kafka 就不引用 Kafka，不用 Redis 就不引用 Redis。
+- 可演进：新增消息队列、缓存、配置中心时，不需要改 Core。
+- 可诊断：加载失败时，可以沿着配置、程序集扫描、标准解析、Startup 执行逐层排查。
+
+---
+
+## 设计代价
+
+这种设计也有代价：
+
+- 启动链路比普通 WebAPI 项目更复杂。
+- 模块没有注册时，部分标准会抛出 `NotImplementedException`。
+- 多个实现同时存在时，需要明确选择一个实现。
+- 自定义实现需要理解接口标准和加载时机。
+
+这不是缺陷，而是模块化框架必须面对的复杂度。Air.Cloud 的重点是把复杂度集中在 Core 的加载机制里，而不是散落在业务项目中。

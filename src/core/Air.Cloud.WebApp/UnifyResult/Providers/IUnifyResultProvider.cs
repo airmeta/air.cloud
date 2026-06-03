@@ -1,12 +1,14 @@
-// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -17,12 +19,12 @@ using Air.Cloud.WebApp.DataValidation.Internal;
 namespace Air.Cloud.WebApp.UnifyResult.Providers;
 
 /// <summary>
-/// 规范化结果提供器
+/// 瑙勮寖鍖栫粨鏋滄彁渚涘櫒
 /// </summary>
 public interface IUnifyResultProvider
 {
     /// <summary>
-    /// 异常返回值
+    /// 寮傚父杩斿洖鍊?
     /// </summary>
     /// <param name="context"></param>
     /// <param name="metadata"></param>
@@ -30,7 +32,7 @@ public interface IUnifyResultProvider
     IActionResult OnException(ExceptionContext context, ExceptionMetadata metadata);
 
     /// <summary>
-    /// 成功返回值
+    /// 鎴愬姛杩斿洖鍊?
     /// </summary>
     /// <param name="context"></param>
     /// <param name="data"></param>
@@ -38,7 +40,7 @@ public interface IUnifyResultProvider
     IActionResult OnSucceeded(ActionExecutedContext context, object data);
 
     /// <summary>
-    /// 验证失败返回值
+    /// 楠岃瘉澶辫触杩斿洖鍊?
     /// </summary>
     /// <param name="context"></param>
     /// <param name="metadata"></param>
@@ -46,7 +48,7 @@ public interface IUnifyResultProvider
     IActionResult OnValidateFailed(ActionExecutingContext context, ValidationMetadata metadata);
 
     /// <summary>
-    /// 拦截返回状态码
+    /// 鎷︽埅杩斿洖鐘舵€佺爜
     /// </summary>
     /// <param name="context"></param>
     /// <param name="statusCode"></param>

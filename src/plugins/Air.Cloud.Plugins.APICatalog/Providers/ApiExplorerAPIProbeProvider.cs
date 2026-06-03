@@ -55,6 +55,7 @@ public sealed class ApiExplorerAPIProbeProvider : IAPIProbeProvider
             Groups = groups.OrderBy(item => item).ToList(),
             Endpoints = endpoints
                 .OrderBy(item => item.Group)
+                .ThenBy(item => item.Order)
                 .ThenBy(item => item.Path)
                 .ThenBy(item => item.Method)
                 .ToList()
@@ -77,6 +78,7 @@ public sealed class ApiExplorerAPIProbeProvider : IAPIProbeProvider
             Path = path,
             Summary = ResolveSummary(apiDescription),
             Description = ResolveDescription(apiDescription),
+            Order = ResolveOrder(apiDescription),
             Request = CreateRequest(apiDescription, includeSchemas),
             Responses = CreateResponses(apiDescription, includeSchemas)
         };
@@ -189,13 +191,20 @@ public sealed class ApiExplorerAPIProbeProvider : IAPIProbeProvider
 
     private static string ResolveGroupName(ApiDescription apiDescription, string groupName)
     {
-        return apiDescription.GroupName
+        return ReadEndpointMetadata<APIProbeEndpointMetadata>(apiDescription).FirstOrDefault()?.GroupName
+            ?? apiDescription.GroupName
             ?? groupName
             ?? "Default";
     }
 
     private static string ResolveTag(ApiDescription apiDescription)
     {
+        var metadataTag = ReadEndpointMetadata<APIProbeEndpointMetadata>(apiDescription).FirstOrDefault()?.Tag;
+        if (!string.IsNullOrWhiteSpace(metadataTag))
+        {
+            return metadataTag;
+        }
+
         if (apiDescription.ActionDescriptor is not ControllerActionDescriptor controllerActionDescriptor)
         {
             return apiDescription.GroupName ?? "Default";
@@ -218,12 +227,19 @@ public sealed class ApiExplorerAPIProbeProvider : IAPIProbeProvider
 
     private static string ResolveSummary(ApiDescription apiDescription)
     {
-        return ReadDescriptionAttributes(apiDescription).FirstOrDefault()?.Description;
+        return ReadEndpointMetadata<APIProbeEndpointMetadata>(apiDescription).FirstOrDefault()?.Summary
+            ?? ReadDescriptionAttributes(apiDescription).FirstOrDefault()?.Description;
     }
 
     private static string ResolveDescription(ApiDescription apiDescription)
     {
-        return ReadDescriptionAttributes(apiDescription).FirstOrDefault()?.Description;
+        return ReadEndpointMetadata<APIProbeEndpointMetadata>(apiDescription).FirstOrDefault()?.Description
+            ?? ReadDescriptionAttributes(apiDescription).FirstOrDefault()?.Description;
+    }
+
+    private static int ResolveOrder(ApiDescription apiDescription)
+    {
+        return ReadEndpointMetadata<APIProbeEndpointMetadata>(apiDescription).FirstOrDefault()?.Order ?? 0;
     }
 
     private static IEnumerable<DescriptionAttribute> ReadDescriptionAttributes(ApiDescription apiDescription)

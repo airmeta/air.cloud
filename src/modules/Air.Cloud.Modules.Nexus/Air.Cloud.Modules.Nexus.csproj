@@ -10,7 +10,7 @@
     <Authors>WangYou77</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>[Alpha]事件总线模块</Description>
+    <Description>事件总线模块</Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

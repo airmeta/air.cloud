@@ -1,11 +1,14 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.WebApp.DataValidation.Attributes;
 using Air.Cloud.WebApp.DataValidation.Internal;
 using Air.Cloud.WebApp.FriendlyException.Exceptions;
@@ -72,6 +75,11 @@ public sealed class DataValidationFilter : IAsyncActionFilter, IOrderedFilter
     {
         // 获取控制器/方法信息
         var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
+        if (actionDescriptor?.MethodInfo == null)
+        {
+            await next();
+            return;
+        }
 
         // 跳过验证类型
         var nonValidationAttributeType = typeof(NonValidationAttribute);
@@ -117,55 +125,100 @@ public sealed class DataValidationFilter : IAsyncActionFilter, IOrderedFilter
     /// <param name="friendlyException"></param>
     private void HandleValidation(ActionExecutingContext context, MethodInfo method, ControllerActionDescriptor actionDescriptor, object errors, ActionExecutedContext resultContext = default, AppFriendlyException friendlyException = default)
     {
-        dynamic finalContext = resultContext != null ? resultContext : context;
+        var validationMetadata = CreateValidationMetadata(errors, friendlyException);
+        var result = CreateValidationResult(context, method, actionDescriptor, validationMetadata);
+        if (result == null) return;
 
-        // 解析验证消息
+        if (resultContext != null) resultContext.Result = result;
+        else context.Result = result;
+
+        PrintValidation(validationMetadata);
+    }
+
+    /// <summary>
+    /// 创建验证失败元数据，并补齐友好异常中的错误码和状态码。
+    /// </summary>
+    /// <param name="errors">验证错误。</param>
+    /// <param name="friendlyException">友好异常。</param>
+    /// <returns>验证元数据。</returns>
+    private static ValidationMetadata CreateValidationMetadata(object errors, AppFriendlyException friendlyException)
+    {
         var validationMetadata = ValidatorContext.GetValidationMetadata(errors);
         validationMetadata.ErrorCode = friendlyException?.ErrorCode;
         validationMetadata.StatusCode = friendlyException?.StatusCode;
 
-        // 判断是否跳过规范化结果，如果跳过，返回 400 BadRequestResult
-        if (UnifyContext.CheckFailedNonUnify(actionDescriptor.MethodInfo, out var unifyResult))
-        {
-            // WebAPI 情况
-            if (Penetrates.IsApiController(method.DeclaringType))
-            {
-                // 如果不启用 SuppressModelStateInvalidFilter，则跳过，理应手动验证
-                if (!_apiBehaviorOptions.SuppressModelStateInvalidFilter)
-                {
-                    finalContext.Result = _apiBehaviorOptions.InvalidModelStateResponseFactory(context);
-                }
-                else
-                {
-                    // 返回 JsonResult
-                    finalContext.Result = new JsonResult(validationMetadata.ValidationResult)
-                    {
-                        StatusCode = StatusCodes.Status400BadRequest
-                    };
-                }
-            }
-            else
-            {
-                // 返回自定义错误页面
-                finalContext.Result = new BadPageResult(StatusCodes.Status400BadRequest)
-                {
-                    Code = validationMetadata.Message
-                };
-            }
-        }
-        else
-        {
-            // 判断是否支持 MVC 规范化处理，一旦启用，则自动调用规范化提供器进行操作
-            if (!UnifyContext.CheckSupportMvcController(context.HttpContext, actionDescriptor, out _)) return;
+        return validationMetadata;
+    }
 
-            finalContext.Result = unifyResult.OnValidateFailed(context, validationMetadata);
+    /// <summary>
+    /// 根据统一返回配置创建最终 MVC 结果。
+    /// </summary>
+    /// <param name="context">动作执行上下文。</param>
+    /// <param name="method">动作方法。</param>
+    /// <param name="actionDescriptor">动作描述。</param>
+    /// <param name="validationMetadata">验证元数据。</param>
+    /// <returns>验证失败结果；返回 null 表示当前场景不处理。</returns>
+    private IActionResult CreateValidationResult(
+        ActionExecutingContext context,
+        MethodInfo method,
+        ControllerActionDescriptor actionDescriptor,
+        ValidationMetadata validationMetadata)
+    {
+        if (UnifyContext.CheckFailedNonUnify(actionDescriptor.MethodInfo, context.HttpContext.RequestServices, out var unifyResult))
+        {
+            return CreateNonUnifiedValidationResult(context, method, validationMetadata);
         }
-        // 打印完整的堆栈信息
+
+        if (!UnifyContext.CheckSupportMvcController(context.HttpContext, actionDescriptor, out _))
+        {
+            return null;
+        }
+
+        return unifyResult.OnValidateFailed(context, validationMetadata);
+    }
+
+    /// <summary>
+    /// 创建非统一返回场景下的验证失败结果。
+    /// </summary>
+    /// <param name="context">动作执行上下文。</param>
+    /// <param name="method">动作方法。</param>
+    /// <param name="validationMetadata">验证元数据。</param>
+    /// <returns>验证失败结果。</returns>
+    private IActionResult CreateNonUnifiedValidationResult(
+        ActionExecutingContext context,
+        MethodInfo method,
+        ValidationMetadata validationMetadata)
+    {
+        if (!Penetrates.IsApiController(method.DeclaringType))
+        {
+            return new BadPageResult(StatusCodes.Status400BadRequest)
+            {
+                Code = validationMetadata.DetailMessage
+            };
+        }
+
+        if (!_apiBehaviorOptions.SuppressModelStateInvalidFilter)
+        {
+            return _apiBehaviorOptions.InvalidModelStateResponseFactory(context);
+        }
+
+        return new JsonResult(validationMetadata.ValidationResult)
+        {
+            StatusCode = StatusCodes.Status400BadRequest
+        };
+    }
+
+    /// <summary>
+    /// 输出验证失败明细。
+    /// </summary>
+    /// <param name="validationMetadata">验证元数据。</param>
+    private static void PrintValidation(ValidationMetadata validationMetadata)
+    {
         AppRealization.Output.Print(new AppPrintInformation
         {
             Title = "validation",
             Level=AppPrintLevel.Error,
-            Content = $"Validation Failed:\r\n{validationMetadata.Message}",
+            Content = $"Validation Failed:\r\n{validationMetadata.DetailMessage}",
             State = true
         });
     }

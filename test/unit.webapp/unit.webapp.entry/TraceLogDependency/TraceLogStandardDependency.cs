@@ -4,8 +4,8 @@ using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
 using Air.Cloud.Core.Standard.TraceLog;
-using Air.Cloud.DataBase.ElasticSearch.Attributes;
-using Air.Cloud.DataBase.ElasticSearch.Enums;
+using Air.Cloud.Modules.ElasticSearch.Attributes;
+using Air.Cloud.Modules.ElasticSearch.Enums;
 using Air.Cloud.WebApp.FriendlyException;
 
 namespace unit.webapp.entry.TraceLogDependency

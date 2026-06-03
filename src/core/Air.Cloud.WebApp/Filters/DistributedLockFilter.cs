@@ -20,6 +20,7 @@ using Air.Cloud.WebApp.FriendlyException;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Air.Cloud.WebApp.Filters
@@ -72,7 +73,7 @@ namespace Air.Cloud.WebApp.Filters
                 else
                 {
                     //2. 尝试从请求中提取LockKey对应的值
-                    JObject obj =JObject.Parse(RequestContent);
+                    JObject obj = JObject.Parse(RequestContent);
                     LockKey = obj[DistributedLockAttr.LockKey]?.ToString();
                 }
                 //如果1和2都没有获取到LockKey 则使用接口全路径作为LockKey
@@ -113,10 +114,9 @@ namespace Air.Cloud.WebApp.Filters
         /// </returns>
         private static async Task<string> GetRequestContentAsync(HttpContext context)
         {
-            string requestData = string.Empty;
             var method = context.Request.Method;
             //固定参数为三个": url,appid,timestamp 三个参数
-            IDictionary<string, string> dic = new Dictionary<string, string>();
+            IDictionary<string, string> dic = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             switch (method.ToUpper())
             {
                 case "POST":
@@ -125,42 +125,53 @@ namespace Air.Cloud.WebApp.Filters
                      * 1. 读取POST请求体
                      * 2. 填充到dic请求参数字典中
                      */
-                    if (context.Request.Body.CanSeek)
-                    {
-                        //是否包含文件上传
-                        bool HasFile = context.Request.Headers["Content-Type"].ToString().Contains("multipart/form-data;");
-                        requestData = "";
-                        if (!HasFile)
-                        {
-                            context.Request.Body.Seek(0, SeekOrigin.Begin);
-                            var reader = new StreamReader(context.Request.Body);
-                            requestData = reader.ReadToEndAsync().Result;
-                            context.Request.Body.Seek(0, SeekOrigin.Begin);
-                        }
-                    }
-                    if (requestData == "{}")
+                    if (IsMultipartRequest(context.Request))
                     {
                         return DefaultRequestContent;
                     }
-                    return AppRealization.JSON.Serialize(JObject.Parse(requestData));
+
+                    context.Request.EnableBuffering();
+                    context.Request.Body.Seek(0, SeekOrigin.Begin);
+                    using (var reader = new StreamReader(context.Request.Body, leaveOpen: true))
+                    {
+                        var requestData = await reader.ReadToEndAsync();
+                        context.Request.Body.Seek(0, SeekOrigin.Begin);
+                        return NormalizeJsonContent(requestData);
+                    }
                 case "DELETE":
                 case "GET":
                     //删除和查询 直接拿到请求参数 然后组装到dic请求参数字典中
-                    var queryString = context.Request.QueryString;
-                    string[] args = new string[2];
-                    if (!string.IsNullOrEmpty(queryString.Value))
+                    foreach (var query in context.Request.Query)
                     {
-                        queryString.Value.Substring(1).Split('&').ToList().ForEach(s =>
-                        {
-                            args = s.Split("=");
-                            if (!args[1].IsNullOrEmpty())
-                                dic.Add(args[0].ToUpper(), System.Web.HttpUtility.UrlDecode(args[1]));
-                        });
-                        return AppRealization.JSON.Serialize(dic);
+                        var value = query.Value.ToString();
+                        if (!value.IsNullOrEmpty()) dic[query.Key.ToUpperInvariant()] = value;
                     }
-                    return DefaultRequestContent;
+
+                    return dic.Count == 0 ? DefaultRequestContent : AppRealization.JSON.Serialize(dic);
             }
             return DefaultRequestContent;
+        }
+
+        private static bool IsMultipartRequest(HttpRequest request)
+        {
+            return request.ContentType?.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        private static string NormalizeJsonContent(string requestData)
+        {
+            if (string.IsNullOrWhiteSpace(requestData) || requestData.Trim() == "{}")
+            {
+                return DefaultRequestContent;
+            }
+
+            try
+            {
+                return AppRealization.JSON.Serialize(JObject.Parse(requestData));
+            }
+            catch (JsonReaderException)
+            {
+                return DefaultRequestContent;
+            }
         }
     }
 }

@@ -13,13 +13,16 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.SchedulerStandard;
+using Air.Cloud.Core.Standard.SchedulerStandard.Coordination;
 using Air.Cloud.Core.Standard.SchedulerStandard.Extensions;
+using Air.Cloud.Modules.Quartz.Coordination;
 using Air.Cloud.Modules.Quartz.Factory;
 using Air.Cloud.Modules.Quartz.Job;
 using Air.Cloud.Modules.Quartz.Options;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 using Quartz;
@@ -284,6 +287,7 @@ namespace Air.Cloud.Modules.Quartz.Extensions
             services.AddSingleton<ISchedulerStandardFactory<TSchedulerOption>, SchedulerStandardFactory<TSchedulerOption>>();
             services.AddTransient<ISchedulerFactory, StdSchedulerFactory>();
             services.AddSingleton<QuartzJobService<TSchedulerOption>>();
+            services.TryAddSingleton<ISchedulerExecutionCoordinatorStandard, RepositorySchedulerExecutionCoordinator>();
             services.AddSchedulerStandard<TSchedulerOption>();
             if (configure == null)
             {

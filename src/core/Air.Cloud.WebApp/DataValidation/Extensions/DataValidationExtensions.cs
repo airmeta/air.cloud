@@ -1,13 +1,17 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 
 using Air.Cloud.WebApp.DataValidation.Enums;
-using Air.Cloud.WebApp.DataValidation.Internal;
+using Air.Cloud.WebApp.DataValidation.Results;
 using Air.Cloud.WebApp.DataValidation.Validators;
 using Air.Cloud.WebApp.FriendlyException.Exceptions;
 
@@ -19,136 +23,165 @@ using System.Text.RegularExpressions;
 namespace Air.Cloud.WebApp.DataValidation.Extensions;
 
 /// <summary>
-/// 数据验证拓展类
+/// 数据验证扩展入口。
 /// </summary>
 [IgnoreScanning]
 public static class DataValidationExtensions
 {
     /// <summary>
-    /// 拓展方法，验证类类型对象
+    /// 为 IValidatableObject 创建实例级验证访问器。
     /// </summary>
-    /// <param name="obj">对象实例</param>
-    /// <param name="validateAllProperties">是否验证所有属性</param>
-    /// <returns>验证结果</returns>
-    public static DataValidationResult TryValidate(this object obj, bool validateAllProperties = true)
+    /// <param name="instance">当前验证对象。</param>
+    /// <returns>实例级验证访问器。</returns>
+    public static DataValidationAccessor Validator(this IValidatableObject instance)
     {
-        return DataValidator.TryValidateObject(obj, validateAllProperties);
+        return new DataValidationAccessor(instance);
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 使用 DataAnnotations 验证当前对象模型。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationAttributes">验证特性</param>
-    /// <returns></returns>
-    public static DataValidationResult TryValidate(this object value, params ValidationAttribute[] validationAttributes)
+    /// <param name="obj">对象实例。</param>
+    /// <param name="validateAllProperties">是否验证所有属性。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateObjectModel(this object obj, bool validateAllProperties = true)
     {
-        return DataValidator.TryValidateValue(value, validationAttributes);
+        return DataValidator.TryValidateObjectModel(obj, validateAllProperties);
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 使用 DataAnnotations 特性验证单个值。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationTypes">验证类型</param>
-    /// <returns></returns>
-    public static DataValidationResult TryValidate(this object value, params object[] validationTypes)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationAttributes">验证特性。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateByAttributes(this object value, params ValidationAttribute[] validationAttributes)
     {
-        return DataValidator.TryValidateValue(value, validationTypes);
+        return DataValidator.TryValidateByAttributes(value, validationAttributes);
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 使用内置或自定义验证类型验证单个值，所有规则通过才算成功。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationOptionss">验证逻辑</param>
-    /// <param name="validationTypes">验证类型</param>
-    /// <returns></returns>
-    public static DataValidationResult TryValidate(this object value, ValidationPattern validationOptionss, params object[] validationTypes)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateByTypes(this object value, params object[] validationTypes)
     {
-        return DataValidator.TryValidateValue(value, validationOptionss, validationTypes);
+        return DataValidator.TryValidateByTypes(value, validationTypes);
     }
 
     /// <summary>
-    /// 拓展方法，验证类类型对象
+    /// 使用内置或自定义验证类型验证单个值。
     /// </summary>
-    /// <param name="obj">对象实例</param>
-    /// <param name="validateAllProperties">是否验证所有属性</param>
-    public static void Validate(this object obj, bool validateAllProperties = true)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationPattern">多规则组合方式。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateByTypes(
+        this object value,
+        ValidationPattern validationPattern,
+        params object[] validationTypes)
     {
-        DataValidator.TryValidateObject(obj, validateAllProperties).ThrowValidateFailedModel();
+        return DataValidator.TryValidateByTypes(value, validationPattern, validationTypes);
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 使用正则表达式验证单个值，并返回完整验证结果。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationAttributes">验证特性</param>
-    public static void Validate(this object value, params ValidationAttribute[] validationAttributes)
+    /// <param name="value">待验证值。</param>
+    /// <param name="regexPattern">正则表达式。</param>
+    /// <param name="regexOptions">正则表达式选项。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryMatchPattern(
+        this object value,
+        string regexPattern,
+        RegexOptions regexOptions = RegexOptions.None)
     {
-        DataValidator.TryValidateValue(value, validationAttributes).ThrowValidateFailedModel();
+        return DataValidator.TryMatchPattern(value, regexPattern, regexOptions);
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 使用正则表达式验证单个值，并返回布尔结果。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationTypes">验证类型</param>
-    public static void Validate(this object value, params object[] validationTypes)
+    /// <param name="value">待验证值。</param>
+    /// <param name="regexPattern">正则表达式。</param>
+    /// <param name="regexOptions">正则表达式选项。</param>
+    /// <returns>是否匹配。</returns>
+    public static bool IsMatchPattern(this object value, string regexPattern, RegexOptions regexOptions = RegexOptions.None)
     {
-        DataValidator.TryValidateValue(value, validationTypes).ThrowValidateFailedModel();
+        return DataValidator.IsMatchPattern(value, regexPattern, regexOptions);
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 验证当前对象模型，失败时抛出统一验证异常。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationOptionss">验证逻辑</param>
-    /// <param name="validationTypes">验证类型</param>
-    public static void Validate(this object value, ValidationPattern validationOptionss, params object[] validationTypes)
+    /// <param name="obj">对象实例。</param>
+    /// <param name="validateAllProperties">是否验证所有属性。</param>
+    public static void EnsureValidObjectModel(this object obj, bool validateAllProperties = true)
     {
-        DataValidator.TryValidateValue(value, validationOptionss, validationTypes).ThrowValidateFailedModel();
+        DataValidator.TryValidateObjectModel(obj, validateAllProperties).ThrowValidateFailedModel();
     }
 
     /// <summary>
-    /// 拓展方法，验证单个值
+    /// 使用 DataAnnotations 特性验证单个值，失败时抛出统一验证异常。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="regexPattern">正则表达式</param>
-    /// <param name="regexOptions">正则表达式选项</param>
-    /// <returns></returns>
-    public static bool TryValidate(this object value, string regexPattern, RegexOptions regexOptions = RegexOptions.None)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationAttributes">验证特性。</param>
+    public static void EnsureValidByAttributes(this object value, params ValidationAttribute[] validationAttributes)
     {
-        return DataValidator.TryValidateValue(value, regexPattern, regexOptions);
+        DataValidator.TryValidateByAttributes(value, validationAttributes).ThrowValidateFailedModel();
     }
 
     /// <summary>
-    /// 直接抛出异常信息
+    /// 使用内置或自定义验证类型验证单个值，失败时抛出统一验证异常。
     /// </summary>
-    /// <param name="dataValidationResult"></param>
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
+    public static void EnsureValidByTypes(this object value, params object[] validationTypes)
+    {
+        DataValidator.TryValidateByTypes(value, validationTypes).ThrowValidateFailedModel();
+    }
+
+    /// <summary>
+    /// 使用内置或自定义验证类型验证单个值，失败时抛出统一验证异常。
+    /// </summary>
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationPattern">多规则组合方式。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
+    public static void EnsureValidByTypes(this object value, ValidationPattern validationPattern, params object[] validationTypes)
+    {
+        DataValidator.TryValidateByTypes(value, validationPattern, validationTypes).ThrowValidateFailedModel();
+    }
+
+    /// <summary>
+    /// 验证失败时抛出统一验证异常。
+    /// </summary>
+    /// <param name="dataValidationResult">验证结果。</param>
     public static void ThrowValidateFailedModel(this DataValidationResult dataValidationResult)
     {
-        if (!dataValidationResult.IsValid)
-        {
-            // 解析验证失败消息，输出统一格式
-            var validationFailMessage =
-                  dataValidationResult.ValidationResults
-                  .Select(u => new
-                  {
-                      MemberNames = u.MemberNames.Any() ? u.MemberNames : new[] { $"{dataValidationResult.MemberOrValue}" },
-                      u.ErrorMessage
-                  })
-                  .OrderBy(u => u.MemberNames.First())
-                  .GroupBy(u => u.MemberNames.First())
-                  .ToDictionary(x => x.Key, u => u.Select(c => c.ErrorMessage).ToArray());
+        ArgumentNullException.ThrowIfNull(dataValidationResult);
 
-            // 抛出验证失败异常
-            throw new AppFriendlyException(default, default, new ValidationException())
-            {
-                StatusCode = StatusCodes.Status400BadRequest,
-                ValidationException = true,
-                ErrorMessage = validationFailMessage,
-            };
+        if (!dataValidationResult.Failed)
+        {
+            return;
         }
+
+        var validationFailMessage = dataValidationResult.ValidationResults
+            .Select(u => new
+            {
+                MemberNames = u.MemberNames.Any() ? u.MemberNames : new[] { $"{dataValidationResult.MemberOrValue}" },
+                u.ErrorMessage
+            })
+            .OrderBy(u => u.MemberNames.First())
+            .GroupBy(u => u.MemberNames.First())
+            .ToDictionary(x => x.Key, u => u.Select(c => c.ErrorMessage).ToArray());
+
+        throw new AppFriendlyException(default, default, new ValidationException())
+        {
+            StatusCode = StatusCodes.Status400BadRequest,
+            ValidationException = true,
+            ErrorMessage = validationFailMessage,
+        };
     }
 }

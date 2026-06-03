@@ -33,7 +33,7 @@ namespace unit.webapp.model
                            //设置oracle使用的版本
                            opt.EnableSensitiveDataLogging().UseOracle(conn, b =>
                            {
-                               b.UseOracleSQLCompatibility("11");
+                               b.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19);
                            });
                        },
                        //注册拦截器

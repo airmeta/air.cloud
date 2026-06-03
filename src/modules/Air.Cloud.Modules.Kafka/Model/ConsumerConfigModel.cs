@@ -21,13 +21,21 @@ namespace Air.Cloud.Modules.Kafka.Model
     public class ConsumerConfigModel:ITopicSubscribeConfig<ConsumerConfig>
     {
         /// <summary>
-        /// 消费配置
+        /// <para>zh-cn:消费配置。</para>
+        /// <para>en-us:Consumer configuration.</para>
         /// </summary>
         public ConsumerConfig Config { get; set; }
 
         /// <summary>
-        /// topic名称
+        /// <para>zh-cn:topic名称。</para>
+        /// <para>en-us:Topic name.</para>
         /// </summary>
         public string TopicName { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:消息 Key 类型，默认保持 Kafka 模块原有 int Key 行为；需要与发布端使用的 Key 类型保持一致。</para>
+        /// <para>en-us:Message key type. The default keeps the original int-key behavior of the Kafka module and should be consistent with the key type used by the publisher.</para>
+        /// </summary>
+        public Type KeyType { get; set; } = typeof(int);
     }
 }

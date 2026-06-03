@@ -1,6 +1,6 @@
 ﻿using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
-using Air.Cloud.DataBase.ElasticSearch;
+using Air.Cloud.Modules.ElasticSearch;
 using Air.Cloud.UnitTest.Modules.ElasticSearch.Model;
 using Nest;
 

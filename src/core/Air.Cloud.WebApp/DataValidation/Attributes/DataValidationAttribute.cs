@@ -1,30 +1,33 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 
 using Air.Cloud.WebApp.DataValidation.Enums;
-using Air.Cloud.WebApp.DataValidation.Extensions;
+using Air.Cloud.WebApp.DataValidation.Validators;
 
 using System.ComponentModel.DataAnnotations;
 
 namespace Air.Cloud.WebApp.DataValidation.Attributes;
 
 /// <summary>
-/// 数据类型验证特性
+/// 数据类型验证特性。
 /// </summary>
 [IgnoreScanning]
 public class DataValidationAttribute : ValidationAttribute
 {
     /// <summary>
-    /// 构造函数
+    /// 构造数据类型验证特性。
     /// </summary>
-    /// <param name="validationPattern">验证逻辑</param>
-    /// <param name="validationTypes"></param>
+    /// <param name="validationPattern">多规则组合方式。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
     public DataValidationAttribute(ValidationPattern validationPattern, params object[] validationTypes)
     {
         ValidationPattern = validationPattern;
@@ -32,9 +35,9 @@ public class DataValidationAttribute : ValidationAttribute
     }
 
     /// <summary>
-    /// 构造函数
+    /// 构造数据类型验证特性，默认要求全部规则通过。
     /// </summary>
-    /// <param name="validationTypes"></param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
     public DataValidationAttribute(params object[] validationTypes)
     {
         ValidationPattern = ValidationPattern.AllOfThem;
@@ -42,55 +45,54 @@ public class DataValidationAttribute : ValidationAttribute
     }
 
     /// <summary>
-    /// 验证逻辑
+    /// 验证当前属性值。
     /// </summary>
-    /// <param name="value"></param>
-    /// <param name="validationContext"></param>
-    /// <returns></returns>
+    /// <param name="value">属性值。</param>
+    /// <param name="validationContext">验证上下文。</param>
+    /// <returns>验证结果。</returns>
     protected override ValidationResult IsValid(object value, ValidationContext validationContext)
     {
-        // 判断是否允许 空值
-        if (AllowNullValue && value == null) return ValidationResult.Success;
-
-        // 是否忽略空字符串
-        if (AllowEmptyStrings && value is string && string.IsNullOrEmpty(value?.ToString())) return ValidationResult.Success;
-
-        // 执行值验证
-        var dataValidationResult = value.TryValidate(ValidationPattern, ValidationTypes);
-        dataValidationResult.MemberOrValue = validationContext.MemberName;
-
-        // 验证失败
-        if (!dataValidationResult.IsValid)
+        if (AllowNullValue && value == null)
         {
-            var resultMessage = dataValidationResult.ValidationResults.FirstOrDefault().ErrorMessage;
-
-            // 进行多语言处理
-            var errorMessage = !string.IsNullOrWhiteSpace(ErrorMessage) ? ErrorMessage : resultMessage;
-
-            return new ValidationResult(string.Format(errorMessage, validationContext.MemberName));
+            return ValidationResult.Success;
         }
 
-        // 验证成功
-        return ValidationResult.Success;
+        if (AllowEmptyStrings && value is string && string.IsNullOrEmpty(value?.ToString()))
+        {
+            return ValidationResult.Success;
+        }
+
+        var result = DataValidator.TryValidateByTypes(value, ValidationPattern, ValidationTypes);
+        result.MemberOrValue = validationContext.MemberName;
+
+        if (result.Passed)
+        {
+            return ValidationResult.Success;
+        }
+
+        var resultMessage = result.ValidationResults.FirstOrDefault()?.ErrorMessage;
+        var errorMessage = !string.IsNullOrWhiteSpace(ErrorMessage) ? ErrorMessage : resultMessage;
+
+        return new ValidationResult(string.Format(errorMessage, validationContext.MemberName));
     }
 
     /// <summary>
-    /// 验证类型
+    /// 验证规则枚举值。
     /// </summary>
     public object[] ValidationTypes { get; set; }
 
     /// <summary>
-    /// 验证逻辑
+    /// 多规则组合方式。
     /// </summary>
     public ValidationPattern ValidationPattern { get; set; }
 
     /// <summary>
-    ///是否允许空字符串
+    /// 是否允许空字符串。
     /// </summary>
     public bool AllowEmptyStrings { get; set; } = false;
 
     /// <summary>
-    /// 允许空值，有值才验证，默认 false
+    /// 是否允许空值；允许时仅在有值时执行规则验证。
     /// </summary>
     public bool AllowNullValue { get; set; } = false;
 }

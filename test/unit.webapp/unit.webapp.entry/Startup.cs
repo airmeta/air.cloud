@@ -1,4 +1,4 @@
-﻿
+
 /*
  * Copyright (c) 2024-2030 星曳数据
  *
@@ -47,7 +47,7 @@ namespace unit.webapp.entry
             services.AddAppControllers(a =>
             {
                 a.Filters.Add<ActionLogFilter>();
-            }).AddInjectWithUnifyResult();
+            }).AddWebApp();
         }
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

@@ -117,6 +117,12 @@ public sealed class APIProbeEndpoint
     public string Description { get; set; }
 
     /// <summary>
+    /// <para>zh-cn:获取或设置端点排序值。</para>
+    /// <para>en-us:Gets or sets the endpoint ordering value.</para>
+    /// </summary>
+    public int Order { get; set; }
+
+    /// <summary>
     /// <para>zh-cn:获取或设置端点是否显式允许匿名访问。</para>
     /// <para>en-us:Gets or sets whether the endpoint explicitly allows anonymous access.</para>
     /// </summary>

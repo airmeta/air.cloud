@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,7 +12,7 @@
 
 using Air.Cloud.Core.Standard.DataBase.Locators;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.EntityFrameWork.Core.Internal;
 
 /// <summary>
 /// 构建 Sql 字符串执行部件

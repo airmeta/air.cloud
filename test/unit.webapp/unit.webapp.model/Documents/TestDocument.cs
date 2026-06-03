@@ -1,5 +1,5 @@
 ﻿using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.DataBase.ElasticSearch.Attributes;
+using Air.Cloud.Modules.ElasticSearch.Attributes;
 
 namespace unit.webapp.model.Documents
 {

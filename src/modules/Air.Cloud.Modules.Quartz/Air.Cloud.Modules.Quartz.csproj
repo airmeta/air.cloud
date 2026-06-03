@@ -10,7 +10,7 @@
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>[Alpha] 使用Quartz.NET实现的任务调度模块,提供基于调度标准的任务调度服务,同时还将Quartz.NET的一些核心功能通过扩展的方式提供给外部使用,以提高框架的可扩展性
+    <Description> 使用Quartz.NET实现的任务调度模块,提供基于调度标准的任务调度服务,同时还将Quartz.NET的一些核心功能通过扩展的方式提供给外部使用,以提高框架的可扩展性
     </Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>

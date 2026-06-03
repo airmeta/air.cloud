@@ -9,8 +9,8 @@
     <Authors>AC</Authors>
     <Product>air.cloud</Product>
     <Description>
-      [Alpha]Air.Cloud.WebApp 包含了Furion v3.8.6的一些常用功能,包括动态接口,数据验证,可以使用该库快速搭建一个WebApp
-      如您需要使用身份验证等功能,请您参阅Air.Cloud 系列的Plugins</Description>
+      Air.Cloud.WebApp 提供 Web API 常用能力，包括动态接口、数据验证、友好异常和统一返回，可用于快速搭建 WebApp。
+      如您需要使用身份验证等功能，请参阅 Air.Cloud 系列 Plugins。</Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -31,7 +31,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Ben.Demystifier" Version="0.4.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>

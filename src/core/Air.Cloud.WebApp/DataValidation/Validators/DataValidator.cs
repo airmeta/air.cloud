@@ -1,319 +1,410 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.WebApp.DataValidation.Attributes;
 using Air.Cloud.WebApp.DataValidation.Enums;
-using Air.Cloud.WebApp.DataValidation.Internal;
 using Air.Cloud.WebApp.DataValidation.Options;
 using Air.Cloud.WebApp.DataValidation.Providers;
+using Air.Cloud.WebApp.DataValidation.Results;
 
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Text.RegularExpressions;
+
 namespace Air.Cloud.WebApp.DataValidation.Validators;
 
 /// <summary>
-/// 数据验证器
+/// 数据验证器。
 /// </summary>
 [IgnoreScanning]
 public static class DataValidator
 {
     /// <summary>
-    /// 所有验证类型
+    /// 所有可用的验证类型定义。
     /// </summary>
-    private static readonly IEnumerable<Type> ValidationTypes;
+    private static readonly IEnumerable<Type> ValidationTypeDefinitions;
 
     /// <summary>
-    /// 所有验证类型
+    /// 所有可用的验证消息类型定义。
     /// </summary>
-    private static readonly IEnumerable<Type> ValidationMessageTypes;
+    private static readonly IEnumerable<Type> ValidationMessageTypeDefinitions;
 
     /// <summary>
-    /// 验证类型正则表达式
+    /// 验证项名称与正则元数据映射。
     /// </summary>
     private static readonly ConcurrentDictionary<string, ValidationItemMetadataAttribute> ValidationItemMetadatas;
 
     /// <summary>
-    /// 构造函数
+    /// 验证规则元数据缓存。
     /// </summary>
+    private static readonly ConcurrentDictionary<object, (string, ValidationItemMetadataAttribute)> ValidationItemMetadataCache;
+
     static DataValidator()
     {
-        // 获取所有验证类型
-        ValidationTypes = GetValidationTypes();
-
-        // 获取所有验证消息类型
-        ValidationMessageTypes = GetValidationMessageTypes();
-
-        // 获取所有验证类型正则表达式
-        ValidationItemMetadatas = GetValidationValidationItemMetadatas();
-
-        // 缓存所有正则表达式
-        GetValidationTypeValidationItemMetadataCached = new ConcurrentDictionary<object, (string, ValidationItemMetadataAttribute)>();
+        ValidationTypeDefinitions = GetValidationTypeDefinitions().ToArray();
+        ValidationMessageTypeDefinitions = GetValidationMessageTypeDefinitions().ToArray();
+        ValidationItemMetadatas = BuildValidationItemMetadatas();
+        ValidationItemMetadataCache = new ConcurrentDictionary<object, (string, ValidationItemMetadataAttribute)>();
     }
 
     /// <summary>
-    /// 验证类类型对象
+    /// 验证对象模型，包含 DataAnnotations 和 IValidatableObject。
     /// </summary>
-    /// <param name="obj">对象实例</param>
-    /// <param name="validateAllProperties">是否验证所有属性</param>
-    /// <returns>验证结果</returns>
-    public static DataValidationResult TryValidateObject(object obj, bool validateAllProperties = true)
+    /// <param name="obj">对象实例。</param>
+    /// <param name="validateAllProperties">是否验证所有属性。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateObjectModel(object obj, bool validateAllProperties = true)
     {
-        // 如果该类型贴有 [NonValidate] 特性，则跳过验证
-        if (obj.GetType().IsDefined(typeof(NonValidationAttribute), true))
-            return new DataValidationResult
-            {
-                IsValid = true,
-                MemberOrValue = obj
-            };
+        ArgumentNullException.ThrowIfNull(obj);
 
-        // 存储验证结果
-        ICollection<ValidationResult> results = new List<ValidationResult>();
+        if (ShouldSkipObjectValidation(obj))
+        {
+            return CreateResult(true, obj);
+        }
+
+        var results = new List<ValidationResult>();
         var isValid = Validator.TryValidateObject(obj, new ValidationContext(obj), results, validateAllProperties);
 
-        // 返回验证结果
-        return new DataValidationResult
-        {
-            IsValid = isValid,
-            ValidationResults = results,
-            MemberOrValue = obj
-        };
+        return CreateResult(isValid, obj, results);
     }
 
     /// <summary>
-    /// 验证单个值
+    /// 使用 DataAnnotations 特性验证单个值。
     /// </summary>
-    /// <param name="value">单个值</param>
-    /// <param name="validationAttributes">验证特性</param>
-    /// <returns></returns>
-    public static DataValidationResult TryValidateValue(object value, params ValidationAttribute[] validationAttributes)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationAttributes">验证特性。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateByAttributes(object value, params ValidationAttribute[] validationAttributes)
     {
-        // 存储验证结果
-        ICollection<ValidationResult> results = new List<ValidationResult>();
-        var isValid = Validator.TryValidateValue(value, new ValidationContext(value), results, validationAttributes);
+        var results = new List<ValidationResult>();
+        var context = new ValidationContext(value ?? new object());
+        var attributes = validationAttributes ?? Array.Empty<ValidationAttribute>();
+        var isValid = Validator.TryValidateValue(value, context, results, attributes);
 
-        // 返回验证结果
-        return new DataValidationResult
-        {
-            IsValid = isValid,
-            ValidationResults = results,
-            MemberOrValue = value
-        };
+        return CreateResult(isValid, value, results);
     }
 
     /// <summary>
-    /// 正则表达式验证
+    /// 使用内置或自定义验证类型验证单个值，所有规则通过才算成功。
     /// </summary>
-    /// <param name="value"></param>
-    /// <param name="regexPattern"></param>
-    /// <param name="regexOptions">正则表达式选项</param>
-    /// <returns></returns>
-    public static bool TryValidateValue(object value, string regexPattern, RegexOptions regexOptions = RegexOptions.None)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateByTypes(object value, params object[] validationTypes)
     {
-        return value == null
-            ? throw new ArgumentNullException(nameof(value))
-            : Regex.IsMatch(value.ToString(), regexPattern, regexOptions);
+        return TryValidateByTypes(value, ValidationPattern.AllOfThem, validationTypes);
     }
 
     /// <summary>
-    /// 验证类型验证
+    /// 使用内置或自定义验证类型验证单个值。
     /// </summary>
-    /// <param name="value"></param>
-    /// <param name="validationTypes"></param>
-    /// <returns></returns>
-    public static DataValidationResult TryValidateValue(object value, params object[] validationTypes)
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationPattern">多规则组合方式。</param>
+    /// <param name="validationTypes">验证规则枚举值。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryValidateByTypes(object value, ValidationPattern validationPattern, params object[] validationTypes)
     {
-        return TryValidateValue(value, ValidationPattern.AllOfThem, validationTypes);
-    }
-
-    /// <summary>
-    /// 验证类型验证
-    /// </summary>
-    /// <param name="value"></param>
-    /// <param name="validationOptionss">验证方式</param>
-    /// <param name="validationTypes"></param>
-    /// <returns></returns>
-    public static DataValidationResult TryValidateValue(object value, ValidationPattern validationOptionss, params object[] validationTypes)
-    {
-        // 存储验证结果
-        ICollection<ValidationResult> results = new List<ValidationResult>();
-
-        // 如果值未null，验证失败
         if (value == null)
         {
-            results.Add(new ValidationResult("The value is required"));
-
-            // 返回验证结果
-            return new DataValidationResult
-            {
-                IsValid = false,
-                ValidationResults = results,
-                MemberOrValue = value
-            };
+            return CreateResult(false, value, new[] { new ValidationResult("The value is required") });
         }
 
-        // 验证标识
-        bool? isValid = null;
+        var results = new List<ValidationResult>();
+        var rules = validationTypes ?? Array.Empty<object>();
+        var isValid = ValidateByTypeRules(value, validationPattern, rules, results);
+
+        return CreateResult(isValid, value, results);
+    }
+
+    /// <summary>
+    /// 使用正则表达式验证单个值，并返回完整验证结果。
+    /// </summary>
+    /// <param name="value">待验证值。</param>
+    /// <param name="regexPattern">正则表达式。</param>
+    /// <param name="regexOptions">正则表达式选项。</param>
+    /// <returns>验证结果。</returns>
+    public static DataValidationResult TryMatchPattern(object value, string regexPattern, RegexOptions regexOptions = RegexOptions.None)
+    {
+        var isMatch = IsMatchPattern(value, regexPattern, regexOptions);
+
+        return CreateResult(
+            isMatch,
+            value,
+            isMatch ? Array.Empty<ValidationResult>() : new[] { new ValidationResult("The value does not match the specified pattern") });
+    }
+
+    /// <summary>
+    /// 使用正则表达式验证单个值，并返回布尔结果。
+    /// </summary>
+    /// <param name="value">待验证值。</param>
+    /// <param name="regexPattern">正则表达式。</param>
+    /// <param name="regexOptions">正则表达式选项。</param>
+    /// <returns>是否匹配。</returns>
+    public static bool IsMatchPattern(object value, string regexPattern, RegexOptions regexOptions = RegexOptions.None)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(regexPattern);
+
+        return value != null && Regex.IsMatch(value.ToString()!, regexPattern, regexOptions);
+    }
+
+    /// <summary>
+    /// 判断对象是否应跳过模型验证。
+    /// </summary>
+    /// <param name="obj">对象实例。</param>
+    /// <returns>是否跳过。</returns>
+    private static bool ShouldSkipObjectValidation(object obj)
+    {
+        return obj.GetType().IsDefined(typeof(NonValidationAttribute), true);
+    }
+
+    /// <summary>
+    /// 执行验证类型规则。
+    /// </summary>
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationPattern">多规则组合方式。</param>
+    /// <param name="validationTypes">验证规则集合。</param>
+    /// <param name="results">验证失败结果集合。</param>
+    /// <returns>是否验证成功。</returns>
+    private static bool ValidateByTypeRules(
+        object value,
+        ValidationPattern validationPattern,
+        IEnumerable<object> validationTypes,
+        ICollection<ValidationResult> results)
+    {
+        var isValid = true;
+
         foreach (var validationType in validationTypes)
         {
-            // 解析名称和正则表达式
-            var (validationName, validationItemMetadata) = GetValidationTypeValidationItemMetadata(validationType);
+            var (validationName, validationItemMetadata) = GetValidationItemMetadata(validationType);
+            var rulePassed = IsMatchPattern(value, validationItemMetadata.RegularExpression, validationItemMetadata.RegexOptions);
 
-            // 验证结果
-            var validResult = TryValidateValue(value, validationItemMetadata.RegularExpression, validationItemMetadata.RegexOptions);
-
-            // 判断是否需要同时验证通过才通过
-            if (validationOptionss == ValidationPattern.AtLeastOne)
+            if (validationPattern == ValidationPattern.AtLeastOne && rulePassed)
             {
-                // 只要有一个验证通过，则跳出
-                if (validResult)
-                {
-                    isValid = true;
-                    break;
-                }
+                results.Clear();
+                return true;
             }
 
-            if (!validResult)
+            if (rulePassed)
             {
-                if (isValid != false) isValid = false;
-                // 添加错误消息
-                results.Add(new ValidationResult(
-                    string.Format(validationItemMetadata.DefaultErrorMessage, value, validationName)));
+                continue;
             }
+
+            isValid = false;
+            results.Add(CreateValidationFailure(value, validationName, validationItemMetadata));
         }
 
-        // 返回验证结果
+        return isValid;
+    }
+
+    /// <summary>
+    /// 创建单条验证失败消息。
+    /// </summary>
+    /// <param name="value">待验证值。</param>
+    /// <param name="validationName">验证规则名称。</param>
+    /// <param name="metadata">验证规则元数据。</param>
+    /// <returns>验证失败结果。</returns>
+    private static ValidationResult CreateValidationFailure(
+        object value,
+        string validationName,
+        ValidationItemMetadataAttribute metadata)
+    {
+        return new ValidationResult(string.Format(metadata.DefaultErrorMessage, value, validationName));
+    }
+
+    /// <summary>
+    /// 获取验证规则元数据。
+    /// </summary>
+    /// <param name="validationType">验证规则枚举值。</param>
+    /// <returns>规则名称和元数据。</returns>
+    private static (string ValidationName, ValidationItemMetadataAttribute ValidationItemMetadata) GetValidationItemMetadata(object validationType)
+    {
+        ArgumentNullException.ThrowIfNull(validationType);
+
+        return ValidationItemMetadataCache.GetOrAdd(validationType, ResolveValidationItemMetadata);
+    }
+
+    /// <summary>
+    /// 解析验证规则元数据。
+    /// </summary>
+    /// <param name="validationType">验证规则枚举值。</param>
+    /// <returns>规则名称和元数据。</returns>
+    private static (string, ValidationItemMetadataAttribute) ResolveValidationItemMetadata(object validationType)
+    {
+        var type = validationType.GetType();
+
+        if (!ValidationTypeDefinitions.Any(u => u == type))
+        {
+            throw new InvalidOperationException($"{type.Name} is not a valid validation type.");
+        }
+
+        var validationName = Enum.GetName(type, validationType);
+        if (string.IsNullOrWhiteSpace(validationName))
+        {
+            throw new InvalidOperationException($"{validationType} is not a valid validation enum value.");
+        }
+
+        if (!ValidationItemMetadatas.TryGetValue(validationName, out var validationItemMetadata))
+        {
+            throw new InvalidOperationException($"No {validationName} validation type metadata exists.");
+        }
+
+        return (validationName, validationItemMetadata);
+    }
+
+    /// <summary>
+    /// 创建验证结果对象。
+    /// </summary>
+    /// <param name="isValid">是否验证成功。</param>
+    /// <param name="memberOrValue">成员名或原始值。</param>
+    /// <param name="validationResults">验证失败结果。</param>
+    /// <returns>验证结果。</returns>
+    private static DataValidationResult CreateResult(
+        bool isValid,
+        object memberOrValue,
+        IEnumerable<ValidationResult> validationResults = null)
+    {
         return new DataValidationResult
         {
-            IsValid = isValid ?? true,
-            ValidationResults = results,
-            MemberOrValue = value
+            Passed = isValid,
+            ValidationResults = validationResults?.ToArray() ?? Array.Empty<ValidationResult>(),
+            MemberOrValue = memberOrValue
         };
     }
 
     /// <summary>
-    /// 获取验证类型验证Item集合
+    /// 获取所有验证类型定义。
     /// </summary>
-    private static readonly ConcurrentDictionary<object, (string, ValidationItemMetadataAttribute)> GetValidationTypeValidationItemMetadataCached;
-
-    /// <summary>
-    /// 获取验证类型正则表达式（需要缓存）
-    /// </summary>
-    /// <param name="validationType"></param>
-    /// <returns></returns>
-    private static (string ValidationName, ValidationItemMetadataAttribute ValidationItemMetadata) GetValidationTypeValidationItemMetadata(object validationType)
+    /// <returns>验证类型集合。</returns>
+    private static IEnumerable<Type> GetValidationTypeDefinitions()
     {
-        return GetValidationTypeValidationItemMetadataCached.GetOrAdd(validationType, Function);
-
-        // 本地函数
-        static (string, ValidationItemMetadataAttribute) Function(object validationType)
-        {
-            // 获取验证类型
-            var type = validationType.GetType();
-
-            // 判断是否是有效的验证类型
-            if (!ValidationTypes.Any(u => u == type))
-                throw new InvalidOperationException($"{type.Name} is not a valid validation type.");
-
-            // 获取对应的枚举名称
-            var validationName = Enum.GetName(type, validationType);
-
-            // 判断是否配置验证正则表达式
-            if (!ValidationItemMetadatas.ContainsKey(validationName))
-                throw new InvalidOperationException($"No ${validationName} validation type metadata exists.");
-
-            // 获取对应的验证选项
-            var validationItemMetadataAttribute = ValidationItemMetadatas[validationName];
-
-            return (validationName, validationItemMetadataAttribute);
-        }
+        return (AppCore.CrucialTypes ?? Array.Empty<Type>())
+            .Append(typeof(ValidationTypes))
+            .Where(u => u.IsDefined(typeof(ValidationTypeAttribute), true) && u.IsEnum)
+            .Distinct();
     }
 
     /// <summary>
-    /// 获取所有验证类型
+    /// 获取所有验证消息类型定义。
     /// </summary>
-    /// <returns></returns>
-    private static IEnumerable<Type> GetValidationTypes()
+    /// <returns>验证消息类型集合。</returns>
+    private static IEnumerable<Type> GetValidationMessageTypeDefinitions()
     {
-        // 扫描所有公开的枚举且贴有 [ValidationType] 特性
-        var validationTypes = AppCore.CrucialTypes.Where(u => u.IsDefined(typeof(ValidationTypeAttribute), true) && u.IsEnum);
-        return validationTypes;
-    }
-
-    /// <summary>
-    /// 获取所有验证消息类型
-    /// </summary>
-    /// <returns></returns>
-    private static IEnumerable<Type> GetValidationMessageTypes()
-    {
-        // 扫描所有公开的的枚举且贴有 [ValidationMessageType] 特性
-        var validationMessageTypes = AppCore.EffectiveTypes
+        var validationMessageTypes = (AppCore.EffectiveTypes ?? Array.Empty<Type>())
             .Where(u => u.IsDefined(typeof(ValidationMessageTypeAttribute), true) && u.IsEnum);
 
-        // 加载自定义验证消息类型提供器
-        var validationMessageTypeProvider = AppCore.GetService<IValidationMessageTypeProvider>(AppCore.RootServices);
-        if (validationMessageTypeProvider is { Definitions: not null }) validationMessageTypes = validationMessageTypes.Concat(validationMessageTypeProvider.Definitions);
+        var provider = AppCore.GetService<IValidationMessageTypeProvider>(AppCore.RootServices);
+        if (provider is { Definitions: not null })
+        {
+            validationMessageTypes = validationMessageTypes.Concat(provider.Definitions);
+        }
 
         return validationMessageTypes.Distinct();
     }
 
     /// <summary>
-    /// 获取验证类型所有有效的正则表达式
+    /// 构建验证项元数据映射。
     /// </summary>
-    /// <returns></returns>
-    private static ConcurrentDictionary<string, ValidationItemMetadataAttribute> GetValidationValidationItemMetadatas()
+    /// <returns>验证项元数据映射。</returns>
+    private static ConcurrentDictionary<string, ValidationItemMetadataAttribute> BuildValidationItemMetadatas()
     {
-        var vaidationItems = new ConcurrentDictionary<string, ValidationItemMetadataAttribute>();
+        var validationItems = new ConcurrentDictionary<string, ValidationItemMetadataAttribute>();
+        var customErrorMessages = GetCustomErrorMessages();
 
-        // 查找所有 [ValidationMessageType] 类型中的 [ValidationMessage] 消息定义
-        var customErrorMessages = ValidationMessageTypes.SelectMany(u => u.GetFields()
-                .Where(u => u.IsDefined(typeof(ValidationMessageAttribute))))
-            .ToDictionary(u => u.Name, u => u.GetCustomAttribute<ValidationMessageAttribute>().ErrorMessage);
-
-        // 加载配置文件配置
-        var validationTypeMessageSettings = AppConfiguration.GetConfig<ValidationTypeMessageSettingsOptions>("ValidationTypeMessageSettings", true);
-        if (validationTypeMessageSettings is { Definitions: not null })
+        foreach (var field in GetValidationMetadataFields())
         {
-            // 获取所有参数大于1的配置
-            var settingsErrorMessages = validationTypeMessageSettings.Definitions
-                .Where(u => u.Length > 1)
-                .ToDictionary(u => u[0].ToString(), u => u[1].ToString());
-
-            customErrorMessages = customErrorMessages.Connect(settingsErrorMessages);
+            var metadata = ReplaceValidateErrorMessage(field.Name, field, customErrorMessages);
+            validationItems.TryAdd(field.Name, metadata);
         }
 
-        // 获取所有验证属性
-        var validationFields = ValidationTypes.SelectMany(u => u.GetFields()
-            .Where(u => u.IsDefined(typeof(ValidationItemMetadataAttribute))))
-            .ToDictionary(u => u.Name, u => ReplaceValidateErrorMessage(u.Name, u, customErrorMessages));
-
-        vaidationItems.Concat(validationFields);
-
-        return vaidationItems;
+        return validationItems;
     }
 
     /// <summary>
-    /// 替换默认验证失败消息
+    /// 获取验证项字段。
     /// </summary>
-    /// <param name="name">验证唯一名称</param>
-    /// <param name="field"></param>
-    /// <param name="customErrorMessages"></param>
-    private static ValidationItemMetadataAttribute ReplaceValidateErrorMessage(string name, FieldInfo field, Dictionary<string, string> customErrorMessages)
+    /// <returns>验证项字段集合。</returns>
+    private static IEnumerable<FieldInfo> GetValidationMetadataFields()
     {
-        var validationValidationItemMetadata = field.GetCustomAttribute<ValidationItemMetadataAttribute>();
-        if (customErrorMessages.ContainsKey(name))
+        return ValidationTypeDefinitions
+            .SelectMany(u => u.GetFields())
+            .Where(u => u.IsDefined(typeof(ValidationItemMetadataAttribute)));
+    }
+
+    /// <summary>
+    /// 获取自定义验证失败消息。
+    /// </summary>
+    /// <returns>验证项名称与失败消息映射。</returns>
+    private static Dictionary<string, string> GetCustomErrorMessages()
+    {
+        var attributeMessages = GetAttributeErrorMessages();
+        var settingsMessages = GetSettingsErrorMessages();
+
+        return attributeMessages.Connect(settingsMessages);
+    }
+
+    /// <summary>
+    /// 获取验证消息枚举上的失败消息。
+    /// </summary>
+    /// <returns>验证项名称与失败消息映射。</returns>
+    private static Dictionary<string, string> GetAttributeErrorMessages()
+    {
+        return ValidationMessageTypeDefinitions
+            .SelectMany(u => u.GetFields())
+            .Where(u => u.IsDefined(typeof(ValidationMessageAttribute)))
+            .GroupBy(u => u.Name)
+            .ToDictionary(
+                u => u.Key,
+                u => u.First().GetCustomAttribute<ValidationMessageAttribute>()!.ErrorMessage);
+    }
+
+    /// <summary>
+    /// 获取配置文件中的失败消息。
+    /// </summary>
+    /// <returns>验证项名称与失败消息映射。</returns>
+    private static Dictionary<string, string> GetSettingsErrorMessages()
+    {
+        var settings = AppConfiguration.GetConfig<ValidationTypeMessageSettingsOptions>("ValidationTypeMessageSettings", true);
+        if (settings is not { Definitions: not null })
         {
-            validationValidationItemMetadata.DefaultErrorMessage = customErrorMessages[name];
+            return new Dictionary<string, string>();
         }
 
-        return validationValidationItemMetadata;
+        return settings.Definitions
+            .Where(u => u.Length > 1)
+            .GroupBy(u => u[0].ToString())
+            .ToDictionary(u => u.Key, u => u.First()[1].ToString());
+    }
+
+    /// <summary>
+    /// 替换默认验证失败消息。
+    /// </summary>
+    /// <param name="name">验证项名称。</param>
+    /// <param name="field">验证项字段。</param>
+    /// <param name="customErrorMessages">自定义错误消息。</param>
+    /// <returns>验证项元数据。</returns>
+    private static ValidationItemMetadataAttribute ReplaceValidateErrorMessage(
+        string name,
+        FieldInfo field,
+        IReadOnlyDictionary<string, string> customErrorMessages)
+    {
+        var metadata = field.GetCustomAttribute<ValidationItemMetadataAttribute>()!;
+        if (customErrorMessages.TryGetValue(name, out var errorMessage))
+        {
+            metadata.DefaultErrorMessage = errorMessage;
+        }
+
+        return metadata;
     }
 }

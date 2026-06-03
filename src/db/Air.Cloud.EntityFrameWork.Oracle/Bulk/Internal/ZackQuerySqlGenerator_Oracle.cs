@@ -44,8 +44,9 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
         }
 
         private ISqlGenerationHelper _sqlGenerationHelper;
-        public ZackQuerySqlGenerator_Oracle(QuerySqlGeneratorDependencies dependencies, IOracleOptions _oracleOptions, ISqlGenerationHelper sqlGenerationHelper)
-            : base(dependencies, _oracleOptions.OracleSQLCompatibility)
+        public ZackQuerySqlGenerator_Oracle(QuerySqlGeneratorDependencies dependencies, IOracleOptions _oracleOptions,
+            ISqlGenerationHelper sqlGenerationHelper, IRelationalTypeMappingSource typeMappingSource)
+            : base(dependencies, typeMappingSource, _oracleOptions.OracleSQLCompatibility)
         {
             this._sqlGenerationHelper = sqlGenerationHelper;
             this.IsForBatchEF = false;

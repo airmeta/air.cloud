@@ -10,7 +10,7 @@
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>[Alpha]Air.Cloud.Modules.MongoDB 提供对于MongoDB NoSQL数据库的支持</Description>
+    <Description>Air.Cloud.Modules.MongoDB 提供对于MongoDB NoSQL数据库的支持</Description>
     <PackageIcon>logo.png</PackageIcon>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

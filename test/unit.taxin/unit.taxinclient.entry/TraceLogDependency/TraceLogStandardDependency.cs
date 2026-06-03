@@ -4,8 +4,8 @@ using Air.Cloud.Core.Standard.TraceLog;
 using Air.Cloud.Core;
 using Air.Cloud.WebApp.FriendlyException;
 using Air.Cloud.Core.Standard.DataBase.Model;
-using Air.Cloud.DataBase.ElasticSearch.Attributes;
-using Air.Cloud.DataBase.ElasticSearch.Enums;
+using Air.Cloud.Modules.ElasticSearch.Attributes;
+using Air.Cloud.Modules.ElasticSearch.Enums;
 
 namespace unit.taxinclient.entry.TraceLogDependency
 {

@@ -33,6 +33,16 @@ namespace Air.Cloud.Core.Standard.MessageQueue.Config
         /// <para>en-us:Gets or sets the target topic name to subscribe to.</para>
         /// </summary>
         public string TopicName { get; set; }
+
+        /// <summary>
+        /// <para>zh-cn:获取或设置订阅消息使用的 Key 类型；消息队列实现会据此选择对应的底层消费者类型。</para>
+        /// <para>en-us:Gets or sets the key type used by subscribed messages. Message-queue implementations use this value to select the corresponding underlying consumer type.</para>
+        /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:该属性需要与发布端使用的 Key 类型保持一致，否则底层消息队列客户端可能无法正确反序列化消息 Key。</para>
+        /// <para>en-us:This property should be consistent with the key type used by the publisher. Otherwise, the underlying message-queue client may not deserialize message keys correctly.</para>
+        /// </remarks>
+        public Type KeyType { get; set; }
     }
 
 }

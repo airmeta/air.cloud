@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -18,7 +18,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using System.Linq.Expressions;
 
-namespace SSS.Cloud.Core.Furion.DatabaseAccessor;
+namespace Air.Cloud.EntityFrameWork.Core.Internal;
 
 /// <summary>
 /// 实体执行组件

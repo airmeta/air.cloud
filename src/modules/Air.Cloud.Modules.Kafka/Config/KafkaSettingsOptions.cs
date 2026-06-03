@@ -47,13 +47,20 @@ namespace Air.Cloud.Modules.Kafka.Config
         public static bool IsInitKafka = false;
 
         /// <summary>
-        /// 根据主题名称获取生产配置
+        /// <para>zh-cn:根据主题名称获取生产配置；当配置集合为空或未找到指定 Topic 时，自动创建默认生产配置。</para>
+        /// <para>en-us:Get the producer configuration by topic name. When the configuration collection is empty or the specified topic is not found, a default producer configuration is created automatically.</para>
         /// </summary>
-        /// <param name="TopicName">主题名称</param>
-        /// <returns></returns>
+        /// <param name="TopicName">
+        /// <para>zh-cn:主题名称。</para>
+        /// <para>en-us:Topic name.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:生产配置模型。</para>
+        /// <para>en-us:Producer configuration model.</para>
+        /// </returns>
         public ProducerConfigModel GetProducerConfigModelByName(string TopicName)
         {
-            ProducerConfigModel producerConfig = ProducerConfigs.FirstOrDefault(s => s.TopicName == TopicName);
+            ProducerConfigModel producerConfig = ProducerConfigs?.FirstOrDefault(s => s.TopicName == TopicName);
             if (producerConfig == null)
             {
                 return new ProducerConfigModel()
@@ -83,13 +90,20 @@ namespace Air.Cloud.Modules.Kafka.Config
         }
 
         /// <summary>
-        /// 根据主题名称获取消费配置
+        /// <para>zh-cn:根据主题名称获取消费配置；当配置集合为空或未找到指定 Topic 时，自动创建默认消费配置。</para>
+        /// <para>en-us:Get the consumer configuration by topic name. When the configuration collection is empty or the specified topic is not found, a default consumer configuration is created automatically.</para>
         /// </summary>
-        /// <param name="TopicName">主题名称</param>
-        /// <returns></returns>
+        /// <param name="TopicName">
+        /// <para>zh-cn:主题名称。</para>
+        /// <para>en-us:Topic name.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:消费配置模型。</para>
+        /// <para>en-us:Consumer configuration model.</para>
+        /// </returns>
         public ConsumerConfigModel GetConsumerConfigModelByName(string TopicName)
         {
-            ConsumerConfigModel consumerConfig = ConsumerConfigs.FirstOrDefault(s => s.TopicName == TopicName);
+            ConsumerConfigModel consumerConfig = ConsumerConfigs?.FirstOrDefault(s => s.TopicName == TopicName);
             if (consumerConfig == null)
             {
                 return new ConsumerConfigModel()

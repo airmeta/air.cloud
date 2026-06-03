@@ -1,9 +1,9 @@
----
+﻿---
 home: true
 heroText: Air.Cloud
 tagline: 致力于快速的.NET 微服务解决方案
 actionText: 快速上手 →
-actionLink: /guide/air-cloud-core/core
+actionLink: /guide/
 features:
 - title: 标准化
   details: 框架内的所有功能均采用标准化接口约束,确保每个标准实现库可无缝衔接替换

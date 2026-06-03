@@ -1,12 +1,14 @@
-﻿// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
-
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -48,12 +50,13 @@ public class SucceededUnifyResultFilter : IAsyncActionFilter, IOrderedFilter
 
         // 获取控制器信息
         var actionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
+        if (actionDescriptor?.MethodInfo == null) return;
 
         // 判断是否支持 MVC 规范化处理
         if (!UnifyContext.CheckSupportMvcController(context.HttpContext, actionDescriptor, out _)) return;
 
         // 判断是否跳过规范化处理
-        if (UnifyContext.CheckSucceededNonUnify(actionDescriptor.MethodInfo, out var unifyResult)) return;
+        if (UnifyContext.CheckSucceededNonUnify(actionDescriptor.MethodInfo, context.HttpContext.RequestServices, out var unifyResult)) return;
 
         // 处理 BadRequestObjectResult 类型规范化处理
         if (actionExecutedContext.Result is BadRequestObjectResult badRequestObjectResult)
@@ -68,7 +71,7 @@ public class SucceededUnifyResultFilter : IAsyncActionFilter, IOrderedFilter
             {
                 Title = "validation",
                 Level = AppPrintLevel.Error,
-                Content = $"Validation Failed:\r\n{validationMetadata.Message}",
+                Content = $"Validation Failed:\r\n{validationMetadata.DetailMessage}",
                 State = true
             });
         }
@@ -77,7 +80,7 @@ public class SucceededUnifyResultFilter : IAsyncActionFilter, IOrderedFilter
             IActionResult result = default;
 
             // 检查是否是有效的结果（可进行规范化的结果）
-            if (UnifyContext.CheckVaildResult(actionExecutedContext.Result, out var data))
+            if (UnifyContext.CheckValidResult(actionExecutedContext.Result, out var data))
             {
                 result = unifyResult.OnSucceeded(actionExecutedContext, data);
             }

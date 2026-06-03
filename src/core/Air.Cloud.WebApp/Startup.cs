@@ -17,7 +17,6 @@ using Air.Cloud.Core.Plugins.Router;
 using Air.Cloud.WebApp.CorsAccessor.Extensions;
 using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.Filters;
-using Air.Cloud.WebApp.FriendlyException.Extensions;
 using Air.Cloud.WebApp.UnifyResult.Extensions;
 
 using Microsoft.AspNetCore.Http;
@@ -29,7 +28,6 @@ namespace Air.Cloud.WebApp
     {
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddFriendlyException();
             //HttpClientFactory
             services.AddHttpClient("Default", client =>
             {
@@ -50,8 +48,11 @@ namespace Air.Cloud.WebApp
             services.AddEntityDomainInject();
             // 添加全局锁
             services.AddMvcFilter<DistributedLockFilter>();
-            // 控制器和规范化结果
-            services.AddControllers();
+
+            // 控制器和 WebApp 核心能力：动态 API、数据验证、友好异常；统一返回由 AddWebAppUnifyResult() 独立开启。
+            // Controllers and WebApp core capabilities: dynamic APIs, data validation, friendly exceptions; unified results are enabled separately by AddWebAppUnifyResult().
+            services.AddControllers()
+                    .AddWebAppCore();
             AppRealization.AppPlugin.SetPlugin<IRouterMatcherPlugin>(new UniversalRouteMatcherCore());
 
         }

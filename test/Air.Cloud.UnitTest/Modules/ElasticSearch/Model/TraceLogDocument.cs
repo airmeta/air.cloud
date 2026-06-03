@@ -1,8 +1,8 @@
 ﻿using Air.Cloud.Core.App;
 using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.Core.Standard.TraceLog;
-using Air.Cloud.DataBase.ElasticSearch.Attributes;
-using Air.Cloud.DataBase.ElasticSearch.Enums;
+using Air.Cloud.Modules.ElasticSearch.Attributes;
+using Air.Cloud.Modules.ElasticSearch.Enums;
 
 namespace Air.Cloud.UnitTest.Modules.ElasticSearch.Model
 {

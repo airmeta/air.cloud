@@ -1,11 +1,14 @@
-// Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
-// Furion is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
-//             https://gitee.com/dotnetchina/Furion/blob/master/LICENSE
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-// See the Mulan PSL v2 for more details.
-
+/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.WebApp.CorsAccessor.Options;
@@ -16,83 +19,164 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Air.Cloud.WebApp.CorsAccessor.Extensions;
 
 /// <summary>
-/// 跨域访问服务拓展类
+/// 跨域访问服务注册扩展。
 /// </summary>
 [IgnoreScanning]
 public static class CorsAccessorServiceCollectionExtensions
 {
     /// <summary>
-    /// 默认跨域导出响应头 Key
+    /// 默认暴露给客户端读取的 Token 响应头。
     /// </summary>
-    /// <remarks>解决 ajax，XMLHttpRequest，axios 不能获取请求头问题</remarks>
-    private static readonly string[] _defaultExposedHeaders = new[]
-    {
+    private static readonly string[] DefaultExposedHeaders =
+    [
         "access-token",
         "x-access-token"
-    };
+    ];
 
     /// <summary>
-    /// 配置跨域
+    /// 注册跨域策略、跨域配置选项和响应缓存服务。
     /// </summary>
-    /// <param name="services">服务集合</param>
-    /// <param name="corsOptionsHandler"></param>
-    /// <param name="corsPolicyBuilderHandler"></param>
-    /// <returns>服务集合</returns>
-    public static IServiceCollection AddCorsAccessor(this IServiceCollection services, Action<CorsOptions> corsOptionsHandler = default, Action<CorsPolicyBuilder> corsPolicyBuilderHandler = default)
+    /// <param name="services">服务集合。</param>
+    /// <param name="corsOptionsHandler">CORS 全局选项后置配置。</param>
+    /// <param name="corsPolicyBuilderHandler">CORS 策略构建器后置配置。</param>
+    /// <returns>服务集合。</returns>
+    public static IServiceCollection AddCorsAccessor(
+        this IServiceCollection services,
+        Action<CorsOptions> corsOptionsHandler = default,
+        Action<CorsPolicyBuilder> corsPolicyBuilderHandler = default)
     {
-        // 添加跨域配置选项
         services.AddConfigurableOptions<CorsAccessorSettingsOptions>();
 
-        // 获取选项
         var corsAccessorSettings = AppConfiguration.GetConfig<CorsAccessorSettingsOptions>("CorsAccessorSettings", true);
+        if (corsAccessorSettings.EnableResponseCaching == true)
+        {
+            services.AddResponseCaching();
+        }
 
-        // 添加跨域服务
         services.AddCors(options =>
         {
-            // 添加策略跨域
-            options.AddPolicy(name: corsAccessorSettings.PolicyName, builder =>
+            options.AddPolicy(corsAccessorSettings.PolicyName, builder =>
             {
-                // 判断是否设置了来源，因为 AllowAnyOrigin 不能和 AllowCredentials一起公用
-                var isNotSetOrigins = corsAccessorSettings.WithOrigins == null || corsAccessorSettings.WithOrigins.Length == 0;
+                ConfigureOrigins(builder, corsAccessorSettings);
+                ConfigureHeaders(builder, corsAccessorSettings);
+                ConfigureMethods(builder, corsAccessorSettings);
+                ConfigureCredentials(builder, corsAccessorSettings);
+                ConfigureExposedHeaders(builder, corsAccessorSettings);
+                ConfigurePreflightMaxAge(builder, corsAccessorSettings);
 
-                // 如果没有配置来源，则允许所有来源
-                if (isNotSetOrigins) builder.AllowAnyOrigin();
-                else builder.WithOrigins(corsAccessorSettings.WithOrigins)
-                                  .SetIsOriginAllowedToAllowWildcardSubdomains();
-
-                // 如果没有配置请求标头，则允许所有表头
-                if (corsAccessorSettings.WithHeaders == null || corsAccessorSettings.WithHeaders.Length == 0) builder.AllowAnyHeader();
-                else builder.WithHeaders(corsAccessorSettings.WithHeaders);
-
-                // 如果没有配置任何请求谓词，则允许所有请求谓词
-                if (corsAccessorSettings.WithMethods == null || corsAccessorSettings.WithMethods.Length == 0) builder.AllowAnyMethod();
-                else builder.WithMethods(corsAccessorSettings.WithMethods);
-
-                // 配置跨域凭据
-                if (corsAccessorSettings.AllowCredentials == true && !isNotSetOrigins) builder.AllowCredentials();
-
-                // 配置响应头，如果前端不能获取自定义的 header 信息，必须配置该项，默认配置了 access-token 和 x-access-token，可取消默认行为
-                IEnumerable<string> exposedHeaders = corsAccessorSettings.FixedClientToken == true
-                    ? _defaultExposedHeaders
-                    : Array.Empty<string>();
-                if (corsAccessorSettings.WithExposedHeaders != null && corsAccessorSettings.WithExposedHeaders.Length > 0)
-                {
-                    exposedHeaders = exposedHeaders.Concat(corsAccessorSettings.WithExposedHeaders).Distinct(StringComparer.OrdinalIgnoreCase);
-                }
-
-                if (exposedHeaders.Any()) builder.WithExposedHeaders(exposedHeaders.ToArray());
-
-                // 设置预检过期时间，如果不设置默认为 24小时
-                builder.SetPreflightMaxAge(TimeSpan.FromSeconds(corsAccessorSettings.SetPreflightMaxAge ?? 24 * 60 * 60));
-
-                // 添加自定义配置
                 corsPolicyBuilderHandler?.Invoke(builder);
             });
 
-            // 添加自定义配置
             corsOptionsHandler?.Invoke(options);
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// 配置允许访问的来源；未配置来源时允许所有来源。
+    /// </summary>
+    /// <param name="builder">CORS 策略构建器。</param>
+    /// <param name="settings">CORS 配置选项。</param>
+    private static void ConfigureOrigins(CorsPolicyBuilder builder, CorsAccessorSettingsOptions settings)
+    {
+        if (HasValues(settings.WithOrigins))
+        {
+            builder.WithOrigins(settings.WithOrigins)
+                   .SetIsOriginAllowedToAllowWildcardSubdomains();
+            return;
+        }
+
+        builder.AllowAnyOrigin();
+    }
+
+    /// <summary>
+    /// 配置允许请求的 Header；未配置时允许所有 Header。
+    /// </summary>
+    /// <param name="builder">CORS 策略构建器。</param>
+    /// <param name="settings">CORS 配置选项。</param>
+    private static void ConfigureHeaders(CorsPolicyBuilder builder, CorsAccessorSettingsOptions settings)
+    {
+        if (HasValues(settings.WithHeaders)) builder.WithHeaders(settings.WithHeaders);
+        else builder.AllowAnyHeader();
+    }
+
+    /// <summary>
+    /// 配置允许请求的方法；未配置时允许所有方法。
+    /// </summary>
+    /// <param name="builder">CORS 策略构建器。</param>
+    /// <param name="settings">CORS 配置选项。</param>
+    private static void ConfigureMethods(CorsPolicyBuilder builder, CorsAccessorSettingsOptions settings)
+    {
+        if (HasValues(settings.WithMethods)) builder.WithMethods(settings.WithMethods);
+        else builder.AllowAnyMethod();
+    }
+
+    /// <summary>
+    /// 配置跨域凭据；启用凭据时必须配置明确来源。
+    /// </summary>
+    /// <param name="builder">CORS 策略构建器。</param>
+    /// <param name="settings">CORS 配置选项。</param>
+    /// <exception cref="InvalidOperationException">启用凭据但未配置明确来源时抛出。</exception>
+    private static void ConfigureCredentials(CorsPolicyBuilder builder, CorsAccessorSettingsOptions settings)
+    {
+        if (settings.AllowCredentials != true) return;
+
+        if (!HasValues(settings.WithOrigins))
+        {
+            throw new InvalidOperationException(
+                $"{nameof(CorsAccessorSettingsOptions.AllowCredentials)} cannot be true when {nameof(CorsAccessorSettingsOptions.WithOrigins)} is empty.");
+        }
+
+        builder.AllowCredentials();
+    }
+
+    /// <summary>
+    /// 配置允许客户端读取的响应 Header。
+    /// </summary>
+    /// <param name="builder">CORS 策略构建器。</param>
+    /// <param name="settings">CORS 配置选项。</param>
+    private static void ConfigureExposedHeaders(CorsPolicyBuilder builder, CorsAccessorSettingsOptions settings)
+    {
+        var exposedHeaders = GetExposedHeaders(settings);
+        if (exposedHeaders.Length == 0) return;
+
+        builder.WithExposedHeaders(exposedHeaders);
+    }
+
+    /// <summary>
+    /// 配置预检请求缓存时间。
+    /// </summary>
+    /// <param name="builder">CORS 策略构建器。</param>
+    /// <param name="settings">CORS 配置选项。</param>
+    private static void ConfigurePreflightMaxAge(CorsPolicyBuilder builder, CorsAccessorSettingsOptions settings)
+    {
+        builder.SetPreflightMaxAge(TimeSpan.FromSeconds(settings.PreflightMaxAgeSeconds.GetValueOrDefault(24 * 60 * 60)));
+    }
+
+    /// <summary>
+    /// 获取最终暴露给客户端的响应 Header 集合。
+    /// </summary>
+    /// <param name="settings">CORS 配置选项。</param>
+    /// <returns>去重后的响应 Header 集合。</returns>
+    private static string[] GetExposedHeaders(CorsAccessorSettingsOptions settings)
+    {
+        var defaultHeaders = settings.ExposeDefaultTokenHeaders.GetValueOrDefault(true) ? DefaultExposedHeaders : Array.Empty<string>();
+        var configuredHeaders = settings.WithExposedHeaders ?? Array.Empty<string>();
+
+        return defaultHeaders.Concat(configuredHeaders)
+                             .Where(header => !string.IsNullOrWhiteSpace(header))
+                             .Distinct(StringComparer.OrdinalIgnoreCase)
+                             .ToArray();
+    }
+
+    /// <summary>
+    /// 判断字符串数组是否包含有效配置值。
+    /// </summary>
+    /// <param name="values">待检查数组。</param>
+    /// <returns>包含至少一个非空白字符串时返回 true。</returns>
+    private static bool HasValues(string[] values)
+    {
+        return values?.Any(value => !string.IsNullOrWhiteSpace(value)) == true;
     }
 }
