@@ -1,29 +1,44 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
+        <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Air.Cloud.Modules.Kafka</PackageId>
+    <Title>Air.Cloud.Modules.Kafka</Title>
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>提供消息队列Kafka的支持</Description>
+    <Description>Air.Cloud.Modules.Kafka 提供 Kafka 消息队列标准实现，包含生产者、消费者、订阅、拦截、恢复和消息队列配置封装。</Description>
+    <PackageDescription>Air.Cloud.Modules.Kafka 提供 Kafka 消息队列标准实现，包含生产者、消费者、订阅、拦截、恢复和消息队列配置封装。</PackageDescription>
+    <PackageTags>Air.Cloud;Kafka;消息队列;生产者;消费者;模块</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-		<Version>10.0.0.0-alpha-260601</Version>
+    <Version>10.0.0.0</Version>
+    <PackageVersion>10.0.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.0.0.0</FileVersion>
   </PropertyGroup>
-
   <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
     <None Include="..\..\..\LICENSE" Link="LICENSE">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
-    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+    <None Include="..\..\..\README.md" Link="README.md">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>

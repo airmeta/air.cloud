@@ -1,34 +1,45 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
+        <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Company>合肥星曳数据科技有限公司</Company>
+    <PackageId>Air.Cloud.HostApp</PackageId>
+    <Title>Air.Cloud.HostApp</Title>
     <Authors>AC</Authors>
+    <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>
-      Air.Cloud.HostApp 为控制台应用程序基础类库,使用该类库可以创建具有Air.Cloud系列支持的类库
-    </Description>
+    <Description>Air.Cloud.HostApp 提供通用 Host 应用启动与依赖注入封装，面向后台服务、Worker、调度任务和非 Web 宿主场景复用 Air.Cloud 标准能力。</Description>
+    <PackageDescription>Air.Cloud.HostApp 提供通用 Host 应用启动与依赖注入封装，面向后台服务、Worker、调度任务和非 Web 宿主场景复用 Air.Cloud 标准能力。</PackageDescription>
+    <PackageTags>Air.Cloud;Host;Worker;后台服务;依赖注入</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-		<Version>10.0.0.0-alpha-260601</Version>
+    <Version>10.0.0.0</Version>
+    <PackageVersion>10.0.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.0.0.0</FileVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <None Include="..\..\..\assets\logo.png" Link="logo.png">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
-      
     </None>
     <None Include="..\..\..\LICENSE" Link="LICENSE">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
-      
+    </None>
+    <None Include="..\..\..\README.md" Link="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
     </None>
   </ItemGroup>
 

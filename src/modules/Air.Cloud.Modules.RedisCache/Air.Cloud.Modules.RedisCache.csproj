@@ -1,34 +1,47 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
+        <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>annotations</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>CS8625</NoWarn>
+    <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Air.Cloud.Modules.RedisCache</PackageId>
+    <Title>Air.Cloud.Modules.RedisCache</Title>
     <Authors>AC</Authors>
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
-    <Description>Air.Cloud.Core 的Redis Cache标准实现</Description>
+    <Description>Air.Cloud.Modules.RedisCache 提供 Redis 缓存与分布式锁标准实现，包含应用缓存、Redis 数据结构访问、Key 管理和分布式互斥执行能力。</Description>
+    <PackageDescription>Air.Cloud.Modules.RedisCache 提供 Redis 缓存与分布式锁标准实现，包含应用缓存、Redis 数据结构访问、Key 管理和分布式互斥执行能力。</PackageDescription>
+    <PackageTags>Air.Cloud;Redis;缓存;分布式锁;模块</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-		<Version>10.0.0.0-alpha-260601</Version>
+    <Version>10.0.0.0</Version>
+    <PackageVersion>10.0.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.0.0.0</FileVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <None Include="..\..\..\assets\logo.png" Link="logo.png">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
-      
     </None>
     <None Include="..\..\..\LICENSE" Link="LICENSE">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
-      
+    </None>
+    <None Include="..\..\..\README.md" Link="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
     </None>
   </ItemGroup>
   <ItemGroup>

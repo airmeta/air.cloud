@@ -3,8 +3,8 @@
 namespace Air.Cloud.Modules.Akka.Actors;
 
 /// <summary>
-/// <para>zh-cn:该成员属于 Akka.Cluster 模块公开契约，提供配置、注册、生命周期、节点状态或消息发送相关行为，并遵循模块的默认值、异常和授权约定。</para>
-/// <para>en-us:Air.Cloud Akka Actor base type.</para>
+/// <para>zh-cn:Air.Cloud Akka Actor 基类，业务 Actor 可继承该类型以复用 `ReceiveActor` 消息处理模型。</para>
+/// <para>en-us:Air.Cloud Akka actor base type that business actors can inherit to reuse the `ReceiveActor` message handling model.</para>
 /// </summary>
 public abstract class AirActorBase : ReceiveActor
 {

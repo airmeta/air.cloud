@@ -1,33 +1,49 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>disable</Nullable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<NoWarn>CS8625</NoWarn>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Authors>AC</Authors>
-		<Company>合肥星曳数据科技有限公司</Company>
-		<Product>air.cloud</Product>
-		<Description>Air.Cloud.EntityFrameWork.PostgreSQL为适配PostgreSQL的EFCore封装库</Description>
-		<PackageIcon>logo.png</PackageIcon>
-		<PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-		<PackAsTool>False</PackAsTool>
-		<Version>10.0.0.0-alpha-260601</Version>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-	</PropertyGroup>
-	<ItemGroup>
-		<None Include="..\..\..\assets\logo.png" Link="logo.png">
-			<PackagePath>\</PackagePath>
-			<Pack>True</Pack>
-		</None>
-		<None Include="..\..\..\LICENSE" Link="LICENSE">
-			<PackagePath>\</PackagePath>
-			<Pack>True</Pack>
-		</None>
-	</ItemGroup>
+	      <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>CS8625</NoWarn>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Air.Cloud.EntityFrameWork.PostgreSQL</PackageId>
+    <Title>Air.Cloud.EntityFrameWork.PostgreSQL</Title>
+    <Authors>AC</Authors>
+    <Company>合肥星曳数据科技有限公司</Company>
+    <Product>air.cloud</Product>
+    <Description>Air.Cloud.EntityFrameWork.PostgreSQL 提供 PostgreSQL 数据库的 Entity Framework Core 适配封装，复用 Air.Cloud 数据库标准与仓储基础能力。</Description>
+    <PackageDescription>Air.Cloud.EntityFrameWork.PostgreSQL 提供 PostgreSQL 数据库的 Entity Framework Core 适配封装，复用 Air.Cloud 数据库标准与仓储基础能力。</PackageDescription>
+    <PackageTags>Air.Cloud;Entity Framework Core;PostgreSQL;数据库;仓储</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackAsTool>False</PackAsTool>
+    <Version>10.0.0.0</Version>
+    <PackageVersion>10.0.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.0.0.0</FileVersion>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\README.md" Link="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
