@@ -59,7 +59,7 @@
 本报告已单独运行对应过滤命令，结果：`6/6` 通过。
 
 ```bash
-dotnet test test/Air.Cloud.IntegrationTest/Air.Cloud.IntegrationTest.csproj --no-restore --filter "Module=Consul"
+dotnet test test/Air.Cloud.IntegrationTest/Air.Cloud.IntegrationTest.csproj --no-restore --filter "FullyQualifiedName~ConsulRealKvIntegrationTests" -m:1
 ```
 
 配置刷新结论：真实 Consul KV 更新后，同一个配置对象可刷新到最新值，`ReloadOnChange` 生效。

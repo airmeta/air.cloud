@@ -10,6 +10,7 @@
 - [Kafka / MessageQueue 单元测试](./unit/kafka-message-queue.md)
 - [Redis 缓存与锁单元测试](./unit/redis-cache-lock.md)
 - [Consul KV 与配置单元测试](./unit/consul-kv-config.md)
+- [Consul 服务中心单元测试](./unit/consul-server-center.md)
 - [ElasticSearch NoSQL 单元测试](./unit/elasticsearch-nosql.md)
 - [其他模块单元测试](./unit/other-modules.md)
 
@@ -21,6 +22,7 @@
 - [Kafka 集成测试](./integration/kafka.md)
 - [Redis 集成测试](./integration/redis.md)
 - [Consul 集成测试](./integration/consul.md)
+- [Consul 服务中心集成测试](./integration/consul-server-center.md)
 - [ElasticSearch 集成测试](./integration/elasticsearch.md)
 - [Oracle 只读集成测试](./integration/oracle.md)
 

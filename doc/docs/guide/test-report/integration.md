@@ -8,6 +8,7 @@
 - [Kafka 集成测试](./integration/kafka.md)
 - [Redis 集成测试](./integration/redis.md)
 - [Consul 集成测试](./integration/consul.md)
+- [Consul 服务中心集成测试](./integration/consul-server-center.md)
 - [ElasticSearch 集成测试](./integration/elasticsearch.md)
 - [Oracle 只读集成测试](./integration/oracle.md)
 
@@ -20,7 +21,8 @@
 | Core 标准 | `FullyQualifiedName~CoreStandardIntegrationTests` | `4/4` 通过 | 不依赖外部中间件。 |
 | Kafka | `Module=Kafka` | `5/5` 通过 | 连接真实 Kafka Broker。 |
 | Redis | `Module=Redis` | `16/16` 通过 | 连接真实 Redis 实例。 |
-| Consul | `Module=Consul` | `6/6` 通过 | 连接真实 Consul 实例，并验证配置刷新。 |
+| Consul 完整过滤 | `Module=Consul` | `10/10` 通过 | 连接真实 Consul 实例，覆盖 KV、配置刷新和服务中心。 |
+| Consul 服务中心 | `FullyQualifiedName~ConsulRealServerCenterIntegrationTests` | `4/4` 通过 | 连接真实 Consul 实例，验证服务注册、发现和注销。 |
 | ElasticSearch | `Module=ElasticSearch` | `6/6` 通过 | 连接真实 ES 集群。 |
 | Oracle 只读 | `FullyQualifiedName~OracleReadOnlyIntegrationTests` | `1/1` 通过 | 当前开关为关闭，验证的是关闭时跳过路径，不代表真实 Oracle 查询通过。 |
 

@@ -8,6 +8,7 @@
 - [Kafka / MessageQueue 单元测试](./unit/kafka-message-queue.md)
 - [Redis 缓存与锁单元测试](./unit/redis-cache-lock.md)
 - [Consul KV 与配置单元测试](./unit/consul-kv-config.md)
+- [Consul 服务中心单元测试](./unit/consul-server-center.md)
 - [ElasticSearch NoSQL 单元测试](./unit/elasticsearch-nosql.md)
 - [WebApp 与 APICatalog 单元测试](./unit/webapp-apicatalog.md)
 - [其他模块单元测试](./unit/other-modules.md)
@@ -22,6 +23,7 @@
 | Kafka / MessageQueue | `FullyQualifiedName~Kafka|FullyQualifiedName~MessageQueueStandardTests` | `34/34` 通过 | 覆盖 Kafka 模块与消息队列标准。 |
 | Redis 缓存与锁 | `FullyQualifiedName~Air.Cloud.UnitTest.Modules.Redis` | `24/24` 通过 | 覆盖 Redis 模块单元测试。 |
 | Consul KV 与配置 | `FullyQualifiedName~ConsulMiddlewareContractTests` | `5/5` 通过 | 覆盖 Consul 契约测试。 |
+| Consul 服务中心 | `FullyQualifiedName~ConsulServerCenterContractTests` | `5/5` 通过 | 覆盖 Consul 服务注册、查询和详情契约。 |
 | ElasticSearch NoSQL | `FullyQualifiedName~Air.Cloud.UnitTest.Modules.ElasticSearch` | `6/12` 通过，`6` 失败 | 失败集中在 `ElasticSearchTests.cs` 的真实连接/连接池相关用例超时；契约类 `ElasticSearchMiddlewareContractTests` 通过。 |
 | WebApp 与 APICatalog | `FullyQualifiedName~WebApp\|FullyQualifiedName~APICatalog\|FullyQualifiedName~FriendlyException` | `105/105` 通过 | 覆盖 DynamicApi、统一返回、友好异常、APIProbe 标准元数据链路。 |
 | 其他模块 | `FullyQualifiedName~Taxin|FullyQualifiedName~SkyWalking|FullyQualifiedName~AppPool|FullyQualifiedName~ActionLog|FullyQualifiedName~DataBase` | `21/21` 通过 | 覆盖 Taxin、SkyWalking、AppPool、ActionLog、DataBase 查询服务。 |

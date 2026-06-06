@@ -90,6 +90,7 @@ module.exports = {
                             title: 'Actor Cluster',
                             collapsable: true,
                             children: [
+                                '/guide/air-cloud-core/modules/akka-application-paradigm.md',
                                 '/guide/air-cloud-core/modules/akka.md'
                             ]
                         },
@@ -128,6 +129,7 @@ module.exports = {
                                 '/guide/test-report/unit/akka.md',
                                 '/guide/test-report/unit/redis-cache-lock.md',
                                 '/guide/test-report/unit/consul-kv-config.md',
+                                '/guide/test-report/unit/consul-server-center.md',
                                 '/guide/test-report/unit/elasticsearch-nosql.md',
                                 '/guide/test-report/unit/webapp-apicatalog.md',
                                 '/guide/test-report/unit/other-modules.md'
@@ -143,6 +145,7 @@ module.exports = {
                                 '/guide/test-report/integration/akka.md',
                                 '/guide/test-report/integration/redis.md',
                                 '/guide/test-report/integration/consul.md',
+                                '/guide/test-report/integration/consul-server-center.md',
                                 '/guide/test-report/integration/elasticsearch.md',
                                 '/guide/test-report/integration/oracle.md'
                             ]
