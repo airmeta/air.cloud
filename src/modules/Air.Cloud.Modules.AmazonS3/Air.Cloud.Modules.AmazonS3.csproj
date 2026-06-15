@@ -4,7 +4,40 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Air.Cloud.Modules.AmazonS3</PackageId>
+    <Title>Air.Cloud.Modules.AmazonS3</Title>
+    <Authors>AC</Authors>
+    <Company>合肥星曳数据科技有限公司</Company>
+    <Product>air.cloud</Product>
+    <Description>Air.Cloud.Modules.AmazonS3 提供面向 Amazon S3 兼容对象存储的模块接入能力，用于文件上传、下载和对象存储标准扩展。</Description>
+    <PackageDescription>Air.Cloud.Modules.AmazonS3 提供面向 Amazon S3 兼容对象存储的模块接入能力，用于文件上传、下载和对象存储标准扩展。</PackageDescription>
+    <PackageTags>Air.Cloud;Amazon S3;对象存储;文件存储;模块</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackAsTool>False</PackAsTool>
+    <Version>6.0.0</Version>
+    <PackageVersion>6.0.0</PackageVersion>
+    <AssemblyVersion>6.0.0</AssemblyVersion>
+    <FileVersion>6.0.0</FileVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.18.7" />
   </ItemGroup>
