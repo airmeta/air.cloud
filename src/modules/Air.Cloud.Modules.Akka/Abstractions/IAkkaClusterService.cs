@@ -1,4 +1,15 @@
-﻿using Akka.Actor;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Akka.Actor;
 using Air.Cloud.Modules.Akka.Models;
 
 namespace Air.Cloud.Modules.Akka.Abstractions;
@@ -60,6 +71,28 @@ public interface IAkkaClusterService
     /// <para>en-us:The created or existing actor reference.</para>
     /// </returns>
     IActorRef ActorOf<TActor>(string actorName) where TActor : ActorBase;
+
+    /// <summary>
+    /// <para>zh-cn:按名称创建 Actor 或返回已注册实例，并允许传入显式构造参数；未显式传入的构造依赖会从 DI 容器解析。</para>
+    /// <para>en-us:Creates an actor by name or returns an already registered one while allowing explicit constructor arguments; constructor dependencies not supplied explicitly are resolved from DI.</para>
+    /// </summary>
+    /// <typeparam name="TActor">
+    /// <para>zh-cn:要创建的 Actor 类型。</para>
+    /// <para>en-us:The actor type.</para>
+    /// </typeparam>
+    /// <param name="actorName">
+    /// <para>zh-cn:Actor 注册名称。</para>
+    /// <para>en-us:The actor registration name.</para>
+    /// </param>
+    /// <param name="args">
+    /// <para>zh-cn:显式构造参数；同名 Actor 已存在时不会重新创建或重新应用这些参数。</para>
+    /// <para>en-us:The explicit constructor arguments; when an actor with the same name already exists, these arguments are not reapplied.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:新建或已有的 Actor 引用。</para>
+    /// <para>en-us:The created or existing actor reference.</para>
+    /// </returns>
+    IActorRef ActorOf<TActor>(string actorName, params object[] args) where TActor : ActorBase;
 
     /// <summary>
     /// <para>zh-cn:向指定 Actor 发送即发即弃消息；目标缺失、运行时未启动或授权失败都会抛出异常。</para>

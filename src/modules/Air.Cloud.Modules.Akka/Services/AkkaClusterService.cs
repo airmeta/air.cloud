@@ -1,4 +1,15 @@
-﻿using System.Reflection;
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using System.Reflection;
 using Akka.Actor;
 using Akka.Configuration;
 using Akka.Cluster;
@@ -20,6 +31,7 @@ public class AkkaClusterService : IAkkaClusterService
     private readonly AkkaSettingsOptions _options;
     private readonly IAkkaActorRegistry _actorRegistry;
     private readonly IEnumerable<IAkkaMessageAuthorizationHandler> _authorizationHandlers;
+    private readonly IServiceProvider _serviceProvider;
     private readonly SemaphoreSlim _lifecycleLocker = new(1, 1);
     private ActorSystem _actorSystem;
 
@@ -39,14 +51,20 @@ public class AkkaClusterService : IAkkaClusterService
     /// <para>zh-cn:消息授权处理器集合；任一处理器拒绝时消息发送会被阻止。</para>
     /// <para>en-us:The message authorization handlers; if any handler denies a message, sending is blocked.</para>
     /// </param>
+    /// <param name="serviceProvider">
+    /// <para>zh-cn:应用服务提供器，用于创建 Actor 时解析构造函数中的依赖；显式传入的构造参数会与容器依赖一起参与匹配。</para>
+    /// <para>en-us:The application service provider used to resolve constructor dependencies when actors are created; explicit constructor arguments are combined with container services.</para>
+    /// </param>
     public AkkaClusterService(
         IOptions<AkkaSettingsOptions> options,
         IAkkaActorRegistry actorRegistry,
-        IEnumerable<IAkkaMessageAuthorizationHandler> authorizationHandlers)
+        IEnumerable<IAkkaMessageAuthorizationHandler> authorizationHandlers,
+        IServiceProvider serviceProvider)
     {
         _options = options.Value;
         _actorRegistry = actorRegistry;
         _authorizationHandlers = authorizationHandlers;
+        _serviceProvider = serviceProvider;
     }
 
     /// <summary>
@@ -149,6 +167,31 @@ public class AkkaClusterService : IAkkaClusterService
     /// </returns>
     public IActorRef ActorOf<TActor>(string actorName) where TActor : ActorBase
     {
+        return ActorOf<TActor>(actorName, Array.Empty<object>());
+    }
+
+    /// <summary>
+    /// <para>zh-cn:使用指定构造参数创建 Actor 并写入模块注册表；构造函数中的其余依赖会从 DI 容器解析，同名 Actor 已存在时直接返回已有引用且不会重新应用参数。</para>
+    /// <para>en-us:Creates an actor with explicit constructor arguments and registers it in the module registry; remaining constructor dependencies are resolved from DI, and an existing actor with the same name is returned without reapplying arguments.</para>
+    /// </summary>
+    /// <typeparam name="TActor">
+    /// <para>zh-cn:Actor 类型，必须继承 `ActorBase`。</para>
+    /// <para>en-us:The actor type, which must derive from `ActorBase`.</para>
+    /// </typeparam>
+    /// <param name="actorName">
+    /// <para>zh-cn:Actor 注册名称。</para>
+    /// <para>en-us:The actor registration name.</para>
+    /// </param>
+    /// <param name="args">
+    /// <para>zh-cn:显式构造参数；为空时仅通过 DI 解析 Actor 构造函数依赖。</para>
+    /// <para>en-us:The explicit constructor arguments; when empty, actor constructor dependencies are resolved only through DI.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:新建或已有的 Actor 引用。</para>
+    /// <para>en-us:The created or existing actor reference.</para>
+    /// </returns>
+    public IActorRef ActorOf<TActor>(string actorName, params object[] args) where TActor : ActorBase
+    {
         EnsureStarted();
 
         if (_actorRegistry.TryGet(actorName, out var registeredActor))
@@ -156,7 +199,7 @@ public class AkkaClusterService : IAkkaClusterService
             return registeredActor;
         }
 
-        var actorRef = _actorSystem.ActorOf(Props.Create(typeof(TActor)), actorName);
+        var actorRef = _actorSystem.ActorOf(CreateActorProps(typeof(TActor), args), actorName);
         _actorRegistry.Register(new AkkaActorDescriptor
         {
             ActorName = actorName,
@@ -261,7 +304,7 @@ public class AkkaClusterService : IAkkaClusterService
             }
 
             var actorName = BuildActorName(item.Attribute);
-            var actorRef = _actorSystem.ActorOf(Props.Create(item.Type), actorName);
+            var actorRef = _actorSystem.ActorOf(CreateActorProps(item.Type), actorName);
             _actorRegistry.Register(new AkkaActorDescriptor
             {
                 ActorName = actorName,
@@ -315,6 +358,11 @@ public class AkkaClusterService : IAkkaClusterService
         }
 
         return $"{attribute.Domain}-{attribute.ActorName}";
+    }
+
+    private Props CreateActorProps(Type actorType, params object[] args)
+    {
+        return Props.CreateBy(new AkkaActorProducer(_serviceProvider, actorType, args));
     }
 
     private void EnsureStarted()

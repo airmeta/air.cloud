@@ -484,12 +484,31 @@ public class AkkaClusterModuleUnitTests
         Assert.True(service.Stopped);
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证 Akka.Cluster 模块的 `IAkkaClusterService should expose parameterized actor creation contract` 场景，确保业务实现可以接收显式构造参数创建 Actor。</para>
+    /// <para>en-us:Verifies the Akka.Cluster module `IAkkaClusterService should expose parameterized actor creation contract` scenario, ensuring business implementations can accept explicit constructor arguments when creating actors.</para>
+    /// </summary>
+    [Fact]
+    public void IAkkaClusterService_should_expose_parameterized_actor_creation_contract()
+    {
+        IAkkaClusterService service = new CustomClusterService();
+
+        service.ActorOf<TestActor>("contract-actor", "arg-1", 2);
+
+        var customService = Assert.IsType<CustomClusterService>(service);
+        Assert.Equal("contract-actor", customService.LastActorName);
+        Assert.Equal(new object[] { "arg-1", 2 }, customService.LastActorArgs);
+    }
+
     private static AkkaClusterService BuildService(AkkaSettingsOptions options)
     {
+        var services = new ServiceCollection();
+
         return new AkkaClusterService(
             Options.Create(options),
             new AkkaActorRegistry(),
-            new[] { new DefaultAkkaMessageAuthorizationHandler() });
+            new[] { new DefaultAkkaMessageAuthorizationHandler() },
+            services.BuildServiceProvider());
     }
 
     private sealed class TestActor : ReceiveActor
@@ -520,6 +539,10 @@ public class AkkaClusterModuleUnitTests
 
         public bool Stopped { get; private set; }
 
+        public string LastActorName { get; private set; } = string.Empty;
+
+        public object[] LastActorArgs { get; private set; } = Array.Empty<object>();
+
         public ActorSystem ActorSystem => throw new NotSupportedException();
 
         public Task StartAsync(CancellationToken cancellationToken = default)
@@ -536,6 +559,15 @@ public class AkkaClusterModuleUnitTests
 
         public IActorRef ActorOf<TActor>(string actorName) where TActor : ActorBase
         {
+            LastActorName = actorName;
+            LastActorArgs = Array.Empty<object>();
+            return ActorRefs.Nobody;
+        }
+
+        public IActorRef ActorOf<TActor>(string actorName, params object[] args) where TActor : ActorBase
+        {
+            LastActorName = actorName;
+            LastActorArgs = args;
             return ActorRefs.Nobody;
         }
 

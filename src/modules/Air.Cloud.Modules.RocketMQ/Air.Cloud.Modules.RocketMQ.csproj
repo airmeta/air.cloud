@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Air.Cloud.Modules.RocketMQ</PackageId>
+    <Title>Air.Cloud.Modules.RocketMQ</Title>
+    <Authors>AC</Authors>
+    <Company>合肥星曳数据科技有限公司</Company>
+    <Product>air.cloud</Product>
+    <Description>Air.Cloud.Modules.RocketMQ provides RocketMQ support for the Air.Cloud message queue standard.</Description>
+    <PackageDescription>Air.Cloud.Modules.RocketMQ provides RocketMQ support for the Air.Cloud message queue standard.</PackageDescription>
+    <PackageTags>Air.Cloud;RocketMQ;MessageQueue;Producer;Consumer;Module</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackAsTool>False</PackAsTool>
+    <Version>10.0.0</Version>
+    <PackageVersion>10.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0</AssemblyVersion>
+    <FileVersion>10.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\README.md" Link="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <ProjectReference Include="..\..\extensions\Air.Cloud.Core.Extensions\Air.Cloud.Core.Extensions.csproj" />
+    <PackageReference Include="OpenTelemetry" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Api" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+    <PackageReference Include="RocketMQ.Client" Version="5.1.0" />
+  </ItemGroup>
+
+</Project>

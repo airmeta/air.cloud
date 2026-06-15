@@ -39,9 +39,11 @@
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.ElasticSearch\Air.Cloud.Modules.ElasticSearch.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.RocketMQ\Air.Cloud.Modules.RocketMQ.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Akka\Air.Cloud.Modules.Akka.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.RedisCache\Air.Cloud.Modules.RedisCache.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj" />
+    <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Nacos\Air.Cloud.Modules.Nacos.csproj" />
   </ItemGroup>
 
 </Project>

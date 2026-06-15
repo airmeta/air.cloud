@@ -52,10 +52,12 @@
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.RedisCache\Air.Cloud.Modules.RedisCache.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.RocketMQ\Air.Cloud.Modules.RocketMQ.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Akka\Air.Cloud.Modules.Akka.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj" />
     <ProjectReference Include="..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\src\plugins\Air.Cloud.Plugins.Jwt\Air.Cloud.Plugins.Jwt.csproj" />
+    <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Nacos\Air.Cloud.Modules.Nacos.csproj" />
   </ItemGroup>
 
 </Project>

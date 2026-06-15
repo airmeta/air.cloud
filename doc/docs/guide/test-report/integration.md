@@ -6,6 +6,7 @@
 
 - [Core 标准集成测试](./integration/core-standard.md)
 - [Kafka 集成测试](./integration/kafka.md)
+- [RocketMQ 集成测试](./integration/rocketmq.md)
 - [Redis 集成测试](./integration/redis.md)
 - [Consul 集成测试](./integration/consul.md)
 - [Consul 服务中心集成测试](./integration/consul-server-center.md)
@@ -20,6 +21,7 @@
 | --- | --- | --- | --- |
 | Core 标准 | `FullyQualifiedName~CoreStandardIntegrationTests` | `4/4` 通过 | 不依赖外部中间件。 |
 | Kafka | `Module=Kafka` | `5/5` 通过 | 连接真实 Kafka Broker。 |
+| RocketMQ | `Module=RocketMQ` | `1/1` 通过 | 当前开关为关闭，验证的是关闭时跳过路径；启用后连接真实 RocketMQ 5.x Proxy。 |
 | Redis | `Module=Redis` | `16/16` 通过 | 连接真实 Redis 实例。 |
 | Consul 完整过滤 | `Module=Consul` | `10/10` 通过 | 连接真实 Consul 实例，覆盖 KV、配置刷新和服务中心。 |
 | Consul 服务中心 | `FullyQualifiedName~ConsulRealServerCenterIntegrationTests` | `4/4` 通过 | 连接真实 Consul 实例，验证服务注册、发现和注销。 |
