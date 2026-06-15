@@ -135,6 +135,54 @@ var result = await akka.Ask<CreateOrderResult>(
     new CreateOrderCommand("order-001"));
 ```
 
+### 5.1 Actor 构造函数依赖
+
+手动 `ActorOf<TActor>` 和 `AkkaActorAttribute` 自动注册都会使用当前应用 `IServiceProvider` 创建 Actor。业务 Actor 可以直接通过构造函数声明依赖：
+
+```csharp
+public interface IOrderFormatter
+{
+    string Format(string orderId);
+}
+
+[AkkaActor("worker", Domain = "Order", Role = "order")]
+public class OrderWorkerActor : ReceiveActor
+{
+    public OrderWorkerActor(IOrderFormatter formatter)
+    {
+        Receive<CreateOrderCommand>(command =>
+        {
+            Sender.Tell(new CreateOrderResult(formatter.Format(command.OrderId)));
+        });
+    }
+}
+```
+
+依赖仍按普通 DI 方式注册：
+
+```csharp
+services.AddSingleton<IOrderFormatter, OrderFormatter>();
+```
+
+如果需要手动创建带运行期参数的 Actor，可以使用 `ActorOf` 的有参重载。显式参数会和 DI 依赖一起匹配构造函数：
+
+```csharp
+public class OrderWorkerActor : ReceiveActor
+{
+    public OrderWorkerActor(IOrderFormatter formatter, string shardName)
+    {
+        Receive<CreateOrderCommand>(command =>
+        {
+            Sender.Tell($"{shardName}:{formatter.Format(command.OrderId)}");
+        });
+    }
+}
+
+akka.ActorOf<OrderWorkerActor>("order-worker-a", "shard-a");
+```
+
+同名 Actor 仍保持注册表单例语义：如果 `order-worker-a` 已经存在，再次调用 `ActorOf` 会返回已有 `IActorRef`，不会重新创建 Actor，也不会重新应用新的构造参数。
+
 ## 6. 多业务域共用 Cluster
 
 框架层允许同一个 Cluster 承载多个业务域，业务方决定是否采用该部署模式。框架层提供以下兜底：
@@ -197,6 +245,7 @@ public class DomainMessageAuthorizationHandler : IAkkaMessageAuthorizationHandle
 | --- | --- | --- |
 | `ActorSystem has not started` | 在宿主启动前访问 `ActorSystem` 或直接调用发送入口 | 确认通过 `IHostedService` 启动，或先调用 `StartAsync` |
 | Actor 未注册 | Role 不匹配、缺少 `AkkaActorAttribute`、程序集未加载 | 检查 `Roles` 与 Attribute 上的 `Role` 是否一致 |
+| Actor 构造失败 | 构造函数依赖未注册，或显式参数类型与构造函数不匹配 | 检查 DI 注册，并确认 `ActorOf` 传入参数顺序和类型能匹配目标构造函数 |
 | 发送被拒绝 | 自定义授权处理器返回 `false` | 检查 Domain 策略和消息来源 |
 | 同名 Actor 被覆盖 | 多业务域未配置 `ActorNamePrefix` | 为每个 Domain 配置唯一前缀 |
 | 多节点无法入群 | `SystemName` 不一致、地址不可达、SeedNodes 配错 | 保证同一 Cluster 使用相同 `SystemName` 并开放端口 |

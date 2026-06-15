@@ -69,7 +69,8 @@ module.exports = {
                             title: '服务治理标准',
                             collapsable: true,
                             children: [
-                                '/guide/air-cloud-core/modules/consul.md'
+                                '/guide/air-cloud-core/modules/consul.md',
+                                '/guide/air-cloud-core/modules/nacos.md'
                             ]
                         },
                         {
@@ -83,7 +84,8 @@ module.exports = {
                             title: '消息队列标准',
                             collapsable: true,
                             children: [
-                                '/guide/air-cloud-core/modules/kafka-usage.md'
+                                '/guide/air-cloud-core/modules/kafka-usage.md',
+                                '/guide/air-cloud-core/modules/rocketmq.md'
                             ]
                         },
                         {
@@ -126,10 +128,12 @@ module.exports = {
                             children: [
                                 '/guide/test-report/unit/core-standard.md',
                                 '/guide/test-report/unit/kafka-message-queue.md',
+                                '/guide/test-report/unit/rocketmq-message-queue.md',
                                 '/guide/test-report/unit/akka.md',
                                 '/guide/test-report/unit/redis-cache-lock.md',
                                 '/guide/test-report/unit/consul-kv-config.md',
                                 '/guide/test-report/unit/consul-server-center.md',
+                                '/guide/test-report/unit/nacos.md',
                                 '/guide/test-report/unit/elasticsearch-nosql.md',
                                 '/guide/test-report/unit/webapp-apicatalog.md',
                                 '/guide/test-report/unit/other-modules.md'
@@ -142,10 +146,12 @@ module.exports = {
                             children: [
                                 '/guide/test-report/integration/core-standard.md',
                                 '/guide/test-report/integration/kafka.md',
+                                '/guide/test-report/integration/rocketmq.md',
                                 '/guide/test-report/integration/akka.md',
                                 '/guide/test-report/integration/redis.md',
                                 '/guide/test-report/integration/consul.md',
                                 '/guide/test-report/integration/consul-server-center.md',
+                                '/guide/test-report/integration/nacos.md',
                                 '/guide/test-report/integration/elasticsearch.md',
                                 '/guide/test-report/integration/oracle.md'
                             ]
@@ -157,6 +163,7 @@ module.exports = {
                     collapsable: true,
                     children: [
                         '/guide/middleware/consul.md',
+                        '/guide/middleware/nacos.md',
                         '/guide/middleware/kafka.md',
                         '/guide/software/docker.md',
                         '/guide/software/elk/elasticsearch.md'

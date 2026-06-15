@@ -39,13 +39,14 @@
 | 配置委托 | `SystemName`、`Roles` | 代码覆盖配置默认值 | `IOptions<AkkaSettingsOptions>` 保留委托配置。 |
 | 业务自定义 Registry | 调用前注册 `IAkkaActorRegistry` | 默认实现可能覆盖业务实现 | 不覆盖业务实现。 |
 | 业务自定义 ClusterService | 调用前注册 `IAkkaClusterService` | 默认实现可能覆盖业务实现 | 不覆盖业务实现。 |
+| 有参创建契约 | `IAkkaClusterService.ActorOf<TActor>(name, args)` | 业务实现接收显式构造参数 | 接口契约保留 ActorName 和参数集合。 |
 | 禁用启动 | `Enabled=false` | 调用 `StartAsync` | 不创建 ActorSystem。 |
 | 未启动 Stop | 直接调用 `StopAsync` | ActorSystem 为空 | 不抛出异常。 |
 | 未启动 Tell | 直接发送消息 | ActorSystem 为空 | 抛出 `InvalidOperationException`。 |
 
 ## 3. 测试数量
 
-当前 Akka 单元测试共 `29` 个。
+当前 Akka 单元测试共 `30` 个。
 
 ## 4. 验证命令
 

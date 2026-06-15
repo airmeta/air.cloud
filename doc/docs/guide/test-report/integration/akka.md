@@ -34,6 +34,9 @@
 | --- | --- | --- | --- |
 | 手动创建 Actor | `ActorOf<EchoActor>("manual-echo")` | 正常名称 | ActorRef 创建并写入注册表。 |
 | 同名复用 | 重复 `ActorOf` | 同一名称 | 返回已注册 ActorRef。 |
+| DI 构造 | `ActorOf<DependencyInjectedActor>` | Actor 构造函数依赖业务服务 | 从 `IServiceProvider` 解析依赖并处理消息。 |
+| 有参构造 | `ActorOf<ParameterizedDependencyInjectedActor>(name, "runtime")` | 显式参数 + DI 依赖 | 构造函数同时收到运行期参数和容器依赖。 |
+| 有参同名复用 | 同名 Actor 使用不同构造参数重复创建 | 注册表已有 ActorRef | 返回已有 ActorRef，不重新应用新参数。 |
 | `Tell` | 单向消息 + Completion | 正常 Actor | Actor 收到消息并完成回调。 |
 | `Ask` | 请求响应消息 | 正常 Actor | 返回指定响应类型。 |
 | 缺失 Actor | `Tell` / `Ask` 目标不存在 | 注册表未命中 | 抛出 `InvalidOperationException`。 |
@@ -43,6 +46,7 @@
 | 测试目标 | 边界内入参 | 边界外 / 异常入参 | 预期结果 |
 | --- | --- | --- | --- |
 | Role 匹配自动注册 | Actor 标记 `Role=akka-integration` | 当前节点包含角色 | Actor 自动注册。 |
+| 自动注册 DI 构造 | Actor 标记 `Role=akka-di` 且构造函数依赖业务服务 | 当前节点包含角色且服务已注册 | 自动扫描创建 Actor 时从 DI 解析依赖。 |
 | Role 不匹配 | 当前节点角色为 `another-role` | Actor 要求 `akka-integration` | Actor 不注册。 |
 | 无 Role Actor | Actor 未声明 Role | 任意节点角色 | Actor 注册。 |
 | Domain 前缀 | `ActorNamePrefix=it` | Domain 为 `Integration` | 最终名称为 `it-attributed-echo`。 |
@@ -63,7 +67,7 @@
 
 ## 4. 测试数量
 
-当前 Akka 集成测试共 `30` 个。
+当前 Akka 集成测试共 `34` 个。
 
 ## 5. 验证命令
 
@@ -71,4 +75,4 @@
 dotnet test test/Air.Cloud.IntegrationTest/Air.Cloud.IntegrationTest.csproj --filter "FullyQualifiedName~Modules.Akka"
 ```
 
-最近一次定向运行结果：`30/30` 通过。
+最近一次定向运行结果：`34/34` 通过。

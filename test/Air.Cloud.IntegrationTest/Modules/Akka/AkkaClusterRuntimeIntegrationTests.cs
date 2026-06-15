@@ -7,6 +7,7 @@ using Air.Cloud.Modules.Akka.Models;
 using Air.Cloud.Modules.Akka.Options;
 using Air.Cloud.Modules.Akka.Registries;
 using Air.Cloud.Modules.Akka.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Air.Cloud.IntegrationTest.Modules.Akka;
@@ -239,6 +240,89 @@ public class AkkaClusterRuntimeIntegrationTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证 Akka.Cluster 模块的 `ActorOf should resolve actor constructor dependencies from DI` 场景，确保手动创建 Actor 时可从容器解析业务依赖。</para>
+    /// <para>en-us:Verifies the Akka.Cluster module `ActorOf should resolve actor constructor dependencies from DI` scenario, ensuring manually created actors can resolve business dependencies from the container.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "Akka")]
+    public async Task ActorOf_should_resolve_actor_constructor_dependencies_from_DI()
+    {
+        var module = BuildModule(
+            configureServices: services => services.AddSingleton<IActorPayloadFormatter>(new PrefixActorPayloadFormatter("di")));
+
+        await module.Service.StartAsync();
+        try
+        {
+            module.Service.ActorOf<DependencyInjectedActor>("manual-di");
+
+            var response = await module.Service.Ask<string>("manual-di", new QueryMessage("payload"));
+
+            Assert.Equal("di:payload", response);
+        }
+        finally
+        {
+            await module.Service.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Akka.Cluster 模块的 `ActorOf should combine explicit constructor arguments with DI dependencies` 场景，确保有参构造和容器依赖可同时参与 Actor 创建。</para>
+    /// <para>en-us:Verifies the Akka.Cluster module `ActorOf should combine explicit constructor arguments with DI dependencies` scenario, ensuring explicit constructor arguments and container dependencies can be used together when creating an actor.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "Akka")]
+    public async Task ActorOf_should_combine_explicit_constructor_arguments_with_DI_dependencies()
+    {
+        var module = BuildModule(
+            configureServices: services => services.AddSingleton<IActorPayloadFormatter>(new PrefixActorPayloadFormatter("di")));
+
+        await module.Service.StartAsync();
+        try
+        {
+            module.Service.ActorOf<ParameterizedDependencyInjectedActor>("manual-args", "runtime");
+
+            var response = await module.Service.Ask<string>("manual-args", new QueryMessage("payload"));
+
+            Assert.Equal("runtime:di:payload", response);
+        }
+        finally
+        {
+            await module.Service.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Akka.Cluster 模块的 `ActorOf should reuse existing actor when constructor args change` 场景，确保同名 Actor 仍保持单例注册语义。</para>
+    /// <para>en-us:Verifies the Akka.Cluster module `ActorOf should reuse existing actor when constructor args change` scenario, ensuring actors with the same name keep the singleton registry semantics.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "Akka")]
+    public async Task ActorOf_should_reuse_existing_actor_when_constructor_args_change()
+    {
+        var module = BuildModule(
+            configureServices: services => services.AddSingleton<IActorPayloadFormatter>(new PrefixActorPayloadFormatter("di")));
+
+        await module.Service.StartAsync();
+        try
+        {
+            var first = module.Service.ActorOf<ParameterizedDependencyInjectedActor>("shared-args", "first");
+            var second = module.Service.ActorOf<ParameterizedDependencyInjectedActor>("shared-args", "second");
+
+            var response = await module.Service.Ask<string>("shared-args", new QueryMessage("payload"));
+
+            Assert.Same(first, second);
+            Assert.Equal("first:di:payload", response);
+        }
+        finally
+        {
+            await module.Service.StopAsync();
+        }
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证 Akka.Cluster 模块的 `Tell should throw for missing actor` 场景，确保该边界下的配置、注册或运行时行为符合框架契约。</para>
     /// <para>en-us:Verifies the Akka.Cluster module `Tell should throw for missing actor` scenario, ensuring the configuration, registration, or runtime behavior matches the framework contract for this boundary.</para>
     /// </summary>
@@ -376,6 +460,37 @@ public class AkkaClusterRuntimeIntegrationTests
         try
         {
             Assert.Contains(module.Registry.GetDescriptors(), descriptor => descriptor.ActorType == typeof(AttributedEchoActor));
+        }
+        finally
+        {
+            await module.Service.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Akka.Cluster 模块的 `Attributed actor should resolve constructor dependencies from DI` 场景，确保自动扫描注册的 Actor 也可使用容器构造依赖。</para>
+    /// <para>en-us:Verifies the Akka.Cluster module `Attributed actor should resolve constructor dependencies from DI` scenario, ensuring auto-scanned actors can also use container-resolved constructor dependencies.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "Akka")]
+    public async Task Attributed_actor_should_resolve_constructor_dependencies_from_DI()
+    {
+        var module = BuildModule(
+            options =>
+            {
+                options.Roles.Add("akka-di");
+                options.Domains["Dependency"] = new AkkaDomainOptions { ActorNamePrefix = "dep" };
+            },
+            configureServices: services => services.AddSingleton<IActorPayloadFormatter>(new PrefixActorPayloadFormatter("auto")));
+
+        await module.Service.StartAsync();
+        try
+        {
+            var response = await module.Service.Ask<string>("dep-attributed-di", new QueryMessage("payload"));
+
+            Assert.Equal("auto:payload", response);
+            Assert.Contains(module.Registry.GetDescriptors(), descriptor => descriptor.ActorType == typeof(AttributedDependencyInjectedActor));
         }
         finally
         {
@@ -787,7 +902,8 @@ public class AkkaClusterRuntimeIntegrationTests
 
     private static ModuleRuntime BuildModule(
         Action<AkkaSettingsOptions>? configureOptions = null,
-        IEnumerable<IAkkaMessageAuthorizationHandler>? handlers = null)
+        IEnumerable<IAkkaMessageAuthorizationHandler>? handlers = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         var options = new AkkaSettingsOptions
         {
@@ -806,10 +922,14 @@ public class AkkaClusterRuntimeIntegrationTests
         configureOptions?.Invoke(options);
 
         var registry = new AkkaActorRegistry();
+        var services = new ServiceCollection();
+        configureServices?.Invoke(services);
+        var serviceProvider = services.BuildServiceProvider();
         var service = new AkkaClusterService(
             Options.Create(options),
             registry,
-            handlers ?? new IAkkaMessageAuthorizationHandler[] { new DefaultAkkaMessageAuthorizationHandler() });
+            handlers ?? new IAkkaMessageAuthorizationHandler[] { new DefaultAkkaMessageAuthorizationHandler() },
+            serviceProvider);
 
         return new ModuleRuntime(service, registry, options);
     }
@@ -824,10 +944,13 @@ public class AkkaClusterRuntimeIntegrationTests
         IEnumerable<IAkkaMessageAuthorizationHandler>? handlers = null)
     {
         var registry = new AkkaActorRegistry();
+        var services = new ServiceCollection();
+        var serviceProvider = services.BuildServiceProvider();
         var service = new AkkaClusterService(
             Options.Create(options),
             registry,
-            handlers ?? new IAkkaMessageAuthorizationHandler[] { new DefaultAkkaMessageAuthorizationHandler() });
+            handlers ?? new IAkkaMessageAuthorizationHandler[] { new DefaultAkkaMessageAuthorizationHandler() },
+            serviceProvider);
 
         return new ModuleRuntime(service, registry, options);
     }
@@ -923,6 +1046,42 @@ public class AkkaClusterRuntimeIntegrationTests
         }
     }
 
+    public interface IActorPayloadFormatter
+    {
+        string Format(string value);
+    }
+
+    public sealed class PrefixActorPayloadFormatter : IActorPayloadFormatter
+    {
+        private readonly string _prefix;
+
+        public PrefixActorPayloadFormatter(string prefix)
+        {
+            _prefix = prefix;
+        }
+
+        public string Format(string value)
+        {
+            return $"{_prefix}:{value}";
+        }
+    }
+
+    public class DependencyInjectedActor : ReceiveActor
+    {
+        public DependencyInjectedActor(IActorPayloadFormatter formatter)
+        {
+            Receive<QueryMessage>(message => Sender.Tell(formatter.Format(message.Value)));
+        }
+    }
+
+    public sealed class ParameterizedDependencyInjectedActor : ReceiveActor
+    {
+        public ParameterizedDependencyInjectedActor(IActorPayloadFormatter formatter, string runtimePrefix)
+        {
+            Receive<QueryMessage>(message => Sender.Tell($"{runtimePrefix}:{formatter.Format(message.Value)}"));
+        }
+    }
+
     [AkkaActor("attributed-echo", Domain = "Integration", Role = "akka-integration")]
     public sealed class AttributedEchoActor : EchoActor
     {
@@ -931,6 +1090,15 @@ public class AkkaClusterRuntimeIntegrationTests
     [AkkaActor("roleless-attributed", Domain = "Integration")]
     public sealed class RolelessAttributedActor : EchoActor
     {
+    }
+
+    [AkkaActor("attributed-di", Domain = "Dependency", Role = "akka-di")]
+    public sealed class AttributedDependencyInjectedActor : DependencyInjectedActor
+    {
+        public AttributedDependencyInjectedActor(IActorPayloadFormatter formatter)
+            : base(formatter)
+        {
+        }
     }
 
     [AkkaActor("worker", Domain = "Order", Role = "order")]

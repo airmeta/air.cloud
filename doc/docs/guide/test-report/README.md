@@ -8,6 +8,7 @@
 
 - [Core 标准单元测试](./unit/core-standard.md)
 - [Kafka / MessageQueue 单元测试](./unit/kafka-message-queue.md)
+- [RocketMQ / MessageQueue 单元测试](./unit/rocketmq-message-queue.md)
 - [Redis 缓存与锁单元测试](./unit/redis-cache-lock.md)
 - [Consul KV 与配置单元测试](./unit/consul-kv-config.md)
 - [Consul 服务中心单元测试](./unit/consul-server-center.md)
@@ -20,6 +21,7 @@
 
 - [Core 标准集成测试](./integration/core-standard.md)
 - [Kafka 集成测试](./integration/kafka.md)
+- [RocketMQ 集成测试](./integration/rocketmq.md)
 - [Redis 集成测试](./integration/redis.md)
 - [Consul 集成测试](./integration/consul.md)
 - [Consul 服务中心集成测试](./integration/consul-server-center.md)

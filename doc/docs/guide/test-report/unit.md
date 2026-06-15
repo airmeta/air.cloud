@@ -6,6 +6,7 @@
 
 - [Core 标准单元测试](./unit/core-standard.md)
 - [Kafka / MessageQueue 单元测试](./unit/kafka-message-queue.md)
+- [RocketMQ / MessageQueue 单元测试](./unit/rocketmq-message-queue.md)
 - [Redis 缓存与锁单元测试](./unit/redis-cache-lock.md)
 - [Consul KV 与配置单元测试](./unit/consul-kv-config.md)
 - [Consul 服务中心单元测试](./unit/consul-server-center.md)
@@ -21,6 +22,7 @@
 | --- | --- | --- | --- |
 | Core 标准 | `FullyQualifiedName~Air.Cloud.UnitTest.Core.Standard` | `46/46` 通过 | 覆盖 Core 标准层。 |
 | Kafka / MessageQueue | `FullyQualifiedName~Kafka|FullyQualifiedName~MessageQueueStandardTests` | `34/34` 通过 | 覆盖 Kafka 模块与消息队列标准。 |
+| RocketMQ / MessageQueue | `FullyQualifiedName~RocketMQ` | `7/7` 通过 | 覆盖 RocketMQ 模块配置、Key、上下文和注册契约。 |
 | Redis 缓存与锁 | `FullyQualifiedName~Air.Cloud.UnitTest.Modules.Redis` | `24/24` 通过 | 覆盖 Redis 模块单元测试。 |
 | Consul KV 与配置 | `FullyQualifiedName~ConsulMiddlewareContractTests` | `5/5` 通过 | 覆盖 Consul 契约测试。 |
 | Consul 服务中心 | `FullyQualifiedName~ConsulServerCenterContractTests` | `5/5` 通过 | 覆盖 Consul 服务注册、查询和详情契约。 |

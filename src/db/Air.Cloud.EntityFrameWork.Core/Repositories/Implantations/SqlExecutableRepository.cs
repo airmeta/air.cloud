@@ -30,7 +30,7 @@ public partial class PrivateSqlRepository
 
     private static object RequireScalarValue(object? value)
     {
-        return value ?? throw new InvalidOperationException("SQL 标量执行没有返回可用值。");
+        return value ?? default;
     }
 
     private static async Task<object> RequireScalarValueAsync(Task<object?> valueTask)
