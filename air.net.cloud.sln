@@ -102,11 +102,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.EntityFrameWork.O
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.EntityFrameWork.MySQL", "src\db\Air.Cloud.EntityFrameWork.MySQL\Air.Cloud.EntityFrameWork.MySQL.csproj", "{9EB87E7B-E85D-4926-97D8-6E8A0707215C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.EntityFrameWork.Kingbase", "src\db\Air.Cloud.EntityFrameWork.Kingbase\Air.Cloud.EntityFrameWork.Kingbase.csproj", "{977B2041-7588-49B7-B12A-4A589B06CBFC}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.AmazonS3", "src\modules\Air.Cloud.Modules.AmazonS3\Air.Cloud.Modules.AmazonS3.csproj", "{3E77357A-F518-4D10-9520-B89F0F8C51D9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.Modules.MongoDB", "src\modules\Air.Cloud.Modules.MongoDB\Air.Cloud.Modules.MongoDB.csproj", "{796C2C26-CDFB-4D8C-9F65-7FDF87DBA985}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{1FB59802-2A93-49E1-A62F-6161FC489F91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Air.Cloud.EntityFrameWork.Kingbase.UnitTest", "test\Air.Cloud.EntityFrameWork.Kingbase.UnitTest\Air.Cloud.EntityFrameWork.Kingbase.UnitTest.csproj", "{5B296B74-BE76-45CE-B437-AFF46069F124}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -258,6 +262,10 @@ Global
 		{9EB87E7B-E85D-4926-97D8-6E8A0707215C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EB87E7B-E85D-4926-97D8-6E8A0707215C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EB87E7B-E85D-4926-97D8-6E8A0707215C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{977B2041-7588-49B7-B12A-4A589B06CBFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{977B2041-7588-49B7-B12A-4A589B06CBFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{977B2041-7588-49B7-B12A-4A589B06CBFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{977B2041-7588-49B7-B12A-4A589B06CBFC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3E77357A-F518-4D10-9520-B89F0F8C51D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E77357A-F518-4D10-9520-B89F0F8C51D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E77357A-F518-4D10-9520-B89F0F8C51D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -266,6 +274,10 @@ Global
 		{796C2C26-CDFB-4D8C-9F65-7FDF87DBA985}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{796C2C26-CDFB-4D8C-9F65-7FDF87DBA985}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{796C2C26-CDFB-4D8C-9F65-7FDF87DBA985}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B296B74-BE76-45CE-B437-AFF46069F124}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B296B74-BE76-45CE-B437-AFF46069F124}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B296B74-BE76-45CE-B437-AFF46069F124}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B296B74-BE76-45CE-B437-AFF46069F124}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -312,8 +324,10 @@ Global
 		{37072C62-97BD-47A9-B82E-EE51D58057CA} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
 		{565A97EC-66C0-41F1-9452-C646A03E6C7C} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
 		{9EB87E7B-E85D-4926-97D8-6E8A0707215C} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
+		{977B2041-7588-49B7-B12A-4A589B06CBFC} = {D893CAA4-4D00-4A9E-9BA2-CA5273F46E5E}
 		{3E77357A-F518-4D10-9520-B89F0F8C51D9} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
 		{796C2C26-CDFB-4D8C-9F65-7FDF87DBA985} = {0FDF11BF-24A1-4AFD-A195-104EAD599359}
+		{5B296B74-BE76-45CE-B437-AFF46069F124} = {1FB59802-2A93-49E1-A62F-6161FC489F91}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CD951757-CD83-4B05-8E7E-76C0555B61FE}

@@ -61,7 +61,8 @@ module.exports = {
                     title: 'Air.Cloud.DataBase',
                     collapsable: false,
                     children: [
-                        '/guide/air-cloud-core/database/options.md'
+                        '/guide/air-cloud-core/database/options.md',
+                        '/guide/air-cloud-core/database/kingbase.md'
                     ]
                 },
                 {
