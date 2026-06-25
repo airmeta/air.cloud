@@ -1,4 +1,4 @@
-module.exports = {
+﻿module.exports = {
     title: 'Air.Cloud',
     host: 'localhost',
     description: 'Air.Cloud Documentation',
@@ -9,14 +9,14 @@ module.exports = {
         initialOpenGroupIndex: -1,
         activeHeaderLinks: true,
         nav: [
-            { text: '首页', link: '/' },
-            { text: '指南', link: '/guide/' },
+            { text: '棣栭〉', link: '/' },
+            { text: '鎸囧崡', link: '/guide/' },
             {
-                text: '相关链接',
+                text: '鐩稿叧閾炬帴',
                 items: [
                     { text: 'GitHub', link: 'https://github.com/AccessCross/air.cloud' },
                     { text: 'NuGet', link: 'https://www.nuget.org/packages?q=Air.Cloud&includeComputedFrameworks=true&prerel=true' },
-                    { text: '许可证', link: 'https://github.com/AccessCross/air.cloud/blob/main/LICENSE' }
+                    { text: '璁稿彲璇�', link: 'https://github.com/AccessCross/air.cloud/blob/main/LICENSE' }
                 ]
             }
         ],
@@ -28,7 +28,7 @@ module.exports = {
                 '/guide/air-cloud-core/loading-mechanism.md',
                 '/guide/air-cloud-core/config.md',
                 {
-                    title: 'Web服务',
+                    title: 'Web鏈嶅姟',
                     path: '/guide/air-cloud-core/webapp.html',
                     collapsable: true,
                     children: [
@@ -44,7 +44,7 @@ module.exports = {
                 },
                 '/guide/air-cloud-core/hostapp.md',
                 {
-                    title: '标准',
+                    title: '鏍囧噯',
                     path: '/guide/air-cloud-core/standard.html',
                     collapsable: true,
                     children: [
@@ -61,12 +61,12 @@ module.exports = {
                     ]
                 },
                 {
-                    title: '模块',
+                    title: '妯″潡',
                     path: '/guide/air-cloud-core/libs.html',
                     collapsable: true,
                     children: [
                         {
-                            title: '服务治理标准',
+                            title: '鏈嶅姟娌荤悊鏍囧噯',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/consul.md',
@@ -74,14 +74,14 @@ module.exports = {
                             ]
                         },
                         {
-                            title: '缓存与锁标准',
+                            title: '缂撳瓨涓庨攣鏍囧噯',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/redis-cache.md'
                             ]
                         },
                         {
-                            title: '消息队列标准',
+                            title: '娑堟伅闃熷垪鏍囧噯',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/kafka-usage.md',
@@ -97,16 +97,23 @@ module.exports = {
                             ]
                         },
                         {
-                            title: 'NoSQL 数据访问扩展',
+                            title: 'NoSQL 鏁版嵁璁块棶鎵╁睍',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/elasticsearch.md'
+                            ]
+                        },
+                        {
+                            title: '数据库适配',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/database/kingbase.md'
                             ]
                         }
                     ]
                 },
                 {
-                    title: '插件',
+                    title: '鎻掍欢',
                     path: '/guide/air-cloud-core/plugins.html',
                     collapsable: true,
                     children: [
@@ -117,12 +124,12 @@ module.exports = {
                 },
                 '/guide/air-cloud-core/usage-advice.md',
                 {
-                    title: '测试报告',
+                    title: '娴嬭瘯鎶ュ憡',
                     path: '/guide/test-report/',
                     collapsable: true,
                     children: [
                         {
-                            title: '单元测试',
+                            title: '鍗曞厓娴嬭瘯',
                             path: '/guide/test-report/unit.html',
                             collapsable: true,
                             children: [
@@ -140,7 +147,7 @@ module.exports = {
                             ]
                         },
                         {
-                            title: '集成测试',
+                            title: '闆嗘垚娴嬭瘯',
                             path: '/guide/test-report/integration.html',
                             collapsable: true,
                             children: [
@@ -159,7 +166,7 @@ module.exports = {
                     ]
                 },
                 {
-                    title: '技术学习',
+                    title: '鎶€鏈涔�',
                     collapsable: true,
                     children: [
                         '/guide/middleware/consul.md',
@@ -170,7 +177,7 @@ module.exports = {
                     ]
                 },
                 {
-                    title: '其他内容',
+                    title: '鍏朵粬鍐呭',
                     collapsable: true,
                     children: [
                         '/guide/example.md',
@@ -182,4 +189,3 @@ module.exports = {
         }
       }
   }
-
