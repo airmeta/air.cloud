@@ -133,6 +133,8 @@ AppRealization.Queue.Subscribe<ConsumerConfig, OrderMessage>(
 
 如果 `consumerConfig.Config` 为空，Kafka 模组会使用 `KafkaSettings:ClusterAddress` 创建默认 `ConsumerConfig`。当前默认会将 `EnableAutoCommit` 补为 `false`，成功处理后手动提交 offset。
 
+如果 `consumerConfig.Config` 已经存在但 `ConsumerConfig.GroupId` 为空，Kafka 模组会把 `Subscribe(..., GroupId)` 传入的动态组编号回填到 Kafka 原生 `group.id`。如果 `ConsumerConfig.GroupId` 已经显式配置，则以显式配置为准。
+
 ## KeyType 规则
 
 Kafka 模组通过 `ProducerConfigModel.KeyType` 和 `ConsumerConfigModel.KeyType` 决定底层 `ProducerBuilder<TKey, string>` / `ConsumerBuilder<TKey, string>` 的 Key 类型。
@@ -397,7 +399,7 @@ dotnet test .\test\Air.Cloud.IntegrationTest\Air.Cloud.IntegrationTest.csproj --
 
 - 发布端和消费端必须保持 `KeyType` 一致。
 - seed 消息也必须使用同类型 key，不要用 `Null` key 初始化 `int` 或 `string` key 的 topic。
-- 生产环境建议显式配置 `ConsumerConfig.GroupId`。
+- 生产环境建议显式配置 `ConsumerConfig.GroupId`；如果业务需要动态组编号，可以通过 `Subscribe(..., GroupId)` 传入，模块会在 `ConsumerConfig.GroupId` 为空时自动回填。
 - 生产环境建议关闭自动创建 Topic，通过运维或部署流程显式创建 Topic。
 - 如果开启自动创建 Topic，需要确认 broker 配置和 ACL 权限。
 - 对重要消息实现自定义 `IMessageQueueFailureCompensationStandard`，明确 retry 和 dead-letter 策略。

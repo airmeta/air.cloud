@@ -14,7 +14,7 @@
     <Company>合肥星曳数据科技有限公司</Company>
     <Product>air.cloud</Product>
     <Description>Air.Cloud.EntityFrameWork.Kingbase 提供 KingbaseES V9 的 Entity Framework Core 适配封装。</Description>
-    <PackageDescription>Air.Cloud.EntityFrameWork.Kingbase 提供 KingbaseES V9 的 Entity Framework Core 适配封装，并通过 UseKingbase 扩展接入 Kdbndp Provider。</PackageDescription>
+    <PackageDescription>Air.Cloud.EntityFrameWork.Kingbase 提供 KingbaseES V9 的 Entity Framework Core 适配封装，并通过 IDatabaseConfigure 接入 Air.Cloud 统一数据库配置入口。</PackageDescription>
     <PackageTags>Air.Cloud;Entity Framework Core;KingbaseES;数据库;ORM</PackageTags>
     <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
@@ -48,13 +48,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kdbndp.EntityFrameworkCore.KingbaseES_V9" Version="10.0.1" />
+    <PackageReference Include="Kdbndp.EntityFrameworkCore.KingbaseES_V9" Version="10.0.1.703" />
+    <PackageReference Include="Kdbndp_V9" Version="10.0.1.703" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.8" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <ProjectReference Include="..\Air.Cloud.EntityFrameWork.Core\Air.Cloud.EntityFrameWork.Core.csproj" />
   </ItemGroup>
 
 </Project>

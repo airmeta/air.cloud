@@ -798,6 +798,11 @@ namespace Air.Cloud.Modules.Kafka.Helper
                 throw new InvalidOperationException($"Kafka consumer config type must be {nameof(ConsumerConfig)}.");
             }
 
+            if (string.IsNullOrWhiteSpace(consumerConfig.GroupId))
+            {
+                consumerConfig.GroupId = groupId;
+            }
+
             if (!consumerConfig.EnableAutoCommit.HasValue)
             {
                 consumerConfig.EnableAutoCommit = false;

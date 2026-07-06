@@ -1,8 +1,8 @@
 ### KingbaseES V9 EF Core 适配
 
-`Air.Cloud.EntityFrameWork.Kingbase` 为 Air.Cloud 数据库访问层提供 KingbaseES V9 的 EF Core Provider 封装。该类库从 `net-6.0.0.0` 分支迁移而来，并升级到 `net10.0`，当前接入 `Kdbndp.EntityFrameworkCore.KingbaseES_V9` `10.0.1`。
+`Air.Cloud.EntityFrameWork.Kingbase` 为 Air.Cloud 数据库访问层提供 KingbaseES V9 的 EF Core Provider 适配。当前主线面向 `net10.0`，接入 `Kdbndp.EntityFrameworkCore.KingbaseES_V9` `10.0.1`，并通过 `IDatabaseConfigure` 接入 Air.Cloud 统一数据库配置入口。
 
-Short (en-us): `Air.Cloud.EntityFrameWork.Kingbase` provides the KingbaseES V9 EF Core provider adapter for the Air.Cloud database layer. It was migrated from the `net-6.0.0.0` branch and upgraded to `net10.0`, using `Kdbndp.EntityFrameworkCore.KingbaseES_V9` `10.0.1`.
+Short (en-us): `Air.Cloud.EntityFrameWork.Kingbase` provides the KingbaseES V9 EF Core provider adapter for the Air.Cloud database layer. The current main line targets `net10.0`, uses `Kdbndp.EntityFrameworkCore.KingbaseES_V9` `10.0.1`, and integrates through the unified Air.Cloud `IDatabaseConfigure` database entry point.
 
 ---
 
@@ -22,22 +22,29 @@ Short (en-us): `Air.Cloud.EntityFrameWork.Kingbase` provides the KingbaseES V9 E
 
 ---
 
-### Provider 注册
+### 统一入口注册
 
-在 EF Core 注册位置调用 `UseKingbase`：
+Kingbase 包提供 `KingbaseDatabaseConfigure : IDatabaseConfigure`，模块启动时注册：
 
 ```csharp
-using Air.Cloud.EntityFrameWork.Kingbase.Extensions;
-
-services.AddDbContext<DefaultDbContext>(options =>
-{
-    options.UseKingbase(
-        Configuration["DataSourceSettings:ConnectionStrings:default"],
-        "Your.Migrations.Assembly");
-});
+services.AddSingleton<IDatabaseConfigure, KingbaseDatabaseConfigure>();
 ```
 
-`UseKingbase` 内部调用 Kingbase Provider 的 `UseKdbndp(connectionString, options => ...)`。第二个参数 `migrationAssemblyName` 可为空；为空时使用 Kingbase Provider 默认迁移程序集行为。
+业务项目使用 Air.Cloud 数据库核心的 `AddDb` 或 `AddDbPool` 注册 DbContext。连接元数据会先通过 `DbProvider.GetConnectionString<TDbContext>(...)` 解析，然后交给 `KingbaseDatabaseConfigure.Configure<TDbContext>(...)`。
+
+```csharp
+using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
+
+services.AddDb<DefaultDbContext>(
+    connectionMetadata: "default");
+```
+
+如需设置迁移程序集，在接入数据库访问器时设置 Air.Cloud 数据库核心的迁移程序集名称；Kingbase 配置器会使用 `Db.MigrationAssemblyName`：
+
+```csharp
+services.AddDatabaseAccessor(
+    migrationAssemblyName: "Your.Migrations.Assembly");
+```
 
 ---
 
@@ -69,9 +76,29 @@ public class DefaultDbContext : DbContext
 
 ---
 
+### 底层扩展
+
+`UseKingbase` 仍然保留为底层 EF Core 扩展，供高级场景直接配置 Provider：
+
+```csharp
+using Air.Cloud.EntityFrameWork.Kingbase.Extensions;
+
+services.AddDbContext<DefaultDbContext>(options =>
+{
+    options.UseKingbase(
+        "Server=127.0.0.1;Port=54321;Database=air_cloud;User Id=system;Password=your-password;",
+        "Your.Migrations.Assembly");
+});
+```
+
+常规 Air.Cloud 项目应优先使用 `IDatabaseConfigure` 统一入口，避免绕过框架的连接字符串解析、DbContext 定位器、动态模型缓存键和状态检查链路。
+
+---
+
 ### 注意事项
 
 - `Kdbndp.EntityFrameworkCore.KingbaseES_V9` `10.0.1` 是当前 `net10.0` 适配使用的 KingbaseES V9 Provider 包。
-- 连接字符串会原样传递给 `UseKdbndp`，请按 KingbaseES V9 驱动要求配置服务器、端口、数据库、用户名和密码。
-- `UseKingbase` 只负责 Provider 绑定和迁移程序集配置，不会自动创建数据库、打开连接或执行迁移。
-- 如果需要接入 Air.Cloud 统一仓储/工作单元链路，应在具体业务项目中将 DbContext 注册到现有数据访问入口后再使用本 Provider 扩展。
+- `KingbaseDatabaseConfigure` 会把连接元数据作为 Kingbase 连接字符串传递给 `UseKdbndp`。
+- 迁移程序集统一来自 `Db.MigrationAssemblyName`，和 MySQL、Oracle、PostgreSQL 适配器保持一致。
+- `UseKingbase` 和 `KingbaseDatabaseConfigure` 只负责 Provider 绑定和迁移程序集配置，不会自动创建数据库、打开连接或执行迁移。
+- 如果启用了 `DataSourceSettings.ConnectionValidationSQL`，模块启动注册会接入数据库状态检查后台服务。

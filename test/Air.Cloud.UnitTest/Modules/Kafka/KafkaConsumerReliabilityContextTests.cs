@@ -1,7 +1,9 @@
 using Air.Cloud.Core.Standard.MessageQueue;
+using Air.Cloud.Core.Standard.MessageQueue.Config;
 using Air.Cloud.Core.Standard.MessageQueue.Enums;
 using Air.Cloud.Modules.Kafka.Contexts;
 using Air.Cloud.Modules.Kafka.Helper;
+using Confluent.Kafka;
 
 using System.Reflection;
 
@@ -148,9 +150,72 @@ namespace Air.Cloud.UnitTest.Modules.Kafka
             Assert.Same(nativeEventArgs, ((KafkaMessageQueueFailureContext)compensation.Context).NativeConsumeResult);
         }
 
+        [Fact]
+        public void KafkaMessageQueueDependency_should_apply_dynamic_group_id_when_existing_consumer_config_has_no_group_id()
+        {
+            var dependency = new KafkaMessageQueueDependency();
+            var method = typeof(KafkaMessageQueueDependency).GetMethod(
+                "EnsureConsumerConfig",
+                BindingFlags.Instance | BindingFlags.NonPublic)!
+                .MakeGenericMethod(typeof(ConsumerConfig));
+            var subscribeConfig = new TestTopicSubscribeConfig
+            {
+                TopicName = "fcj_workflow_audit",
+                Config = new ConsumerConfig
+                {
+                    BootstrapServers = "192.168.100.165:9092"
+                }
+            };
+
+            method.Invoke(dependency, new object?[]
+            {
+                subscribeConfig,
+                "workflow_audit_listener"
+            });
+
+            Assert.Equal("workflow_audit_listener", subscribeConfig.Config.GroupId);
+            Assert.False(subscribeConfig.Config.EnableAutoCommit);
+        }
+
+        [Fact]
+        public void KafkaMessageQueueDependency_should_preserve_explicit_consumer_config_group_id()
+        {
+            var dependency = new KafkaMessageQueueDependency();
+            var method = typeof(KafkaMessageQueueDependency).GetMethod(
+                "EnsureConsumerConfig",
+                BindingFlags.Instance | BindingFlags.NonPublic)!
+                .MakeGenericMethod(typeof(ConsumerConfig));
+            var subscribeConfig = new TestTopicSubscribeConfig
+            {
+                TopicName = "fcj_workflow_audit",
+                Config = new ConsumerConfig
+                {
+                    BootstrapServers = "192.168.100.165:9092",
+                    GroupId = "configured_group"
+                }
+            };
+
+            method.Invoke(dependency, new object?[]
+            {
+                subscribeConfig,
+                "workflow_audit_listener"
+            });
+
+            Assert.Equal("configured_group", subscribeConfig.Config.GroupId);
+        }
+
         private sealed class TestKafkaMessage
         {
             public string Content { get; set; } = string.Empty;
+        }
+
+        private sealed class TestTopicSubscribeConfig : ITopicSubscribeConfig<ConsumerConfig>
+        {
+            public string TopicName { get; set; } = string.Empty;
+
+            public ConsumerConfig Config { get; set; } = null!;
+
+            public Type KeyType { get; set; } = typeof(int);
         }
 
         private sealed class CapturingConsumerRecoveryStandard : IMessageQueueConsumerRecoveryStandard
