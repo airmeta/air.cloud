@@ -12,6 +12,7 @@
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Plugins.LogFiltering;
 using Air.Cloud.Core.Plugins.PID;
 using Air.Cloud.Core.Standard.AppInject;
 using Air.Cloud.Modules.Consul.Dependencies;
@@ -86,6 +87,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             builder.Configuration.AddConfiguration(Config.Item1);
 
             builder = AppRealization.Injection.Inject(builder);
+            builder.Services.Configure<AppLogFilterOptions>(options => options.IgnorePaths.Add(consulServiceOptions.HealthCheckRoute));
             //注册Consul服务
             builder.Services.AddConulService();
             var app = builder.Build();
@@ -175,6 +177,10 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 AppConfigurationLoader.SetExternalConfiguration(Config.Item1);
             });
             builder = AppRealization.Injection.Inject(builder, true);
+            builder.ConfigureServices(services =>
+            {
+                services.Configure<AppLogFilterOptions>(options => options.IgnorePaths.Add(consulServiceOptions.HealthCheckRoute));
+            });
             return builder;
         }
         /// <summary>
@@ -199,6 +205,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
         {
             //开发环境剔除此参数
             if (AppEnvironment.IsDevelopment) return app;
+            app.ApplicationServices.GetService<IAppLogFilterPlugin>()?.AddIgnorePath(serviceOptions.HealthCheckRoute);
             var ConsulHelpers = new ConsulOperatorHelper(serviceOptions.ConsulAddress);
             var result = ConsulHelpers.InitConsulRegistration(serviceOptions);
             if (!result.Item1) return app;

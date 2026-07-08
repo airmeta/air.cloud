@@ -9,6 +9,11 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
+using Air.Cloud.Core.App;
+using Air.Cloud.Core.Plugins.LogFiltering;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 namespace Air.Cloud.Core.Extensions
 {
@@ -18,6 +23,21 @@ namespace Air.Cloud.Core.Extensions
         /// </summary>
         public class AppLogProvider : ILoggerProvider
         {
+            private readonly IAppLogFilterPlugin _logFilter;
+
+            /// <summary>
+            /// <para>zh-cn:初始化 Air.Cloud 日志提供器，并使用可替换的日志过滤插件处理输出前过滤。</para>
+            /// <para>en-us:Initializes the Air.Cloud log provider and uses a replaceable log filtering plugin for pre-output filtering.</para>
+            /// </summary>
+            /// <param name="logFilter">
+            /// <para>zh-cn:日志过滤插件；为空时会使用框架默认插件。</para>
+            /// <para>en-us:The log filtering plugin; the framework default plugin is used when null.</para>
+            /// </param>
+            public AppLogProvider(IAppLogFilterPlugin logFilter = null)
+            {
+                _logFilter = logFilter ?? new DefaultAppLogFilterPlugin();
+            }
+
             /// <summary>
             /// <para>zh-cn:根据日志分类名称创建自定义控制台日志实例。</para>
             /// <para>en-us:Creates a custom console logger instance by logger category name.</para>
@@ -33,7 +53,7 @@ namespace Air.Cloud.Core.Extensions
             public ILogger CreateLogger(string categoryName)
             {
                 // categoryName 是日志分类（如 Microsoft.AspNetCore.Server.Kestrel），作为 Title 一部分
-                return new CustomConsoleLogger(categoryName);
+                return new CustomConsoleLogger(categoryName, _logFilter);
             }
 
             /// <summary>
@@ -53,6 +73,7 @@ namespace Air.Cloud.Core.Extensions
         public class CustomConsoleLogger : ILogger
         {
             private readonly string _categoryName;
+            private readonly IAppLogFilterPlugin _logFilter;
 
             /// <summary>
             /// <para>zh-cn:初始化指定分类名称的自定义控制台日志实例。</para>
@@ -62,9 +83,14 @@ namespace Air.Cloud.Core.Extensions
             /// <para>zh-cn:日志分类名称。</para>
             /// <para>en-us:The logger category name.</para>
             /// </param>
-            public CustomConsoleLogger(string categoryName)
+            /// <param name="logFilter">
+            /// <para>zh-cn:日志过滤插件；为空时使用默认过滤插件。</para>
+            /// <para>en-us:The log filtering plugin; the default filtering plugin is used when null.</para>
+            /// </param>
+            public CustomConsoleLogger(string categoryName, IAppLogFilterPlugin logFilter = null)
             {
                 _categoryName = categoryName;
+                _logFilter = logFilter ?? new DefaultAppLogFilterPlugin();
             }
 
             /// <summary>
@@ -102,6 +128,8 @@ namespace Air.Cloud.Core.Extensions
                         return;
                     var title = GetTitle(_categoryName, state); // 提取/生成 Title
                     var content = formatter(state, exception); // 日志内容（包含异常信息）
+                    if (_logFilter.ShouldIgnore(CreateFilterContext(logLevel, eventId, state, content)))
+                        return;
                     AppRealization.Output.Print(new AppPrintInformation()
                     {
                         State=true,
@@ -120,6 +148,22 @@ namespace Air.Cloud.Core.Extensions
                         Title= title,
                         Type= AppPrintConstType.SYSTEM_TYPE
                     });
+            }
+
+            private AppLogFilterContext CreateFilterContext<TState>(LogLevel logLevel, EventId eventId, TState state, string content)
+            {
+                var httpContext = AppCore.HttpContext;
+                return new AppLogFilterContext
+                {
+                    CategoryName = _categoryName,
+                    LogLevel = logLevel,
+                    EventId = eventId,
+                    State = state,
+                    Content = content,
+                    RequestPath = httpContext?.Request?.Path.Value ?? string.Empty,
+                    RequestMethod = httpContext?.Request?.Method ?? string.Empty,
+                    StatusCode = httpContext?.Response?.StatusCode
+                };
             }
 
             /// <summary>
@@ -180,7 +224,7 @@ namespace Air.Cloud.Core.Extensions
             public bool IsEnabled(LogLevel logLevel)
             {
                 // 启用所有日志级别（可根据需求调整，如只启用 Information 及以上）
-                return logLevel >= LogLevel.Debug;
+                return logLevel != LogLevel.None;
             }
 
             /// <summary>
@@ -235,7 +279,9 @@ namespace Air.Cloud.Core.Extensions
                 // 清除默认控制台日志，避免格式冲突
                 builder.ClearProviders();
                 // 添加自定义日志提供器
-                builder.AddProvider(new AppLogProvider());
+                builder.Services.AddOptions<AppLogFilterOptions>();
+                builder.Services.TryAddSingleton<IAppLogFilterPlugin, DefaultAppLogFilterPlugin>();
+                builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, AppLogProvider>());
                 return builder;
             }
         }

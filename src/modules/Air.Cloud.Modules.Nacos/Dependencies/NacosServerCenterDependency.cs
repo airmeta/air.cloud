@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.Core.Plugins.LogFiltering;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Nacos.Model;
 
@@ -29,6 +30,7 @@ namespace Air.Cloud.Modules.Nacos.Service
     {
         private readonly INacosNamingService _namingService;
         private readonly NacosServiceOptions _serviceOptions;
+        private readonly IAppLogFilterPlugin _logFilter;
 
         /// <summary>
         /// <para>zh-cn:创建 Nacos 服务中心实现，依赖官方 Nacos Naming 客户端和 Air.Cloud 配置。</para>
@@ -38,9 +40,14 @@ namespace Air.Cloud.Modules.Nacos.Service
         /// <para>zh-cn:Nacos 服务发现客户端。</para>
         /// <para>en-us>The Nacos naming service client.</para>
         /// </param>
-        public NacosServerCenterDependency(INacosNamingService namingService)
+        /// <param name="logFilter">
+        /// <para>zh-cn:Air.Cloud 日志过滤插件，用于登记最终健康检查路由；为空时会尝试从框架服务容器读取。</para>
+        /// <para>en-us>The Air.Cloud log filtering plugin used to register the final health-check route; when null, the framework service container is used as a fallback.</para>
+        /// </param>
+        public NacosServerCenterDependency(INacosNamingService namingService, IAppLogFilterPlugin logFilter = null)
         {
             _namingService = namingService;
+            _logFilter = logFilter;
             _serviceOptions = AppConfigurationLoader.InnerConfiguration.GetConfig<NacosServiceOptions>() ?? new NacosServiceOptions();
         }
 
@@ -85,12 +92,19 @@ namespace Air.Cloud.Modules.Nacos.Service
         public async Task<bool> RegisterAsync<T>(T serverCenterServiceInformation) where T : class, IServerCenterServiceRegisterOptions, new()
         {
             var uri = new Uri(serverCenterServiceInformation.ServiceAddress);
+            if (serverCenterServiceInformation.HealthCheckRoute.IsNullOrEmpty())
+            {
+                serverCenterServiceInformation.HealthCheckRoute = _serviceOptions.HealthCheckRoute;
+            }
+
             if (!serverCenterServiceInformation.HealthCheckRoute.IsNullOrEmpty())
             {
                 serverCenterServiceInformation.HealthCheckRoute = serverCenterServiceInformation.HealthCheckRoute.StartsWith("/")
                     ? serverCenterServiceInformation.HealthCheckRoute
                     : $"/{serverCenterServiceInformation.HealthCheckRoute}";
             }
+
+            (_logFilter ?? AppCore.GetService<IAppLogFilterPlugin>())?.AddIgnorePath(serverCenterServiceInformation.HealthCheckRoute);
 
             var groupName = serverCenterServiceInformation is NacosServerCenterServiceRegisterOptions nacosOptions
                 ? NormalizeGroup(nacosOptions.GroupName)

@@ -11,6 +11,7 @@
  */
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
+using Air.Cloud.Core.Plugins.LogFiltering;
 using Air.Cloud.Core.Standard.KVCenter;
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Nacos.Model;
@@ -57,6 +58,7 @@ namespace Air.Cloud.Modules.Nacos.Extensions
         {
             var serviceOptions = GetNacosServiceOptions(configuration, action);
             services.AddSingleton(serviceOptions);
+            services.Configure<AppLogFilterOptions>(options => options.IgnorePaths.Add(serviceOptions.HealthCheckRoute));
             services.AddNacosV2Config(NacosOptionsBuilder.Build(serviceOptions));
             services.AddNacosV2Naming(NacosOptionsBuilder.Build(serviceOptions));
             services.AddTransient<IServerCenterStandard, NacosServerCenterDependency>();
@@ -197,6 +199,7 @@ namespace Air.Cloud.Modules.Nacos.Extensions
             target.DefaultTimeOut = source.DefaultTimeOut;
             target.ServiceName = source.ServiceName;
             target.ServiceAddress = source.ServiceAddress;
+            target.HealthCheckRoute = source.HealthCheckRoute;
             target.ClusterName = source.ClusterName;
             target.Weight = source.Weight;
             target.Ephemeral = source.Ephemeral;

@@ -1,6 +1,8 @@
 using Air.Cloud.Core.Standard.ServerCenter;
 using Air.Cloud.Modules.Nacos.Model;
 
+using Microsoft.Extensions.Configuration;
+
 namespace Air.Cloud.UnitTest.Modules.Nacos
 {
     /// <summary>
@@ -69,6 +71,48 @@ namespace Air.Cloud.UnitTest.Modules.Nacos
             Assert.Equal("/healthz", detail.ServiceMeta["HealthCheckRoute"]);
         }
 
+        /// <summary>
+        /// <para>zh-cn:验证 NacosServiceOptions 可以从配置节点绑定健康检查路由。</para>
+        /// <para>en-us:Verifies NacosServiceOptions can bind the health-check route from configuration.</para>
+        /// </summary>
+        [Fact]
+        public void Nacos_service_options_should_bind_health_check_route()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["NacosServiceOptions:HealthCheckRoute"] = "/healthz"
+                })
+                .Build();
+
+            var options = configuration.GetSection("NacosServiceOptions").Get<NacosServiceOptions>();
+
+            Assert.NotNull(options);
+            Assert.Equal("/healthz", options.HealthCheckRoute);
+        }
+
+        /// <summary>
+        /// <para>zh-cn:验证注册信息没有传入健康检查路由时，可以使用 NacosServiceOptions 中的默认路由。</para>
+        /// <para>en-us:Verifies registration can use the default route from NacosServiceOptions when no health-check route is provided.</para>
+        /// </summary>
+        [Fact]
+        public async Task Nacos_server_center_should_use_options_health_check_route_when_registration_route_is_empty()
+        {
+            IServerCenterStandard serverCenter = new InMemoryNacosServerCenterStandard(new NacosServiceOptions
+            {
+                HealthCheckRoute = "/options-health"
+            });
+            var registration = CreateRegistration("air-cloud-nacos-options-health", "air-cloud-nacos-options-health-1");
+            registration.HealthCheckRoute = string.Empty;
+
+            Assert.True(await serverCenter.RegisterAsync(registration));
+
+            var details = Assert.IsType<NacosServerCenterServiceOptions>(await serverCenter.GetAsync(registration.ServiceName));
+            var detail = Assert.Single(details.ServerDetails);
+
+            Assert.Equal("/options-health", detail.ServiceMeta["HealthCheckRoute"]);
+        }
+
         private static NacosServerCenterServiceRegisterOptions CreateRegistration(
             string serviceName,
             string serviceKey,
@@ -91,6 +135,12 @@ namespace Air.Cloud.UnitTest.Modules.Nacos
         private sealed class InMemoryNacosServerCenterStandard : IServerCenterStandard
         {
             private readonly Dictionary<string, NacosServerCenterServiceRegisterOptions> _registrations = new(StringComparer.Ordinal);
+            private readonly NacosServiceOptions _serviceOptions;
+
+            public InMemoryNacosServerCenterStandard(NacosServiceOptions? serviceOptions = null)
+            {
+                _serviceOptions = serviceOptions ?? new NacosServiceOptions();
+            }
 
             public Task<IList<T>> QueryAsync<T>() where T : IServerCenterServiceOptions, new()
             {
@@ -132,6 +182,11 @@ namespace Air.Cloud.UnitTest.Modules.Nacos
             public Task<bool> RegisterAsync<T>(T serverCenterServiceInformation)
                 where T : class, IServerCenterServiceRegisterOptions, new()
             {
+                if (string.IsNullOrWhiteSpace(serverCenterServiceInformation.HealthCheckRoute))
+                {
+                    serverCenterServiceInformation.HealthCheckRoute = _serviceOptions.HealthCheckRoute;
+                }
+
                 _registrations[serverCenterServiceInformation.ServiceKey] = new NacosServerCenterServiceRegisterOptions
                 {
                     ServiceName = serverCenterServiceInformation.ServiceName,

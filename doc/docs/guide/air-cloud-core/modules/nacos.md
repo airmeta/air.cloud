@@ -179,3 +179,24 @@ dotnet test test/Air.Cloud.UnitTest/Air.Cloud.UnitTest.csproj --filter "FullyQua
 ```bash
 dotnet test test/Air.Cloud.IntegrationTest/Air.Cloud.IntegrationTest.csproj --filter "FullyQualifiedName~Modules.Nacos" -m:1
 ```
+
+## HealthCheckRoute 与日志过滤
+
+`NacosServiceOptions` 支持配置 `HealthCheckRoute`：
+
+```json
+{
+  "NacosServiceOptions": {
+    "ServerAddress": "http://127.0.0.1:8848/",
+    "ServiceName": "order-service",
+    "ServiceAddress": "http://127.0.0.1:5295",
+    "HealthCheckRoute": "/health"
+  }
+}
+```
+
+服务注册时，如果 `NacosServerCenterServiceRegisterOptions.HealthCheckRoute` 为空，模块会使用 `NacosServiceOptions.HealthCheckRoute`。如果注册参数中传入了 `HealthCheckRoute`，以注册参数为准。
+
+`AddNacosModule()` 会把 `NacosServiceOptions.HealthCheckRoute` 写入 Air.Cloud 日志过滤插件的忽略列表。服务注册时传入的健康检查路由也会在规范化后写入忽略列表。
+
+默认只过滤 `Information` 及以下级别，并保留 `Warning`、`Error`、`Critical`。默认分类范围包括 ASP.NET Core 的请求开始/结束日志和 ResponseCaching 中间件日志，业务 logger 不会因为当前请求路径命中健康检查地址而被过滤。

@@ -101,6 +101,12 @@ namespace Air.Cloud.Modules.Nacos.Model
         public string ServiceAddress { get; set; }
 
         /// <summary>
+        /// <para>zh-cn:健康检查路由，用于服务注册元数据和 Air.Cloud 日志过滤；为空时不会写入健康检查忽略列表。</para>
+        /// <para>en-us>The health-check route used by service registration metadata and Air.Cloud log filtering; when empty, it is not added to the health-check ignore list.</para>
+        /// </summary>
+        public string HealthCheckRoute { get; set; }
+
+        /// <summary>
         /// <para>zh-cn:注册实例所属集群名称。</para>
         /// <para>en-us>The cluster name of the registered instance.</para>
         /// </summary>

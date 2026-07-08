@@ -153,3 +153,15 @@ app.Run();
 - `CommonConfigFileRoute` 只放公共配置，不要把服务私有配置混进去。
 - 如果 Consul 作为配置中心使用，优先排查远程配置是否被写入 `AppConfigurationLoader`。
 - 如果服务注册失败，分别检查 `ConsulAddress`、`ServiceAddress`、健康检查路由和网络 ACL。
+
+## 健康检查日志过滤
+
+`WebInjectInConsul()` 会读取最终的 `ConsulServiceOptions.HealthCheckRoute`，并把该路径写入 Air.Cloud 日志过滤插件的忽略列表。这样健康检查地址由 Consul 配置决定，不需要在日志过滤逻辑里写死 `/Health`。
+
+默认行为：
+
+- 只过滤 `Information` 及以下级别。
+- `Warning`、`Error`、`Critical` 会保留。
+- 默认只对 ASP.NET Core 框架噪音分类生效，例如 `Microsoft.AspNetCore.Hosting.Diagnostics` 和 `Microsoft.AspNetCore.ResponseCaching.ResponseCachingMiddleware`。
+
+如果需要覆盖默认规则，可以在服务中注册自定义 `IAppLogFilterPlugin`，或配置 `AppLogFilterOptions`。

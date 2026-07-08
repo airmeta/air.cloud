@@ -12,11 +12,13 @@
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.Core.Modules.AppAspect.Extensions;
 using Air.Cloud.Core.Plugins;
+using Air.Cloud.Core.Plugins.LogFiltering;
 using Air.Cloud.Core.Plugins.Router;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Air.Cloud.Core
 {
@@ -56,6 +58,8 @@ namespace Air.Cloud.Core
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddAspect();
+            services.AddOptions<AppLogFilterOptions>();
+            services.TryAddSingleton<IAppLogFilterPlugin, DefaultAppLogFilterPlugin>();
         }
     }
 }
