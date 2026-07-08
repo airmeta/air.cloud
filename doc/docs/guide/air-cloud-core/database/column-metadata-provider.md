@@ -28,6 +28,33 @@ services.AddSingleton<IColumnMetadataProvider, MyColumnMetadataProvider>();
 
 ---
 
+### Kingbase 示例
+
+业务项目可以定义一个 Kingbase 专用提供器，把 `DateTime` 统一映射为 `timestamp without time zone`：
+
+```csharp
+using Air.Cloud.EntityFrameWork.Core.Entities.Configures;
+
+namespace FCJ.Practitioners.Repository
+{
+    public class KingbaseColumnMetadataProvider : DefaultColumnMetadataProvider
+    {
+        protected override IReadOnlyDictionary<Type, string> TypeMappings => new Dictionary<Type, string>
+        {
+            { typeof(DateTime), "timestamp without time zone" }
+        };
+    }
+}
+```
+
+然后在业务项目的 `Startup.ConfigureServices` 中注册，注册时机必须早于 DbContext 第一次创建：
+
+```csharp
+services.AddSingleton<IColumnMetadataProvider, KingbaseColumnMetadataProvider>();
+```
+
+---
+
 ### 类型映射示例
 
 ```csharp
