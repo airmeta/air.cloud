@@ -99,6 +99,9 @@ internal static class AppDbContextBuilder
             // 配置数据库实体类型构建器
             ConfigureEntityTypeBuilder(entityType, entityBuilder, dbContext, dbContextLocator, dbContextCorrelationType);
 
+            // 配置数据库实体属性元数据
+            ConfigureColumnMetadata(modelBuilder, entityBuilder, dbContext, dbContextLocator);
+
             // 配置数据库实体种子数据
             ConfigureEntitySeedData(entityType, entityBuilder, dbContext, dbContextLocator, dbContextCorrelationType);
 
@@ -243,6 +246,36 @@ internal static class AppDbContextBuilder
 
             var instance = Activator.CreateInstance(entityTypeBuilderType);
             configureMethod.Invoke(instance, new object[] { entityBuilder, dbContext, dbContextLocator });
+        }
+    }
+
+    /// <summary>
+    /// 配置数据库实体属性元数据
+    /// </summary>
+    /// <param name="modelBuilder">模型构建器</param>
+    /// <param name="entityBuilder">实体类型构建器</param>
+    /// <param name="dbContext">数据库上下文</param>
+    /// <param name="dbContextLocator">数据库上下文定位器</param>
+    private static void ConfigureColumnMetadata(ModelBuilder modelBuilder, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator)
+    {
+        var columnMetadataProvider = AppCore.GetService<IColumnMetadataProvider>();
+        if (columnMetadataProvider == null) return;
+
+        var entityType = entityBuilder.Metadata;
+        foreach (var property in entityType.GetProperties())
+        {
+            if (property.PropertyInfo == null) continue;
+
+            var context = new ColumnMetadataContext(
+                modelBuilder,
+                entityBuilder,
+                entityType,
+                property,
+                property.PropertyInfo,
+                dbContext,
+                dbContextLocator);
+
+            columnMetadataProvider.Apply(context);
         }
     }
 

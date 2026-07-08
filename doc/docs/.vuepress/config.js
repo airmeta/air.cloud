@@ -107,6 +107,7 @@
                             title: '数据库适配',
                             collapsable: true,
                             children: [
+                                '/guide/air-cloud-core/database/column-metadata-provider.md',
                                 '/guide/air-cloud-core/database/kingbase.md'
                             ]
                         }
