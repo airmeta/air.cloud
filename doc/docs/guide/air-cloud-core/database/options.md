@@ -2,7 +2,7 @@
 
 配置类: DataSourceOptions
 
-命名空间: `Air.Cloud.DataBase.Options`
+命名空间: `Air.Cloud.EntityFrameWork.Core.Options`
 
 短述（zh-cn）: 数据源的通用配置项，包含连接校验、校验间隔以及多命名连接字符串的管理。
 
@@ -47,7 +47,7 @@ Short (en-us): Common data source options including connection validation, valid
 ### 使用示例（C#）
 
 ```csharp
-using Air.Cloud.DataBase.Options;
+using Air.Cloud.EntityFrameWork.Core.Options;
 
 var options = new DataSourceOptions
 {

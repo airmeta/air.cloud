@@ -67,9 +67,6 @@ yarn build
   - JWT - JWT 认证
   - Swagger - API 文档
 
-- **Air.Cloud.DataBase**
-  - 数据库选项配置
-
 - **其他内容**
   - 示例
   - 使用说明

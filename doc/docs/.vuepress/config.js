@@ -117,8 +117,7 @@
                         '/guide/air-cloud-core/database/oracle.md',
                         '/guide/air-cloud-core/database/postgresql.md',
                         '/guide/air-cloud-core/database/column-metadata-provider.md',
-                        '/guide/air-cloud-core/database/kingbase.md',
-                        '/guide/air-cloud-core/database/legacy-packages.md'
+                        '/guide/air-cloud-core/database/kingbase.md'
                     ]
                 },
                 {

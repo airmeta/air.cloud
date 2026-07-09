@@ -11,8 +11,6 @@ Air.Cloud 的数据库能力分为两类：Entity Framework Core 数据访问包
 | `Air.Cloud.EntityFrameWork.Oracle` | 推荐 | Oracle EF Core Provider 适配，并启用 Oracle 批量操作扩展 |
 | `Air.Cloud.EntityFrameWork.PostgreSQL` | 推荐 | PostgreSQL EF Core Provider 适配 |
 | `Air.Cloud.EntityFrameWork.Kingbase` | 推荐 | KingbaseES V9 EF Core Provider 适配 |
-| `Air.Cloud.DataBase.FreeSql` | 占位 | 当前没有 Air.Cloud 封装入口 |
-| `Air.Cloud.DataBase.SqlLite` | 占位 | 当前没有 Air.Cloud 封装入口 |
 
 ## 标准接入流程
 
@@ -53,4 +51,3 @@ services.AddDb<DefaultDbContext>(connectionMetadata: "default");
 - [PostgreSQL Provider](./postgresql.md)
 - [Kingbase Provider](./kingbase.md)
 - [列元数据提供器](./column-metadata-provider.md)
-- [FreeSql/SqlLite 占位包](./legacy-packages.md)

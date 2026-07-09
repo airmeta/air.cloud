@@ -30,7 +30,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Air.Cloud.Core" Version="1.0.2" />
-    <PackageReference Include="Air.Cloud.DataBase"  Version="1.0.2" />
     <PackageReference Include="Air.Cloud.Core.Extensions"  Version="1.0.2" />
     <PackageReference Include="Air.Cloud.Modules.Kafka"  Version="1.0.2" />
     <PackageReference Include="Air.Cloud.Modules.RedisCache"  Version="1.0.2" />
@@ -98,4 +97,4 @@ app.Run();
 
 ::: tip 提示
 该文档为大概的启动顺序,需要你参考Github中的框架代码,并进行适当的调整,有问题请提交ISSUES
-::: 
+:::

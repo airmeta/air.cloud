@@ -85,8 +85,6 @@ flowchart LR
 
 | 类库 | 主要用途 |
 | --- | --- |
-| `Air.Cloud.DataBase.FreeSql` | FreeSql 数据访问 |
-| `Air.Cloud.DataBase.SqlLite` | SQLite 数据访问 |
 | `Air.Cloud.EntityFrameWork.Core` | EF Core 公共能力 |
 | `Air.Cloud.EntityFrameWork.MySQL` | MySQL EF Core 支持 |
 | `Air.Cloud.EntityFrameWork.Oracle` | Oracle EF Core 支持 |
