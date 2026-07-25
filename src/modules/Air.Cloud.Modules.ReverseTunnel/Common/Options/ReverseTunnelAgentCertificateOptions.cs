@@ -1,0 +1,47 @@
+namespace Air.Cloud.Modules.ReverseTunnel.Common.Options;
+
+/// <summary>
+/// <para>zh-cn:Agent 侧证书材料的挂载文件配置。配置只保存路径，不保存 Agent 私钥、证书字节、Enrollment token 或数据库状态。</para>
+/// <para>en-us:Mounted-file configuration for Agent-side certificate material. Configuration stores only paths, never Agent private keys, certificate bytes, enrollment tokens, or database state.</para>
+/// </summary>
+public sealed class ReverseTunnelAgentCertificateOptions
+{
+    /// <summary>
+    /// <para>zh-cn:Agent 客户端证书的本地文件路径。初次 Enrollment 或续签成功后会原子写入该文件。</para>
+    /// <para>en-us:Local file path for the Agent client certificate. Initial enrollment or renewal writes this file atomically after success.</para>
+    /// </summary>
+    public string CertificatePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:Agent 私钥的本地文件路径。私钥只在 Agent 本机生成和保存，不提交给 Server。</para>
+    /// <para>en-us:Local file path for the Agent private key. The private key is generated and stored only on the Agent machine and is never submitted to the Server.</para>
+    /// </summary>
+    public string PrivateKeyPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:Agent 信任的 Server CA 公钥证书路径。Enrollment 或续签响应包含签发者证书时会原子写入该文件。</para>
+    /// <para>en-us:Path of the Server CA public certificate trusted by the Agent. When enrollment or renewal returns an issuer certificate, it is written atomically to this file.</para>
+    /// </summary>
+    public string TrustedIssuerPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:可选的一次性 Enrollment token 挂载文件路径。配置只保存路径，token 内容只从该文件读取。</para>
+    /// <para>en-us:Optional mounted-file path for the one-time enrollment token. Configuration stores only the path, and the token value is read only from that file.</para>
+    /// </summary>
+    public string EnrollmentCredentialPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:Agent 本地生成 RSA 私钥时使用的位数。默认 2048，后置配置会限制在 2048 到 4096。</para>
+    /// <para>en-us:RSA key size used when the Agent generates a local private key. The default is 2048, and post-configuration clamps it to 2048 through 4096.</para>
+    /// </summary>
+    public int PrivateKeySizeBits { get; set; } = 2048;
+
+    internal void Normalize()
+    {
+        CertificatePath = CertificatePath?.Trim() ?? string.Empty;
+        PrivateKeyPath = PrivateKeyPath?.Trim() ?? string.Empty;
+        TrustedIssuerPath = TrustedIssuerPath?.Trim() ?? string.Empty;
+        EnrollmentCredentialPath = EnrollmentCredentialPath?.Trim() ?? string.Empty;
+        PrivateKeySizeBits = Math.Clamp(PrivateKeySizeBits, 2048, 4096);
+    }
+}

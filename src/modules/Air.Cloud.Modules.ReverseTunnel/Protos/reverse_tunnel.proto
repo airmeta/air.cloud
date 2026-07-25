@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+option csharp_namespace = "Air.Cloud.Modules.ReverseTunnel.Server.Grpc";
+
+package air.cloud.reverse_tunnel.v1;
+
+service ReverseTunnelTransport {
+  rpc Connect(stream TunnelFrameMessage) returns (stream TunnelFrameMessage);
+}
+
+service ReverseTunnelEnrollment {
+  rpc Enroll(TunnelEnrollmentRequest) returns (TunnelEnrollmentResponse);
+}
+
+service ReverseTunnelCertificateManagement {
+  rpc Renew(TunnelCertificateRenewalRequest) returns (TunnelCertificateRenewalResponse);
+}
+
+enum TunnelFrameKindMessage {
+  TUNNEL_FRAME_KIND_MESSAGE_UNSPECIFIED = 0;
+  TUNNEL_FRAME_KIND_MESSAGE_HELLO = 1;
+  TUNNEL_FRAME_KIND_MESSAGE_WELCOME = 2;
+  TUNNEL_FRAME_KIND_MESSAGE_PING = 3;
+  TUNNEL_FRAME_KIND_MESSAGE_PONG = 4;
+  TUNNEL_FRAME_KIND_MESSAGE_OPEN_REQUEST = 10;
+  TUNNEL_FRAME_KIND_MESSAGE_REQUEST_BODY = 11;
+  TUNNEL_FRAME_KIND_MESSAGE_RESPONSE_HEADERS = 12;
+  TUNNEL_FRAME_KIND_MESSAGE_RESPONSE_BODY = 13;
+  TUNNEL_FRAME_KIND_MESSAGE_COMPLETE = 14;
+  TUNNEL_FRAME_KIND_MESSAGE_CANCEL = 15;
+  TUNNEL_FRAME_KIND_MESSAGE_ERROR = 16;
+}
+
+message TunnelFrameMessage {
+  int32 protocol_version = 1;
+  string session_id = 2;
+  int64 stream_id = 3;
+  TunnelFrameKindMessage kind = 4;
+  bytes payload = 5;
+  string agent_id = 6;
+  repeated string service_keys = 7;
+}
+
+message TunnelEnrollmentRequest {
+  int32 protocol_version = 1;
+  string agent_id = 2;
+  string enrollment_credential = 3;
+  bytes certificate_signing_request = 4;
+}
+
+message TunnelEnrollmentResponse {
+  bool accepted = 1;
+  string failure_reason = 2;
+  bytes certificate = 3;
+  bytes issuer_certificate = 4;
+  int64 expires_at_unix_time_seconds = 5;
+}
+
+message TunnelCertificateRenewalRequest {
+  int32 protocol_version = 1;
+  string agent_id = 2;
+  bytes certificate_signing_request = 3;
+}
+
+message TunnelCertificateRenewalResponse {
+  bool accepted = 1;
+  string failure_reason = 2;
+  bytes certificate = 3;
+  bytes issuer_certificate = 4;
+  int64 expires_at_unix_time_seconds = 5;
+}
