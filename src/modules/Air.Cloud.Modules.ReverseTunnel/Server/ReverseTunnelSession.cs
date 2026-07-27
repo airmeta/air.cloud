@@ -1,16 +1,19 @@
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
+using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Google.Protobuf;
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading.Channels;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Server;
 
 /// <summary>
-/// <para>zh-cn:已连接 Agent 的内存会话快照。对象保存路由选择需要的身份、服务键和最后活跃时间，不保存证书私钥或请求正文。</para>
-/// <para>en-us:In-memory session snapshot for a connected Agent. The object stores identity, service keys, and last-seen time needed for routing selection; it does not store certificate private keys or request bodies.</para>
+/// <para>zh-cn:已连接 Agent 的内存会话快照。对象保存路由选择需要的身份、服务键、最后活跃时间和当前 HTTP 流状态；不保存证书私钥。</para>
+/// <para>en-us:In-memory session snapshot for a connected Agent. The object stores identity, service keys, last-seen time, and current HTTP stream state needed for routing; it does not store certificate private keys.</para>
 /// </summary>
 public sealed class ReverseTunnelSession
 {
@@ -20,6 +23,7 @@ public sealed class ReverseTunnelSession
     private readonly ConcurrentDictionary<long, PendingInvocation> pendingInvocations = new();
     private readonly SemaphoreSlim concurrentStreamSlots;
     private readonly int maxFramePayloadBytes;
+    private readonly long maxRequestBodyBytes;
     private readonly long maxResponseBodyBytes;
 
     /// <summary>
@@ -31,8 +35,8 @@ public sealed class ReverseTunnelSession
     /// <para>en-us:Server-side session identifier.</para>
     /// </param>
     /// <param name="agentId">
-    /// <para>zh-cn:已认证或 Hello 帧声明的 Agent 稳定身份。mTLS 接入完成后该值必须来自证书身份。</para>
-    /// <para>en-us:Stable Agent identity authenticated or declared by the Hello frame. After mTLS ingress is completed, this value must come from certificate identity.</para>
+    /// <para>zh-cn:已认证或 Hello 帧声明的 Agent 稳定身份。</para>
+    /// <para>en-us:Stable Agent identity authenticated or declared by the Hello frame.</para>
     /// </param>
     /// <param name="serviceKeys">
     /// <para>zh-cn:该会话声明可处理的逻辑服务键集合。</para>
@@ -43,20 +47,24 @@ public sealed class ReverseTunnelSession
     /// <para>en-us:UTC time when the session was established.</para>
     /// </param>
     /// <param name="maxConcurrentStreams">
-    /// <para>zh-cn:该会话允许同时处理的最大 HTTP 请求流数量。超过该值的新请求会被拒绝，不会进入 Agent 队列。</para>
-    /// <para>en-us:Maximum number of HTTP request streams allowed concurrently for this session. New requests over the limit are rejected before they enter the Agent queue.</para>
+    /// <para>zh-cn:该会话允许同时处理的最大 HTTP 请求流数量。</para>
+    /// <para>en-us:Maximum number of HTTP request streams allowed concurrently for this session.</para>
     /// </param>
     /// <param name="outboundFrameQueueCapacity">
     /// <para>zh-cn:Server 发往 Agent 的出站帧队列容量。队列满时写入方等待，形成基础背压。</para>
     /// <para>en-us:Capacity of the outbound frame queue from Server to Agent. Writers wait when the queue is full, providing basic backpressure.</para>
     /// </param>
     /// <param name="maxFramePayloadBytes">
-    /// <para>zh-cn:单个请求体帧允许承载的最大字节数。请求体会按该值拆分，避免单帧过大。</para>
-    /// <para>en-us:Maximum bytes carried by one request-body frame. Request bodies are split by this value to avoid oversized frames.</para>
+    /// <para>zh-cn:单个请求体或响应体帧允许承载的最大字节数。</para>
+    /// <para>en-us:Maximum bytes carried by one request-body or response-body frame.</para>
     /// </param>
     /// <param name="maxResponseBodyBytes">
-    /// <para>zh-cn:Gateway 聚合 Agent 响应体时允许的最大字节数。超过该值会让本次调用以失败结果结束。</para>
-    /// <para>en-us:Maximum bytes allowed while the Gateway aggregates the Agent response body. Exceeding the limit completes the invocation with a failure result.</para>
+    /// <para>zh-cn:Gateway 接收 Agent 响应体时允许的最大字节数，超限会终止本次 HTTP 流。</para>
+    /// <para>en-us:Maximum bytes allowed while the Gateway receives the Agent response body. Exceeding the limit terminates the HTTP stream.</para>
+    /// </param>
+    /// <param name="maxRequestBodyBytes">
+    /// <para>zh-cn:Gateway 发送请求体给 Agent 时允许的最大字节数，超限会发送 Cancel 帧并返回失败。</para>
+    /// <para>en-us:Maximum bytes allowed while the Gateway sends the request body to the Agent. Exceeding the limit sends a Cancel frame and returns a failure.</para>
     /// </param>
     public ReverseTunnelSession(
         string sessionId,
@@ -66,7 +74,8 @@ public sealed class ReverseTunnelSession
         int maxConcurrentStreams = 128,
         int outboundFrameQueueCapacity = 1024,
         int maxFramePayloadBytes = 64 * 1024,
-        long maxResponseBodyBytes = 10 * 1024 * 1024)
+        long maxResponseBodyBytes = 10 * 1024 * 1024,
+        long maxRequestBodyBytes = 10 * 1024 * 1024)
     {
         SessionId = sessionId;
         AgentId = agentId;
@@ -75,6 +84,7 @@ public sealed class ReverseTunnelSession
         lastSeenUtcTicks = connectedAtUtc.UtcTicks;
         concurrentStreamSlots = new SemaphoreSlim(Math.Max(1, maxConcurrentStreams), Math.Max(1, maxConcurrentStreams));
         this.maxFramePayloadBytes = Math.Max(1_024, maxFramePayloadBytes);
+        this.maxRequestBodyBytes = Math.Max(1_024, maxRequestBodyBytes);
         this.maxResponseBodyBytes = Math.Max(1_024, maxResponseBodyBytes);
         outboundFrames = Channel.CreateBounded<TunnelFrameMessage>(new BoundedChannelOptions(Math.Max(16, outboundFrameQueueCapacity))
         {
@@ -109,14 +119,14 @@ public sealed class ReverseTunnelSession
     public DateTimeOffset ConnectedAtUtc { get; }
 
     /// <summary>
-    /// <para>zh-cn:最近一次收到控制帧或业务帧的 UTC 时间。读取使用原子操作，适合并发摘除检查。</para>
-    /// <para>en-us:UTC time when the most recent control or business frame was received. Reads use an atomic operation, making it suitable for concurrent eviction checks.</para>
+    /// <para>zh-cn:最近一次收到控制帧或业务帧的 UTC 时间。</para>
+    /// <para>en-us:UTC time when the most recent control or business frame was received.</para>
     /// </summary>
     public DateTimeOffset LastSeenUtc => new(Interlocked.Read(ref lastSeenUtcTicks), TimeSpan.Zero);
 
     /// <summary>
-    /// <para>zh-cn:刷新会话最后活跃时间。该方法不验证时间是否单调递增，调用方应传入可信 UTC 时间。</para>
-    /// <para>en-us:Refreshes the session last-seen time. The method does not verify monotonicity, so callers should pass a trusted UTC time.</para>
+    /// <para>zh-cn:刷新会话最后活跃时间。调用方应传入可信 UTC 时间。</para>
+    /// <para>en-us:Refreshes the session last-seen time. Callers should pass a trusted UTC time.</para>
     /// </summary>
     /// <param name="utcNow">
     /// <para>zh-cn:新的 UTC 活跃时间。</para>
@@ -128,19 +138,40 @@ public sealed class ReverseTunnelSession
 
     internal async Task<ReverseTunnelHttpExchangeResult> InvokeAsync(ReverseTunnelHttpRequestPayload request, byte[] body, TimeSpan timeout, CancellationToken cancellationToken)
     {
+        var requestBody = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            SingleWriter = true
+        });
+        if (body is { Length: > 0 })
+        {
+            await requestBody.Writer.WriteAsync(body, cancellationToken);
+        }
+
+        requestBody.Writer.TryComplete();
+        using var content = new StreamBackedChannelContent(requestBody.Reader);
+        return await InvokeAsync(request, content, timeout, cancellationToken);
+    }
+
+    internal async Task<ReverseTunnelHttpExchangeResult> InvokeAsync(ReverseTunnelHttpRequestPayload request, HttpContent? content, TimeSpan timeout, CancellationToken cancellationToken)
+    {
         if (!await concurrentStreamSlots.WaitAsync(0, cancellationToken))
         {
+            ReverseTunnelMetrics.RequestRejected(request.ServiceKey, AgentId, "too_many_concurrent_streams");
             return ReverseTunnelHttpExchangeResult.Failure("too_many_concurrent_streams", "Reverse tunnel Agent session is at the configured concurrent stream limit.");
         }
 
         var streamId = Interlocked.Increment(ref nextStreamId);
-        var pendingInvocation = new PendingInvocation();
+        var startedAt = Stopwatch.GetTimestamp();
+        var pendingInvocation = new PendingInvocation(request.ServiceKey, AgentId, startedAt, Math.Max(16, maxFramePayloadBytes / 1024));
         if (!pendingInvocations.TryAdd(streamId, pendingInvocation))
         {
             concurrentStreamSlots.Release();
+            ReverseTunnelMetrics.RequestRejected(request.ServiceKey, AgentId, "duplicate_stream");
             return ReverseTunnelHttpExchangeResult.Failure("duplicate_stream", "Reverse tunnel stream identifier could not be allocated.");
         }
 
+        ReverseTunnelMetrics.RequestStarted(request.ServiceKey, AgentId);
         using var timeoutCancellation = new CancellationTokenSource(timeout);
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellation.Token);
         try
@@ -154,7 +185,7 @@ public sealed class ReverseTunnelSession
                 Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeRequest(request))
             }, linkedCancellation.Token);
 
-            await EnqueueBodyFramesAsync(streamId, body, linkedCancellation.Token);
+            await EnqueueBodyFramesAsync(streamId, request.ServiceKey, content, linkedCancellation.Token);
 
             await EnqueueAsync(new TunnelFrameMessage
             {
@@ -164,55 +195,93 @@ public sealed class ReverseTunnelSession
                 Kind = TunnelFrameKindMessage.Complete
             }, linkedCancellation.Token);
 
-            return await pendingInvocation.Completion.Task.WaitAsync(linkedCancellation.Token);
+            return await pendingInvocation.ResponseStarted.Task.WaitAsync(linkedCancellation.Token);
+        }
+        catch (ReverseTunnelHttpLimitExceededException exception)
+        {
+            await SendCancelAsync(streamId);
+            CompleteInvocationWithFailure(streamId, pendingInvocation, exception.Code, exception.Message);
+            return ReverseTunnelHttpExchangeResult.Failure(exception.Code, exception.Message);
         }
         catch (OperationCanceledException) when (timeoutCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
+            await SendCancelAsync(streamId);
+            ReverseTunnelMetrics.Timeout(request.ServiceKey, AgentId);
+            CompleteInvocationWithFailure(streamId, pendingInvocation, "timeout", "Reverse tunnel invocation timed out.");
             return ReverseTunnelHttpExchangeResult.Failure("timeout", "Reverse tunnel invocation timed out.");
         }
-        finally
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            pendingInvocations.TryRemove(streamId, out _);
-            concurrentStreamSlots.Release();
+            await SendCancelAsync(streamId);
+            ReverseTunnelMetrics.Cancellation(request.ServiceKey, AgentId);
+            CompleteInvocationWithFailure(streamId, pendingInvocation, "cancelled", "Reverse tunnel invocation was cancelled.");
+            return ReverseTunnelHttpExchangeResult.Failure("cancelled", "Reverse tunnel invocation was cancelled.");
+        }
+        catch (Exception exception)
+        {
+            await SendCancelAsync(streamId);
+            CompleteInvocationWithFailure(streamId, pendingInvocation, "gateway_stream_failed", exception.Message);
+            return ReverseTunnelHttpExchangeResult.Failure("gateway_stream_failed", exception.Message);
         }
     }
 
-    private async Task EnqueueBodyFramesAsync(long streamId, byte[] body, CancellationToken cancellationToken)
+    private async Task EnqueueBodyFramesAsync(long streamId, string serviceKey, HttpContent? content, CancellationToken cancellationToken)
     {
-        if (body is not { Length: > 0 })
+        if (content is null)
         {
             return;
         }
 
-        for (var offset = 0; offset < body.Length; offset += maxFramePayloadBytes)
+        await using var contentStream = await content.ReadAsStreamAsync(cancellationToken);
+        var buffer = new byte[maxFramePayloadBytes];
+        long totalBytes = 0;
+        int read;
+        while ((read = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
         {
-            var count = Math.Min(maxFramePayloadBytes, body.Length - offset);
+            totalBytes += read;
+            if (totalBytes > maxRequestBodyBytes)
+            {
+                throw new ReverseTunnelHttpLimitExceededException("request_body_too_large", "Reverse tunnel request body exceeds the configured Gateway limit.");
+            }
+
+            ReverseTunnelMetrics.RequestBodyBytes(serviceKey, AgentId, read);
             await EnqueueAsync(new TunnelFrameMessage
             {
                 ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
                 SessionId = SessionId,
                 StreamId = streamId,
                 Kind = TunnelFrameKindMessage.RequestBody,
-                Payload = ByteString.CopyFrom(body, offset, count)
+                Payload = ByteString.CopyFrom(buffer, 0, read)
             }, cancellationToken);
         }
     }
 
-    internal ValueTask EnqueueAsync(TunnelFrameMessage frame, CancellationToken cancellationToken)
+    internal async ValueTask EnqueueAsync(TunnelFrameMessage frame, CancellationToken cancellationToken)
     {
-        return outboundFrames.Writer.WriteAsync(frame, cancellationToken);
+        if (outboundFrames.Writer.TryWrite(frame))
+        {
+            return;
+        }
+
+        ReverseTunnelMetrics.BackpressureWait(frame.StreamId > 0 ? ResolveServiceKey(frame.StreamId) : "control", AgentId);
+        await outboundFrames.Writer.WriteAsync(frame, cancellationToken);
     }
 
     internal void CompleteOutbound(Exception? exception = null)
     {
         outboundFrames.Writer.TryComplete(exception);
-        foreach (var pendingInvocation in pendingInvocations.Values)
+        foreach (var item in pendingInvocations.ToArray())
         {
-            pendingInvocation.Completion.TrySetResult(ReverseTunnelHttpExchangeResult.Failure("session_closed", "Reverse tunnel Agent session was closed."));
+            CompleteInvocationWithFailure(item.Key, item.Value, "session_closed", "Reverse tunnel Agent session was closed.");
         }
     }
 
     internal void HandleInboundFrame(TunnelFrameMessage frame)
+    {
+        HandleInboundFrameAsync(frame, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    internal async Task HandleInboundFrameAsync(TunnelFrameMessage frame, CancellationToken cancellationToken)
     {
         Touch(DateTimeOffset.UtcNow);
         if (frame.StreamId <= 0)
@@ -230,40 +299,158 @@ public sealed class ReverseTunnelSession
             switch (frame.Kind)
             {
                 case TunnelFrameKindMessage.ResponseHeaders:
-                    pendingInvocation.Response = ReverseTunnelPayloadSerializer.DeserializeResponse(frame.Payload.ToByteArray());
+                    var response = ReverseTunnelPayloadSerializer.DeserializeResponse(frame.Payload.ToByteArray());
+                    pendingInvocation.ResponseStarted.TrySetResult(ReverseTunnelHttpExchangeResult.Success(
+                        response,
+                        pendingInvocation.Body.Reader,
+                        token => CancelResponseBodyAsync(frame.StreamId, pendingInvocation, token)));
                     break;
                 case TunnelFrameKindMessage.ResponseBody:
-                    if (pendingInvocation.Body.Length + frame.Payload.Length > maxResponseBodyBytes)
+                    var responseBytes = Interlocked.Add(ref pendingInvocation.ResponseBytes, frame.Payload.Length);
+                    if (responseBytes > maxResponseBodyBytes)
                     {
-                        pendingInvocation.Completion.TrySetResult(ReverseTunnelHttpExchangeResult.Failure("response_body_too_large", "Reverse tunnel response body exceeds the configured Gateway limit."));
+                        pendingInvocation.Body.Writer.TryComplete(new InvalidOperationException("Reverse tunnel response body exceeds the configured Gateway limit."));
+                        CompleteInvocationWithFailure(frame.StreamId, pendingInvocation, "response_body_too_large", "Reverse tunnel response body exceeds the configured Gateway limit.");
+                        await SendCancelAsync(frame.StreamId);
                         break;
                     }
 
-                    pendingInvocation.Body.Write(frame.Payload.Span);
+                    ReverseTunnelMetrics.ResponseBodyBytes(pendingInvocation.ServiceKey, pendingInvocation.AgentId, frame.Payload.Length);
+                    await pendingInvocation.Body.Writer.WriteAsync(frame.Payload.ToByteArray(), cancellationToken);
                     break;
                 case TunnelFrameKindMessage.Complete:
-                    pendingInvocation.Completion.TrySetResult(ReverseTunnelHttpExchangeResult.Success(
-                        pendingInvocation.Response ?? new ReverseTunnelHttpResponsePayload { StatusCode = 204 },
-                        pendingInvocation.Body.ToArray()));
+                    if (!pendingInvocation.ResponseStarted.Task.IsCompleted)
+                    {
+                        pendingInvocation.ResponseStarted.TrySetResult(ReverseTunnelHttpExchangeResult.Success(
+                            new ReverseTunnelHttpResponsePayload { StatusCode = 204 },
+                            pendingInvocation.Body.Reader,
+                            token => CancelResponseBodyAsync(frame.StreamId, pendingInvocation, token)));
+                    }
+
+                    pendingInvocation.Body.Writer.TryComplete();
+                    CompleteInvocationWithSuccess(frame.StreamId, pendingInvocation);
                     break;
                 case TunnelFrameKindMessage.Error:
                     var error = ReverseTunnelPayloadSerializer.DeserializeError(frame.Payload.ToByteArray());
-                    pendingInvocation.Completion.TrySetResult(ReverseTunnelHttpExchangeResult.Failure(error.Code, error.Message));
+                    pendingInvocation.Body.Writer.TryComplete(new InvalidOperationException(error.Message));
+                    CompleteInvocationWithFailure(frame.StreamId, pendingInvocation, error.Code, error.Message);
                     break;
             }
         }
         catch (Exception exception)
         {
-            pendingInvocation.Completion.TrySetResult(ReverseTunnelHttpExchangeResult.Failure("invalid_agent_response", exception.Message));
+            pendingInvocation.Body.Writer.TryComplete(exception);
+            CompleteInvocationWithFailure(frame.StreamId, pendingInvocation, "invalid_agent_response", exception.Message);
         }
+    }
+
+    private async Task SendCancelAsync(long streamId)
+    {
+        try
+        {
+            await EnqueueAsync(new TunnelFrameMessage
+            {
+                ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                SessionId = SessionId,
+                StreamId = streamId,
+                Kind = TunnelFrameKindMessage.Cancel
+            }, CancellationToken.None);
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task CancelResponseBodyAsync(long streamId, PendingInvocation pendingInvocation, CancellationToken cancellationToken)
+    {
+        await SendCancelAsync(streamId);
+        ReverseTunnelMetrics.Cancellation(pendingInvocation.ServiceKey, pendingInvocation.AgentId);
+        CompleteInvocationWithFailure(streamId, pendingInvocation, "cancelled", "Reverse tunnel response body reading was cancelled.");
+    }
+
+    private void CompleteInvocationWithSuccess(long streamId, PendingInvocation pendingInvocation)
+    {
+        if (!pendingInvocations.TryRemove(streamId, out _))
+        {
+            return;
+        }
+
+        ReverseTunnelMetrics.RequestCompleted(pendingInvocation.ServiceKey, pendingInvocation.AgentId, pendingInvocation.StartedAt);
+        concurrentStreamSlots.Release();
+    }
+
+    private void CompleteInvocationWithFailure(long streamId, PendingInvocation pendingInvocation, string code, string message)
+    {
+        pendingInvocation.ResponseStarted.TrySetResult(ReverseTunnelHttpExchangeResult.Failure(code, message));
+        pendingInvocation.Body.Writer.TryComplete(new InvalidOperationException(message));
+        if (!pendingInvocations.TryRemove(streamId, out _))
+        {
+            return;
+        }
+
+        ReverseTunnelMetrics.RequestFailed(pendingInvocation.ServiceKey, pendingInvocation.AgentId, code, pendingInvocation.StartedAt);
+        concurrentStreamSlots.Release();
+    }
+
+    private string ResolveServiceKey(long streamId)
+    {
+        return pendingInvocations.TryGetValue(streamId, out var pendingInvocation) ? pendingInvocation.ServiceKey : "unknown";
     }
 
     private sealed class PendingInvocation
     {
-        public TaskCompletionSource<ReverseTunnelHttpExchangeResult> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public PendingInvocation(string serviceKey, string agentId, long startedAt, int bodyQueueCapacity)
+        {
+            ServiceKey = serviceKey;
+            AgentId = agentId;
+            StartedAt = startedAt;
+            Body = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(Math.Max(16, bodyQueueCapacity))
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
+        }
 
-        public ReverseTunnelHttpResponsePayload? Response { get; set; }
+        public string ServiceKey { get; }
 
-        public MemoryStream Body { get; } = new();
+        public string AgentId { get; }
+
+        public long StartedAt { get; }
+
+        public TaskCompletionSource<ReverseTunnelHttpExchangeResult> ResponseStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Channel<byte[]> Body { get; }
+
+        public long ResponseBytes;
+    }
+
+    private sealed class StreamBackedChannelContent : HttpContent
+    {
+        private readonly ChannelReader<byte[]> bodyReader;
+
+        public StreamBackedChannelContent(ChannelReader<byte[]> bodyReader)
+        {
+            this.bodyReader = bodyReader;
+        }
+
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context)
+        {
+            return SerializeToStreamAsync(stream, context, CancellationToken.None);
+        }
+
+        protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context, CancellationToken cancellationToken)
+        {
+            await foreach (var chunk in bodyReader.ReadAllAsync(cancellationToken))
+            {
+                await stream.WriteAsync(chunk, cancellationToken);
+            }
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
     }
 }

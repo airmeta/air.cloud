@@ -1,4 +1,5 @@
 using Air.Cloud.Modules.ReverseTunnel.Agent;
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Extensions;
@@ -18,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
+using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -40,6 +42,14 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
     [Trait("Module", "ReverseTunnel")]
     public async Task Grpc_connect_should_bridge_gateway_invoker_to_agent_local_http_dispatcher()
     {
+        var stoppedActivities = new List<Activity>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == ReverseTunnelMetrics.ActivitySourceName,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activity => stoppedActivities.Add(activity)
+        };
+        ActivitySource.AddActivityListener(listener);
         using var material = TestCertificateMaterial.Create();
         var options = CreateOptions(material);
         var optionsAccessor = Options.Create(options);
@@ -105,6 +115,79 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         Assert.Equal(new Uri("http://127.0.0.1:5101/api/orders?id=7"), localHttpHandler.LastRequestUri);
         Assert.Equal("grpc-gateway-body", localHttpHandler.LastBody);
         Assert.Contains("X-Trace-Id", localHttpHandler.LastRequestHeaderNames);
+        Assert.True(localHttpHandler.LastRequestHeaders.TryGetValue("traceparent", out var traceparent));
+        Assert.StartsWith("00-", traceparent, StringComparison.Ordinal);
+        Assert.Contains(stoppedActivities, item => item.OperationName == "airtunnel.gateway.invoke" && Equals(item.GetTagItem("reverse_tunnel.agent_id"), "agent-alpha"));
+
+        await call.RequestStream.CompleteAsync();
+        await agentLoop.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Gateway 在收到响应头后提前释放响应体时，Cancel 帧会经真实 gRPC 双向流传递到 Agent，并取消 Agent 正在读取的本地 HTTP 响应流。</para>
+    /// <para>en-us:Verifies that when the Gateway releases the response body early after receiving headers, the Cancel frame is delivered through the real gRPC bidirectional stream to the Agent and cancels the Agent while it is reading the local HTTP response stream.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Grpc_connect_should_cancel_agent_local_response_when_gateway_response_body_is_disposed()
+    {
+        using var material = TestCertificateMaterial.Create();
+        var options = CreateOptions(material);
+        var optionsAccessor = Options.Create(options);
+        using var agentKey = RSA.Create(2048);
+        var csr = new CertificateRequest("CN=ignored-by-server", agentKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+            .CreateSigningRequest();
+        var certificateAuthority = new MountedReverseTunnelCertificateAuthority(optionsAccessor);
+        using var issuedCertificate = certificateAuthority.SignAgentCertificate("agent-alpha", csr, DateTimeOffset.UtcNow.AddMinutes(-1));
+        using var agentCertificate = issuedCertificate.CopyWithPrivateKey(agentKey);
+        var localHttpHandler = new CancelAwareLocalHttpHandler();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(optionsAccessor);
+        builder.Services.AddSingleton<IReverseTunnelAgentLocalHttpDispatcher>(_ =>
+            new ReverseTunnelAgentLocalHttpDispatcher(optionsAccessor, new FixedHttpClientFactory(new HttpClient(localHttpHandler))));
+
+        await using var app = builder.Build();
+        app.UseRouting();
+        app.Use(async (context, next) =>
+        {
+            context.Connection.ClientCertificate = agentCertificate;
+            await next();
+        });
+        app.MapReverseTunnelServer();
+        await app.StartAsync();
+
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions
+        {
+            HttpHandler = app.GetTestServer().CreateHandler()
+        });
+        var transportClient = new ReverseTunnelTransport.ReverseTunnelTransportClient(channel);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var call = transportClient.Connect(cancellationToken: timeout.Token);
+        await call.RequestStream.WriteAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = "agent-session-cancel",
+            Kind = TunnelFrameKindMessage.Hello,
+            AgentId = "agent-alpha",
+            ServiceKeys = { "order-service" }
+        }, timeout.Token);
+
+        var agentLoop = RunAgentResponseLoopAsync(app.Services.GetRequiredService<IReverseTunnelAgentFrameProcessor>(), call, timeout.Token);
+        var registry = app.Services.GetRequiredService<IReverseTunnelSessionRegistry>();
+        await WaitForSessionAsync(registry, "order-service", timeout.Token);
+        var invoker = app.Services.GetRequiredService<IReverseTunnelInvoker>();
+
+        using var gatewayRequest = new HttpRequestMessage(HttpMethod.Get, "http://tunnel-order-service/api/orders/stream");
+        using var response = await invoker.InvokeAsync(options.Routes[0], gatewayRequest, timeout.Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        response.Content!.Dispose();
+        await localHttpHandler.ResponseReadCancelled.Task.WaitAsync(timeout.Token);
 
         await call.RequestStream.CompleteAsync();
         await agentLoop.WaitAsync(TimeSpan.FromSeconds(5));
@@ -179,13 +262,21 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
 
     private static async Task RunAgentResponseLoopAsync(IReverseTunnelAgentFrameProcessor frameProcessor, AsyncDuplexStreamingCall<TunnelFrameMessage, TunnelFrameMessage> call, CancellationToken cancellationToken)
     {
+        using var writeLock = new SemaphoreSlim(1, 1);
         while (await call.ResponseStream.MoveNext(cancellationToken))
         {
-            var responses = await frameProcessor.ProcessAsync(call.ResponseStream.Current, cancellationToken);
-            foreach (var response in responses)
+            await frameProcessor.ProcessAsync(call.ResponseStream.Current, async (response, token) =>
             {
-                await call.RequestStream.WriteAsync(response, cancellationToken);
-            }
+                await writeLock.WaitAsync(token);
+                try
+                {
+                    await call.RequestStream.WriteAsync(response, token);
+                }
+                finally
+                {
+                    writeLock.Release();
+                }
+            }, cancellationToken);
         }
     }
 
@@ -263,6 +354,8 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
 
         public HashSet<string> LastRequestHeaderNames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+        public Dictionary<string, string> LastRequestHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             LastRequestUri = request.RequestUri;
@@ -270,9 +363,94 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
             foreach (var header in request.Headers)
             {
                 LastRequestHeaderNames.Add(header.Key);
+                LastRequestHeaders[header.Key] = string.Join(",", header.Value);
             }
 
             return response;
+        }
+    }
+
+    private sealed class CancelAwareLocalHttpHandler : HttpMessageHandler
+    {
+        public TaskCompletionSource ResponseReadCancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new CancelAwareResponseStream(ResponseReadCancelled))
+            });
+        }
+    }
+
+    private sealed class CancelAwareResponseStream : Stream
+    {
+        private readonly TaskCompletionSource cancelled;
+        private readonly byte[] firstChunk = "stream-start"u8.ToArray();
+        private bool firstRead = true;
+
+        public CancelAwareResponseStream(TaskCompletionSource cancelled)
+        {
+            this.cancelled = cancelled;
+        }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (firstRead)
+            {
+                firstRead = false;
+                firstChunk.AsSpan().CopyTo(buffer.Span);
+                return firstChunk.Length;
+            }
+
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return 0;
+            }
+            catch (OperationCanceledException)
+            {
+                cancelled.TrySetResult();
+                throw;
+            }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
         }
     }
 

@@ -76,11 +76,10 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
         {
             while (await call.ResponseStream.MoveNext(cancellationToken))
             {
-                var outboundFrames = await frameProcessor.ProcessAsync(call.ResponseStream.Current, cancellationToken);
-                foreach (var outboundFrame in outboundFrames)
-                {
-                    await WriteFrameAsync(call.RequestStream, writeLock, outboundFrame, cancellationToken);
-                }
+                await frameProcessor.ProcessAsync(
+                    call.ResponseStream.Current,
+                    (outboundFrame, token) => WriteFrameAsync(call.RequestStream, writeLock, outboundFrame, token),
+                    cancellationToken);
             }
         }
         finally

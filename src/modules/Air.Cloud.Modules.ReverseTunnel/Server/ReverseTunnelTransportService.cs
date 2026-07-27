@@ -62,7 +62,8 @@ internal sealed class ReverseTunnelTransportService : ReverseTunnelTransport.Rev
             settings.MaxConcurrentStreams,
             settings.OutboundFrameQueueCapacity,
             settings.MaxFramePayloadBytes,
-            settings.MaxResponseBodyBytes);
+            settings.MaxResponseBodyBytes,
+            settings.MaxRequestBodyBytes);
         sessionRegistry.Register(session);
         var outboundWriterTask = WriteOutboundFramesAsync(session, responseStream, context.CancellationToken);
 
@@ -92,7 +93,7 @@ internal sealed class ReverseTunnelTransportService : ReverseTunnelTransport.Rev
                     continue;
                 }
 
-                session.HandleInboundFrame(frame);
+                await session.HandleInboundFrameAsync(frame, context.CancellationToken);
             }
         }
         finally

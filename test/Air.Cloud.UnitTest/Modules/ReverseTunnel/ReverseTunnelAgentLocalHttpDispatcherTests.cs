@@ -1,4 +1,5 @@
 using Air.Cloud.Modules.ReverseTunnel.Agent;
+using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 
@@ -126,13 +127,39 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
         Assert.Contains("must not be an absolute URI", exception.Message, StringComparison.Ordinal);
     }
 
-    private static ReverseTunnelOptions CreateOptions()
+    /// <summary>
+    /// <para>zh-cn:验证本地 HTTP 服务返回超过配置上限的响应体时，Agent 会终止本次分发，避免把过大的响应聚合到内存。</para>
+    /// <para>en-us:Verifies that the Agent stops dispatching when the local HTTP service returns a response body over the configured limit, avoiding oversized response aggregation in memory.</para>
+    /// </summary>
+    [Fact]
+    public async Task Dispatcher_should_reject_response_body_larger_than_configured_limit()
+    {
+        var dispatcher = new ReverseTunnelAgentLocalHttpDispatcher(
+            Options.Create(CreateOptions(maxResponseBodyBytes: 1024)),
+            new FixedHttpClientFactory(new HttpClient(new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(new byte[2048])
+            }))));
+
+        var exception = await Assert.ThrowsAsync<ReverseTunnelHttpLimitExceededException>(() => dispatcher.DispatchAsync(new ReverseTunnelHttpRequestPayload
+        {
+            ServiceKey = "order-service",
+            Method = "GET",
+            PathAndQuery = "/api/orders"
+        }, Array.Empty<byte>()));
+
+        Assert.Equal("response_body_too_large", exception.Code);
+        Assert.Contains("response body exceeds", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static ReverseTunnelOptions CreateOptions(long maxResponseBodyBytes = 1024)
     {
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
             Roles = ReverseTunnelRole.Agent,
             MaxRequestBodyBytes = 1024,
+            MaxResponseBodyBytes = maxResponseBodyBytes,
             LocalServices =
             [
                 new ReverseTunnelLocalServiceOptions

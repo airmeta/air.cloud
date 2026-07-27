@@ -1,9 +1,12 @@
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 
 using Microsoft.Extensions.Options;
 
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -63,73 +66,63 @@ public sealed class ReverseTunnelInvoker : IReverseTunnelInvoker
             throw new ArgumentNullException(nameof(request));
         }
 
+        var pathAndQuery = request.RequestUri?.PathAndQuery ?? "/";
+        using var activity = ReverseTunnelMetrics.StartGatewayInvoke(route.ServiceKey, route.VirtualHost, request.Method.Method, pathAndQuery);
         if (!options.Value.Enabled || !options.Value.Roles.HasFlag(ReverseTunnelRole.Gateway))
         {
-            return CreateErrorResponse(HttpStatusCode.ServiceUnavailable, "reverse_tunnel_gateway_disabled", "Reverse tunnel Gateway role is not enabled.");
+            const string code = "reverse_tunnel_gateway_disabled";
+            const string message = "Reverse tunnel Gateway role is not enabled.";
+            ReverseTunnelMetrics.SetGatewayFailure(activity, code, message, (int)HttpStatusCode.ServiceUnavailable);
+            return CreateErrorResponse(HttpStatusCode.ServiceUnavailable, code, message);
         }
 
         if (!sessionRegistry.TryGetForServiceKey(route.ServiceKey, out var session) || session is null)
         {
-            return CreateErrorResponse(HttpStatusCode.ServiceUnavailable, "agent_unavailable", $"No reverse tunnel Agent session is available for service '{route.ServiceKey}'.");
+            const string code = "agent_unavailable";
+            var message = $"No reverse tunnel Agent session is available for service '{route.ServiceKey}'.";
+            ReverseTunnelMetrics.SetGatewayFailure(activity, code, message, (int)HttpStatusCode.ServiceUnavailable);
+            return CreateErrorResponse(HttpStatusCode.ServiceUnavailable, code, message);
         }
 
-        byte[] body;
-        try
-        {
-            body = request.Content is null
-                ? Array.Empty<byte>()
-                : await ReadContentWithLimitAsync(request.Content, options.Value.MaxRequestBodyBytes, "request_body_too_large", "Reverse tunnel request body exceeds the configured Gateway limit.", cancellationToken);
-        }
-        catch (ReverseTunnelHttpLimitExceededException exception)
-        {
-            return CreateErrorResponse(HttpStatusCode.RequestEntityTooLarge, exception.Code, exception.Message);
-        }
-
+        ReverseTunnelMetrics.SetGatewayAgent(activity, session.AgentId, session.SessionId);
         var payload = new ReverseTunnelHttpRequestPayload
         {
             ServiceKey = route.ServiceKey,
             Method = request.Method.Method,
-            PathAndQuery = request.RequestUri?.PathAndQuery ?? "/",
+            PathAndQuery = pathAndQuery,
             Headers = CollectRequestHeaders(request)
         };
+        InjectTraceContext(payload.Headers);
 
-        var result = await session.InvokeAsync(payload, body, TimeSpan.FromSeconds(route.TimeoutSeconds), cancellationToken);
+        var result = await session.InvokeAsync(payload, request.Content, TimeSpan.FromSeconds(route.TimeoutSeconds), cancellationToken);
         if (!result.Succeeded || result.Response is null)
         {
-            return CreateErrorResponse(ResolveFailureStatusCode(result.ErrorCode), result.ErrorCode ?? "agent_error", result.ErrorMessage ?? "Reverse tunnel Agent returned an error.");
+            var statusCode = ResolveFailureStatusCode(result.ErrorCode);
+            var errorCode = result.ErrorCode ?? "agent_error";
+            var errorMessage = result.ErrorMessage ?? "Reverse tunnel Agent returned an error.";
+            ReverseTunnelMetrics.SetGatewayFailure(activity, errorCode, errorMessage, (int)statusCode);
+            return CreateErrorResponse(statusCode, errorCode, errorMessage);
         }
 
-        return CreateSuccessResponse(result.Response, result.Body);
-    }
-
-    private static async Task<byte[]> ReadContentWithLimitAsync(HttpContent content, long maxBytes, string code, string message, CancellationToken cancellationToken)
-    {
-        await using var contentStream = await content.ReadAsStreamAsync(cancellationToken);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81920];
-        int read;
-        while ((read = await contentStream.ReadAsync(chunk, cancellationToken)) > 0)
-        {
-            if (buffer.Length + read > maxBytes)
-            {
-                throw new ReverseTunnelHttpLimitExceededException(code, message);
-            }
-
-            buffer.Write(chunk, 0, read);
-        }
-
-        return buffer.ToArray();
+        ReverseTunnelMetrics.SetGatewaySuccess(activity, result.Response.StatusCode);
+        return CreateSuccessResponse(result.Response, result);
     }
 
     private static HttpStatusCode ResolveFailureStatusCode(string? errorCode)
     {
         return errorCode switch
         {
+            "agent_unavailable" => HttpStatusCode.ServiceUnavailable,
+            "reverse_tunnel_gateway_disabled" => HttpStatusCode.ServiceUnavailable,
             "timeout" => HttpStatusCode.GatewayTimeout,
+            "cancelled" => (HttpStatusCode)499,
             "too_many_concurrent_streams" => HttpStatusCode.TooManyRequests,
             "request_body_too_large" => HttpStatusCode.RequestEntityTooLarge,
             "response_body_too_large" => HttpStatusCode.BadGateway,
             "session_closed" => HttpStatusCode.ServiceUnavailable,
+            "local_dispatch_failed" => HttpStatusCode.BadGateway,
+            "invalid_agent_response" => HttpStatusCode.BadGateway,
+            "gateway_stream_failed" => HttpStatusCode.BadGateway,
             _ => HttpStatusCode.BadGateway
         };
     }
@@ -153,17 +146,20 @@ public sealed class ReverseTunnelInvoker : IReverseTunnelInvoker
         return headers;
     }
 
-    private static HttpResponseMessage CreateSuccessResponse(ReverseTunnelHttpResponsePayload payload, byte[] body)
+    private static HttpResponseMessage CreateSuccessResponse(ReverseTunnelHttpResponsePayload payload, ReverseTunnelHttpExchangeResult result)
     {
         var response = new HttpResponseMessage((HttpStatusCode)Math.Clamp(payload.StatusCode, 100, 599))
         {
             ReasonPhrase = string.IsNullOrWhiteSpace(payload.ReasonPhrase) ? null : payload.ReasonPhrase
         };
 
-        var hasBody = body is { Length: > 0 };
-        if (hasBody || payload.Headers.Any(header => header.Name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase)))
+        if (result.BodyReader is not null)
         {
-            response.Content = new ByteArrayContent(body ?? Array.Empty<byte>());
+            response.Content = new ReverseTunnelChannelReaderHttpContent(result.BodyReader, result.CancelBodyAsync);
+        }
+        else if (result.Body is { Length: > 0 } || payload.Headers.Any(header => header.Name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase)))
+        {
+            response.Content = new ByteArrayContent(result.Body ?? Array.Empty<byte>());
         }
 
         foreach (var header in payload.Headers.Where(item => !string.IsNullOrWhiteSpace(item.Name) && !HopByHopHeaders.Contains(item.Name)))
@@ -207,14 +203,28 @@ public sealed class ReverseTunnelInvoker : IReverseTunnelInvoker
         }
     }
 
-    private sealed class ReverseTunnelHttpLimitExceededException : Exception
+    private static void InjectTraceContext(ICollection<ReverseTunnelHttpHeader> target)
     {
-        public ReverseTunnelHttpLimitExceededException(string code, string message)
-            : base(message)
+        var activity = Activity.Current;
+        if (activity?.Id is null || target.Any(header => string.Equals(header.Name, "traceparent", StringComparison.OrdinalIgnoreCase)))
         {
-            Code = code;
+            return;
         }
 
-        public string Code { get; }
+        target.Add(new ReverseTunnelHttpHeader
+        {
+            Name = "traceparent",
+            Value = activity.Id
+        });
+
+        if (!string.IsNullOrWhiteSpace(activity.TraceStateString) &&
+            !target.Any(header => string.Equals(header.Name, "tracestate", StringComparison.OrdinalIgnoreCase)))
+        {
+            target.Add(new ReverseTunnelHttpHeader
+            {
+                Name = "tracestate",
+                Value = activity.TraceStateString
+            });
+        }
     }
 }

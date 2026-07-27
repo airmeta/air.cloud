@@ -37,6 +37,11 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
         }
 
         var failures = new List<string>();
+        if (!Enum.IsDefined(options.SessionSelectionStrategy))
+        {
+            failures.Add("ReverseTunnelSettings:SessionSelectionStrategy must be one of NewestActive, OldestActive, or RoundRobin.");
+        }
+
         if (options.Roles.HasFlag(ReverseTunnelRole.Agent))
         {
             ValidateAgentOptions(options, failures);

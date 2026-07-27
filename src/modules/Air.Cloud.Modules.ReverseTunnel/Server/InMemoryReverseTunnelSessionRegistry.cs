@@ -12,6 +12,7 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
 {
     private readonly ConcurrentDictionary<string, ReverseTunnelSession> sessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> agentSessions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, long> roundRobinCounters = new(StringComparer.OrdinalIgnoreCase);
     private readonly IOptions<ReverseTunnelOptions> options;
 
     /// <summary>
@@ -45,9 +46,12 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
             return false;
         }
 
-        session = sessions.Values
-            .OrderByDescending(item => item.LastSeenUtc)
-            .FirstOrDefault(item => item.ServiceKeys.Contains(serviceKey.Trim()));
+        var normalizedServiceKey = serviceKey.Trim();
+        var candidates = sessions.Values
+            .Where(item => item.ServiceKeys.Contains(normalizedServiceKey))
+            .ToArray();
+
+        session = SelectSession(normalizedServiceKey, candidates);
 
         return session is not null;
     }
@@ -65,5 +69,41 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
     {
         var threshold = TimeSpan.FromSeconds(options.Value.SessionIdleTimeoutSeconds);
         return sessions.Values.Where(session => utcNow - session.LastSeenUtc >= threshold).Count(session => Remove(session.SessionId));
+    }
+
+    private ReverseTunnelSession? SelectSession(string serviceKey, IReadOnlyList<ReverseTunnelSession> candidates)
+    {
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        return options.Value.SessionSelectionStrategy switch
+        {
+            ReverseTunnelSessionSelectionStrategy.OldestActive => candidates
+                .OrderBy(item => item.LastSeenUtc)
+                .ThenBy(item => item.SessionId, StringComparer.Ordinal)
+                .FirstOrDefault(),
+            ReverseTunnelSessionSelectionStrategy.RoundRobin => SelectRoundRobin(serviceKey, candidates),
+            _ => candidates
+                .OrderByDescending(item => item.LastSeenUtc)
+                .ThenBy(item => item.SessionId, StringComparer.Ordinal)
+                .FirstOrDefault()
+        };
+    }
+
+    private ReverseTunnelSession SelectRoundRobin(string serviceKey, IReadOnlyList<ReverseTunnelSession> candidates)
+    {
+        var orderedCandidates = candidates
+            .OrderBy(item => item.SessionId, StringComparer.Ordinal)
+            .ToArray();
+        var next = roundRobinCounters.AddOrUpdate(serviceKey, 0, (_, current) => unchecked(current + 1));
+        var index = (int)(next % orderedCandidates.Length);
+        if (index < 0)
+        {
+            index += orderedCandidates.Length;
+        }
+
+        return orderedCandidates[index];
     }
 }

@@ -27,6 +27,52 @@
                 '/guide/air-cloud-core/concepts.md',
                 '/guide/air-cloud-core/loading-mechanism.md',
                 '/guide/air-cloud-core/config.md',
+                '/guide/air-cloud-core/app-aspect.md',
+                {
+                    title: '网络穿透',
+                    path: '/guide/network-tunnel/',
+                    collapsable: true,
+                    children: [
+                        '/guide/network-tunnel/',
+                        '/guide/network-tunnel/scenarios.md',
+                        '/guide/network-tunnel/server-agent.md',
+                        {
+                            title: '隧道接入',
+                            collapsable: true,
+                            children: [
+                                '/guide/network-tunnel/access/ocelot.md'
+                            ]
+                        },
+                        '/guide/network-tunnel/config-security.md',
+                        '/guide/network-tunnel/verification.md'
+                    ]
+                },
+                {
+                    title: '动态应用',
+                    path: '/guide/air-cloud-core/dynamic-app/',
+                    collapsable: true,
+                    children: [
+                        '/guide/air-cloud-core/dynamic-app/',
+                        '/guide/air-cloud-core/dynamic-app/architecture.md',
+                        '/guide/air-cloud-core/dynamic-app/lifecycle.md',
+                        '/guide/air-cloud-core/dynamic-app/manager-api.md',
+                        '/guide/air-cloud-core/dynamic-app/panel.md',
+                        '/guide/air-cloud-core/dynamic-app/local-debug.md',
+                        '/guide/air-cloud-core/dynamic-app/publish.md',
+                        '/guide/air-cloud-core/dynamic-app/deployment.md',
+                        '/guide/air-cloud-core/dynamic-app/manifest.md',
+                        '/guide/air-cloud-core/dynamic-app/verification.md'
+                    ]
+                },
+                {
+                    title: '应用安全',
+                    path: '/guide/air-cloud-core/security/',
+                    collapsable: true,
+                    children: [
+                        '/guide/air-cloud-core/security/',
+                        '/guide/air-cloud-core/security/app-key-exchange.md'
+                    ]
+                },
                 {
                     title: 'Web服务',
                     path: '/guide/air-cloud-core/webapp.html',
@@ -70,7 +116,8 @@
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/consul.md',
-                                '/guide/air-cloud-core/modules/nacos.md'
+                                '/guide/air-cloud-core/modules/nacos.md',
+                                '/guide/air-cloud-core/modules/reverse-tunnel.md'
                             ]
                         },
                         {

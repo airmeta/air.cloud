@@ -1,7 +1,11 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
 using Air.Cloud.Modules.ReverseTunnel.Gateway;
 using Air.Cloud.Modules.ReverseTunnel.Server;
+using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
+
+using Google.Protobuf;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -73,12 +77,115 @@ public sealed class ReverseTunnelGatewayTests
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
     }
 
-    private static ReverseTunnelOptions CreateGatewayOptions(bool enabled)
+    /// <summary>
+    /// <para>zh-cn:验证 Gateway 在请求体超过配置上限时直接返回 413，不把超限请求写入 Agent 会话队列。</para>
+    /// <para>en-us:Verifies that the Gateway returns 413 when the request body exceeds the configured limit and does not enqueue the oversized request into the Agent session.</para>
+    /// </summary>
+    [Fact]
+    public async Task Invoker_should_return_payload_too_large_when_request_body_exceeds_limit()
+    {
+        var options = CreateGatewayOptions(enabled: true, maxRequestBodyBytes: 1024);
+        var optionsAccessor = Options.Create(options);
+        var registry = new InMemoryReverseTunnelSessionRegistry(optionsAccessor);
+        registry.Register(new ReverseTunnelSession("session-one", "agent-a", ["order-service"], DateTimeOffset.UtcNow, maxRequestBodyBytes: options.MaxRequestBodyBytes));
+        var invoker = new ReverseTunnelInvoker(registry, optionsAccessor);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "http://tunnel-order-service/orders")
+        {
+            Content = new ByteArrayContent(new byte[2048])
+        };
+
+        var response = await invoker.InvokeAsync(options.Routes[0], request);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Gateway 已经收到 Agent 响应头后，如果上游提前释放响应体，Session 会向 Agent 发送 Cancel 帧，避免长响应继续占用隧道流。</para>
+    /// <para>en-us:Verifies that after the Gateway has received Agent response headers, releasing the upstream response body early makes the session send a Cancel frame to the Agent so long responses do not keep occupying the tunnel stream.</para>
+    /// </summary>
+    [Fact]
+    public async Task Invoker_should_send_cancel_when_streaming_response_content_is_disposed_early()
+    {
+        var options = CreateGatewayOptions(enabled: true);
+        var optionsAccessor = Options.Create(options);
+        var registry = new InMemoryReverseTunnelSessionRegistry(optionsAccessor);
+        var session = new ReverseTunnelSession(
+            "session-one",
+            "agent-a",
+            ["order-service"],
+            DateTimeOffset.UtcNow,
+            maxConcurrentStreams: 1,
+            outboundFrameQueueCapacity: 16,
+            maxFramePayloadBytes: 1024,
+            maxResponseBodyBytes: 4096,
+            maxRequestBodyBytes: options.MaxRequestBodyBytes);
+        registry.Register(session);
+        var invoker = new ReverseTunnelInvoker(registry, optionsAccessor);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://tunnel-order-service/orders");
+
+        var responseTask = invoker.InvokeAsync(options.Routes[0], request, timeout.Token);
+        await WaitForOutboundFrameAsync(session, TunnelFrameKindMessage.Complete, timeout.Token);
+        await session.HandleInboundFrameAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = session.SessionId,
+            StreamId = 1,
+            Kind = TunnelFrameKindMessage.ResponseHeaders,
+            Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeResponse(new ReverseTunnelHttpResponsePayload
+            {
+                StatusCode = 200
+            }))
+        }, timeout.Token);
+        using var response = await responseTask;
+
+        response.Content!.Dispose();
+        var cancelFrame = await WaitForOutboundFrameAsync(session, TunnelFrameKindMessage.Cancel, timeout.Token);
+
+        Assert.Equal(1, cancelFrame.StreamId);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证上游取消 Gateway 调用时，取消错误码会映射为 499，便于日志和监控中区分客户端取消与后端失败。</para>
+    /// <para>en-us:Verifies that when the upstream cancels a Gateway invocation, the cancellation error code maps to 499 so logs and monitoring can distinguish client cancellation from backend failure.</para>
+    /// </summary>
+    [Fact]
+    public async Task Invoker_should_map_upstream_cancellation_to_499()
+    {
+        var options = CreateGatewayOptions(enabled: true);
+        var optionsAccessor = Options.Create(options);
+        var registry = new InMemoryReverseTunnelSessionRegistry(optionsAccessor);
+        var session = new ReverseTunnelSession(
+            "session-one",
+            "agent-a",
+            ["order-service"],
+            DateTimeOffset.UtcNow,
+            maxConcurrentStreams: 1,
+            outboundFrameQueueCapacity: 16,
+            maxFramePayloadBytes: 1024,
+            maxResponseBodyBytes: 4096,
+            maxRequestBodyBytes: options.MaxRequestBodyBytes);
+        registry.Register(session);
+        var invoker = new ReverseTunnelInvoker(registry, optionsAccessor);
+        using var cancellation = new CancellationTokenSource();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://tunnel-order-service/orders");
+
+        var responseTask = invoker.InvokeAsync(options.Routes[0], request, cancellation.Token);
+        await WaitForOutboundFrameAsync(session, TunnelFrameKindMessage.Complete, timeout.Token);
+        await cancellation.CancelAsync();
+        using var response = await responseTask.WaitAsync(timeout.Token);
+
+        Assert.Equal(499, (int)response.StatusCode);
+    }
+
+    private static ReverseTunnelOptions CreateGatewayOptions(bool enabled, long maxRequestBodyBytes = 1024 * 1024)
     {
         var options = new ReverseTunnelOptions
         {
             Enabled = enabled,
             Roles = ReverseTunnelRole.Gateway,
+            MaxRequestBodyBytes = maxRequestBodyBytes,
             Routes =
             [
                 new ReverseTunnelRouteOptions
@@ -90,6 +197,18 @@ public sealed class ReverseTunnelGatewayTests
         };
         options.PostConfigure(options, new ConfigurationBuilder().Build());
         return options;
+    }
+
+    private static async Task<TunnelFrameMessage> WaitForOutboundFrameAsync(ReverseTunnelSession session, TunnelFrameKindMessage expectedKind, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var frame = await session.OutboundFrames.ReadAsync(cancellationToken);
+            if (frame.Kind == expectedKind)
+            {
+                return frame;
+            }
+        }
     }
 
     private sealed class CapturingInvoker : IReverseTunnelInvoker

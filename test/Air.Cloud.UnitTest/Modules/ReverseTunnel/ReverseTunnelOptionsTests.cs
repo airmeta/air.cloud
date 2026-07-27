@@ -67,6 +67,7 @@ public class ReverseTunnelOptionsTests
         Assert.Equal(1_024, options.MaxResponseBodyBytes);
         Assert.Equal(1_024, options.MaxFramePayloadBytes);
         Assert.Equal(16, options.OutboundFrameQueueCapacity);
+        Assert.Equal(ReverseTunnelSessionSelectionStrategy.NewestActive, options.SessionSelectionStrategy);
         Assert.Equal(1, options.AgentReconnectInitialDelaySeconds);
         Assert.Equal(1, options.AgentReconnectMaxDelaySeconds);
         Assert.Equal("tunnel-order-service", options.Routes[0].VirtualHost);
@@ -171,5 +172,25 @@ public class ReverseTunnelOptionsTests
         Assert.Contains("ReverseTunnelSettings:AgentAuthorizations contains duplicate AgentId 'AGENT-ALPHA'.", result.Failures);
         Assert.Contains("ReverseTunnelSettings:AgentAuthorizations:2:AgentId is required when an authorization entry is configured.", result.Failures);
         Assert.Contains("ReverseTunnelSettings:AgentAuthorizations:2:AllowedServiceKeys must contain at least one ServiceKey when an authorization entry is configured.", result.Failures);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证启用模块时，非法的会话选择策略枚举值会被配置校验拒绝，避免运行时静默回退到错误策略。</para>
+    /// <para>en-us:Verifies that an invalid session-selection strategy enum value is rejected when the module is enabled, avoiding silent runtime fallback to the wrong strategy.</para>
+    /// </summary>
+    [Fact]
+    public void Validate_should_reject_invalid_session_selection_strategy_when_enabled()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Gateway,
+            SessionSelectionStrategy = (ReverseTunnelSessionSelectionStrategy)999
+        };
+
+        var result = new ReverseTunnelOptionsValidation().Validate(null, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains("ReverseTunnelSettings:SessionSelectionStrategy must be one of NewestActive, OldestActive, or RoundRobin.", result.Failures);
     }
 }

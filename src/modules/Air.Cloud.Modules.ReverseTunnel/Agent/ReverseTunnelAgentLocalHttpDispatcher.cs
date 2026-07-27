@@ -1,9 +1,11 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 
 using Microsoft.Extensions.Options;
 
 using System.Net.Http;
+using System.Threading.Channels;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Agent;
 
@@ -49,45 +51,103 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
     }
 
     /// <inheritdoc />
-    public async Task<ReverseTunnelLocalHttpResponse> DispatchAsync(ReverseTunnelHttpRequestPayload request, byte[] body, CancellationToken cancellationToken = default)
+    public async Task DispatchAsync(
+        ReverseTunnelHttpRequestPayload request,
+        ChannelReader<byte[]> requestBodyReader,
+        Func<ReverseTunnelHttpResponsePayload, CancellationToken, Task> onResponseHeaders,
+        Func<ReadOnlyMemory<byte>, CancellationToken, Task> onResponseBody,
+        CancellationToken cancellationToken = default)
     {
         if (request is null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        body ??= Array.Empty<byte>();
-        if (body.LongLength > options.Value.MaxRequestBodyBytes)
+        if (requestBodyReader is null)
         {
-            throw new InvalidOperationException("Reverse tunnel request body exceeds the configured Agent limit.");
+            throw new ArgumentNullException(nameof(requestBodyReader));
+        }
+
+        if (onResponseHeaders is null)
+        {
+            throw new ArgumentNullException(nameof(onResponseHeaders));
+        }
+
+        if (onResponseBody is null)
+        {
+            throw new ArgumentNullException(nameof(onResponseBody));
         }
 
         var targetBaseAddress = ResolveLocalService(request.ServiceKey);
         var targetUri = BuildTargetUri(targetBaseAddress, request.PathAndQuery);
         using var httpRequest = new HttpRequestMessage(new HttpMethod(NormalizeMethod(request.Method)), targetUri);
 
-        if (body.Length > 0 || MethodAllowsBody(httpRequest.Method))
+        if (MethodAllowsBody(httpRequest.Method))
         {
-            httpRequest.Content = new ByteArrayContent(body);
+            httpRequest.Content = new ReverseTunnelChannelReaderHttpContent(requestBodyReader);
         }
 
         CopyRequestHeaders(request.Headers, httpRequest);
 
         var httpClient = httpClientFactory.CreateClient("AirCloudReverseTunnelAgentLocal");
         using var response = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        var responseBody = response.Content is null
-            ? Array.Empty<byte>()
-            : await ReadContentWithLimitAsync(response.Content, options.Value.MaxResponseBodyBytes, cancellationToken);
+        await onResponseHeaders(new ReverseTunnelHttpResponsePayload
+        {
+            StatusCode = (int)response.StatusCode,
+            ReasonPhrase = response.ReasonPhrase ?? string.Empty,
+            Headers = CollectResponseHeaders(response)
+        }, cancellationToken);
+
+        if (response.Content is null)
+        {
+            return;
+        }
+
+        await StreamContentWithLimitAsync(response.Content, options.Value.MaxResponseBodyBytes, Math.Max(1_024, options.Value.MaxFramePayloadBytes), onResponseBody, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ReverseTunnelLocalHttpResponse> DispatchAsync(ReverseTunnelHttpRequestPayload request, byte[] body, CancellationToken cancellationToken = default)
+    {
+        body ??= Array.Empty<byte>();
+        if (body.LongLength > options.Value.MaxRequestBodyBytes)
+        {
+            throw new InvalidOperationException("Reverse tunnel request body exceeds the configured Agent limit.");
+        }
+
+        var requestBody = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            SingleWriter = true
+        });
+        if (body.Length > 0)
+        {
+            await requestBody.Writer.WriteAsync(body, cancellationToken);
+        }
+
+        requestBody.Writer.TryComplete();
+
+        ReverseTunnelHttpResponsePayload? headers = null;
+        using var responseBody = new MemoryStream();
+        await DispatchAsync(
+            request,
+            requestBody.Reader,
+            (payload, _) =>
+            {
+                headers = payload;
+                return Task.CompletedTask;
+            },
+            (chunk, _) =>
+            {
+                responseBody.Write(chunk.Span);
+                return Task.CompletedTask;
+            },
+            cancellationToken);
 
         return new ReverseTunnelLocalHttpResponse
         {
-            Headers = new ReverseTunnelHttpResponsePayload
-            {
-                StatusCode = (int)response.StatusCode,
-                ReasonPhrase = response.ReasonPhrase ?? string.Empty,
-                Headers = CollectResponseHeaders(response)
-            },
-            Body = responseBody
+            Headers = headers ?? new ReverseTunnelHttpResponsePayload { StatusCode = 204 },
+            Body = responseBody.ToArray()
         };
     }
 
@@ -184,25 +244,29 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
 
     private static bool MethodAllowsBody(HttpMethod method)
     {
-        return method != HttpMethod.Get && method != HttpMethod.Head && method != HttpMethod.Delete;
+        return method != HttpMethod.Head;
     }
 
-    private static async Task<byte[]> ReadContentWithLimitAsync(HttpContent content, long maxBytes, CancellationToken cancellationToken)
+    private static async Task StreamContentWithLimitAsync(
+        HttpContent content,
+        long maxBytes,
+        int chunkSize,
+        Func<ReadOnlyMemory<byte>, CancellationToken, Task> onChunk,
+        CancellationToken cancellationToken)
     {
         await using var contentStream = await content.ReadAsStreamAsync(cancellationToken);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81920];
+        var chunk = new byte[Math.Max(1_024, chunkSize)];
+        long totalBytes = 0;
         int read;
         while ((read = await contentStream.ReadAsync(chunk, cancellationToken)) > 0)
         {
-            if (buffer.Length + read > maxBytes)
+            totalBytes += read;
+            if (totalBytes > maxBytes)
             {
-                throw new InvalidOperationException("Reverse tunnel response body exceeds the configured Agent limit.");
+                throw new ReverseTunnelHttpLimitExceededException("response_body_too_large", "Reverse tunnel response body exceeds the configured Agent limit.");
             }
 
-            buffer.Write(chunk, 0, read);
+            await onChunk(chunk.AsMemory(0, read), cancellationToken);
         }
-
-        return buffer.ToArray();
     }
 }

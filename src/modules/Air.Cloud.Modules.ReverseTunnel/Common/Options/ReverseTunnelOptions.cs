@@ -48,6 +48,12 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     /// <summary><para>zh-cn:每个 Agent 会话的出站帧队列容量。默认 1024；队列满时写入方等待，以形成基础背压。</para><para>en-us:Outbound frame queue capacity per Agent session. The default is 1024; writers wait when the queue is full to provide basic backpressure.</para></summary>
     public int OutboundFrameQueueCapacity { get; set; } = 1024;
 
+    /// <summary>
+    /// <para>zh-cn:同一个 ServiceKey 存在多个 Agent 会话时的选择策略。默认 `NewestActive`，保持已有“最近活跃会话优先”的行为；`RoundRobin` 仅在当前进程内轮询，不提供跨 Gateway 全局负载均衡。</para>
+    /// <para>en-us:Selection strategy used when multiple Agent sessions declare the same ServiceKey. The default is `NewestActive`, preserving the existing most-recently-active behavior; `RoundRobin` rotates only within the current process and does not provide cross-Gateway global load balancing.</para>
+    /// </summary>
+    public ReverseTunnelSessionSelectionStrategy SessionSelectionStrategy { get; set; } = ReverseTunnelSessionSelectionStrategy.NewestActive;
+
     /// <summary><para>zh-cn:Agent 连接失败后的初始重连等待秒数。默认 5 秒。</para><para>en-us:Initial reconnect delay in seconds after an Agent connection failure. The default is 5 seconds.</para></summary>
     public int AgentReconnectInitialDelaySeconds { get; set; } = 5;
 
