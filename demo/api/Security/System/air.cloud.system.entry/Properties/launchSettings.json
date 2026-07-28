@@ -1,0 +1,31 @@
+﻿{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:10373",
+      "sslPort": 44385
+    }
+  },
+  "profiles": {
+    "air.cloud.system.entry": {
+      "commandName": "Project",
+      "dotnetRunMessages": false,
+      "launchBrowser": false,
+      "launchUrl": "index.html",
+      "applicationUrl": "http://127.0.0.1:5107",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": false,
+      "launchUrl": "weatherforecast",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

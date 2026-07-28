@@ -1,4 +1,6 @@
+using Air.Cloud.Core.App;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
 using Air.Cloud.Modules.ReverseTunnel.Extensions;
 using Air.Cloud.Modules.ReverseTunnel.Agent;
@@ -6,7 +8,9 @@ using Air.Cloud.Modules.ReverseTunnel.Gateway;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,6 +18,7 @@ using Microsoft.Extensions.Options;
 
 using Ocelot.DependencyInjection;
 
+using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -90,7 +95,9 @@ public class ReverseTunnelRegistrationIntegrationTests
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentCertificateClient>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentLocalHttpDispatcher>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentConnectionClient>());
+        Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelDiagnosticsService>());
         Assert.Contains(serviceProvider.GetServices<IHostedService>(), item => item is ReverseTunnelAgentHostedService);
+        Assert.Contains(serviceProvider.GetServices<IHostedService>(), item => item is ReverseTunnelDiagnosticsHostedService);
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelInvoker>());
         Assert.NotNull(serviceProvider.GetRequiredService<ReverseTunnelDelegatingHandler>());
         Assert.Contains(serviceProvider.GetServices<IValidateOptions<ReverseTunnelOptions>>(), item => item is ReverseTunnelOptionsValidation);
@@ -175,6 +182,235 @@ public class ReverseTunnelRegistrationIntegrationTests
             endpoint.DisplayName?.Contains("ReverseTunnelCertificateManagement", StringComparison.OrdinalIgnoreCase) == true);
         Assert.DoesNotContain(endpoints.DataSources.SelectMany(source => source.Endpoints), endpoint =>
             endpoint.DisplayName?.Contains("ReverseTunnelEnrollment", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Contains(endpoints.DataSources.SelectMany(source => source.Endpoints), endpoint =>
+            endpoint.DisplayName?.Contains("AirTunnel diagnostics snapshot", StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证诊断 endpoint 会固定映射到路由表，显式启用诊断配置后请求返回当前进程快照。</para>
+    /// <para>en-us:Verifies that diagnostic endpoints are always mapped into the route table and return current-process snapshots when diagnostics are explicitly enabled.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void MapReverseTunnelServer_should_add_diagnostic_endpoints_when_enabled()
+    {
+        using var material = TestCertificateMaterial.Create();
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Server,
+            CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
+            {
+                CertificatePath = material.CaPfxPath,
+                CertificatePasswordEnvironmentVariable = material.PasswordEnvironmentVariable
+            },
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                Enabled = true,
+                PathPrefix = "/airtunnel/status"
+            }
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+        using var app = builder.Build();
+        var endpoints = (IEndpointRouteBuilder)app;
+
+        app.MapReverseTunnelServer();
+
+        var displayNames = endpoints.DataSources
+            .SelectMany(source => source.Endpoints)
+            .Select(endpoint => endpoint.DisplayName)
+            .Where(displayName => !string.IsNullOrWhiteSpace(displayName))
+            .ToArray();
+        Assert.Contains(displayNames, displayName => displayName!.Contains("AirTunnel diagnostics snapshot", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(displayNames, displayName => displayName!.Contains("AirTunnel diagnostics metrics", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(displayNames, displayName => displayName!.Contains("AirTunnel diagnostics sessions", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(StatusCodes.Status200OK, InvokeEndpoint(app, "AirTunnel diagnostics snapshot"));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证诊断 endpoint 在运行期配置关闭时仍存在于路由表，但请求会返回 404。</para>
+    /// <para>en-us:Verifies that diagnostic endpoints remain in the route table when runtime diagnostics are disabled, but requests return 404.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void MapReverseTunnelServer_should_return_not_found_when_diagnostics_are_disabled()
+    {
+        using var material = TestCertificateMaterial.Create();
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Server,
+            CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
+            {
+                CertificatePath = material.CaPfxPath,
+                CertificatePasswordEnvironmentVariable = material.PasswordEnvironmentVariable
+            },
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                Enabled = false
+            }
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+        using var app = builder.Build();
+
+        app.MapReverseTunnelServer();
+
+        Assert.Equal(StatusCodes.Status404NotFound, InvokeEndpoint(app, "AirTunnel diagnostics snapshot"));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证诊断 endpoint 可以独立映射在 Agent-only 进程中，不依赖 Server 角色、CA 挂载或 gRPC Server endpoint。</para>
+    /// <para>en-us:Verifies that diagnostic endpoints can be mapped independently in an Agent-only process without depending on the Server role, CA mounts, or gRPC Server endpoints.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void MapReverseTunnelDiagnostics_should_not_require_server_role()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Agent,
+            AgentId = "agent-diagnostics",
+            ServerAddress = "https://airtunnel.example.com",
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                Enabled = true
+            },
+            LocalServices =
+            [
+                new ReverseTunnelLocalServiceOptions
+                {
+                    ServiceKey = "account",
+                    LocalAddress = "http://127.0.0.1:5100"
+                }
+            ]
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+        using var app = builder.Build();
+        var endpoints = (IEndpointRouteBuilder)app;
+
+        app.MapReverseTunnelDiagnostics();
+
+        Assert.Contains(endpoints.DataSources.SelectMany(source => source.Endpoints), endpoint =>
+            endpoint.DisplayName?.Contains("AirTunnel diagnostics snapshot", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.DoesNotContain(endpoints.DataSources.SelectMany(source => source.Endpoints), endpoint =>
+            endpoint.DisplayName?.Contains("ReverseTunnelTransport", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Equal(StatusCodes.Status200OK, InvokeEndpoint(app, "AirTunnel diagnostics snapshot"));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证诊断 endpoint 放在业务中间件之前时会直接返回诊断响应，后续签名、白名单或 Ocelot 类中间件不会拦截该路径。</para>
+    /// <para>en-us:Verifies that when diagnostic endpoints are placed before business middlewares, the diagnostic response is returned directly and later signature, whitelist, or Ocelot-like middlewares do not intercept the path.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task UseReverseTunnelDiagnostics_should_short_circuit_later_middlewares()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Agent,
+            AgentId = "agent-diagnostics",
+            ServerAddress = "https://airtunnel.example.com",
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                Enabled = true
+            },
+            LocalServices =
+            [
+                new ReverseTunnelLocalServiceOptions
+                {
+                    ServiceKey = "account",
+                    LocalAddress = "http://127.0.0.1:5100"
+                }
+            ]
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+        await using var app = builder.Build();
+
+        app.UseRouting();
+        app.UseReverseTunnelDiagnostics();
+        app.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status418ImATeapot;
+            await context.Response.WriteAsync("blocked-by-business-middleware");
+        });
+
+        await app.StartAsync();
+        using var client = app.GetTestClient();
+        using var response = await client.GetAsync("/airtunnel/diagnostics/snapshot");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Air.Cloud.Modules.ReverseTunnel", await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证诊断开关以运行期 `AppCore.Configuration` 为准，而不是只依赖启动时绑定的选项实例。</para>
+    /// <para>en-us:Verifies that the diagnostic switch follows runtime `AppCore.Configuration` instead of only relying on the startup-bound options instance.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void Diagnostic_endpoint_should_use_runtime_appcore_configuration_switch()
+    {
+        var originalConfiguration = AppConfigurationLoader.Configurations;
+        try
+        {
+            AppConfigurationLoader.Configurations = new ConfigurationManager();
+            AppConfigurationLoader.Configurations.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ReverseTunnelSettings:Diagnostics:Enabled"] = "true",
+                ["ReverseTunnelSettings:Diagnostics:SnapshotCollectionIntervalSeconds"] = "3"
+            });
+            using var material = TestCertificateMaterial.Create();
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                Roles = ReverseTunnelRole.Server,
+                CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
+                {
+                    CertificatePath = material.CaPfxPath,
+                    CertificatePasswordEnvironmentVariable = material.PasswordEnvironmentVariable
+                },
+                Diagnostics = new ReverseTunnelDiagnosticsOptions
+                {
+                    Enabled = false
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var builder = WebApplication.CreateBuilder();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            using var app = builder.Build();
+
+            app.MapReverseTunnelServer();
+
+            Assert.Equal(StatusCodes.Status200OK, InvokeEndpoint(app, "AirTunnel diagnostics snapshot"));
+            var snapshot = app.Services.GetRequiredService<IReverseTunnelDiagnosticsService>().GetSnapshot();
+            Assert.True(snapshot.DiagnosticsEnabled);
+            Assert.Equal(3, snapshot.SnapshotCollectionIntervalSeconds);
+        }
+        finally
+        {
+            AppConfigurationLoader.Configurations = originalConfiguration;
+        }
     }
 
     /// <summary>
@@ -255,5 +491,20 @@ public class ReverseTunnelRegistrationIntegrationTests
                 Directory.Delete(directory, recursive: true);
             }
         }
+    }
+
+    private static int InvokeEndpoint(WebApplication app, string displayName)
+    {
+        var endpoint = ((IEndpointRouteBuilder)app).DataSources
+            .SelectMany(source => source.Endpoints)
+            .Single(item => item.DisplayName?.Contains(displayName, StringComparison.OrdinalIgnoreCase) == true);
+        var routeEndpoint = Assert.IsType<RouteEndpoint>(endpoint);
+        var httpContext = new DefaultHttpContext
+        {
+            RequestServices = app.Services
+        };
+        httpContext.Response.Body = new MemoryStream();
+        routeEndpoint.RequestDelegate!(httpContext).GetAwaiter().GetResult();
+        return httpContext.Response.StatusCode;
     }
 }

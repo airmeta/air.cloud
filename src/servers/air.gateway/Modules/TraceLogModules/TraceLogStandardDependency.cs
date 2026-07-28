@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,268 +14,565 @@ using air.gateway.Options;
 
 using Air.Cloud.Core;
 using Air.Cloud.Core.App;
-using Air.Cloud.Core.Extensions;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.Core.Standard.DataBase.Repositories;
 using Air.Cloud.Core.Standard.TraceLog;
-using Air.Cloud.Core.Standard.TraceLog.Defaults;
-using Air.Cloud.WebApp.FriendlyException;
+using Air.Cloud.Modules.ElasticSearch.Attributes;
+using Air.Cloud.Modules.ElasticSearch.Connections;
+
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
+using Nest;
 
 using System.Text;
+using System.Reflection;
+using System.Threading.Channels;
 
 namespace air.gateway.Modules.TraceLogModules
 {
+    /// <summary>
+    /// <para>zh-cn:网关 TraceLog 标准实现。请求线程只负责把日志写入可靠内存队列；实际文件或 ES 写入由后台服务批量完成。</para>
+    /// <para>en-us:Gateway TraceLog standard implementation. Request threads only enqueue logs into a reliable in-memory queue; file or Elasticsearch writes are batched by a background service.</para>
+    /// </summary>
     public class TraceLogStandardDependency : ITraceLogStandard
     {
-        public static INoSqlRepository<TraceLogDocument> repository=null;
-        public static DefaultTraceLogDependency defaultTraceLogDependency = new DefaultTraceLogDependency();
-
-        private static TraceLogSettings traceLogSettings = AppCore.GetOptions<TraceLogSettings>();
-
-        public static string LogRandomKey=string.Empty;
-
-        static TraceLogStandardDependency(){
-            LogRandomKey= AppCore.Guid().Replace("-", "").ToLower().Substring(0, 6);
-
-        }
-        public TraceLogStandardDependency()
+        /// <summary>
+        /// <para>zh-cn:写入已经序列化的日志内容。Durable 模式下队列满会等待，不主动丢弃日志。</para>
+        /// <para>en-us:Writes a serialized log payload. In Durable mode, a full queue waits instead of actively dropping logs.</para>
+        /// </summary>
+        /// <param name="logContent"><para>zh-cn:序列化后的日志内容。</para><para>en-us:Serialized log payload.</para></param>
+        /// <param name="Tag"><para>zh-cn:调用方传入的附加标签；当前网关日志保留在日志正文中。</para><para>en-us:Additional caller tags; gateway logs keep tags in the payload.</para></param>
+        public void Write(string logContent, IDictionary<string, string>? Tag = null)
         {
+            var settings = TraceLogSettings.SetDefaultSettings(AppCore.GetOptions<TraceLogSettings>()) as TraceLogSettings ?? new TraceLogSettings();
+            if (settings.Enabled != true || string.IsNullOrWhiteSpace(logContent))
+            {
+                return;
+            }
 
-        }
-        private static bool IsWriteToLocalFile => traceLogSettings.EnableLocalLog.HasValue && traceLogSettings.EnableLocalLog.Value;
-
-        public void Write(string logContent, IDictionary<string, string> Tag = null)
-        {
             try
             {
-                if (IsWriteToLocalFile)
+                TraceLogWriteQueue.Configure(settings);
+                if (settings.EnableDurableSpool)
                 {
-                    WriteToLocalFile(logContent).GetAwaiter().GetResult();
-                    return;
-                }
-                try
-                {
-                    WriteToTraceLogServer(AppRealization.JSON.Deserialize<TraceLogDocument>(logContent));
-                }
-                catch (Exception ex)
-                {
-                    AppRealization.Output.Print("日志记录",$"日志记录记录到日志存储服务时失败,异常内容:{ex.Message},已计入到指定运行目录或当前运行目录中",AppPrintLevel.Warn);
-                    WriteToLocalFile(logContent).GetAwaiter().GetResult();
-                }
-            }
-            catch (Exception)
-            {
-                throw Oops.Oh("系统异常,请稍后再试");
-            }
-            
-        }
-
-
-        private async Task WriteToLocalFile(string logContent)
-        {
-            //启用本地日志记录
-            string CurrentLogDirectory = traceLogSettings.LocalLogDirectory;
-
-            if (!System.IO.Directory.Exists(CurrentLogDirectory))
-            {
-                //创建日志目录
-                System.IO.Directory.CreateDirectory(CurrentLogDirectory);
-            }
-            if (LogRandomKey.IsNullOrEmpty())
-            {
-                LogRandomKey = AppCore.Guid().Replace("-", "").ToLower().Substring(0, 6);
-            }
-            string CurrentLogFileName = $"TraceLog_{DateTime.Now.ToString("yyyyMMdd")}_{LogRandomKey}.log";
-            string CurrentLogFilePath = System.IO.Path.Combine(CurrentLogDirectory, CurrentLogFileName);
-            await AsyncFileAppender.Instance.AppendTextAsync(CurrentLogFilePath, logContent + "\r\n",true);
-        }
-
-
-        private void WriteToTraceLogServer<TLog>(TLog logContent) where TLog : ITraceLogContent, new()
-        {
-            repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
-            try
-            {
-                //找不到对应的日志类型，使用默认日志类型
-                if (logContent is TraceLogDocument)
-                {
-                    var Document = logContent as TraceLogDocument;
-                    if (Document != null)
-                    {
-                        var documents = repository.Save(Document);
-                    }
+                    TraceLogDurableSpool.AppendAsync(logContent, settings, CancellationToken.None).GetAwaiter().GetResult();
+                    TraceLogWriteQueue.EnqueueAsync(string.Empty, CancellationToken.None).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    defaultTraceLogDependency.Write<TLog>(logContent);
+                    TraceLogWriteQueue.EnqueueAsync(logContent, CancellationToken.None).GetAwaiter().GetResult();
                 }
             }
             catch (Exception ex)
             {
-                throw Oops.Oh("系统异常,请稍后再试" + ex.Message);
+                AppRealization.Output.Print("日志记录", $"TraceLog 持久化或入队失败，已同步落本地文件。异常内容:{ex.Message}", AppPrintLevel.Warn);
+                TraceLogLocalFileSink.WriteBatchAsync(new[] { logContent }, settings, CancellationToken.None).GetAwaiter().GetResult();
             }
         }
 
-
-
-
-        public void Write<TLog>(TLog logContent, IDictionary<string, string> Tag = null) where TLog : ITraceLogContent, new()
+        /// <summary>
+        /// <para>zh-cn:写入结构化日志对象。方法会先序列化对象，再进入统一队列。</para>
+        /// <para>en-us:Writes a structured log object. The object is serialized first and then sent to the shared queue.</para>
+        /// </summary>
+        /// <typeparam name="TLog"><para>zh-cn:日志内容类型。</para><para>en-us:Log payload type.</para></typeparam>
+        /// <param name="logContent"><para>zh-cn:日志内容实例。</para><para>en-us:Log payload instance.</para></param>
+        /// <param name="Tag"><para>zh-cn:调用方传入的附加标签。</para><para>en-us:Additional caller tags.</para></param>
+        public void Write<TLog>(TLog logContent, IDictionary<string, string>? Tag = null) where TLog : ITraceLogContent, new()
         {
             Write(AppRealization.JSON.Serialize(logContent), Tag);
         }
 
-        public void Write(AppPrintInformation logContent, IDictionary<string, string> Tag = null)
+        /// <summary>
+        /// <para>zh-cn:写入框架输出日志。该日志不进入网关访问日志队列，保持原有输出行为。</para>
+        /// <para>en-us:Writes framework output logs. These logs do not enter the gateway access-log queue and keep the original output behavior.</para>
+        /// </summary>
+        /// <param name="logContent"><para>zh-cn:输出日志内容。</para><para>en-us:Output log payload.</para></param>
+        /// <param name="Tag"><para>zh-cn:调用方传入的附加标签。</para><para>en-us:Additional caller tags.</para></param>
+        public void Write(AppPrintInformation logContent, IDictionary<string, string>? Tag = null)
         {
-           AppRealization.Output.Print(logContent);
+            AppRealization.Output.Print(logContent);
         }
-
     }
 
-
-
     /// <summary>
-    /// 高频写入工具类（全局复用文件句柄 + 异步刷盘）
+    /// <para>zh-cn:TraceLog 后台写入服务。服务持续从内存队列读取日志，并按批次写入文件或 ES。</para>
+    /// <para>en-us:TraceLog background writer service. The service continuously reads logs from the memory queue and writes batches to files or Elasticsearch.</para>
     /// </summary>
-    public sealed class AsyncFileAppender : IDisposable
+    public sealed class TraceLogBackgroundWriterService : BackgroundService
     {
-        #region 单例与核心配置
-        // 单例实例（懒加载，线程安全）
-        private static readonly Lazy<AsyncFileAppender> _instance = new(() => new AsyncFileAppender());
-        public static AsyncFileAppender Instance => _instance.Value;
+        private readonly IOptions<TraceLogSettings> options;
 
-        // 核心配置（可根据业务调整）
-        private const int _bufferSize = 65536; // 文件流缓冲区（64KB，匹配SSD块大小）
-        private const int _asyncLockCount = 1; // 异步锁并发数（单线程写入更安全）
-        private readonly Encoding _encoding = Encoding.UTF8;
-
-        // 核心资源（全局复用）
-        private FileStream? _fileStream;
-        private StreamWriter? _streamWriter;
-        private readonly SemaphoreSlim _asyncLock = new(_asyncLockCount, _asyncLockCount);
-        private bool _isDisposed = false;
-        #endregion
-
-        #region 私有构造函数（单例）
-        private AsyncFileAppender() { }
-        #endregion
-
-        #region 初始化文件流（首次写入时初始化，全局复用）
         /// <summary>
-        /// 初始化文件流（首次调用时执行，全程复用）
+        /// <para>zh-cn:创建 TraceLog 后台写入服务。配置来自 TraceLogSettings，并会在启动时标准化默认值。</para>
+        /// <para>en-us:Creates the TraceLog background writer service. Configuration comes from TraceLogSettings and is normalized on startup.</para>
         /// </summary>
-        /// <param name="filePath">文件路径</param>
-        /// <param name="autoFlush">是否自动刷盘（建议关闭，手动控制）</param>
-        private void InitFileStream(string filePath, bool autoFlush = false)
+        /// <param name="options"><para>zh-cn:TraceLog 配置访问器。</para><para>en-us:TraceLog options accessor.</para></param>
+        public TraceLogBackgroundWriterService(IOptions<TraceLogSettings> options)
         {
-            if (_fileStream != null) return;
-
-            // 全局复用的FileStream（核心：避免频繁打开/关闭句柄）
-            _fileStream = new FileStream(
-                path: filePath,
-                mode: FileMode.Append,
-                access: FileAccess.Write,
-                share: FileShare.Read, // 允许其他进程读，独占写
-                bufferSize: _bufferSize,
-                useAsync: true); // 启用异步I/O
-
-            // 异步StreamWriter（复用FileStream）
-            _streamWriter = new StreamWriter(
-                stream: _fileStream,
-                encoding: _encoding,
-                bufferSize: _bufferSize)
-            {
-                AutoFlush = autoFlush // 关闭自动刷盘，由手动/定时控制
-            };
+            this.options = options;
         }
-        #endregion
 
-        #region 核心写入方法（异步 + 线程安全）
         /// <summary>
-        /// 异步写入文本（核心方法）
+        /// <para>zh-cn:执行后台批量写入循环。停止时会在 StopDrainTimeoutSeconds 内尽量排空队列。</para>
+        /// <para>en-us:Runs the background batch write loop. During shutdown it tries to drain the queue within StopDrainTimeoutSeconds.</para>
         /// </summary>
-        /// <param name="filePath">文件路径</param>
-        /// <param name="content">写入内容</param>
-        /// <param name="flushImmediately">是否立即刷盘（牺牲性能，保证数据）</param>
-        /// <param name="cancellationToken">取消令牌</param>
-        public async Task AppendTextAsync(
-            string filePath,
-            string content,
-            bool flushImmediately = false,
-            CancellationToken cancellationToken = default)
+        /// <param name="stoppingToken"><para>zh-cn:宿主停止令牌。</para><para>en-us:Host shutdown token.</para></param>
+        /// <returns><para>zh-cn:后台写入任务。</para><para>en-us:The background writer task.</para></returns>
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentNullException(nameof(filePath));
-            if (string.IsNullOrEmpty(content))
+            var settings = NormalizeOptions();
+            TraceLogWriteQueue.Configure(settings);
+            TraceLogDurableSpool.Configure(settings);
+            if (settings.Enabled != true)
+            {
                 return;
-            if (_isDisposed)
-                throw new ObjectDisposedException(nameof(AsyncFileAppender));
+            }
 
-            // 异步锁：保证多线程写入安全
-            await _asyncLock.WaitAsync(cancellationToken);
             try
             {
-                // 首次写入初始化文件流（全局复用）
-                InitFileStream(filePath);
-
-                // 异步写入（无阻塞）
-                await _streamWriter!.WriteLineAsync(content.AsMemory(), cancellationToken);
-
-                // 按需刷盘：立即刷盘/缓冲区满自动刷盘
-                if (flushImmediately || _streamWriter.BaseStream.Position >= _bufferSize)
+                if (settings.EnableDurableSpool)
                 {
-                    await FlushAsync(cancellationToken);
+                    await ProcessDurableSpoolAsync(settings, stoppingToken);
+                }
+
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    var batch = await TraceLogWriteQueue.ReadBatchAsync(settings.BatchSize, TimeSpan.FromSeconds(settings.FlushIntervalSeconds), stoppingToken);
+                    var memoryBatch = batch.Where(item => !string.IsNullOrWhiteSpace(item)).ToArray();
+                    if (memoryBatch.Length > 0)
+                    {
+                        await WriteBatchWithRetryAsync(memoryBatch, settings, stoppingToken);
+                    }
+
+                    if (settings.EnableDurableSpool)
+                    {
+                        await ProcessDurableSpoolAsync(settings, stoppingToken);
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                using var drainTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(settings.StopDrainTimeoutSeconds));
+                if (settings.EnableDurableSpool)
+                {
+                    await ProcessDurableSpoolAsync(settings, drainTimeout.Token);
+                }
+
+                await DrainQueueAsync(settings, drainTimeout.Token);
+            }
+        }
+
+        private TraceLogSettings NormalizeOptions()
+        {
+            TraceLogSettings.SetDefaultSettings(options.Value);
+            return options.Value;
+        }
+
+        private static async Task DrainQueueAsync(TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var batch = TraceLogWriteQueue.TryReadBatch(settings.BatchSize);
+                if (batch.Count == 0)
+                {
+                    return;
+                }
+
+                var memoryBatch = batch.Where(item => !string.IsNullOrWhiteSpace(item)).ToArray();
+                if (memoryBatch.Length > 0)
+                {
+                    await WriteBatchWithRetryAsync(memoryBatch, settings, cancellationToken);
+                }
+
+                if (settings.EnableDurableSpool)
+                {
+                    await ProcessDurableSpoolAsync(settings, cancellationToken);
+                }
+            }
+        }
+
+        private static async Task ProcessDurableSpoolAsync(TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            await TraceLogDurableSpool.SealActiveFileAsync(settings, cancellationToken);
+            foreach (var filePath in TraceLogDurableSpool.GetReadyFiles(settings))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var batch = await TraceLogDurableSpool.ReadReadyFileAsync(filePath, cancellationToken);
+                if (batch.Count == 0)
+                {
+                    TraceLogDurableSpool.DeleteReadyFile(filePath);
+                    continue;
+                }
+
+                await WriteBatchWithRetryAsync(batch, settings, cancellationToken);
+                TraceLogDurableSpool.DeleteReadyFile(filePath);
+            }
+        }
+
+        private static async Task WriteBatchWithRetryAsync(IReadOnlyList<string> batch, TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await TraceLogBatchSink.WriteAsync(batch, settings, cancellationToken);
+                    return;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    AppRealization.Output.Print("日志记录", $"TraceLog 批量写入失败，将在 {settings.SinkFailureRetryIntervalMilliseconds}ms 后重试。异常内容:{ex.Message}", AppPrintLevel.Warn);
+                    await Task.Delay(settings.SinkFailureRetryIntervalMilliseconds, cancellationToken);
+                }
+            }
+        }
+    }
+
+    internal static class TraceLogDurableSpool
+    {
+        private static readonly SemaphoreSlim SpoolLock = new(1, 1);
+        private static readonly string SegmentRandomKey = AppCore.Guid().Replace("-", "").ToLower()[..6];
+        private static string? activeFilePath;
+        private static long activeSequence;
+
+        public static void Configure(TraceLogSettings settings)
+        {
+            Directory.CreateDirectory(settings.SpoolDirectory);
+        }
+
+        public static async Task AppendAsync(string logContent, TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            Configure(settings);
+            await SpoolLock.WaitAsync(cancellationToken);
+            try
+            {
+                var filePath = GetOrCreateActiveFile(settings);
+                if (File.Exists(filePath) && new FileInfo(filePath).Length >= settings.SpoolSegmentMaxBytes)
+                {
+                    SealActiveFileCore(settings);
+                    filePath = GetOrCreateActiveFile(settings);
+                }
+
+                await File.AppendAllTextAsync(filePath, logContent + Environment.NewLine, Encoding.UTF8, cancellationToken);
+            }
+            finally
+            {
+                SpoolLock.Release();
+            }
+        }
+
+        public static async Task SealActiveFileAsync(TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            Configure(settings);
+            await SpoolLock.WaitAsync(cancellationToken);
+            try
+            {
+                SealActiveFileCore(settings);
+                foreach (var activeFile in Directory.EnumerateFiles(settings.SpoolDirectory, "*.active", SearchOption.TopDirectoryOnly))
+                {
+                    SealFile(settings, activeFile);
                 }
             }
             finally
             {
-                _asyncLock.Release();
+                SpoolLock.Release();
             }
         }
 
-        /// <summary>
-        /// 手动异步刷盘（将缓冲区数据写入磁盘）
-        /// </summary>
-        public async Task FlushAsync(CancellationToken cancellationToken = default)
+        public static IEnumerable<string> GetReadyFiles(TraceLogSettings settings)
         {
-            if (_streamWriter == null || _isDisposed) return;
-
-            await _streamWriter.FlushAsync();
-            // 强制刷盘到物理磁盘（可选：进一步保证数据持久性，性能略降）
-            await _fileStream!.FlushAsync();
-        }
-        #endregion
-
-        #region 资源释放（关键：保证文件句柄释放）
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Configure(settings);
+            return Directory.EnumerateFiles(settings.SpoolDirectory, "*.ready", SearchOption.TopDirectoryOnly)
+                .OrderBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .Take(settings.SpoolMaxFilesPerCycle)
+                .ToArray();
         }
 
-        private void Dispose(bool disposing)
+        public static async Task<IReadOnlyList<string>> ReadReadyFileAsync(string filePath, CancellationToken cancellationToken)
         {
-            if (_isDisposed) return;
-
-            // 释放托管资源
-            if (disposing)
+            if (!File.Exists(filePath))
             {
-                _asyncLock.Dispose();
-                _streamWriter?.Flush();
-                _streamWriter?.Dispose();
-                _fileStream?.Dispose();
+                return Array.Empty<string>();
             }
 
-            // 标记释放状态
-            _streamWriter = null;
-            _fileStream = null;
-            _isDisposed = true;
+            var lines = await File.ReadAllLinesAsync(filePath, Encoding.UTF8, cancellationToken);
+            return lines.Where(item => !string.IsNullOrWhiteSpace(item)).ToArray();
         }
 
-        // 析构函数：防止未手动Dispose导致句柄泄漏
-        ~AsyncFileAppender()
+        public static void DeleteReadyFile(string filePath)
         {
-            Dispose(false);
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
         }
-        #endregion
+
+        private static string GetOrCreateActiveFile(TraceLogSettings settings)
+        {
+            if (!string.IsNullOrWhiteSpace(activeFilePath))
+            {
+                return activeFilePath;
+            }
+
+            activeSequence++;
+            activeFilePath = Path.Combine(settings.SpoolDirectory, $"TraceLog_{DateTime.Now:yyyyMMddHHmmssfff}_{SegmentRandomKey}_{activeSequence:000000}.active");
+            return activeFilePath;
+        }
+
+        private static void SealActiveFileCore(TraceLogSettings settings)
+        {
+            if (string.IsNullOrWhiteSpace(activeFilePath))
+            {
+                return;
+            }
+
+            var filePath = activeFilePath;
+            activeFilePath = null;
+            SealFile(settings, filePath);
+        }
+
+        private static void SealFile(TraceLogSettings settings, string filePath)
+        {
+            if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
+            {
+                DeleteReadyFile(filePath);
+                return;
+            }
+
+            var readyPath = Path.Combine(settings.SpoolDirectory, $"{Path.GetFileNameWithoutExtension(filePath)}.ready");
+            if (File.Exists(readyPath))
+            {
+                readyPath = Path.Combine(settings.SpoolDirectory, $"{Path.GetFileNameWithoutExtension(filePath)}_{AppCore.Guid().Replace("-", "").ToLower()[..6]}.ready");
+            }
+
+            File.Move(filePath, readyPath);
+        }
+    }
+
+    internal static class TraceLogWriteQueue
+    {
+        private static readonly object Sync = new();
+        private static Channel<string>? channel;
+        private static int capacity;
+
+        public static void Configure(TraceLogSettings settings)
+        {
+            if (channel is not null)
+            {
+                return;
+            }
+
+            lock (Sync)
+            {
+                if (channel is not null)
+                {
+                    return;
+                }
+
+                capacity = settings.QueueCapacity;
+                channel = Channel.CreateBounded<string>(new BoundedChannelOptions(settings.QueueCapacity)
+                {
+                    FullMode = BoundedChannelFullMode.Wait,
+                    SingleReader = true,
+                    SingleWriter = false
+                });
+            }
+        }
+
+        public static async ValueTask EnqueueAsync(string logContent, CancellationToken cancellationToken)
+        {
+            var writer = channel?.Writer ?? throw new InvalidOperationException("TraceLog queue is not configured.");
+            await writer.WriteAsync(logContent, cancellationToken);
+        }
+
+        public static async Task<IReadOnlyList<string>> ReadBatchAsync(int maxBatchSize, TimeSpan flushInterval, CancellationToken cancellationToken)
+        {
+            var reader = channel?.Reader ?? throw new InvalidOperationException("TraceLog queue is not configured.");
+            var first = await reader.ReadAsync(cancellationToken);
+            var batch = new List<string>(maxBatchSize) { first };
+            using var timeout = new CancellationTokenSource(flushInterval);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+
+            while (batch.Count < maxBatchSize)
+            {
+                if (reader.TryRead(out var item))
+                {
+                    batch.Add(item);
+                    continue;
+                }
+
+                try
+                {
+                    if (!await reader.WaitToReadAsync(linked.Token))
+                    {
+                        break;
+                    }
+                }
+                catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+            }
+
+            return batch;
+        }
+
+        public static IReadOnlyList<string> TryReadBatch(int maxBatchSize)
+        {
+            var reader = channel?.Reader;
+            var batch = new List<string>(maxBatchSize);
+            if (reader is null)
+            {
+                return batch;
+            }
+
+            while (batch.Count < maxBatchSize && reader.TryRead(out var item))
+            {
+                batch.Add(item);
+            }
+
+            return batch;
+        }
+    }
+
+    internal static class TraceLogBatchSink
+    {
+        public static async Task WriteAsync(IReadOnlyList<string> batch, TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            if (batch.Count == 0)
+            {
+                return;
+            }
+
+            if (IsLocalFile(settings))
+            {
+                await TraceLogLocalFileSink.WriteBatchAsync(batch, settings, cancellationToken);
+                return;
+            }
+
+            if (IsBoth(settings))
+            {
+                await WriteElasticOrThrowAsync(batch, settings, cancellationToken);
+                await TraceLogLocalFileSink.WriteBatchAsync(batch, settings, cancellationToken);
+                return;
+            }
+
+            var elasticSucceeded = await TryWriteElasticAsync(batch, settings, cancellationToken);
+            if (elasticSucceeded)
+            {
+                return;
+            }
+
+            if (settings.EnableDurableSpool)
+            {
+                throw new InvalidOperationException("TraceLog ES 批量写入失败，spool 文件将保留并等待重试。");
+            }
+
+            if (settings.FallbackToLocalFile)
+            {
+                await TraceLogLocalFileSink.WriteBatchAsync(batch, settings, cancellationToken);
+                return;
+            }
+
+            throw new InvalidOperationException("TraceLog ES 批量写入失败，且未启用本地文件回落。");
+        }
+
+        private static bool IsLocalFile(TraceLogSettings settings)
+        {
+            return string.Equals(settings.SinkType, "LocalFile", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsBoth(TraceLogSettings settings)
+        {
+            return string.Equals(settings.SinkType, "Both", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static async Task<bool> TryWriteElasticAsync(IReadOnlyList<string> batch, TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var documents = batch
+                    .Select(item => AppRealization.JSON.Deserialize<TraceLogDocument>(item))
+                    .Where(item => item is not null)
+                    .ToArray();
+                if (documents.Length == 0)
+                {
+                    return false;
+                }
+
+                var repository = AppCore.GetService<INoSqlRepository<TraceLogDocument>>();
+                var client = repository.Client<IElasticClient>();
+                var indexName = GetCurrentTraceLogIndexName();
+                var response = await client.IndexManyAsync(documents, indexName, cancellationToken);
+                if (response is { IsValid: true, Errors: false })
+                {
+                    return true;
+                }
+
+                var reason = response?.ServerError?.ToString() ?? response?.OriginalException?.Message ?? "unknown";
+                AppRealization.Output.Print("日志记录", $"TraceLog ES 显式 Bulk 写入失败，Index:{indexName}，原因:{reason}", AppPrintLevel.Warn);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                AppRealization.Output.Print("日志记录", $"TraceLog ES 批量写入失败，准备回落本地文件。异常内容:{ex.Message}", AppPrintLevel.Warn);
+                return false;
+            }
+        }
+
+        private static string GetCurrentTraceLogIndexName()
+        {
+            var documentType = typeof(TraceLogDocument);
+            var attribute = documentType.GetCustomAttribute<ElasticSearchIndexAttribute>()
+                ?? throw new InvalidOperationException($"{documentType.Name} 缺少 ElasticSearchIndexAttribute。");
+            return ElasticClientPoolElement.GetTableName(attribute.TableName, attribute.SegmentationPattern, attribute.SegmentationTag, documentType.Name.ToLower());
+        }
+
+        private static async Task WriteElasticOrThrowAsync(IReadOnlyList<string> batch, TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            if (!await TryWriteElasticAsync(batch, settings, cancellationToken))
+            {
+                throw new InvalidOperationException("TraceLog ES 批量写入失败。");
+            }
+        }
+    }
+
+    internal static class TraceLogLocalFileSink
+    {
+        private static readonly SemaphoreSlim FileLock = new(1, 1);
+        private static readonly string LogRandomKey = AppCore.Guid().Replace("-", "").ToLower()[..6];
+
+        public static async Task WriteBatchAsync(IReadOnlyList<string> batch, TraceLogSettings settings, CancellationToken cancellationToken)
+        {
+            if (batch.Count == 0)
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(settings.LocalLogDirectory);
+            var filePath = Path.Combine(settings.LocalLogDirectory, $"TraceLog_{DateTime.Now:yyyyMMdd}_{LogRandomKey}.log");
+            var content = new StringBuilder();
+            foreach (var item in batch)
+            {
+                content.AppendLine(item);
+            }
+
+            await FileLock.WaitAsync(cancellationToken);
+            try
+            {
+                await File.AppendAllTextAsync(filePath, content.ToString(), Encoding.UTF8, cancellationToken);
+            }
+            finally
+            {
+                FileLock.Release();
+            }
+        }
     }
 }

@@ -28,6 +28,7 @@
                 '/guide/air-cloud-core/loading-mechanism.md',
                 '/guide/air-cloud-core/config.md',
                 '/guide/air-cloud-core/app-aspect.md',
+                '/guide/air-cloud-core/gateway/standalone.md',
                 {
                     title: '网络穿透',
                     path: '/guide/network-tunnel/',
@@ -44,8 +45,13 @@
                             ]
                         },
                         '/guide/network-tunnel/config-security.md',
-                        '/guide/network-tunnel/verification.md'
+                        '/guide/network-tunnel/verification.md',
+                        '/guide/network-tunnel/performance.md'
                     ]
+                },
+                {
+                    title: '网络穿透模块',
+                    path: '/guide/air-cloud-core/modules/reverse-tunnel.html'
                 },
                 {
                     title: '动态应用',
@@ -62,15 +68,6 @@
                         '/guide/air-cloud-core/dynamic-app/deployment.md',
                         '/guide/air-cloud-core/dynamic-app/manifest.md',
                         '/guide/air-cloud-core/dynamic-app/verification.md'
-                    ]
-                },
-                {
-                    title: '应用安全',
-                    path: '/guide/air-cloud-core/security/',
-                    collapsable: true,
-                    children: [
-                        '/guide/air-cloud-core/security/',
-                        '/guide/air-cloud-core/security/app-key-exchange.md'
                     ]
                 },
                 {
@@ -116,8 +113,7 @@
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/consul.md',
-                                '/guide/air-cloud-core/modules/nacos.md',
-                                '/guide/air-cloud-core/modules/reverse-tunnel.md'
+                                '/guide/air-cloud-core/modules/nacos.md'
                             ]
                         },
                         {

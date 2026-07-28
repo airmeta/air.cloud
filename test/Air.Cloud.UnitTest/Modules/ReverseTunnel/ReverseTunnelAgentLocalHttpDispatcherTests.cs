@@ -29,6 +29,7 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
             ServiceKey = "order-service",
             Method = "POST",
             PathAndQuery = "/api/orders?id=1",
+            HasBody = true,
             Headers =
             [
                 new ReverseTunnelHttpHeader
@@ -58,6 +59,7 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
         Assert.Equal("order-service", restoredRequest.ServiceKey);
         Assert.Equal("POST", restoredRequest.Method);
         Assert.Equal("/api/orders?id=1", restoredRequest.PathAndQuery);
+        Assert.True(restoredRequest.HasBody);
         Assert.Equal("X-Trace-Id", restoredRequest.Headers[0].Name);
         Assert.Equal(201, restoredResponse.StatusCode);
         Assert.Equal("application/json", restoredResponse.Headers[0].Value);
@@ -93,6 +95,11 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
                 },
                 new ReverseTunnelHttpHeader
                 {
+                    Name = "Content-Type",
+                    Value = "application/json"
+                },
+                new ReverseTunnelHttpHeader
+                {
                     Name = "Host",
                     Value = "attacker.example"
                 }
@@ -100,10 +107,49 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
         }, "body"u8.ToArray());
 
         Assert.Equal(new Uri("http://127.0.0.1:5101/api/orders?id=1"), handler.LastRequestUri);
+        Assert.True(handler.LastRequestHadContent);
+        Assert.Equal("body", handler.LastBody);
+        Assert.Equal("application/json", handler.LastContentType);
         Assert.Equal(HttpStatusCode.Accepted, (HttpStatusCode)response.Headers.StatusCode);
         Assert.Equal("ok", System.Text.Encoding.UTF8.GetString(response.Body));
         Assert.Contains("X-Trace-Id", handler.LastRequestHeaderNames);
         Assert.DoesNotContain("Host", handler.LastRequestHeaderNames);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证无请求体的 GET 经 Agent 本地分发时不会创建 HttpContent，避免本地 Ocelot 收到 `Transfer-Encoding: chunked` 后转下游失败。</para>
+    /// <para>en-us:Verifies that a body-less GET dispatched by the Agent does not create HttpContent, avoiding local Ocelot downstream failures caused by `Transfer-Encoding: chunked`.</para>
+    /// </summary>
+    [Fact]
+    public async Task Dispatcher_should_not_create_http_content_for_get_without_declared_body()
+    {
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("ok")
+        });
+        var dispatcher = new ReverseTunnelAgentLocalHttpDispatcher(
+            Options.Create(CreateOptions()),
+            new FixedHttpClientFactory(new HttpClient(handler)));
+
+        var response = await dispatcher.DispatchAsync(new ReverseTunnelHttpRequestPayload
+        {
+            ServiceKey = "order-service",
+            Method = "GET",
+            PathAndQuery = "/api/orders?id=1",
+            HasBody = false,
+            Headers =
+            [
+                new ReverseTunnelHttpHeader
+                {
+                    Name = "Content-Type",
+                    Value = "application/json"
+                }
+            ]
+        }, Array.Empty<byte>());
+
+        Assert.Equal(HttpStatusCode.OK, (HttpStatusCode)response.Headers.StatusCode);
+        Assert.False(handler.LastRequestHadContent);
+        Assert.Equal(string.Empty, handler.LastBody);
     }
 
     /// <summary>
@@ -196,17 +242,26 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
 
         public Uri? LastRequestUri { get; private set; }
 
+        public bool LastRequestHadContent { get; private set; }
+
+        public string LastBody { get; private set; } = string.Empty;
+
+        public string? LastContentType { get; private set; }
+
         public HashSet<string> LastRequestHeaderNames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             LastRequestUri = request.RequestUri;
+            LastRequestHadContent = request.Content is not null;
+            LastBody = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
+            LastContentType = request.Content?.Headers.ContentType?.MediaType;
             foreach (var header in request.Headers)
             {
                 LastRequestHeaderNames.Add(header.Key);
             }
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

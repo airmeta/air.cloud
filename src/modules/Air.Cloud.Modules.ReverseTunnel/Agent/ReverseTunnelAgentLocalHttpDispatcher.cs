@@ -82,12 +82,12 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
         var targetUri = BuildTargetUri(targetBaseAddress, request.PathAndQuery);
         using var httpRequest = new HttpRequestMessage(new HttpMethod(NormalizeMethod(request.Method)), targetUri);
 
-        if (MethodAllowsBody(httpRequest.Method))
+        if (request.HasBody)
         {
             httpRequest.Content = new ReverseTunnelChannelReaderHttpContent(requestBodyReader);
         }
 
-        CopyRequestHeaders(request.Headers, httpRequest);
+        CopyRequestHeaders(request.Headers, httpRequest, request.HasBody);
 
         var httpClient = httpClientFactory.CreateClient("AirCloudReverseTunnelAgentLocal");
         using var response = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -110,6 +110,11 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
     public async Task<ReverseTunnelLocalHttpResponse> DispatchAsync(ReverseTunnelHttpRequestPayload request, byte[] body, CancellationToken cancellationToken = default)
     {
         body ??= Array.Empty<byte>();
+        request = request with
+        {
+            HasBody = request.HasBody || body.Length > 0
+        };
+
         if (body.LongLength > options.Value.MaxRequestBodyBytes)
         {
             throw new InvalidOperationException("Reverse tunnel request body exceeds the configured Agent limit.");
@@ -189,12 +194,17 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
         return new Uri(baseAddress, normalizedPath);
     }
 
-    private static void CopyRequestHeaders(IEnumerable<ReverseTunnelHttpHeader> headers, HttpRequestMessage httpRequest)
+    private static void CopyRequestHeaders(IEnumerable<ReverseTunnelHttpHeader> headers, HttpRequestMessage httpRequest, bool hasBody)
     {
         foreach (var header in headers.Where(item => !string.IsNullOrWhiteSpace(item.Name) && !HopByHopHeaders.Contains(item.Name)))
         {
             if (!httpRequest.Headers.TryAddWithoutValidation(header.Name, header.Value))
             {
+                if (!hasBody)
+                {
+                    continue;
+                }
+
                 httpRequest.Content ??= new ByteArrayContent(Array.Empty<byte>());
                 httpRequest.Content.Headers.TryAddWithoutValidation(header.Name, header.Value);
             }
@@ -240,11 +250,6 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
     private static string NormalizeMethod(string method)
     {
         return string.IsNullOrWhiteSpace(method) ? "GET" : method.Trim().ToUpperInvariant();
-    }
-
-    private static bool MethodAllowsBody(HttpMethod method)
-    {
-        return method != HttpMethod.Head;
     }
 
     private static async Task StreamContentWithLimitAsync(

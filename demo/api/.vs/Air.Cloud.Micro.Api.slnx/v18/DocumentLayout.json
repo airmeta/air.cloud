@@ -1,0 +1,449 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\account\\air.cloud.account.service\\impls\\publicservices\\publicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|solutionrelative:security\\account\\air.cloud.account.service\\impls\\publicservices\\publicservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\account\\air.cloud.account.service\\impls\\accountservices\\accountloginservices\\accountloginservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|solutionrelative:security\\account\\air.cloud.account.service\\impls\\accountservices\\accountloginservices\\accountloginservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{98E03846-07B9-E7FA-43C2-F65DE2E06F86}|GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\gateway\\air.cloud.gateway\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{98E03846-07B9-E7FA-43C2-F65DE2E06F86}|GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj|solutionrelative:gateway\\air.cloud.gateway\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{98E03846-07B9-E7FA-43C2-F65DE2E06F86}|GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\gateway\\air.cloud.gateway\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{98E03846-07B9-E7FA-43C2-F65DE2E06F86}|GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj|solutionrelative:gateway\\air.cloud.gateway\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2244FD49-3390-D09A-CE74-0A24B7AD6D95}|Security\\air.cloud.security.common\\air.cloud.security.common.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\air.cloud.security.common\\model\\tickitcreateresult.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2244FD49-3390-D09A-CE74-0A24B7AD6D95}|Security\\air.cloud.security.common\\air.cloud.security.common.csproj|solutionrelative:security\\air.cloud.security.common\\model\\tickitcreateresult.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2244FD49-3390-D09A-CE74-0A24B7AD6D95}|Security\\air.cloud.security.common\\air.cloud.security.common.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\air.cloud.security.common\\dtos\\approuteauthresultdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2244FD49-3390-D09A-CE74-0A24B7AD6D95}|Security\\air.cloud.security.common\\air.cloud.security.common.csproj|solutionrelative:security\\air.cloud.security.common\\dtos\\approuteauthresultdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A0B59E55-368B-F0F7-26CC-20A17BAF8CD0}|Security\\Auth\\air.cloud.auth.entry\\air.cloud.auth.entry.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\auth\\air.cloud.auth.entry\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A0B59E55-368B-F0F7-26CC-20A17BAF8CD0}|Security\\Auth\\air.cloud.auth.entry\\air.cloud.auth.entry.csproj|solutionrelative:security\\auth\\air.cloud.auth.entry\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CD07E6BE-ACB9-FA22-F089-A82CA7C8AE80}|Open\\air.cloud.open.entry\\air.cloud.open.entry.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\open\\air.cloud.open.entry\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CD07E6BE-ACB9-FA22-F089-A82CA7C8AE80}|Open\\air.cloud.open.entry\\air.cloud.open.entry.csproj|solutionrelative:open\\air.cloud.open.entry\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\account\\air.cloud.account.service\\impls\\accountservices\\accountservices\\accountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|solutionrelative:security\\account\\air.cloud.account.service\\impls\\accountservices\\accountservices\\accountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2244FD49-3390-D09A-CE74-0A24B7AD6D95}|Security\\air.cloud.security.common\\air.cloud.security.common.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\air.cloud.security.common\\utils\\useraccountfactoryutil.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2244FD49-3390-D09A-CE74-0A24B7AD6D95}|Security\\air.cloud.security.common\\air.cloud.security.common.csproj|solutionrelative:security\\air.cloud.security.common\\utils\\useraccountfactoryutil.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{50A2B1BE-9F37-1ABF-57A2-BA157D530E3C}|Security\\Auth\\air.cloud.auth.service\\air.cloud.auth.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\auth\\air.cloud.auth.service\\impls\\authstoreservices\\authstoreservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{50A2B1BE-9F37-1ABF-57A2-BA157D530E3C}|Security\\Auth\\air.cloud.auth.service\\air.cloud.auth.service.csproj|solutionrelative:security\\auth\\air.cloud.auth.service\\impls\\authstoreservices\\authstoreservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{01426B9F-0536-2640-346E-363BB22C79FA}|Security\\System\\air.cloud.system.open.service\\air.cloud.system.open.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\system\\air.cloud.system.open.service\\impls\\openaccountservices\\openaccountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{01426B9F-0536-2640-346E-363BB22C79FA}|Security\\System\\air.cloud.system.open.service\\air.cloud.system.open.service.csproj|solutionrelative:security\\system\\air.cloud.system.open.service\\impls\\openaccountservices\\openaccountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{797571DB-E12C-CD5D-8F57-A6F19964C2FF}|Open\\air.cloud.open.domain\\air.cloud.open.domain.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\open\\air.cloud.open.domain\\impls\\externalinterfacemappingdomain.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{797571DB-E12C-CD5D-8F57-A6F19964C2FF}|Open\\air.cloud.open.domain\\air.cloud.open.domain.csproj|solutionrelative:open\\air.cloud.open.domain\\impls\\externalinterfacemappingdomain.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{98E03846-07B9-E7FA-43C2-F65DE2E06F86}|GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\gateway\\air.cloud.gateway\\air.cloud.gateway.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{98E03846-07B9-E7FA-43C2-F65DE2E06F86}|GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj|solutionrelative:gateway\\air.cloud.gateway\\air.cloud.gateway.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{65799E1C-9B96-75EE-1EDF-A2B0BDA2F289}|Open\\air.cloud.open.service\\air.cloud.open.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\open\\air.cloud.open.service\\impls\\internalinterfacemappingservices\\internalinterfacemappingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{65799E1C-9B96-75EE-1EDF-A2B0BDA2F289}|Open\\air.cloud.open.service\\air.cloud.open.service.csproj|solutionrelative:open\\air.cloud.open.service\\impls\\internalinterfacemappingservices\\internalinterfacemappingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{50A2B1BE-9F37-1ABF-57A2-BA157D530E3C}|Security\\Auth\\air.cloud.auth.service\\air.cloud.auth.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\auth\\air.cloud.auth.service\\impls\\authvalidservices\\authvalidservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{50A2B1BE-9F37-1ABF-57A2-BA157D530E3C}|Security\\Auth\\air.cloud.auth.service\\air.cloud.auth.service.csproj|solutionrelative:security\\auth\\air.cloud.auth.service\\impls\\authvalidservices\\authvalidservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{50A2B1BE-9F37-1ABF-57A2-BA157D530E3C}|Security\\Auth\\air.cloud.auth.service\\air.cloud.auth.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\auth\\air.cloud.auth.service\\services\\authvalidservices\\iauthvalidservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{50A2B1BE-9F37-1ABF-57A2-BA157D530E3C}|Security\\Auth\\air.cloud.auth.service\\air.cloud.auth.service.csproj|solutionrelative:security\\auth\\air.cloud.auth.service\\services\\authvalidservices\\iauthvalidservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA6CE91D-22C7-28BB-EA63-D09C3C7D8626}|Open\\air.cloud.open.repository\\air.cloud.open.repository.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\open\\air.cloud.open.repository\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BA6CE91D-22C7-28BB-EA63-D09C3C7D8626}|Open\\air.cloud.open.repository\\air.cloud.open.repository.csproj|solutionrelative:open\\air.cloud.open.repository\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{177EBC37-1C3C-0968-0E04-5E7D49C2CEAB}|Security\\System\\air.cloud.system.entry\\air.cloud.system.entry.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\system\\air.cloud.system.entry\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{177EBC37-1C3C-0968-0E04-5E7D49C2CEAB}|Security\\System\\air.cloud.system.entry\\air.cloud.system.entry.csproj|solutionrelative:security\\system\\air.cloud.system.entry\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A0B59E55-368B-F0F7-26CC-20A17BAF8CD0}|Security\\Auth\\air.cloud.auth.entry\\air.cloud.auth.entry.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\auth\\air.cloud.auth.entry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A0B59E55-368B-F0F7-26CC-20A17BAF8CD0}|Security\\Auth\\air.cloud.auth.entry\\air.cloud.auth.entry.csproj|solutionrelative:security\\auth\\air.cloud.auth.entry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BBB04A27-545C-8BF7-6BA8-F15473DEC141}|Security\\System\\air.cloud.system.repository\\air.cloud.system.repository.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\system\\air.cloud.system.repository\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BBB04A27-545C-8BF7-6BA8-F15473DEC141}|Security\\System\\air.cloud.system.repository\\air.cloud.system.repository.csproj|solutionrelative:security\\system\\air.cloud.system.repository\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\account\\air.cloud.account.service\\impls\\accountservices\\accountauthorityservices\\accountauthorityservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5402570D-A07D-4DDE-E393-F0EC59640CE6}|Security\\Account\\air.cloud.account.service\\air.cloud.account.service.csproj|solutionrelative:security\\account\\air.cloud.account.service\\impls\\accountservices\\accountauthorityservices\\accountauthorityservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7CDF318D-39EC-FC3A-9F41-EC422A4CD243}|Security\\Account\\air.cloud.account.entry\\air.cloud.account.entry.csproj|x:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\security\\account\\air.cloud.account.entry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7CDF318D-39EC-FC3A-9F41-EC422A4CD243}|Security\\Account\\air.cloud.account.entry\\air.cloud.account.entry.csproj|solutionrelative:security\\account\\air.cloud.account.entry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 213,
+          "SelectedChildIndex": 20,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:134:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:130:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:254354193:0:{71f361cc-493f-47c0-923f-f2570b6f8618}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:4732840:0:{81164725-9a96-4ece-a4cb-440d8fd285e5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1613416671:0:{71f361cc-493f-47c0-923f-f2570b6f8618}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1824838298:0:{81164725-9a96-4ece-a4cb-440d8fd285e5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:133:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:135:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:136:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:137:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:132:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AccountLoginService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountLoginServices\\AccountLoginService.cs",
+              "RelativeDocumentMoniker": "Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountLoginServices\\AccountLoginService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountLoginServices\\AccountLoginService.cs",
+              "RelativeToolTip": "Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountLoginServices\\AccountLoginService.cs",
+              "ViewState": "AgIAAC0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T09:03:42.457Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\GateWay\\air.cloud.gateway\\appsettings.json",
+              "RelativeDocumentMoniker": "GateWay\\air.cloud.gateway\\appsettings.json",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\GateWay\\air.cloud.gateway\\appsettings.json",
+              "RelativeToolTip": "GateWay\\air.cloud.gateway\\appsettings.json",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABkAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-07-16T08:24:04.984Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "TickitCreateResult.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\air.cloud.security.common\\Model\\TickitCreateResult.cs",
+              "RelativeDocumentMoniker": "Security\\air.cloud.security.common\\Model\\TickitCreateResult.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\air.cloud.security.common\\Model\\TickitCreateResult.cs",
+              "RelativeToolTip": "Security\\air.cloud.security.common\\Model\\TickitCreateResult.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAADwvzMAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T08:06:59.235Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AppRouteAuthResultDto.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\air.cloud.security.common\\Dtos\\AppRouteAuthResultDto.cs",
+              "RelativeDocumentMoniker": "Security\\air.cloud.security.common\\Dtos\\AppRouteAuthResultDto.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\air.cloud.security.common\\Dtos\\AppRouteAuthResultDto.cs",
+              "RelativeToolTip": "Security\\air.cloud.security.common\\Dtos\\AppRouteAuthResultDto.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAUwBUAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T08:06:54.44Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.entry\\Startup.cs",
+              "RelativeDocumentMoniker": "Open\\air.cloud.open.entry\\Startup.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.entry\\Startup.cs",
+              "RelativeToolTip": "Open\\air.cloud.open.entry\\Startup.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAswCMAAABTAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T08:02:33.359Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "PublicService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\PublicServices\\PublicService.cs",
+              "RelativeDocumentMoniker": "Security\\Account\\air.cloud.account.service\\Impls\\PublicServices\\PublicService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\PublicServices\\PublicService.cs",
+              "RelativeToolTip": "Security\\Account\\air.cloud.account.service\\Impls\\PublicServices\\PublicService.cs",
+              "ViewState": "AgIAAC0AAAAAAAAAAAAswEAAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T06:03:24.64Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\GateWay\\air.cloud.gateway\\Startup.cs",
+              "RelativeDocumentMoniker": "GateWay\\air.cloud.gateway\\Startup.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\GateWay\\air.cloud.gateway\\Startup.cs",
+              "RelativeToolTip": "GateWay\\air.cloud.gateway\\Startup.cs",
+              "ViewState": "AgIAADsAAAAAAAAAAAAAwG4AAABeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:38:49.357Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "AccountService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountServices\\AccountService.cs",
+              "RelativeDocumentMoniker": "Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountServices\\AccountService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountServices\\AccountService.cs",
+              "RelativeToolTip": "Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountServices\\AccountService.cs",
+              "ViewState": "AgIAADcAAAAAAAAAAADwv0oAAABBAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T07:38:09.321Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.entry\\Startup.cs",
+              "RelativeDocumentMoniker": "Security\\Auth\\air.cloud.auth.entry\\Startup.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.entry\\Startup.cs",
+              "RelativeToolTip": "Security\\Auth\\air.cloud.auth.entry\\Startup.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAAswCYAAAA8AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:24:53.865Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "UserAccountFactoryUtil.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\air.cloud.security.common\\Utils\\UserAccountFactoryUtil.cs",
+              "RelativeDocumentMoniker": "Security\\air.cloud.security.common\\Utils\\UserAccountFactoryUtil.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\air.cloud.security.common\\Utils\\UserAccountFactoryUtil.cs",
+              "RelativeToolTip": "Security\\air.cloud.security.common\\Utils\\UserAccountFactoryUtil.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAYwC4AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T07:36:12.776Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "AuthStoreService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.service\\Impls\\AuthStoreServices\\AuthStoreService.cs",
+              "RelativeDocumentMoniker": "Security\\Auth\\air.cloud.auth.service\\Impls\\AuthStoreServices\\AuthStoreService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.service\\Impls\\AuthStoreServices\\AuthStoreService.cs",
+              "RelativeToolTip": "Security\\Auth\\air.cloud.auth.service\\Impls\\AuthStoreServices\\AuthStoreService.cs",
+              "ViewState": "AgIAADMAAAAAAAAAAAAAAFUAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:37:32.048Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "OpenAccountService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\System\\air.cloud.system.open.service\\Impls\\OpenAccountServices\\OpenAccountService.cs",
+              "RelativeDocumentMoniker": "Security\\System\\air.cloud.system.open.service\\Impls\\OpenAccountServices\\OpenAccountService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\System\\air.cloud.system.open.service\\Impls\\OpenAccountServices\\OpenAccountService.cs",
+              "RelativeToolTip": "Security\\System\\air.cloud.system.open.service\\Impls\\OpenAccountServices\\OpenAccountService.cs",
+              "ViewState": "AgIAACYAAAAAAAAAAADwv0MAAABKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T07:36:14.932Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "ExternalInterfaceMappingDomain.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.domain\\Impls\\ExternalInterfaceMappingDomain.cs",
+              "RelativeDocumentMoniker": "Open\\air.cloud.open.domain\\Impls\\ExternalInterfaceMappingDomain.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.domain\\Impls\\ExternalInterfaceMappingDomain.cs",
+              "RelativeToolTip": "Open\\air.cloud.open.domain\\Impls\\ExternalInterfaceMappingDomain.cs",
+              "ViewState": "AgIAABYAAAAAAAAAAAAwwDMAAABdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T07:36:56.882Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "InternalInterfaceMappingService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.service\\Impls\\InternalInterfaceMappingServices\\InternalInterfaceMappingService.cs",
+              "RelativeDocumentMoniker": "Open\\air.cloud.open.service\\Impls\\InternalInterfaceMappingServices\\InternalInterfaceMappingService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.service\\Impls\\InternalInterfaceMappingServices\\InternalInterfaceMappingService.cs",
+              "RelativeToolTip": "Open\\air.cloud.open.service\\Impls\\InternalInterfaceMappingServices\\InternalInterfaceMappingService.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAiwBMAAABHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T06:16:43.347Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "air.cloud.gateway.csproj",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj",
+              "RelativeDocumentMoniker": "GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj",
+              "RelativeToolTip": "GateWay\\air.cloud.gateway\\air.cloud.gateway.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-07-16T03:41:41.801Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "AuthValidService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.service\\Impls\\AuthValidServices\\AuthValidService.cs",
+              "RelativeDocumentMoniker": "Security\\Auth\\air.cloud.auth.service\\Impls\\AuthValidServices\\AuthValidService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.service\\Impls\\AuthValidServices\\AuthValidService.cs",
+              "RelativeToolTip": "Security\\Auth\\air.cloud.auth.service\\Impls\\AuthValidServices\\AuthValidService.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:37:58.155Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "IAuthValidService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.service\\Services\\AuthValidServices\\IAuthValidService.cs",
+              "RelativeDocumentMoniker": "Security\\Auth\\air.cloud.auth.service\\Services\\AuthValidServices\\IAuthValidService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.service\\Services\\AuthValidServices\\IAuthValidService.cs",
+              "RelativeToolTip": "Security\\Auth\\air.cloud.auth.service\\Services\\AuthValidServices\\IAuthValidService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:37:55.328Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\System\\air.cloud.system.entry\\appsettings.json",
+              "RelativeDocumentMoniker": "Security\\System\\air.cloud.system.entry\\appsettings.json",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\System\\air.cloud.system.entry\\appsettings.json",
+              "RelativeToolTip": "Security\\System\\air.cloud.system.entry\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-07-16T02:26:03Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "Program.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.entry\\Program.cs",
+              "RelativeDocumentMoniker": "Security\\Auth\\air.cloud.auth.entry\\Program.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Auth\\air.cloud.auth.entry\\Program.cs",
+              "RelativeToolTip": "Security\\Auth\\air.cloud.auth.entry\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:24:53.196Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\System\\air.cloud.system.repository\\Startup.cs",
+              "RelativeDocumentMoniker": "Security\\System\\air.cloud.system.repository\\Startup.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\System\\air.cloud.system.repository\\Startup.cs",
+              "RelativeToolTip": "Security\\System\\air.cloud.system.repository\\Startup.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAACEAAABLAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:23:54.189Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.repository\\Startup.cs",
+              "RelativeDocumentMoniker": "Open\\air.cloud.open.repository\\Startup.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Open\\air.cloud.open.repository\\Startup.cs",
+              "RelativeToolTip": "Open\\air.cloud.open.repository\\Startup.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABMAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:23:39.02Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "AccountAuthorityService.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountAuthorityServices\\AccountAuthorityService.cs",
+              "RelativeDocumentMoniker": "Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountAuthorityServices\\AccountAuthorityService.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountAuthorityServices\\AccountAuthorityService.cs",
+              "RelativeToolTip": "Security\\Account\\air.cloud.account.service\\Impls\\AccountServices\\AccountAuthorityServices\\AccountAuthorityService.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABcAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:21:40.839Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "Program.cs",
+              "DocumentMoniker": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.entry\\Program.cs",
+              "RelativeDocumentMoniker": "Security\\Account\\air.cloud.account.entry\\Program.cs",
+              "ToolTip": "X:\\\u661F\u66F3\u6570\u636E\\\u7814\u7A76\u9662\\\u6D3B\u8DC3\u9879\u76EE\\air.cloud\\demo\\api\\Security\\Account\\air.cloud.account.entry\\Program.cs",
+              "RelativeToolTip": "Security\\Account\\air.cloud.account.entry\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-16T02:21:27.339Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

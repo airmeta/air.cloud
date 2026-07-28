@@ -1,0 +1,335 @@
+-- PostgreSQL schema for the Air.Cloud demo. Connect to the target database before running this file.
+-- Example: createdb air_cloud_demo; psql -d air_cloud_demo -f init.sql
+-- Contains PostgreSQL DDL only; no data or credentials.
+
+CREATE TABLE IF NOT EXISTS "APP_INTERFACE_AUTHORIZATION" (
+  "APP_ID" varchar(50) DEFAULT NULL,
+  "ACTION_ID" varchar(50) DEFAULT NULL,
+  "ACTION_SECRET" varchar(300) DEFAULT NULL,
+  "EXPIRED_TIME" timestamp without time zone DEFAULT NULL,
+  "EXTERNAL_INTERFACE_ID" varchar(50) DEFAULT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "DELETE_REMARK" varchar(300) DEFAULT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  "ID" varchar(50) DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "APP_ROUTE" (
+  "ID" varchar(50) NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "ROUTE" varchar(300) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "ALLOW_ANONYMOUS" integer DEFAULT NULL,
+  "REQUIRES_AUTHORIZATION" integer DEFAULT NULL,
+  "AUTHORIZATION_META" text,
+  "METHOD" varchar(50) DEFAULT NULL,
+  "IS_AUTO_CREATE" integer NOT NULL DEFAULT 0,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "APP_ROUTE_AUTH" (
+  "ID" varchar(50) NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "ROUTE_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "ASSIGNMENT" (
+  "ID" varchar(50) NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "DEPARTMENT_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  "NAME" varchar(300) DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "DICTIONARY_CONFIG" (
+  "ID" varchar(50) NOT NULL,
+  "PARENT_ID" varchar(50) DEFAULT NULL,
+  "CODE" varchar(64) NOT NULL,
+  "LABEL" varchar(128) NOT NULL,
+  "VALUE" varchar(256) NOT NULL,
+  "DESCRIPTION" varchar(512) DEFAULT NULL,
+  "META" text,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "EXTERNAL_INTERFACE_MAPPING" (
+  "INTERNAL_INTERFACE_ID" varchar(50) DEFAULT NULL,
+  "ENABLE_APP_ENCRYPT" integer DEFAULT NULL,
+  "REQUEST_PARAMETER" text,
+  "RESPONSE_PARAMETER" text,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  "ID" varchar(50) DEFAULT NULL,
+  "NAME" varchar(200) DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "INTERNAL_INTERFACE_MAPPING" (
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  "ID" varchar(50) DEFAULT NULL,
+  "ROUTE_ID" varchar(50) DEFAULT NULL,
+  "REQUEST_PARAMETER" text,
+  "RESPONSE_PARAMETER" text,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "NAME" varchar(200) DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_ACTION_PERMISSION" (
+  "ID" varchar(50) NOT NULL,
+  "VALUE" varchar(300) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "SERVICE_NAME" varchar(300) NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_APP" (
+  "ID" varchar(50) NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "APP_NAME" varchar(300) NOT NULL,
+  "REDIRECT_URL" varchar(300) DEFAULT NULL,
+  "LOGO" text NOT NULL,
+  "IS_DEFAULT" integer NOT NULL,
+  "APP_ENCRYPT_TYPE" integer NOT NULL,
+  "PUBLIC_KEY" text NOT NULL,
+  "PRIVATE_KEY" text NOT NULL,
+  "APP_PRIVATE_KEY" text,
+  "ENABLE_MFA" integer NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "IS_COMMON_APP" integer NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  "CAN_DELETE" integer DEFAULT 1,
+  "IS_ENABLE" integer DEFAULT 1,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_DEPARTMENT" (
+  "ID" varchar(50) NOT NULL,
+  "DEPARTMENT_NAME" varchar(300) NOT NULL,
+  "DEPARTMENT_CODE" varchar(300) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "PARENT_DEPARTMENT_ID" varchar(50) DEFAULT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_ENTITY_ASSOCIATION" (
+  "ID" varchar(50) NOT NULL,
+  "SOURCE_ENTITY_ID" varchar(50) NOT NULL,
+  "TARGET_ENTITY_ID" varchar(50) NOT NULL,
+  "ASSOCIATION_TYPE" integer NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_MENU" (
+  "ID" varchar(50) NOT NULL,
+  "TYPE" integer NOT NULL,
+  "PARENTID" varchar(50) DEFAULT NULL,
+  "TITLE" varchar(30) NOT NULL,
+  "ICON" varchar(50) NOT NULL,
+  "PATH" varchar(100) NOT NULL,
+  "COMPONENT" varchar(100) DEFAULT NULL,
+  "HIDE" integer NOT NULL,
+  "SORT_NUMBER" integer DEFAULT NULL,
+  "AUTHORITY" varchar(300) DEFAULT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_REGION" (
+  "ID" varchar(50) NOT NULL,
+  "CODE" varchar(300) NOT NULL,
+  "NAME" varchar(300) NOT NULL,
+  "TYPE" integer NOT NULL,
+  "PARENT_ID" varchar(50) DEFAULT NULL,
+  "PARENT_REGION_ID" varchar(50) DEFAULT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "LNG_SAT" varchar(300) DEFAULT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_ROLE" (
+  "ID" varchar(50) NOT NULL,
+  "ROLE_NAME" varchar(300) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_ROLE_GROUP" (
+  "ID" varchar(50) NOT NULL,
+  "ROLE_GROUP_NAME" varchar(300) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_USER" (
+  "ID" varchar(50) NOT NULL,
+  "USER_NAME" varchar(300) DEFAULT NULL,
+  "APP_USER_ID" varchar(50) DEFAULT NULL,
+  "ACCOUNT" varchar(300) DEFAULT NULL,
+  "PASSWORD" varchar(300) DEFAULT NULL,
+  "ACCOUNT_CERDICT" varchar(300) DEFAULT NULL,
+  "ID_CARDNO" varchar(300) DEFAULT NULL,
+  "Email" varchar(300) DEFAULT NULL,
+  "PHONE_NUMBER" varchar(300) DEFAULT NULL,
+  "ACCOUNT_CREATE_APPID" varchar(50) NOT NULL,
+  "IS_THIRD_PLATFORM_USER" integer NOT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_USER_ACCOUNT_LOG" (
+  "ID" varchar(50) NOT NULL,
+  "USER_ID" varchar(50) NOT NULL,
+  "TYPE_CODE" varchar(64) NOT NULL,
+  "META" text,
+  "REMARK" varchar(512) DEFAULT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS "SYS_USER_GROUP" (
+  "ID" varchar(50) NOT NULL,
+  "GROUP_NAME" varchar(300) NOT NULL,
+  "APP_ID" varchar(50) NOT NULL,
+  "DESCRIPTION" varchar(300) DEFAULT NULL,
+  "CREATE_USER_ID" varchar(50) DEFAULT NULL,
+  "CREATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "CREATE_TIME" timestamp without time zone DEFAULT NULL,
+  "UPDATE_USER_ID" varchar(50) DEFAULT NULL,
+  "UPDATE_USER_NAME" varchar(300) DEFAULT NULL,
+  "UPDATE_TIME" timestamp without time zone DEFAULT NULL,
+  "DELETE_USER_ID" varchar(50) DEFAULT NULL,
+  "DELETE_USER_NAME" varchar(300) DEFAULT NULL,
+  "IS_DELETE" integer NOT NULL,
+  "DELETE_TIME" timestamp without time zone DEFAULT NULL,
+  PRIMARY KEY ("ID")
+);
+

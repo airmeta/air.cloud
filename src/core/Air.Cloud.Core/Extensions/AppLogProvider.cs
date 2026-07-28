@@ -15,6 +15,7 @@ using Air.Cloud.Core.Plugins.LogFiltering;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 namespace Air.Cloud.Core.Extensions
 {
         /// <summary>
@@ -24,6 +25,7 @@ namespace Air.Cloud.Core.Extensions
         public class AppLogProvider : ILoggerProvider
         {
             private readonly IAppLogFilterPlugin _logFilter;
+            private readonly IOptions<AppLogFilterOptions> _options;
 
             /// <summary>
             /// <para>zh-cn:初始化 Air.Cloud 日志提供器，并使用可替换的日志过滤插件处理输出前过滤。</para>
@@ -33,9 +35,14 @@ namespace Air.Cloud.Core.Extensions
             /// <para>zh-cn:日志过滤插件；为空时会使用框架默认插件。</para>
             /// <para>en-us:The log filtering plugin; the framework default plugin is used when null.</para>
             /// </param>
-            public AppLogProvider(IAppLogFilterPlugin logFilter = null)
+            /// <param name="options">
+            /// <para>zh-cn:日志过滤配置；为空时使用默认配置，保持既有 Trace 及以上级别均可进入输出流程的行为。</para>
+            /// <para>en-us:Log-filter options; when null, defaults are used so the existing behavior of allowing Trace and above into the output pipeline is preserved.</para>
+            /// </param>
+            public AppLogProvider(IAppLogFilterPlugin logFilter = null, IOptions<AppLogFilterOptions> options = null)
             {
                 _logFilter = logFilter ?? new DefaultAppLogFilterPlugin();
+                _options = options ?? Options.Create(new AppLogFilterOptions());
             }
 
             /// <summary>
@@ -53,7 +60,7 @@ namespace Air.Cloud.Core.Extensions
             public ILogger CreateLogger(string categoryName)
             {
                 // categoryName 是日志分类（如 Microsoft.AspNetCore.Server.Kestrel），作为 Title 一部分
-                return new CustomConsoleLogger(categoryName, _logFilter);
+                return new CustomConsoleLogger(categoryName, _logFilter, _options);
             }
 
             /// <summary>
@@ -74,6 +81,7 @@ namespace Air.Cloud.Core.Extensions
         {
             private readonly string _categoryName;
             private readonly IAppLogFilterPlugin _logFilter;
+            private readonly IOptions<AppLogFilterOptions> _options;
 
             /// <summary>
             /// <para>zh-cn:初始化指定分类名称的自定义控制台日志实例。</para>
@@ -87,10 +95,15 @@ namespace Air.Cloud.Core.Extensions
             /// <para>zh-cn:日志过滤插件；为空时使用默认过滤插件。</para>
             /// <para>en-us:The log filtering plugin; the default filtering plugin is used when null.</para>
             /// </param>
-            public CustomConsoleLogger(string categoryName, IAppLogFilterPlugin logFilter = null)
+            /// <param name="options">
+            /// <para>zh-cn:日志级别过滤配置；为空时使用默认配置。</para>
+            /// <para>en-us:Log-level filter options; default options are used when null.</para>
+            /// </param>
+            public CustomConsoleLogger(string categoryName, IAppLogFilterPlugin logFilter = null, IOptions<AppLogFilterOptions> options = null)
             {
                 _categoryName = categoryName;
                 _logFilter = logFilter ?? new DefaultAppLogFilterPlugin();
+                _options = options ?? Options.Create(new AppLogFilterOptions());
             }
 
             /// <summary>
@@ -221,10 +234,36 @@ namespace Air.Cloud.Core.Extensions
             /// <para>zh-cn:如果该级别日志启用则返回 `true`；否则返回 `false`。</para>
             /// <para>en-us:Returns `true` when the log level is enabled; otherwise returns `false`.</para>
             /// </returns>
+            /// <remarks>
+            /// <para>zh-cn:该判断会读取 `AppLogFilter:MinimumLevel` 和 `AppLogFilter:CategoryMinimumLevels`，并在日志格式化之前拒绝低级别日志。</para>
+            /// <para>en-us:This check reads `AppLogFilter:MinimumLevel` and `AppLogFilter:CategoryMinimumLevels`, rejecting low-level entries before log formatting.</para>
+            /// </remarks>
             public bool IsEnabled(LogLevel logLevel)
             {
-                // 启用所有日志级别（可根据需求调整，如只启用 Information 及以上）
-                return logLevel != LogLevel.None;
+                if (logLevel == LogLevel.None)
+                {
+                    return false;
+                }
+
+                var minimumLevel = ResolveMinimumLevel();
+                return minimumLevel != LogLevel.None && logLevel >= minimumLevel;
+            }
+
+            private LogLevel ResolveMinimumLevel()
+            {
+                var options = _options.Value ?? new AppLogFilterOptions();
+                if (options.CategoryMinimumLevels == null || options.CategoryMinimumLevels.Count == 0)
+                {
+                    return options.MinimumLevel;
+                }
+
+                var matched = options.CategoryMinimumLevels
+                    .Where(item => !string.IsNullOrWhiteSpace(item.Key)
+                        && _categoryName.StartsWith(item.Key, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(item => item.Key.Length)
+                    .FirstOrDefault();
+
+                return string.IsNullOrWhiteSpace(matched.Key) ? options.MinimumLevel : matched.Value;
             }
 
             /// <summary>
@@ -279,7 +318,7 @@ namespace Air.Cloud.Core.Extensions
                 // 清除默认控制台日志，避免格式冲突
                 builder.ClearProviders();
                 // 添加自定义日志提供器
-                builder.Services.AddOptions<AppLogFilterOptions>();
+                builder.Services.AddConfigurableOptions<AppLogFilterOptions>();
                 builder.Services.TryAddSingleton<IAppLogFilterPlugin, DefaultAppLogFilterPlugin>();
                 builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, AppLogProvider>());
                 return builder;

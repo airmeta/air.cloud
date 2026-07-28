@@ -2,6 +2,18 @@
 
 `Air.Cloud.Modules.Consul` 是 Air.Cloud 对 Consul 的模块实现，主要用于远程配置加载、服务注册发现和 KV 中心能力。
 
+## 配置加载摘要
+
+`WebInjectInConsul()` 与 `HostInjectInConsul()` 在挂载服务配置后，都会通过 `AppRealization.Output.Print` 输出一条不含配置值的摘要。摘要包含 Consul 地址、KV 路径和有效配置项数量；启用公共配置时，公共 KV 路径会单独输出。
+
+示例：
+
+```text
+配置加载 | 加载到配置: 来源:Consul; 地址:http://127.0.0.1:8500/; 配置定位:order/service/appsettings.Production.json; 有效配置项:18个
+```
+
+配置值、连接字符串、密码、Token 均不会写入该日志。由于远程配置按可选配置源加载，`有效配置项:0个` 表示本次读取未发现有值的键，不应视为已成功取得业务配置。
+
 ## 所属 Standard
 
 | Standard | 模块实现 | 说明 |

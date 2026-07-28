@@ -114,6 +114,7 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         Assert.Equal("grpc-agent-ok", responseBody);
         Assert.Equal(new Uri("http://127.0.0.1:5101/api/orders?id=7"), localHttpHandler.LastRequestUri);
         Assert.Equal("grpc-gateway-body", localHttpHandler.LastBody);
+        Assert.Equal("application/json", localHttpHandler.LastContentType);
         Assert.Contains("X-Trace-Id", localHttpHandler.LastRequestHeaderNames);
         Assert.True(localHttpHandler.LastRequestHeaders.TryGetValue("traceparent", out var traceparent));
         Assert.StartsWith("00-", traceparent, StringComparison.Ordinal);
@@ -185,6 +186,7 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         using var response = await invoker.InvokeAsync(options.Routes[0], gatewayRequest, timeout.Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(localHttpHandler.LastRequestHadContent);
 
         response.Content!.Dispose();
         await localHttpHandler.ResponseReadCancelled.Task.WaitAsync(timeout.Token);
@@ -260,6 +262,84 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         Assert.False(registry.TryGetForServiceKey("account", out _));
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证同一个通过 mTLS 认证的 AgentId 可以建立多条真实 gRPC 物理连接，并在当前 Server 进程内按 RoundRobin 策略选择会话。</para>
+    /// <para>en-us:Verifies that the same mTLS-authenticated AgentId can open multiple real gRPC physical connections and that the current Server process can select those sessions with the RoundRobin strategy.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Grpc_connect_should_keep_same_agent_multiple_sessions_and_round_robin_them()
+    {
+        using var material = TestCertificateMaterial.Create();
+        var options = CreateOptions(material);
+        options.SessionSelectionStrategy = ReverseTunnelSessionSelectionStrategy.RoundRobin;
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var optionsAccessor = Options.Create(options);
+        using var agentKey = RSA.Create(2048);
+        var csr = new CertificateRequest("CN=ignored-by-server", agentKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+            .CreateSigningRequest();
+        var certificateAuthority = new MountedReverseTunnelCertificateAuthority(optionsAccessor);
+        using var issuedCertificate = certificateAuthority.SignAgentCertificate("agent-alpha", csr, DateTimeOffset.UtcNow.AddMinutes(-1));
+        using var agentCertificate = issuedCertificate.CopyWithPrivateKey(agentKey);
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(optionsAccessor);
+
+        await using var app = builder.Build();
+        app.UseRouting();
+        app.Use(async (context, next) =>
+        {
+            context.Connection.ClientCertificate = agentCertificate;
+            await next();
+        });
+        app.MapReverseTunnelServer();
+        await app.StartAsync();
+
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions
+        {
+            HttpHandler = app.GetTestServer().CreateHandler()
+        });
+        var transportClient = new ReverseTunnelTransport.ReverseTunnelTransportClient(channel);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var firstCall = transportClient.Connect(cancellationToken: timeout.Token);
+        using var secondCall = transportClient.Connect(cancellationToken: timeout.Token);
+        await firstCall.RequestStream.WriteAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = "agent-session-a",
+            Kind = TunnelFrameKindMessage.Hello,
+            AgentId = "agent-alpha",
+            ServiceKeys = { "order-service" }
+        }, timeout.Token);
+        await secondCall.RequestStream.WriteAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = "agent-session-b",
+            Kind = TunnelFrameKindMessage.Hello,
+            AgentId = "agent-alpha",
+            ServiceKeys = { "order-service" }
+        }, timeout.Token);
+
+        var registry = app.Services.GetRequiredService<IReverseTunnelSessionRegistry>();
+        await WaitForSessionIdAsync(registry, "agent-session-a", timeout.Token);
+        await WaitForSessionIdAsync(registry, "agent-session-b", timeout.Token);
+
+        var selectedSessionIds = new List<string>();
+        for (var i = 0; i < 4; i++)
+        {
+            Assert.True(registry.TryGetForServiceKey("order-service", out var session));
+            selectedSessionIds.Add(session!.SessionId);
+        }
+
+        Assert.Equal(["agent-session-a", "agent-session-b", "agent-session-a", "agent-session-b"], selectedSessionIds);
+
+        await firstCall.RequestStream.CompleteAsync();
+        await secondCall.RequestStream.CompleteAsync();
+    }
+
     private static async Task RunAgentResponseLoopAsync(IReverseTunnelAgentFrameProcessor frameProcessor, AsyncDuplexStreamingCall<TunnelFrameMessage, TunnelFrameMessage> call, CancellationToken cancellationToken)
     {
         using var writeLock = new SemaphoreSlim(1, 1);
@@ -285,6 +365,19 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         while (!cancellationToken.IsCancellationRequested)
         {
             if (registry.TryGetForServiceKey(serviceKey, out _))
+            {
+                return;
+            }
+
+            await Task.Delay(25, cancellationToken);
+        }
+    }
+
+    private static async Task WaitForSessionIdAsync(IReverseTunnelSessionRegistry registry, string sessionId, CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            if (registry.TryGet(sessionId, out _))
             {
                 return;
             }
@@ -352,6 +445,8 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
 
         public string? LastBody { get; private set; }
 
+        public string? LastContentType { get; private set; }
+
         public HashSet<string> LastRequestHeaderNames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<string, string> LastRequestHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -360,6 +455,7 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         {
             LastRequestUri = request.RequestUri;
             LastBody = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
+            LastContentType = request.Content?.Headers.ContentType?.MediaType;
             foreach (var header in request.Headers)
             {
                 LastRequestHeaderNames.Add(header.Key);
@@ -374,8 +470,11 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
     {
         public TaskCompletionSource ResponseReadCancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public bool LastRequestHadContent { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            LastRequestHadContent = request.Content is not null;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StreamContent(new CancelAwareResponseStream(ResponseReadCancelled))

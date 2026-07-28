@@ -1,0 +1,11 @@
+{
+  "auth": {
+    "login": "Login"
+  },
+  "sso": {
+    "appCenter": "App Center",
+    "inject": "Initialize App",
+    "login": "Single Sign-On",
+    "oauth": "App Authorization"
+  }
+}

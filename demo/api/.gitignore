@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/logs/
+**/*.csproj.user
+**/*.pubxml.user
+**/appsettings.json
+**/appsettings.Development.json

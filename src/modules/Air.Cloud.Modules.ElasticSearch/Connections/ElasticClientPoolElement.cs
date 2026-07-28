@@ -140,7 +140,9 @@ namespace Air.Cloud.Modules.ElasticSearch.Connections
                 throw new ElasticSearchException($"ElasticSearch数据库\"{noSqlTableAttribute.DbKey}\"缺少可用节点配置");
             }
             var nodes = nodesStr.Select(s => new Uri(s)).ToList();
-            var connectionPool = new SniffingConnectionPool(nodes);
+            IConnectionPool connectionPool = nodes.Count == 1
+                ? new SingleNodeConnectionPool(nodes[0])
+                : new StaticConnectionPool(nodes);
             Name = GetTableName(noSqlTableAttribute, DocumentType.Name.ToLower());
             var settings = new ConnectionSettings(connectionPool);
             if (!string.IsNullOrEmpty(noSqlTableAttribute.TableName))

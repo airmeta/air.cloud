@@ -24,6 +24,7 @@ using Air.Cloud.Core.Standard.Taxin.Options;
 using Air.Cloud.Core.Standard.Taxin.Result;
 using Air.Cloud.Core.Standard.Taxin.Tools;
 using Air.Cloud.Modules.Taxin.Extensions;
+using Air.Cloud.Modules.Taxin.Tools;
 
 using System.Data;
 
@@ -307,9 +308,10 @@ namespace Air.Cloud.Modules.Taxin.Client
                 using (HttpClient client = HttpClientFactory.CreateClient())
                 {
                     Data = Data ??new { };
+                    var requestRoute = TaxinRouteParameterBinder.Bind(RouteInfo, Data);
                     HttpRequestMessage httpRequestMessage = new HttpRequestMessage()
                     {
-                        RequestUri = new Uri(new Uri(Options.GetServerAddress()), RouteInfo.Route),
+                        RequestUri = new Uri(new Uri(Options.GetServerAddress()), requestRoute),
                         Method = new HttpMethod(RouteInfo.HttpMethod),
                         Content = client.SetBody(Data)
                     };

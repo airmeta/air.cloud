@@ -97,37 +97,7 @@ namespace Air.Cloud.Modules.Kafka.Extensions
                     producerConfig.TopicName = SubscribeAttribute.ReciveQueue;
                 }
                 Action<IMessageContentStandard> Subscribe = (s) =>
-                {
-                    try
-                    {
-                        
-
-                        var instance = MessageQueueSubscriber.ContainsKey(item) ? MessageQueueSubscriber[item]:Activator.CreateInstance(item);
-                        if (!MessageQueueSubscriber.ContainsKey(item))
-                        {
-                            MessageQueueSubscriber.Add(item, instance);
-                        }
-                        var x = ImplMethod.Invoke(instance, new object[] { s });
-                        if (NeedProduce) AppRealization.Queue.Publish(producerConfig, x);
-                    }
-                    catch (Exception ex)
-                    {
-                        AppRealization.TraceLog.Write(new DefaultTraceLogContent()
-                        {
-                            Title = "kafka-error",
-                            Content = ex.Message,
-                            AdditionalParams = new Dictionary<string, object>()
-                            {
-                                { "StackTrace",ex.StackTrace},
-                                { "Message",ex.Message},
-                                { "Source",ex.Source },
-                                { "InnerException",ex.InnerException?.Message},
-                                { "InnerExceptionStackTrace",ex.InnerException?.StackTrace}
-                            },
-                            Tags = "kafka_subscribe_error"
-                        });
-                    }
-                };
+                    InvokeSubscriber(item, ImplMethod, s, NeedProduce, producerConfig);
                 Method.Invoke(AppRealization.Queue, new object[]
                 {
                         ConsumConfig,
@@ -136,6 +106,81 @@ namespace Air.Cloud.Modules.Kafka.Extensions
                 });
             }
             return services;
+        }
+
+        /// <summary>
+        /// <para>zh-cn:调用自动发现的订阅者，并在保留失败审计日志后重新抛出业务异常。异常必须传回 Kafka 消费循环，才能使当前记录被判定为处理失败；使用默认的手动提交配置时，不会提交该记录的 offset。</para>
+        /// <para>en-us:Invokes an automatically discovered subscriber and rethrows business exceptions after retaining failure audit logs. The exception must reach the Kafka consume loop so the current record is marked as failed; with the default manual-commit configuration, its offset is not committed.</para>
+        /// </summary>
+        /// <param name="subscriberType">
+        /// <para>zh-cn:订阅者实现类型。</para>
+        /// <para>en-us:The subscriber implementation type.</para>
+        /// </param>
+        /// <param name="subscribeMethod">
+        /// <para>zh-cn:订阅者消息处理方法。</para>
+        /// <para>en-us:The subscriber message handler method.</para>
+        /// </param>
+        /// <param name="message">
+        /// <para>zh-cn:当前消费到的消息。</para>
+        /// <para>en-us:The currently consumed message.</para>
+        /// </param>
+        /// <param name="needProduce">
+        /// <para>zh-cn:是否需要将订阅者返回值发布到回复主题。</para>
+        /// <para>en-us:Whether the subscriber return value must be published to a reply topic.</para>
+        /// </param>
+        /// <param name="producerConfig">
+        /// <para>zh-cn:回复主题的生产者配置；仅在 <paramref name="needProduce"/> 为 true 时使用。</para>
+        /// <para>en-us:The producer configuration for the reply topic; used only when <paramref name="needProduce"/> is true.</para>
+        /// </param>
+        private static void InvokeSubscriber(
+            Type subscriberType,
+            MethodInfo subscribeMethod,
+            IMessageContentStandard message,
+            bool needProduce,
+            ProducerConfigModel producerConfig)
+        {
+            try
+            {
+                var instance = MessageQueueSubscriber.ContainsKey(subscriberType)
+                    ? MessageQueueSubscriber[subscriberType]
+                    : Activator.CreateInstance(subscriberType);
+                if (!MessageQueueSubscriber.ContainsKey(subscriberType))
+                {
+                    MessageQueueSubscriber.Add(subscriberType, instance);
+                }
+
+                var response = subscribeMethod.Invoke(instance, new object[] { message });
+                if (needProduce)
+                {
+                    AppRealization.Queue.Publish(producerConfig, response);
+                }
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    AppRealization.TraceLog.Write(new DefaultTraceLogContent()
+                    {
+                        Title = "kafka-error",
+                        Content = ex.Message,
+                        AdditionalParams = new Dictionary<string, object>()
+                        {
+                            { "StackTrace",ex.StackTrace},
+                            { "Message",ex.Message},
+                            { "Source",ex.Source },
+                            { "InnerException",ex.InnerException?.Message},
+                            { "InnerExceptionStackTrace",ex.InnerException?.StackTrace}
+                        },
+                        Tags = "kafka_subscribe_error"
+                    });
+                }
+                catch (Exception traceException)
+                {
+                    Console.Error.WriteLine($"Kafka subscriber failure trace logging failed. Exception={traceException}");
+                }
+
+                throw;
+            }
         }
     }
 }

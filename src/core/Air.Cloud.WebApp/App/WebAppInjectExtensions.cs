@@ -40,6 +40,8 @@ namespace Air.Cloud.WebApp.App
             AppRealization.SetDependency<IAppInjectStandard>(new WebAppInjectDependency());
             builder = AppRealization.Injection.Inject(builder);
             var app = builder.Build();
+            ConfigurationLoadSummary.Print("本地文件", AppConst.ApplicationPath, Path.Combine(AppConst.ApplicationPath, AppConst.SystemEnvironmentConfigFileFullName), Configuration);
+            ConfigurationLoadSummary.Print("本地文件", AppConst.ApplicationPath, Path.Combine(AppConst.ApplicationPath, AppConst.CommonEnvironmentConfigFileFullName), CommonConfiguration);
             return app;
         }
     }

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Air.Cloud.Modules.Consul" Version="10.0.0" />
+		<PackageReference Include="Air.Cloud.Modules.SkyMirrorShield" Version="10.0.0" />
+		<PackageReference Include="Air.Cloud.Modules.Taxin" Version="10.0.1" />
+		<PackageReference Include="Air.Cloud.WebApp" Version="10.0.0" />
+	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\air.cloud.account.service\air.cloud.account.service.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\Cascadia-Code-Regular-2.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

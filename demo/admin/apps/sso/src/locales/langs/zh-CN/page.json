@@ -1,0 +1,11 @@
+{
+  "auth": {
+    "login": "登录"
+  },
+  "sso": {
+    "appCenter": "应用中心",
+    "inject": "初始化应用",
+    "login": "单点登录",
+    "oauth": "应用授权"
+  }
+}

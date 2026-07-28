@@ -1,3 +1,5 @@
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
+
 namespace Air.Cloud.Modules.ReverseTunnel.Server;
 
 /// <summary>
@@ -7,8 +9,8 @@ namespace Air.Cloud.Modules.ReverseTunnel.Server;
 public interface IReverseTunnelSessionRegistry
 {
     /// <summary>
-    /// <para>zh-cn:注册或替换同一 Agent 的活跃会话。同一 Agent 重连时，新会话会成为后续转发选择的唯一活跃会话。</para>
-    /// <para>en-us:Registers or replaces the active session for an Agent. When the same Agent reconnects, the new session becomes the only active session for later forwarding selection.</para>
+    /// <para>zh-cn:注册一个活跃 Agent 会话。同一个 AgentId 可以同时拥有多条物理连接；只有相同 SessionId 会被后续注册覆盖。</para>
+    /// <para>en-us:Registers an active Agent session. The same AgentId may own multiple physical connections at the same time; only a later registration with the same SessionId replaces the existing entry.</para>
     /// </summary>
     /// <param name="session">
     /// <para>zh-cn:需要注册的 Agent 会话快照。</para>
@@ -79,4 +81,18 @@ public interface IReverseTunnelSessionRegistry
     /// <para>en-us:Number of sessions removed by this call.</para>
     /// </returns>
     int RemoveExpired(DateTimeOffset utcNow);
+
+    /// <summary>
+    /// <para>zh-cn:读取当前进程内所有 Agent 会话的只读诊断快照。返回值不跨 Gateway 聚合，也不包含证书私钥或一次性凭据。</para>
+    /// <para>en-us:Reads read-only diagnostic snapshots for all Agent sessions in the current process. The result is not aggregated across Gateways and contains no certificate private keys or one-time credentials.</para>
+    /// </summary>
+    /// <param name="utcNow">
+    /// <para>zh-cn:用于计算会话空闲时长的 UTC 当前时间。</para>
+    /// <para>en-us:Current UTC time used to calculate session idle duration.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:当前进程内会话快照集合。</para>
+    /// <para>en-us:Collection of session snapshots from the current process.</para>
+    /// </returns>
+    IReadOnlyList<ReverseTunnelSessionDiagnosticsSnapshot> GetSnapshot(DateTimeOffset utcNow);
 }

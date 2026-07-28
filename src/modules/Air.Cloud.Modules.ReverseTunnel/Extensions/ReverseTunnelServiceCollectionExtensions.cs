@@ -1,6 +1,7 @@
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Modules.ReverseTunnel.Agent;
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
 using Air.Cloud.Modules.ReverseTunnel.Gateway;
@@ -36,6 +37,10 @@ public static class ReverseTunnelServiceCollectionExtensions
         services.AddConfigurableOptions<ReverseTunnelOptions>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<ReverseTunnelOptions>, ReverseTunnelOptionsValidation>());
         services.AddGrpc();
+        services.AddHttpContextAccessor();
+        services.TryAddSingleton<ReverseTunnelDiagnosticsService>();
+        services.TryAddSingleton<IReverseTunnelDiagnosticsService>(serviceProvider => serviceProvider.GetRequiredService<ReverseTunnelDiagnosticsService>());
+        services.AddHostedService<ReverseTunnelDiagnosticsHostedService>();
         services.TryAddSingleton<IReverseTunnelRouteProvider, ReverseTunnelRouteProvider>();
         services.TryAddSingleton<IReverseTunnelSessionRegistry, InMemoryReverseTunnelSessionRegistry>();
         services.TryAddSingleton<IReverseTunnelCertificateAuthority, MountedReverseTunnelCertificateAuthority>();

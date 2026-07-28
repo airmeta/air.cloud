@@ -7,6 +7,7 @@ using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Google.Protobuf;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -39,6 +40,39 @@ public sealed class ReverseTunnelGatewayTests
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.Equal("order-service", invoker.LastRoute?.ServiceKey);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Ocelot 传入的下游 `HttpRequestMessage.Content` 为空但原始 ASP.NET 请求仍带有请求体和内容头时，隧道处理器会从当前上下文恢复内容，避免 JSON POST 经隧道后被本地服务识别为无媒体类型请求。</para>
+    /// <para>en-us:Verifies that when Ocelot provides a downstream `HttpRequestMessage` without content while the original ASP.NET request still carries a body and content headers, the tunnel handler restores the content from the current context so JSON POST requests are not seen by the local service as media-type-less requests.</para>
+    /// </summary>
+    [Fact]
+    public async Task Delegating_handler_should_restore_content_from_http_context_when_ocelot_request_content_is_missing()
+    {
+        var options = CreateGatewayOptions(enabled: true);
+        var invoker = new CapturingInvoker(new HttpResponseMessage(HttpStatusCode.Accepted));
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Post;
+        httpContext.Request.ContentType = "application/json";
+        httpContext.Request.ContentLength = 2;
+        httpContext.Request.Body = new MemoryStream("{}"u8.ToArray());
+        using var handler = new ReverseTunnelDelegatingHandler(
+            new ReverseTunnelRouteProvider(Options.Create(options)),
+            invoker,
+            Options.Create(options),
+            new HttpContextAccessor { HttpContext = httpContext })
+        {
+            InnerHandler = new StaticResponseHandler(HttpStatusCode.OK)
+        };
+        using var client = new HttpMessageInvoker(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "http://tunnel-order-service/v1/identity/login");
+
+        var response = await client.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.NotNull(invoker.LastRequest?.Content);
+        Assert.Equal("application/json", invoker.LastRequest.Content!.Headers.ContentType?.MediaType);
+        Assert.Equal("{}", await invoker.LastRequest.Content.ReadAsStringAsync());
     }
 
     /// <summary>
@@ -222,9 +256,12 @@ public sealed class ReverseTunnelGatewayTests
 
         public ReverseTunnelRouteOptions? LastRoute { get; private set; }
 
+        public HttpRequestMessage? LastRequest { get; private set; }
+
         public Task<HttpResponseMessage> InvokeAsync(ReverseTunnelRouteOptions route, HttpRequestMessage request, CancellationToken cancellationToken = default)
         {
             LastRoute = route;
+            LastRequest = request;
             return Task.FromResult(response);
         }
     }

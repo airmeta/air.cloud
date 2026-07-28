@@ -1,0 +1,198 @@
+﻿/*
+ * Copyright (c) 2024-2030 星曳数据
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file is provided under the Mozilla Public License Version 2.0,
+ * and the "NO WARRANTY" clause of the MPL is hereby expressly
+ * acknowledged.
+ */
+using Air.Cloud.WebApp.UnifyResult;
+using Air.Cloud.WebApp.UnifyResult.Internal;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+
+namespace air.cloud.gateway.Const
+{
+    public class LowercaseContractResolver : DefaultContractResolver
+    {
+        protected override string ResolvePropertyName(string propertyName)
+        {
+            return propertyName.ToLower();
+        }
+    }
+    public static class HttpRequestErrorResultConst
+    {
+        /// <summary>
+        /// <para>zh-cn:创建带自定义消息的网关错误响应，避免对 JSON 模板执行 string.Format 导致大括号解析异常。</para>
+        /// <para>en-us:Creates a gateway error response with a custom message, avoiding string.Format over JSON templates because JSON braces are parsed as format items.</para>
+        /// </summary>
+        /// <param name="message">
+        /// <para>zh-cn:返回给调用方的错误消息。</para>
+        /// <para>en-us:The error message returned to the caller.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:统一结果格式的 JSON 字符串。</para>
+        /// <para>en-us:A JSON string in the unified result format.</para>
+        /// </returns>
+        public static string CreateErrorResult(string message)
+        {
+            return JsonConvert.SerializeObject(new RESTfulResult<string>()
+            {
+                Code = 500,
+                Data = "",
+                Extras = UnifyContext.Take(),
+                Succeeded = true,
+                Message = message,
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+        }
+
+        #region 返回参数
+
+        /// <summary>
+        /// 未授权的请求
+        /// </summary>
+        public static readonly string UNAUTH = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "当前应用未获得此地址访问权限,请联系运维配置",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 不允许通过的请求
+        /// </summary>
+        public static readonly string UNACCEPT = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "验证签名失败",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 参数不足
+        /// </summary>
+        public static readonly string HEADERLOSE = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "参数不足",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 部分参数不足
+        /// </summary>
+        public static readonly string HEADERLOSE_ITEM = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "{0}",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+
+        public static readonly string TOKEN_INVALID = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 401,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "您的账户已经在其他设备登录,本设备将会自动退出",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 重复请求
+        /// </summary>
+        public static readonly string REREQUEST = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "重复请求",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 域名无访问权限
+        /// </summary>
+        public static readonly string UNDOMAIN = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "无访问权限",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 请求异常
+        /// </summary>
+        public static readonly string ERROR = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "当前请求出现异常,请稍后再试!",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+        /// <summary>
+        /// 请求异常
+        /// </summary>
+        public static readonly string ERROR_ITEM = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "{0}",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 应用不存在
+        /// </summary>
+        public static readonly string APP_NOT_FOUND = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "当前应用不存在,请检查你的AppID",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        /// <summary>
+        /// 应用检查出现异常
+        /// </summary>
+        public static readonly string APP_CHECK_ERROR = JsonConvert.SerializeObject(new RESTfulResult<string>()
+        {
+            Code = 500,
+            Data = "",
+            Extras = UnifyContext.Take(),
+            Succeeded = true,
+            Message = "检查你的应用时,出现异常",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+
+        #endregion 返回参数
+    }
+}

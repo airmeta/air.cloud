@@ -78,6 +78,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             ConsulServiceOptions consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
             //加载远程配置文件
             var Config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
+            PrintConfigurationLoadSummary(consulServiceOptions, Config);
             if (Config.Item2 != null)
             {
                 AppConfigurationLoader.SetPublicConfiguration(Config.Item2);
@@ -166,6 +167,7 @@ namespace Air.Cloud.Modules.Consul.Extensions
             InitAppInject();
             ConsulServiceOptions consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
             var Config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
+            PrintConfigurationLoadSummary(consulServiceOptions, Config);
             builder = builder.ConfigureAppConfiguration(a =>
             {
                 if (Config.Item2 != null)
@@ -182,6 +184,18 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 services.Configure<AppLogFilterOptions>(options => options.IgnorePaths.Add(consulServiceOptions.HealthCheckRoute));
             });
             return builder;
+        }
+
+        private static void PrintConfigurationLoadSummary(ConsulServiceOptions serviceOptions, (IConfiguration, IConfiguration) configurations)
+        {
+            var serviceConfigurationLocation = $"{serviceOptions.ServiceName.Replace(".", "/")}/{AppConst.SystemEnvironmentConfigFileFullName}";
+            ConfigurationLoadSummary.Print("Consul", serviceOptions.ConsulAddress, serviceConfigurationLocation, configurations.Item1);
+
+            if (configurations.Item2 != null)
+            {
+                var commonConfigurationLocation = $"{serviceOptions.CommonConfigFileRoute}/{AppConst.CommonEnvironmentConfigFileFullName}";
+                ConfigurationLoadSummary.Print("Consul", serviceOptions.ConsulAddress, commonConfigurationLocation, configurations.Item2);
+            }
         }
         /// <summary>
         ///  <para>zh-cn:接入注册中心</para>

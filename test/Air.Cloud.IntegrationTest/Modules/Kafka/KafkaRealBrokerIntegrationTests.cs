@@ -1,6 +1,8 @@
 ﻿using Air.Cloud.Core.App;
 using Air.Cloud.Core.Enums;
 using Air.Cloud.Core.Standard.MessageQueue;
+using Air.Cloud.Core.Standard.MessageQueue.Attributes;
+using Air.Cloud.Core.Standard.MessageQueue.Config;
 using Air.Cloud.Core.Standard.MessageQueue.Enums;
 using Air.Cloud.Modules.Kafka.Config;
 using Air.Cloud.Modules.Kafka.Contexts;
@@ -357,6 +359,46 @@ public class KafkaRealBrokerIntegrationTests
         });
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证自动发现的订阅者抛出业务异常时，异常会传回消息队列处理层，而不是被订阅包装层吞掉。</para>
+    /// <para>en-us:Verifies that a business exception from an automatically discovered subscriber is propagated back to the message-queue handling layer instead of being swallowed by the subscriber wrapper.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "Kafka")]
+    public void AddKafkaService_should_propagate_automatic_subscriber_failure()
+    {
+        var queue = new CapturingMessageQueue();
+        using var serviceProvider = new ServiceCollection()
+            .AddSingleton<IMessageQueueStandard>(queue)
+            .BuildServiceProvider();
+        var originalRootServices = AppCore.RootServices;
+        var originalInternalServices = AppCore.InternalServices;
+        var originalStartType = AppCore.AppStartType;
+        var originalAssemblies = AppCore.Assemblies;
+
+        try
+        {
+            KafkaModuleExtensions.MessageQueueSubscriber.Remove(typeof(ThrowingAutomaticSubscriber));
+            AppCore.RootServices = serviceProvider;
+            AppCore.Assemblies = new[] { typeof(ThrowingAutomaticSubscriber).Assembly.GetName() };
+
+            new ServiceCollection().AddKafkaService();
+
+            var exception = Assert.Throws<TargetInvocationException>(() => queue.Invoke(new AutomaticSubscriberMessage()));
+            var subscriberException = Assert.IsType<InvalidOperationException>(exception.InnerException);
+            Assert.Equal("automatic subscriber failed", subscriberException.Message);
+        }
+        finally
+        {
+            KafkaModuleExtensions.MessageQueueSubscriber.Remove(typeof(ThrowingAutomaticSubscriber));
+            AppCore.RootServices = originalRootServices;
+            AppCore.InternalServices = originalInternalServices;
+            AppCore.AppStartType = originalStartType;
+            AppCore.Assemblies = originalAssemblies;
+        }
+    }
+
     private static KafkaModuleHost BuildKafkaModuleHost(string bootstrapServers, Action<IServiceCollection>? configureServices = null)
     {
         var services = new ServiceCollection();
@@ -622,4 +664,50 @@ public class KafkaRealBrokerIntegrationTests
             return Task.CompletedTask;
         }
     }
+
+    private sealed class CapturingMessageQueue : IMessageQueueStandard
+    {
+        private Action<AutomaticSubscriberMessage>? _subscriber;
+
+        public void Publish<TTopicPublishConfig, TMessageContentStandard>(
+            ITopicPublishConfig<TTopicPublishConfig> producerConfigModel,
+            TMessageContentStandard content)
+            where TTopicPublishConfig : class
+            where TMessageContentStandard : class, new()
+        {
+        }
+
+        public void Subscribe<TTopicSubscribeConfig, TMessageContentStandard>(
+            ITopicSubscribeConfig<TTopicSubscribeConfig> subscribeConfig,
+            Action<TMessageContentStandard> action,
+            string? groupId = null)
+            where TTopicSubscribeConfig : class
+            where TMessageContentStandard : class, new()
+        {
+            if (typeof(TMessageContentStandard) == typeof(AutomaticSubscriberMessage))
+            {
+                _subscriber = (Action<AutomaticSubscriberMessage>)(object)action;
+            }
+        }
+
+        public void Invoke(AutomaticSubscriberMessage message)
+        {
+            Assert.NotNull(_subscriber);
+            _subscriber.Invoke(message);
+        }
+    }
+}
+
+[AppQueueDescriptor("automatic-subscriber-failure", GroupId = "automatic-subscriber-failure-test")]
+public sealed class ThrowingAutomaticSubscriber : IMessageQueueSubscribeStandard<AutomaticSubscriberMessage>
+{
+    public object Subscribe(AutomaticSubscriberMessage message)
+    {
+        throw new InvalidOperationException("automatic subscriber failed");
+    }
+}
+
+public sealed class AutomaticSubscriberMessage : IMessageContentStandard
+{
+    public string Content { get; set; } = string.Empty;
 }

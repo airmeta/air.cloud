@@ -85,9 +85,10 @@ namespace Air.Cloud.Modules.Nacos.Extensions
         public static WebApplication WebInjectInNacos(this WebApplicationBuilder builder, Action<NacosServiceOptions> action = null)
         {
             var serviceOptions = GetNacosServiceOptions(builder.Configuration, action);
-            LoadRemoteConfiguration(builder.Configuration, serviceOptions);
+            var remoteConfiguration = LoadRemoteConfiguration(builder.Configuration, serviceOptions);
             builder.Services.AddNacosModule(builder.Configuration, options => CopyOptions(serviceOptions, options));
             AppConst.LoadConfigurationTypeEnum = LoadConfigurationTypeEnum.Remote;
+            PrintConfigurationLoadSummary(serviceOptions, remoteConfiguration);
             return builder.Build();
         }
 
@@ -113,7 +114,8 @@ namespace Air.Cloud.Modules.Nacos.Extensions
             {
                 var root = configurationBuilder.Build();
                 var serviceOptions = GetNacosServiceOptions(root, action);
-                LoadRemoteConfiguration(configurationBuilder, serviceOptions);
+                var remoteConfiguration = LoadRemoteConfiguration(configurationBuilder, serviceOptions);
+                PrintConfigurationLoadSummary(serviceOptions, remoteConfiguration);
             });
 
             builder.ConfigureServices((context, services) =>
@@ -132,10 +134,14 @@ namespace Air.Cloud.Modules.Nacos.Extensions
             return serviceOptions;
         }
 
-        private static void LoadRemoteConfiguration(IConfigurationBuilder builder, NacosServiceOptions serviceOptions)
+        private static IConfiguration LoadRemoteConfiguration(IConfigurationBuilder builder, NacosServiceOptions serviceOptions)
         {
             var configuration = BuildNacosConfigurationSection(serviceOptions);
-            builder.AddNacosV2Configuration(configuration.GetSection("NacosConfig"));
+            var remoteConfiguration = new ConfigurationBuilder()
+                .AddNacosV2Configuration(configuration.GetSection("NacosConfig"))
+                .Build();
+            builder.AddConfiguration(remoteConfiguration);
+            return remoteConfiguration;
         }
 
         private static IConfiguration BuildNacosConfigurationSection(NacosServiceOptions serviceOptions)
@@ -183,6 +189,17 @@ namespace Air.Cloud.Modules.Nacos.Extensions
             {
                 yield return serviceOptions.ServerAddress;
             }
+        }
+
+        private static void PrintConfigurationLoadSummary(NacosServiceOptions serviceOptions, IConfiguration remoteConfiguration)
+        {
+            var endpoint = string.Join(", ", GetServerAddresses(serviceOptions));
+            var namespaceName = string.IsNullOrWhiteSpace(serviceOptions.Namespace) ? "public" : serviceOptions.Namespace;
+            var dataIds = serviceOptions.EnableCommonConfig
+                ? $"{serviceOptions.ConfigDataId}, {serviceOptions.CommonConfigDataId}"
+                : serviceOptions.ConfigDataId;
+            var location = $"dataId={dataIds}; group={serviceOptions.ConfigGroup}; namespace={namespaceName}";
+            ConfigurationLoadSummary.Print("Nacos", endpoint, location, remoteConfiguration);
         }
 
         private static void CopyOptions(NacosServiceOptions source, NacosServiceOptions target)

@@ -67,6 +67,7 @@ public sealed class ReverseTunnelEndToEndTests
         Assert.Equal(new Uri("http://127.0.0.1:5101/api/orders?id=9"), localHttpHandler.LastRequestUri);
         Assert.Equal("POST", localHttpHandler.LastMethod);
         Assert.Equal("gateway-body", localHttpHandler.LastBody);
+        Assert.Equal("application/json", localHttpHandler.LastContentType);
         Assert.Contains("X-Trace-Id", localHttpHandler.LastRequestHeaderNames);
     }
 
@@ -77,6 +78,7 @@ public sealed class ReverseTunnelEndToEndTests
     [Fact]
     public async Task Agent_frame_processor_should_split_response_body_by_configured_frame_payload_limit()
     {
+        ReverseTunnelMetrics.ResetSnapshotForTesting();
         var options = CreateOptions(maxFramePayloadBytes: 1024);
         var optionsAccessor = Options.Create(options);
         var localHttpHandler = new CapturingLocalHttpHandler(new HttpResponseMessage(HttpStatusCode.OK)
@@ -147,6 +149,12 @@ public sealed class ReverseTunnelEndToEndTests
         }
 
         Assert.Equal([1024, 1024, 452], bodyFrameLengths);
+        var metricSnapshot = ReverseTunnelMetrics.GetSnapshot();
+        var dimension = Assert.Single(metricSnapshot.Dimensions, item => item.ServiceKey == "order-service" && item.AgentId == "unknown");
+        Assert.Equal(1, dimension.Counters.RequestsTotal);
+        Assert.Equal(1, dimension.Counters.DurationSamples);
+        Assert.Equal(2500, dimension.Counters.ResponseBodyBytesTotal);
+        Assert.Equal(0, dimension.Counters.ActiveStreams);
     }
 
     /// <summary>
@@ -443,6 +451,8 @@ public sealed class ReverseTunnelEndToEndTests
 
         public string? LastBody { get; private set; }
 
+        public string? LastContentType { get; private set; }
+
         public HashSet<string> LastRequestHeaderNames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<string, string> LastRequestHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -452,6 +462,7 @@ public sealed class ReverseTunnelEndToEndTests
             LastRequestUri = request.RequestUri;
             LastMethod = request.Method.Method;
             LastBody = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
+            LastContentType = request.Content?.Headers.ContentType?.MediaType;
             foreach (var header in request.Headers)
             {
                 LastRequestHeaderNames.Add(header.Key);

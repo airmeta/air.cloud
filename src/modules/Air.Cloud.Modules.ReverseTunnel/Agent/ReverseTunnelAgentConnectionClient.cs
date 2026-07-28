@@ -54,13 +54,19 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
     /// <inheritdoc />
     public async Task RunOnceAsync(CancellationToken cancellationToken = default)
     {
+        await RunOnceAsync(0, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task RunOnceAsync(int connectionIndex, CancellationToken cancellationToken = default)
+    {
         using var clientCertificate = materialStore.LoadClientCertificate();
         using var channel = CreateChannel(clientCertificate);
         var client = new ReverseTunnelTransport.ReverseTunnelTransportClient(channel);
         using var call = client.Connect(cancellationToken: cancellationToken);
         using var writeLock = new SemaphoreSlim(1, 1);
         using var heartbeatCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var sessionId = Guid.NewGuid().ToString("N");
+        var sessionId = CreateSessionId(connectionIndex);
 
         await WriteFrameAsync(call.RequestStream, writeLock, new TunnelFrameMessage
         {
@@ -88,6 +94,12 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
             await call.RequestStream.CompleteAsync();
             await AwaitHeartbeatStopAsync(heartbeatTask);
         }
+    }
+
+    private static string CreateSessionId(int connectionIndex)
+    {
+        var normalizedIndex = Math.Max(0, connectionIndex);
+        return $"{Guid.NewGuid():N}-{normalizedIndex}";
     }
 
     private async Task RunHeartbeatAsync(IClientStreamWriter<TunnelFrameMessage> requestStream, SemaphoreSlim writeLock, string sessionId, CancellationToken cancellationToken)

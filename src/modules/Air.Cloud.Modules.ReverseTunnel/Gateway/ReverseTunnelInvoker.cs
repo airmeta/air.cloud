@@ -90,6 +90,7 @@ public sealed class ReverseTunnelInvoker : IReverseTunnelInvoker
             ServiceKey = route.ServiceKey,
             Method = request.Method.Method,
             PathAndQuery = pathAndQuery,
+            HasBody = request.Content is not null,
             Headers = CollectRequestHeaders(request)
         };
         InjectTraceContext(payload.Headers);

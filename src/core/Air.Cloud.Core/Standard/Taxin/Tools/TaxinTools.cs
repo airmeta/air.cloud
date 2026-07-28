@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -175,45 +175,49 @@ namespace Air.Cloud.Core.Standard.Taxin.Tools
             }
         }
         /// <summary>
-        /// <para>zh-cn:复杂数据结构处理与分析</para>
-        /// <para>en-us:Data sort</para>
+        /// <para>zh-cn:候选 Taxin 路由排序实现。每个动作键独立构建版本到路由的映射，避免同一服务包中的后续动作覆盖前序动作。该方法当前不写入全局路由表，供替换现有排序实现前进行逻辑验证。</para>
+        /// <para>en-us:Candidate Taxin route-sorting implementation. Each action key builds its own version-to-route map so later actions in the same service package cannot overwrite earlier actions. This method does not write the global route table and is intended for validation before replacing the current sorter.</para>
         /// </summary>
         /// <param name="Packages">
-        /// <para>zh-cn:数据包信息</para>
-        /// <para>en-us:Data</para>
+        /// <para>zh-cn:按服务实例标识分组的 Taxin 路由数据包。</para>
+        /// <para>en-us:Taxin route data packages grouped by service instance identifier.</para>
         /// </param>
         /// <returns>
-        ///  <para>zh-cn:排序处理后的结果</para> 
-        ///  <para>en-us:result</para>
+        /// <para>zh-cn:按动作名和实例版本索引的候选路由表。</para>
+        /// <para>en-us:A candidate route table indexed by action name and instance version.</para>
         /// </returns>
         private static IDictionary<string, IDictionary<Version, TaxinRouteInformation>> SortRoutes(IDictionary<string, IEnumerable<TaxinRouteDataPackage>> Packages)
         {
-            //结果
-            IDictionary<string, IDictionary<Version, TaxinRouteInformation>> KeyValues = new Dictionary<string, IDictionary<Version, TaxinRouteInformation>>();
-            IDictionary<Version, TaxinRouteInformation> VersionRoutes = null;
-            foreach (var item in Packages)
+            var keyValues = new Dictionary<string, IDictionary<Version, TaxinRouteInformation>>();
+
+            foreach (var package in Packages)
             {
-                // 路由 版本 路由信息
-                var AllRoutes = item.Value.Where(s => s.Routes != null && s.Routes.Any()).Select(s => new { s.Routes, s.InstanceVersion })
-                    .SelectMany(s => s.Routes.Select(x => new Tuple<string, Version, TaxinRouteInformation>(x.ServiceName, s.InstanceVersion, x))).ToList();
-                var AllRouteKeys = AllRoutes.GroupBy(s => s.Item1).ToList();
-                VersionRoutes = new Dictionary<Version, TaxinRouteInformation>();
-                foreach (var Route in AllRouteKeys)
+                var allRoutes = package.Value
+                    .Where(item => item.Routes != null && item.Routes.Any())
+                    .Select(item => new { item.Routes, item.InstanceVersion })
+                    .SelectMany(item => item.Routes.Select(route => new Tuple<string, Version, TaxinRouteInformation>(route.ServiceName, item.InstanceVersion, route)));
+
+                foreach (var actionRoutes in allRoutes.GroupBy(item => item.Item1))
                 {
-                    var Versions = AllRoutes.Where(s => s.Item1 == Route.Key).GroupBy(s => s.Item2).ToList();
-                    foreach (var item1 in Versions)
+                    // A route dictionary belongs to one action only; it must not be shared by sibling actions.
+                    var versionRoutes = new Dictionary<Version, TaxinRouteInformation>();
+
+                    foreach (var versionRoutesGroup in actionRoutes.GroupBy(item => item.Item2))
                     {
-                        //相同版本的接口应该是相同的 所以这里只需要取一条数据就可以了
-                        var VersionRoute = AllRoutes.Where(s => s.Item1 == Route.Key && s.Item2 == item1.Key).Select(s => s.Item3).FirstOrDefault();
-                        if (VersionRoute != null)
-                            VersionRoutes[item1.Key] = VersionRoute;
+                        var route = versionRoutesGroup.Select(item => item.Item3).FirstOrDefault();
+                        if (route != null)
+                        {
+                            versionRoutes[versionRoutesGroup.Key] = route;
+                        }
                     }
-                    if (VersionRoutes.Values.Any())
-                        KeyValues[Route.Key] = VersionRoutes;
+                    if (versionRoutes.Count > 0)
+                    {
+                        keyValues[actionRoutes.Key] = versionRoutes;
+                    }
                 }
             }
-            ITaxinStoreStandard.Routes = KeyValues;
-            return KeyValues;
+            ITaxinStoreStandard.Routes = keyValues;
+            return keyValues;
         }
 
 

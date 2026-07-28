@@ -37,4 +37,27 @@ public static class ReverseTunnelApplicationBuilderExtensions
         app.UseEndpoints(endpoints => endpoints.MapReverseTunnelServer());
         return app;
     }
+
+    /// <summary>
+    /// <para>zh-cn:通过独立 UseEndpoints 调用映射 AirTunnel 诊断 HTTP API。该扩展不要求当前进程包含 Server 角色，适合 Agent、Gateway 或 Server 宿主在业务中间件之前开放只读诊断入口；调用前必须已经执行 UseRouting。</para>
+    /// <para>en-us:Maps AirTunnel diagnostic HTTP APIs through a standalone UseEndpoints call. This extension does not require the current process to include the Server role, so Agent, Gateway, or Server hosts can expose the read-only diagnostic entry before business middlewares; UseRouting must have already run.</para>
+    /// </summary>
+    /// <param name="app">
+    /// <para>zh-cn:应用程序构建器，必须已经在前面调用 UseRouting。</para>
+    /// <para>en-us:Application builder; UseRouting must have been called earlier.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:原始应用程序构建器。</para>
+    /// <para>en-us:The original application builder.</para>
+    /// </returns>
+    public static IApplicationBuilder UseReverseTunnelDiagnostics(this IApplicationBuilder app)
+    {
+        if (app is null)
+        {
+            throw new ArgumentNullException(nameof(app));
+        }
+
+        app.UseEndpoints(endpoints => endpoints.MapReverseTunnelDiagnostics());
+        return app;
+    }
 }

@@ -1,0 +1,81 @@
+{
+  "id": {
+    "value": "security-platform"
+  },
+  "version": {
+    "value": "101-process-current"
+  },
+  "runtime": {
+    "profile": "Compact"
+  },
+  "endpoints": {
+    "gatewayPort": 8080,
+    "managerPort": 8081,
+    "managerInternalOnly": true
+  },
+  "mods": [
+    {
+      "id": {
+        "value": "auth"
+      },
+      "version": {
+        "value": "101-process-current"
+      },
+      "executionMode": "Process",
+      "artifact": {
+        "file": "mods/auth/air.cloud.auth.entry.dll",
+        "arguments": "--urls http://+:5106",
+        "endpoint": "http://127.0.0.1:5106"
+      },
+      "health": {
+        "path": "/Health",
+        "startupTimeoutSeconds": 90
+      },
+      "route": {
+        "prefix": "/mods/auth"
+      }
+    },
+    {
+      "id": {
+        "value": "account"
+      },
+      "version": {
+        "value": "101-process-current"
+      },
+      "executionMode": "Process",
+      "artifact": {
+        "file": "mods/account/air.cloud.account.entry.dll",
+        "arguments": "--urls http://+:5108",
+        "endpoint": "http://127.0.0.1:5108"
+      },
+      "health": {
+        "path": "/Health",
+        "startupTimeoutSeconds": 90
+      },
+      "route": {
+        "prefix": "/mods/account"
+      }
+    },
+    {
+      "id": {
+        "value": "system"
+      },
+      "version": {
+        "value": "101-process-current"
+      },
+      "executionMode": "Process",
+      "artifact": {
+        "file": "mods/system/air.cloud.system.entry.dll",
+        "arguments": "--urls http://+:5107",
+        "endpoint": "http://127.0.0.1:5107"
+      },
+      "health": {
+        "path": "/Health",
+        "startupTimeoutSeconds": 90
+      },
+      "route": {
+        "prefix": "/mods/system"
+      }
+    }
+  ]
+}

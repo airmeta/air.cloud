@@ -2,6 +2,18 @@
 
 `Air.Cloud.Modules.Nacos` 是 Air.Cloud 对 Nacos 的服务治理模块实现，提供服务注册发现、配置中心键值操作和远程配置加载能力。
 
+## 配置加载摘要
+
+`WebInjectInNacos()` 与 `HostInjectInNacos()` 在挂载远程配置后，都会通过 `AppRealization.Output.Print` 输出一条不含配置值的摘要。摘要包含 Nacos 服务端地址、dataId、group、namespace 和有效配置项数量；启用公共配置时，服务和公共 dataId 会汇总在同一条摘要中，避免重复统计。
+
+示例：
+
+```text
+配置加载 | 加载到配置: 来源:Nacos; 地址:http://127.0.0.1:8848/; 配置定位:dataId=order.json, common.json; group=DEFAULT_GROUP; namespace=public; 有效配置项:18个
+```
+
+配置值、连接字符串、密码、Token 均不会写入该日志。由于监听项为可选项，`有效配置项:0个` 表示本次读取未发现有值的键，不应视为已成功取得业务配置。
+
 ## 所属 Standard
 
 | Standard | 模块实现 | 说明 |

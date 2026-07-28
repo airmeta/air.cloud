@@ -1,8 +1,10 @@
 using Air.Cloud.Core.Attributes;
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -46,7 +48,46 @@ public static class ReverseTunnelEndpointRouteBuilderExtensions
         {
             endpoints.MapGrpcService<ReverseTunnelEnrollmentService>();
         }
+
+        endpoints.MapReverseTunnelDiagnostics();
         return endpoints;
+    }
+
+    /// <summary>
+    /// <para>zh-cn:映射 AirTunnel 诊断 HTTP API。endpoint 会被固定加入路由表；每次请求都会按运行期配置检查 `ReverseTunnelSettings:Diagnostics:Enabled`，关闭时返回 404。</para>
+    /// <para>en-us:Maps AirTunnel diagnostic HTTP APIs. Endpoints are always added to the route table; each request checks the runtime `ReverseTunnelSettings:Diagnostics:Enabled` value and returns 404 when diagnostics are disabled.</para>
+    /// </summary>
+    /// <param name="endpoints">
+    /// <para>zh-cn:endpoint 路由构建器。</para>
+    /// <para>en-us:The endpoint route builder.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:原始 endpoint 路由构建器。诊断接口路径在映射时确定，开关在请求时判断。</para>
+    /// <para>en-us:The original endpoint route builder. The diagnostic API path is determined at mapping time, while the switch is evaluated per request.</para>
+    /// </returns>
+    public static IEndpointRouteBuilder MapReverseTunnelDiagnostics(this IEndpointRouteBuilder endpoints)
+    {
+        if (endpoints is null)
+        {
+            throw new ArgumentNullException(nameof(endpoints));
+        }
+
+        var options = endpoints.ServiceProvider.GetRequiredService<IOptions<ReverseTunnelOptions>>().Value;
+        var diagnostics = ReverseTunnelDiagnosticsConfigurationReader.Read(options);
+        var prefix = diagnostics.PathPrefix;
+        endpoints.MapGet($"{prefix}/snapshot", (IReverseTunnelDiagnosticsService diagnostics, IOptions<ReverseTunnelOptions> options) => CreateDiagnosticsResult(options.Value, () => diagnostics.GetSnapshot()))
+            .WithDisplayName("AirTunnel diagnostics snapshot");
+        endpoints.MapGet($"{prefix}/metrics", (IReverseTunnelDiagnosticsService diagnostics, IOptions<ReverseTunnelOptions> options) => CreateDiagnosticsResult(options.Value, () => diagnostics.GetMetrics()))
+            .WithDisplayName("AirTunnel diagnostics metrics");
+        endpoints.MapGet($"{prefix}/sessions", (IReverseTunnelDiagnosticsService diagnostics, IOptions<ReverseTunnelOptions> options) => CreateDiagnosticsResult(options.Value, () => diagnostics.GetSessions()))
+            .WithDisplayName("AirTunnel diagnostics sessions");
+        return endpoints;
+    }
+
+    private static IResult CreateDiagnosticsResult<TValue>(ReverseTunnelOptions options, Func<TValue> read)
+    {
+        var diagnostics = ReverseTunnelDiagnosticsConfigurationReader.Read(options);
+        return diagnostics.Enabled ? Results.Ok(read()) : Results.NotFound();
     }
 
     private static ReverseTunnelOptions ValidateServerEndpoint(IServiceProvider serviceProvider)

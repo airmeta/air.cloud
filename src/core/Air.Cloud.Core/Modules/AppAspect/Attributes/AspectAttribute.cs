@@ -38,15 +38,21 @@ namespace Air.Cloud.Core.Modules.AppAspect.Attributes
         public Type AppAspectDependencies { get; set; }
 
         /// <summary>
-        /// <para>zh-cn:Aspect切入挂载点</para>
-        /// <para>en-us:Mount Aspect</para>
+        /// <para>zh-cn:初始化方法级 Aspect 切入点，并保留传入的执行顺序。具体执行方向由处理器类型和切面调度逻辑决定。</para>
+        /// <para>en-us:Initializes a method-level Aspect interception point and preserves the supplied execution order. The effective direction is determined by the handler type and aspect dispatch logic.</para>
         /// </summary>
-        /// <param name="appAspectDependencies"></param>
-        /// <param name="Order"></param>
+        /// <param name="appAspectDependencies">
+        /// <para>zh-cn:实现 <c>IAspectAroundHandler</c> 或 <c>IAspectExecuteHandler</c> 的切面处理器类型。</para>
+        /// <para>en-us:The aspect handler type implementing <c>IAspectAroundHandler</c> or <c>IAspectExecuteHandler</c>.</para>
+        /// </param>
+        /// <param name="Order">
+        /// <para>zh-cn:切面执行顺序，默认值为 1。</para>
+        /// <para>en-us:The aspect execution order. The default is 1.</para>
+        /// </param>
         public AspectAttribute(Type appAspectDependencies, int Order = 1)
         {
             AppAspectDependencies = appAspectDependencies;
-            Order = 1;
+            this.Order = Order;
         }
     }
 

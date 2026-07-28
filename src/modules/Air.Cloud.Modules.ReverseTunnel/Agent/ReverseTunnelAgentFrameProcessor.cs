@@ -1,5 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Http;
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
@@ -8,6 +9,7 @@ using Google.Protobuf;
 using Microsoft.Extensions.Options;
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading.Channels;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Agent;
@@ -123,7 +125,8 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
                 SingleWriter = false,
                 FullMode = BoundedChannelFullMode.Wait
             }),
-            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken),
+            Stopwatch.GetTimestamp());
 
         if (!pendingRequests.TryAdd(frame.StreamId, pendingRequest))
         {
@@ -132,6 +135,7 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
             return;
         }
 
+        ReverseTunnelMetrics.RequestStarted(request.ServiceKey, options.Value.AgentId);
         _ = DispatchRequestAsync(frame, pendingRequest, writeAsync);
     }
 
@@ -146,12 +150,14 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
         var bodyBytes = Interlocked.Add(ref pendingRequest.BodyBytes, frame.Payload.Length);
         if (bodyBytes > options.Value.MaxRequestBodyBytes)
         {
+            CompleteMetricsWithFailure(pendingRequest, "request_body_too_large", false);
             await CompletePendingRequestAsync(frame.StreamId, pendingRequest);
             await writeAsync(CreateError(frame, "request_body_too_large", "Reverse tunnel request body exceeds the configured Agent limit."), cancellationToken);
             return;
         }
 
         await pendingRequest.Body.Writer.WriteAsync(frame.Payload.ToByteArray(), cancellationToken);
+        ReverseTunnelMetrics.RequestBodyBytes(pendingRequest.Request.ServiceKey, options.Value.AgentId, frame.Payload.Length);
     }
 
     private void CompleteRequest(TunnelFrameMessage frame)
@@ -166,6 +172,7 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
     {
         if (pendingRequests.TryGetValue(frame.StreamId, out var pendingRequest))
         {
+            CompleteMetricsWithFailure(pendingRequest, "cancelled", true);
             await CompletePendingRequestAsync(frame.StreamId, pendingRequest);
         }
     }
@@ -187,6 +194,7 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
                 }, token),
                 async (body, token) =>
                 {
+                    ReverseTunnelMetrics.ResponseBodyBytes(pendingRequest.Request.ServiceKey, options.Value.AgentId, body.Length);
                     foreach (var frame in CreateBodyFrames(openFrame, body))
                     {
                         await writeAsync(frame, token);
@@ -201,16 +209,20 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
                 StreamId = openFrame.StreamId,
                 Kind = TunnelFrameKindMessage.Complete
             }, pendingRequest.Cancellation.Token);
+            CompleteMetricsWithSuccess(pendingRequest);
         }
         catch (OperationCanceledException) when (pendingRequest.Cancellation.IsCancellationRequested)
         {
+            CompleteMetricsWithFailure(pendingRequest, "cancelled", true);
         }
         catch (ReverseTunnelHttpLimitExceededException exception)
         {
+            CompleteMetricsWithFailure(pendingRequest, exception.Code, false);
             await writeAsync(CreateError(openFrame, exception.Code, exception.Message), CancellationToken.None);
         }
         catch (Exception exception)
         {
+            CompleteMetricsWithFailure(pendingRequest, "local_dispatch_failed", false);
             await writeAsync(CreateError(openFrame, "local_dispatch_failed", exception.Message), CancellationToken.None);
         }
         finally
@@ -225,6 +237,29 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
         pendingRequests.TryRemove(streamId, out _);
         pendingRequest.Body.Writer.TryComplete();
         await pendingRequest.Cancellation.CancelAsync();
+    }
+
+    private void CompleteMetricsWithSuccess(PendingRequest pendingRequest)
+    {
+        if (pendingRequest.TryCompleteMetrics())
+        {
+            ReverseTunnelMetrics.RequestCompleted(pendingRequest.Request.ServiceKey, options.Value.AgentId, pendingRequest.StartedAt);
+        }
+    }
+
+    private void CompleteMetricsWithFailure(PendingRequest pendingRequest, string reason, bool cancellation)
+    {
+        if (!pendingRequest.TryCompleteMetrics())
+        {
+            return;
+        }
+
+        if (cancellation)
+        {
+            ReverseTunnelMetrics.Cancellation(pendingRequest.Request.ServiceKey, options.Value.AgentId);
+        }
+
+        ReverseTunnelMetrics.RequestFailed(pendingRequest.Request.ServiceKey, options.Value.AgentId, reason, pendingRequest.StartedAt);
     }
 
     private static TunnelFrameMessage CreateError(TunnelFrameMessage frame, string code, string message)
@@ -263,8 +298,16 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
     private sealed record PendingRequest(
         ReverseTunnelHttpRequestPayload Request,
         Channel<byte[]> Body,
-        CancellationTokenSource Cancellation)
+        CancellationTokenSource Cancellation,
+        long StartedAt)
     {
+        private int metricsCompleted;
+
         public long BodyBytes;
+
+        public bool TryCompleteMetrics()
+        {
+            return Interlocked.Exchange(ref metricsCompleted, 1) == 0;
+        }
     }
 }

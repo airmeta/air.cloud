@@ -1,0 +1,37 @@
+<Solution>
+  <Folder Name="/Account/">
+    <Project Path="Security/Account/air.cloud.account.entry/air.cloud.account.entry.csproj" />
+    <Project Path="Security/Account/air.cloud.account.service/air.cloud.account.service.csproj" />
+  </Folder>
+  <Folder Name="/Common/">
+    <Project Path="Security/air.cloud.security.common/air.cloud.security.common.csproj" />
+  </Folder>
+  <Folder Name="/DynamicApp/">
+    <Project Path="DynamicApp/air.cloud.dynamicapp.entry/air.cloud.dynamicapp.entry.csproj" />
+  </Folder>
+  <Folder Name="/Gateway/">
+    <Project Path="GateWay/air.cloud.gateway/air.cloud.gateway.csproj" />
+  </Folder>
+  <Folder Name="/Open/">
+    <Project Path="Open/air.cloud.open.domain/air.cloud.open.domain.csproj" />
+    <Project Path="Open/air.cloud.open.entry/air.cloud.open.entry.csproj" />
+    <Project Path="Open/air.cloud.open.model/air.cloud.open.model.csproj" />
+    <Project Path="Open/air.cloud.open.repository/air.cloud.open.repository.csproj" />
+    <Project Path="Open/air.cloud.open.service/air.cloud.open.service.csproj" />
+  </Folder>
+  <Folder Name="/Security/">
+    <Project Path="Security/Auth/air.cloud.auth.domain/air.cloud.auth.domain.csproj" />
+    <Project Path="Security/Auth/air.cloud.auth.entry/air.cloud.auth.entry.csproj" />
+    <Project Path="Security/Auth/air.cloud.auth.model/air.cloud.auth.model.csproj" />
+    <Project Path="Security/Auth/air.cloud.auth.repository/air.cloud.auth.repository.csproj" />
+    <Project Path="Security/Auth/air.cloud.auth.service/air.cloud.auth.service.csproj" />
+  </Folder>
+  <Folder Name="/System/">
+    <Project Path="Security/System/air.cloud.system.domain/air.cloud.system.domain.csproj" />
+    <Project Path="Security/System/air.cloud.system.entry/air.cloud.system.entry.csproj" />
+    <Project Path="Security/System/air.cloud.system.model/air.cloud.system.model.csproj" />
+    <Project Path="Security/System/air.cloud.system.open.service/air.cloud.system.open.service.csproj" />
+    <Project Path="Security/System/air.cloud.system.repository/air.cloud.system.repository.csproj" />
+    <Project Path="Security/System/air.cloud.system.service/air.cloud.system.service.csproj" />
+  </Folder>
+</Solution>

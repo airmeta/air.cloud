@@ -208,6 +208,8 @@ public sealed class OrderEventSubscriber : IMessageQueueSubscribeStandard<OrderM
 
 如果没有找到 Topic 对应配置，模组会创建默认消费配置。
 
+自动订阅的 `Subscribe` 是同步调用。订阅者成功返回后，Kafka 模组才会把当前记录视为处理成功；在默认 `EnableAutoCommit=false` 的配置下，随后手动提交 offset。订阅者抛出的异常会先写入 `kafka_subscribe_error` 追踪日志，再继续传递到消费处理层，触发失败补偿且不提交当前记录的 offset。不要在订阅者内部吞掉需要重试的业务异常。
+
 ## 消费超时
 
 默认消费执行策略：

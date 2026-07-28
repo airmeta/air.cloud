@@ -37,6 +37,9 @@ namespace Air.Cloud.HostApp.Dependency
                     AppStartupTypeEnum.HOST,
                     LoadConfigurationTypeEnum.File,
                     assembly);
+            ConfigurationLoadSummary.Print("本地文件", AppConst.ApplicationPath,
+                $"{Path.Combine(AppConst.ApplicationPath, AppConst.SystemEnvironmentConfigFileFullName)}; {Path.Combine(AppConst.ApplicationPath, AppConst.CommonEnvironmentConfigFileFullName)}",
+                AppConfigurationLoader.Configurations);
 
             builder = builder.ConfigureAppConfiguration(a =>
             {

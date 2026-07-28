@@ -72,7 +72,7 @@ namespace air.gateway.Middleware
                 Nonce = context.Request.Headers["Nonce"],
                 RequestLimit = 1
             };
-            if (RouteValidateWhiteList != null && RouteValidateWhiteList.Any(s => s == ValidateRouteMetadata.Path))
+            if (IsRouteValidateWhiteListed(ValidateRouteMetadata.Path))
             {
                 await next(context);
                 return;
@@ -88,7 +88,7 @@ namespace air.gateway.Middleware
                 catch (Exception)
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM,"Launcher参数异常")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("Launcher参数异常")));
                     return;
                 }
             }
@@ -97,7 +97,7 @@ namespace air.gateway.Middleware
                 if (ValidateRouteMetadata.TimeStamp.IsNullOrEmpty())
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "TimeStamp参数缺失")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("TimeStamp参数缺失")));
                     return;
                 }
                 //校验TimeStamp与现在时间差值是否在允许范围内
@@ -113,7 +113,7 @@ namespace air.gateway.Middleware
                     if (timeDifference.TotalSeconds > 300)
                     {
                         context.Response.StatusCode = 200;
-                        _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "时间戳转换失败,请检查是否为有效时间戳(精确到秒)")));
+                        _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("时间戳转换失败,请检查是否为有效时间戳(精确到秒)")));
                         //string m = $"时间戳校验失败,服务时间:{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
                         //string D = string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM,m);
                         //context.Response.StatusCode = 200;
@@ -124,31 +124,31 @@ namespace air.gateway.Middleware
                 catch (Exception)
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "时间戳转换失败,请检查是否为有效时间戳(精确到秒)")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("时间戳转换失败,请检查是否为有效时间戳(精确到秒)")));
                     return;
                 }
                 if (ValidateRouteMetadata.AppId.IsNullOrEmpty())
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "AppId参数缺失")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("AppId参数缺失")));
                     return;
                 }
                 if (ValidateRouteMetadata.Sign.IsNullOrEmpty())
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Sign参数缺失")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("Sign参数缺失")));
                     return;
                 }
                 if (ValidateRouteMetadata.Nonce.IsNullOrEmpty())
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Nonce参数缺失")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("Nonce参数缺失")));
                     return;
                 }
                 if (ValidateRouteMetadata.Nonce.ToString()?.Length<16)
                 {
                     context.Response.StatusCode = 200;
-                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(string.Format(HttpRequestErrorResultConst.HEADERLOSE_ITEM, "Nonce参数长度不得低于16位")));
+                    _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(HttpRequestErrorResultConst.CreateErrorResult("Nonce参数长度不得低于16位")));
                     return;
                 }
             }
@@ -205,6 +205,84 @@ namespace air.gateway.Middleware
             //放行-----继续进行后续操作
             await next(context);
         }
+        /// <summary>
+        /// <para>zh-cn:判断请求路径是否命中签名校验白名单；支持精确路径、以斜杠结尾的前缀路径，以及包含 {参数名} 的路由模板。</para>
+        /// <para>en-us:Determines whether the request path matches the signature validation whitelist; exact paths, slash-ended prefixes, and route templates containing {parameter} are supported.</para>
+        /// </summary>
+        /// <param name="path">
+        /// <para>zh-cn:当前请求路径。</para>
+        /// <para>en-us:The current request path.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:命中白名单返回 true，否则返回 false。</para>
+        /// <para>en-us:Returns true when the whitelist matches; otherwise false.</para>
+        /// </returns>
+        public bool IsRouteValidateWhiteListed(string path)
+        {
+            if (RouteValidateWhiteList == null)
+            {
+                return false;
+            }
+
+            string requestPath = NormalizePath(path);
+            return RouteValidateWhiteList
+                .Where(item => !item.IsNullOrEmpty())
+                .Select(NormalizePath)
+                .Any(item => IsWhiteRouteMatch(item, requestPath));
+        }
+
+        private static bool IsWhiteRouteMatch(string whiteRoute, string requestPath)
+        {
+            if (whiteRoute.Equals(requestPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (whiteRoute.EndsWith("/", StringComparison.Ordinal) && requestPath.StartsWith(whiteRoute, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!whiteRoute.Contains('{', StringComparison.Ordinal) || !whiteRoute.Contains('}', StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string[] routeSegments = whiteRoute.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            string[] requestSegments = requestPath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (routeSegments.Length != requestSegments.Length)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < routeSegments.Length; index++)
+            {
+                string segment = routeSegments[index];
+                if (segment.StartsWith("{", StringComparison.Ordinal) && segment.EndsWith("}", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!segment.Equals(requestSegments[index], StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return "/";
+            }
+
+            string normalized = path.Trim();
+            return normalized.StartsWith("/", StringComparison.Ordinal) ? normalized : "/" + normalized;
+        }
+
         /// <summary>
         /// 获取当前请求的请求内容
         /// </summary>

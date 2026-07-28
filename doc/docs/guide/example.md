@@ -62,3 +62,7 @@
     例如: SANSHI.WUYE.Common
 :::
 
+#### Air.Cloud Micro API 示例
+
+仓库中的 `demo/api` 提供网关、开放服务和安全域服务组成的完整后端微服务示例。它通过 NuGet 引用 Air.Cloud 发布包，不引用本仓库的 `src` 源码；构建与运行说明见 [demo/api/README.zh-cn.md](https://github.com/AccessCross/air.cloud/blob/main/demo/api/README.zh-cn.md)。`demo/api/database/mysql/init.sql` 是从原 MySQL 实例导出的 18 张表初始化 DDL，`seed.sql` 包含同一实例的 260 行测试默认数据；按该顺序导入，两个文件均不含连接凭据。前端未包含在该示例中，后续将基于现有的 `demo/admin/VbenAdmin` 重构管理端。
+

@@ -1,0 +1,43 @@
+{
+  "name": "@air-cloud/sso",
+  "version": "5.7.0",
+  "homepage": "https://vben.pro",
+  "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vbenjs/vue-vben-admin.git",
+    "directory": "apps/sso"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "vben",
+    "email": "ann.vben@gmail.com",
+    "url": "https://github.com/anncwb"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "pnpm vite build --mode production && node ./scripts/zip-dist.mjs",
+    "build:analyze": "pnpm vite build --mode analyze",
+    "dev": "pnpm vite --mode development",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck"
+  },
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "dependencies": {
+    "jsencrypt": "^3.5.4",
+    "pinia": "catalog:",
+    "tdesign-vue-next": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "archiver": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

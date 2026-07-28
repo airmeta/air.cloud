@@ -125,6 +125,12 @@ public sealed class ReverseTunnelSession
     public DateTimeOffset LastSeenUtc => new(Interlocked.Read(ref lastSeenUtcTicks), TimeSpan.Zero);
 
     /// <summary>
+    /// <para>zh-cn:当前会话中尚未完成的 HTTP 请求流数量。该值用于诊断和容量判断，只表示当前进程内的瞬时状态。</para>
+    /// <para>en-us:Current number of unfinished HTTP request streams in this session. The value is intended for diagnostics and capacity checks and represents only an in-process instant state.</para>
+    /// </summary>
+    public int ActiveStreamCount => pendingInvocations.Count;
+
+    /// <summary>
     /// <para>zh-cn:刷新会话最后活跃时间。调用方应传入可信 UTC 时间。</para>
     /// <para>en-us:Refreshes the session last-seen time. Callers should pass a trusted UTC time.</para>
     /// </summary>
@@ -138,6 +144,11 @@ public sealed class ReverseTunnelSession
 
     internal async Task<ReverseTunnelHttpExchangeResult> InvokeAsync(ReverseTunnelHttpRequestPayload request, byte[] body, TimeSpan timeout, CancellationToken cancellationToken)
     {
+        request = request with
+        {
+            HasBody = request.HasBody || body is { Length: > 0 }
+        };
+
         var requestBody = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
         {
             SingleReader = true,

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>annotations</Nullable>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageId>Air.Cloud.DynamicApp</PackageId>
+    <Title>Air.Cloud.DynamicApp</Title>
+    <Authors>AC</Authors>
+    <Company>鏄熸洺鏁版嵁</Company>
+    <Product>air.cloud</Product>
+    <Description>DynamicApp runtime library for manifests, lifecycle state, manager APIs, gateway forwarding, compact process hosting, and orchestration boundaries.</Description>
+    <PackageDescription>DynamicApp runtime library for manifests, lifecycle state, manager APIs, gateway forwarding, compact process hosting, and orchestration boundaries.</PackageDescription>
+    <PackageTags>Air.Cloud;DynamicApp;Contracts;Gateway;Host;Manager;Orchestrator</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <Version>10.0.0</Version>
+    <PackageVersion>10.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0</AssemblyVersion>
+    <FileVersion>10.0.0</FileVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

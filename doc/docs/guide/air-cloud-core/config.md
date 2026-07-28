@@ -123,6 +123,8 @@ var app = builder.WebInjectInFile();
 app.Run();
 ```
 
+`WebInjectInFile()` 和 `HostInjectInFile()` 会通过 `AppRealization.Output.Print` 输出本地配置读取摘要，包含应用目录、配置文件绝对路径和有效配置项数量。配置值、连接字符串、密码和 Token 不会输出；`有效配置项:0个` 表示该可选文件未读取到有值的配置项。
+
 内部会执行：
 
 ```csharp

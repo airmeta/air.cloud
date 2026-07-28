@@ -1,3 +1,4 @@
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
@@ -5,13 +6,12 @@ using System.Collections.Concurrent;
 namespace Air.Cloud.Modules.ReverseTunnel.Server;
 
 /// <summary>
-/// <para>zh-cn:线程安全的本地 Agent 会话注册表。多 Gateway 高可用将在后续阶段通过 Agent 多连接或专用接入层解决。</para>
-/// <para>en-us:Thread-safe local Agent-session registry. A later phase will address multi-Gateway high availability through Agent multi-connection or a dedicated ingress tier.</para>
+/// <para>zh-cn:线程安全的本地 Agent 会话注册表。注册表按会话标识保存当前进程内的活跃连接，同一个 AgentId 可以注册多条物理连接，会话选择策略决定某个 ServiceKey 的转发目标。</para>
+/// <para>en-us:Thread-safe local Agent-session registry. The registry stores active connections in the current process by session identifier; the same AgentId may register multiple physical connections, and the session-selection strategy chooses the forwarding target for a ServiceKey.</para>
 /// </summary>
 public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSessionRegistry
 {
     private readonly ConcurrentDictionary<string, ReverseTunnelSession> sessions = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, string> agentSessions = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, long> roundRobinCounters = new(StringComparer.OrdinalIgnoreCase);
     private readonly IOptions<ReverseTunnelOptions> options;
 
@@ -29,9 +29,7 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
     public void Register(ReverseTunnelSession session)
     {
         if (string.IsNullOrWhiteSpace(session.SessionId) || string.IsNullOrWhiteSpace(session.AgentId)) throw new ArgumentException("Reverse tunnel session and agent identifiers are required.", nameof(session));
-        if (agentSessions.TryGetValue(session.AgentId, out var previousSessionId) && previousSessionId != session.SessionId) sessions.TryRemove(previousSessionId, out _);
         sessions[session.SessionId] = session;
-        agentSessions[session.AgentId] = session.SessionId;
     }
 
     /// <inheritdoc />
@@ -59,9 +57,7 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
     /// <inheritdoc />
     public bool Remove(string sessionId)
     {
-        if (!sessions.TryRemove(sessionId, out var session)) return false;
-        if (agentSessions.TryGetValue(session.AgentId, out var activeSessionId) && activeSessionId == sessionId) agentSessions.TryRemove(session.AgentId, out _);
-        return true;
+        return sessions.TryRemove(sessionId, out _);
     }
 
     /// <inheritdoc />
@@ -69,6 +65,29 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
     {
         var threshold = TimeSpan.FromSeconds(options.Value.SessionIdleTimeoutSeconds);
         return sessions.Values.Where(session => utcNow - session.LastSeenUtc >= threshold).Count(session => Remove(session.SessionId));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<ReverseTunnelSessionDiagnosticsSnapshot> GetSnapshot(DateTimeOffset utcNow)
+    {
+        return sessions.Values
+            .OrderBy(session => session.AgentId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(session => session.SessionId, StringComparer.Ordinal)
+            .Select(session =>
+            {
+                var lastSeenUtc = session.LastSeenUtc;
+                return new ReverseTunnelSessionDiagnosticsSnapshot
+                {
+                    SessionId = session.SessionId,
+                    AgentId = session.AgentId,
+                    ServiceKeys = session.ServiceKeys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase).ToArray(),
+                    ConnectedAtUtc = session.ConnectedAtUtc,
+                    LastSeenUtc = lastSeenUtc,
+                    IdleSeconds = Math.Max(0, (utcNow - lastSeenUtc).TotalSeconds),
+                    ActiveStreamCount = session.ActiveStreamCount
+                };
+            })
+            .ToArray();
     }
 
     private ReverseTunnelSession? SelectSession(string serviceKey, IReadOnlyList<ReverseTunnelSession> candidates)

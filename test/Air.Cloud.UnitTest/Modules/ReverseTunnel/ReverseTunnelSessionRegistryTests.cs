@@ -2,6 +2,7 @@ using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
+using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Microsoft.Extensions.Options;
 using Google.Protobuf;
 using System.Diagnostics.Metrics;
@@ -11,15 +12,31 @@ namespace Air.Cloud.UnitTest.Modules.ReverseTunnel;
 public class ReverseTunnelSessionRegistryTests
 {
     [Fact]
-    public void Register_should_replace_previous_session_for_same_agent()
+    public void Register_should_keep_multiple_sessions_for_same_agent()
     {
         var registry = CreateRegistry(30);
         registry.Register(new ReverseTunnelSession("session-one", "agent-a", ["order-service"], DateTimeOffset.UtcNow));
         registry.Register(new ReverseTunnelSession("session-two", "agent-a", ["order-service"], DateTimeOffset.UtcNow));
 
-        Assert.False(registry.TryGet("session-one", out _));
+        Assert.True(registry.TryGet("session-one", out var firstSession));
         Assert.True(registry.TryGet("session-two", out var session));
+        Assert.Equal("agent-a", firstSession!.AgentId);
         Assert.Equal("agent-a", session!.AgentId);
+    }
+
+    [Fact]
+    public void Remove_should_remove_only_requested_session_for_same_agent()
+    {
+        var registry = CreateRegistry(30);
+        registry.Register(new ReverseTunnelSession("session-one", "agent-a", ["order-service"], DateTimeOffset.UtcNow));
+        registry.Register(new ReverseTunnelSession("session-two", "agent-a", ["order-service"], DateTimeOffset.UtcNow));
+
+        var removed = registry.Remove("session-one");
+
+        Assert.True(removed);
+        Assert.False(registry.TryGet("session-one", out _));
+        Assert.True(registry.TryGet("session-two", out var remainingSession));
+        Assert.Equal("agent-a", remainingSession!.AgentId);
     }
 
     [Fact]
@@ -83,8 +100,8 @@ public class ReverseTunnelSessionRegistryTests
         var now = DateTimeOffset.UtcNow;
         var registry = CreateRegistry(30, ReverseTunnelSessionSelectionStrategy.RoundRobin);
         registry.Register(new ReverseTunnelSession("session-a", "agent-a", ["order-service"], now));
-        registry.Register(new ReverseTunnelSession("session-b", "agent-b", ["order-service"], now));
-        registry.Register(new ReverseTunnelSession("session-c", "agent-c", ["order-service"], now));
+        registry.Register(new ReverseTunnelSession("session-b", "agent-a", ["order-service"], now));
+        registry.Register(new ReverseTunnelSession("session-c", "agent-a", ["order-service"], now));
 
         var selected = new List<string>();
         for (var i = 0; i < 6; i++)
@@ -94,6 +111,27 @@ public class ReverseTunnelSessionRegistryTests
         }
 
         Assert.Equal(["session-a", "session-b", "session-c", "session-a", "session-b", "session-c"], selected);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证会话注册表可以输出当前进程内会话诊断快照，并按 AgentId 与 SessionId 稳定排序。</para>
+    /// <para>en-us:Verifies that the session registry can output current-process session diagnostics and sort them stably by AgentId and SessionId.</para>
+    /// </summary>
+    [Fact]
+    public void GetSnapshot_should_return_current_process_session_diagnostics()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var registry = CreateRegistry(30);
+        registry.Register(new ReverseTunnelSession("session-two", "agent-b", ["system", "account"], now.AddSeconds(-3)));
+        registry.Register(new ReverseTunnelSession("session-one", "agent-a", ["account"], now.AddSeconds(-7)));
+
+        var snapshot = registry.GetSnapshot(now);
+
+        Assert.Equal(["session-one", "session-two"], snapshot.Select(item => item.SessionId).ToArray());
+        Assert.Equal("agent-a", snapshot[0].AgentId);
+        Assert.Equal(["account"], snapshot[0].ServiceKeys);
+        Assert.InRange(snapshot[0].IdleSeconds, 6.9, 7.1);
+        Assert.Equal(["account", "system"], snapshot[1].ServiceKeys);
     }
 
     [Fact]
@@ -283,6 +321,7 @@ public class ReverseTunnelSessionRegistryTests
     [Fact]
     public async Task InvokeAsync_should_emit_request_metrics_for_successful_stream()
     {
+        ReverseTunnelMetrics.ResetSnapshotForTesting();
         var measurementNames = new List<string>();
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, meterListener) =>
@@ -298,15 +337,20 @@ public class ReverseTunnelSessionRegistryTests
 
         var session = new ReverseTunnelSession(
             "session-one",
-            "agent-a",
-            ["order-service"],
+            "metrics-agent",
+            ["metrics-service"],
             DateTimeOffset.UtcNow,
             maxConcurrentStreams: 1,
             outboundFrameQueueCapacity: 16,
             maxFramePayloadBytes: 1024,
             maxResponseBodyBytes: 4096);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var invocation = session.InvokeAsync(CreateRequest(), "metrics-body"u8.ToArray(), TimeSpan.FromSeconds(5), timeout.Token);
+        var invocation = session.InvokeAsync(new ReverseTunnelHttpRequestPayload
+        {
+            ServiceKey = "metrics-service",
+            Method = "GET",
+            PathAndQuery = "/api/metrics"
+        }, "metrics-body"u8.ToArray(), TimeSpan.FromSeconds(5), timeout.Token);
         await WaitForOutboundFrameAsync(session, TunnelFrameKindMessage.Complete, timeout.Token);
         CompleteInvocation(session, streamId: 1);
         var result = await invocation;
@@ -315,6 +359,13 @@ public class ReverseTunnelSessionRegistryTests
         Assert.Contains("aircloud_reverse_tunnel_requests_total", measurementNames);
         Assert.Contains("aircloud_reverse_tunnel_request_duration_ms", measurementNames);
         Assert.Contains("aircloud_reverse_tunnel_request_bytes_total", measurementNames);
+
+        var snapshot = ReverseTunnelMetrics.GetSnapshot();
+        var dimension = snapshot.Dimensions.Single(item => item.ServiceKey == "metrics-service" && item.AgentId == "metrics-agent");
+        Assert.Equal(1, dimension.Counters.RequestsTotal);
+        Assert.Equal(0, dimension.Counters.RequestFailuresTotal);
+        Assert.Equal(12, dimension.Counters.RequestBodyBytesTotal);
+        Assert.Equal(1, dimension.Counters.DurationSamples);
     }
 
     private static async Task<TunnelFrameMessage> WaitForOutboundFrameAsync(ReverseTunnelSession session, TunnelFrameKindMessage expectedKind, CancellationToken cancellationToken)

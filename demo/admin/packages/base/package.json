@@ -1,0 +1,21 @@
+{
+  "name": "@root/base",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit --skipLibCheck"
+  },
+  "keywords": [],
+  "author": "airmeta",
+  "license": "MPL-2.0",
+  "packageManager": "pnpm@10.23.0",
+  "dependencies": {
+    "@vben/icons": "workspace:*",
+    "tdesign-vue-next": "catalog:",
+    "ts-md5": "^2.0.1",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  }
+}

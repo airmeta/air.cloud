@@ -26,6 +26,31 @@ namespace air.gateway.Const
     }
     public static class HttpRequestErrorResultConst
     {
+        /// <summary>
+        /// <para>zh-cn:创建带自定义消息的网关错误响应，避免对 JSON 模板执行 string.Format 导致大括号解析异常。</para>
+        /// <para>en-us:Creates a gateway error response with a custom message, avoiding string.Format over JSON templates because JSON braces are parsed as format items.</para>
+        /// </summary>
+        /// <param name="message">
+        /// <para>zh-cn:返回给调用方的错误消息。</para>
+        /// <para>en-us:The error message returned to the caller.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:统一结果格式的 JSON 字符串。</para>
+        /// <para>en-us>A JSON string in the unified result format.</para>
+        /// </returns>
+        public static string CreateErrorResult(string message)
+        {
+            return JsonConvert.SerializeObject(new RESTfulResult<string>()
+            {
+                Code = 500,
+                Data = "",
+                Extras = UnifyContext.Take(),
+                Succeeded = true,
+                Message = message,
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
+        }
+
         #region 返回参数
 
         /// <summary>

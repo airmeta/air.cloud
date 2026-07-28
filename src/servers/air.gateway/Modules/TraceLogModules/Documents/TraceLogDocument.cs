@@ -23,20 +23,29 @@ namespace air.gateway.Modules.TraceLogModules.Documents
     public class TraceLogDocument:INoSqlEntity,ITraceLogContent
     {
         public string Id { get; set; } = AppCore.Guid();
-        public string Host { get; set; }
-        public string Method { get; set; }
-        public string Path { get; set; }
-        public string RequestContent { get; set; }
-        public string ResponseContent { get; set; }
-        public string Sign { get; set; }
-        public string AppId { get; set; }
-        public string AppSecret { get; set; }
-        public string TimeStamp { get; set; }
-        public string RequestId { get; set; }
-        public string UKey { get; set; }
-        public string Authorization { get; set; }
-        public string XAuthorization { get; set; }
+        public string Host { get; set; } = string.Empty;
+        public string Method { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
+        public string RequestContent { get; set; } = string.Empty;
+        public string ResponseContent { get; set; } = string.Empty;
+        public bool RequestContentTruncated { get; set; }
+        public bool ResponseContentTruncated { get; set; }
+        public long RequestBodyLength { get; set; }
+        public long ResponseBodyLength { get; set; }
+        public int StatusCode { get; set; }
+        public double ElapsedMilliseconds { get; set; }
+        public string ClientIp { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public string ExceptionMessage { get; set; } = string.Empty;
+        public string Sign { get; set; } = string.Empty;
+        public string AppId { get; set; } = string.Empty;
+        public string AppSecret { get; set; } = string.Empty;
+        public string TimeStamp { get; set; } = string.Empty;
+        public string RequestId { get; set; } = string.Empty;
+        public string UKey { get; set; } = string.Empty;
+        public string Authorization { get; set; } = string.Empty;
+        public string XAuthorization { get; set; } = string.Empty;
         public DateTime RequestTime { get; set; } = DateTime.Now;
-        public string Tags { get; set; }
+        public string Tags { get; set; } = string.Empty;
     }
 }

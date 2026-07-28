@@ -24,6 +24,12 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     /// <summary><para>zh-cn:Agent 主动连接的 Server 地址。仅 Agent 角色需要配置。</para><para>en-us:Server address to which the Agent actively connects. Only the Agent role requires this value.</para></summary>
     public string ServerAddress { get; set; } = string.Empty;
 
+    /// <summary>
+    /// <para>zh-cn:单个 Agent 进程向 Server 建立的物理隧道连接数量。默认值为 1；调高后仍使用同一个 AgentId 作为安全身份，但每条连接会注册为独立会话，用于在单 Gateway/Server 进程内分摊并发 HTTP 请求。</para>
+    /// <para>en-us:Number of physical tunnel connections opened from one Agent process to the Server. The default is 1; higher values keep the same AgentId security identity, but each connection registers as an independent session so a single Gateway/Server process can spread concurrent HTTP requests.</para>
+    /// </summary>
+    public int AgentConnectionCount { get; set; } = 1;
+
     /// <summary><para>zh-cn:协议版本。当前仅支持版本 1。</para><para>en-us:Protocol version. Only version 1 is currently supported.</para></summary>
     public int ProtocolVersion { get; set; } = 1;
 
@@ -91,6 +97,12 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     public ReverseTunnelAgentCertificateOptions AgentCertificate { get; set; } = new();
 
     /// <summary>
+    /// <para>zh-cn:诊断 HTTP API 配置。该配置只控制当前进程内的只读快照接口，不会启用外部观测平台或远程采集器。</para>
+    /// <para>en-us:Diagnostic HTTP API options. These options only control read-only in-process snapshot APIs and do not enable an external observability platform or remote collector.</para>
+    /// </summary>
+    public ReverseTunnelDiagnosticsOptions Diagnostics { get; set; } = new();
+
+    /// <summary>
     /// <para>zh-cn:标准化配置默认值和字符串键。该过程不自动启用模块，也不允许通过默认值创建可访问的网络入口。</para>
     /// <para>en-us:Normalizes configuration defaults and string keys. The process does not enable the module or create an accessible network entry through defaults.</para>
     /// </summary>
@@ -107,6 +119,7 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
         ProtocolVersion = ProtocolVersion <= 0 ? 1 : ProtocolVersion;
         AgentId = AgentId?.Trim() ?? string.Empty;
         ServerAddress = ServerAddress?.Trim().TrimEnd('/') ?? string.Empty;
+        AgentConnectionCount = Math.Clamp(AgentConnectionCount, 1, 64);
         HeartbeatIntervalSeconds = Math.Clamp(HeartbeatIntervalSeconds, 5, 300);
         SessionIdleTimeoutSeconds = Math.Max(SessionIdleTimeoutSeconds, HeartbeatIntervalSeconds * 2);
         MaxConcurrentStreams = Math.Clamp(MaxConcurrentStreams, 1, 4_096);
@@ -126,6 +139,8 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
         Enrollment.Normalize();
         AgentCertificate ??= new ReverseTunnelAgentCertificateOptions();
         AgentCertificate.Normalize();
+        Diagnostics ??= new ReverseTunnelDiagnosticsOptions();
+        Diagnostics.Normalize();
 
         foreach (var route in Routes)
         {

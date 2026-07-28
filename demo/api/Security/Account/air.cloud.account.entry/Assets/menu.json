@@ -1,0 +1,71 @@
+[
+  {
+    "Type": 0,
+    "ParentId": "0",
+    "Title": "系统管理",
+    "Icon": "lucide:settings",
+    "Path": "/system",
+    "Component": null,
+    "Hide": 0,
+    "SortNumber": 1,
+    "Authority": null,
+    "AppId": "",
+    "Children": [
+      {
+        "Type": 1,
+        "Title": "用户管理",
+        "Icon": "lucide:users",
+        "Path": "/system/users",
+        "Component": "/system/users",
+        "Hide": 0,
+        "SortNumber": 1,
+        "Authority": null,
+        "AppId": ""
+      },
+      {
+        "Type": 1,
+        "Title": "角色管理",
+        "Icon": "lucide:shield-check",
+        "Path": "/system/roles",
+        "Component": "/system/roles",
+        "Hide": 0,
+        "SortNumber": 2,
+        "Authority": null,
+        "AppId": ""
+      },
+      {
+        "Type": 1,
+        "Title": "部门管理",
+        "Icon": "lucide:network",
+        "Path": "/system/departments",
+        "Component": "/system/departments",
+        "Hide": 0,
+        "SortNumber": 3,
+        "Authority": null,
+        "AppId": ""
+      },
+      {
+        "Type": 1,
+        "Title": "菜单管理",
+        "Icon": "lucide:menu",
+        "Path": "/system/menus",
+        "Component": "/system/menus",
+        "Hide": 0,
+        "SortNumber": 4,
+        "Authority": null,
+        "AppId": ""
+      },
+      {
+        "Type": 1,
+        "Title": "字典管理",
+        "Icon": "lucide:book-open-text",
+        "Path": "/system/dictionaries",
+        "Component": "/system/dictionaries",
+        "Hide": 0,
+        "SortNumber": 5,
+        "Authority": null,
+        "AppId": ""
+      }
+    ]
+  }
+]

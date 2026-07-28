@@ -58,7 +58,7 @@ namespace Air.Cloud.Core
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddAspect();
-            services.AddOptions<AppLogFilterOptions>();
+            services.AddConfigurableOptions<AppLogFilterOptions>();
             services.TryAddSingleton<IAppLogFilterPlugin, DefaultAppLogFilterPlugin>();
         }
     }

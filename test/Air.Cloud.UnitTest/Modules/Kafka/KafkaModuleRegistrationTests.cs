@@ -64,6 +64,28 @@ namespace Air.Cloud.UnitTest.Modules.Kafka
             Assert.Same(customGenerator, provider.GetRequiredService<IMessageQueueKeyGenerator<int>>());
         }
 
+        [Fact]
+        public void InvokeSubscriber_should_rethrow_subscriber_failure_after_logging()
+        {
+            var method = typeof(KafkaModuleExtensions).GetMethod(
+                "InvokeSubscriber",
+                BindingFlags.Static | BindingFlags.NonPublic)!;
+            var subscriberMethod = typeof(ThrowingSubscriber).GetMethod(nameof(ThrowingSubscriber.Subscribe))!;
+
+            var exception = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, new object?[]
+            {
+                typeof(ThrowingSubscriber),
+                subscriberMethod,
+                new TestMessage(),
+                false,
+                null
+            }));
+
+            var invocationException = Assert.IsType<TargetInvocationException>(exception.InnerException);
+            var subscriberException = Assert.IsType<InvalidOperationException>(invocationException.InnerException);
+            Assert.Equal("subscriber failed", subscriberException.Message);
+        }
+
         private static void InvokeWithKafkaAssemblyScanOnly(Action action)
         {
             var originalAssemblies = AppCore.Assemblies;
@@ -112,6 +134,19 @@ namespace Air.Cloud.UnitTest.Modules.Kafka
             {
                 return 42;
             }
+        }
+
+        public sealed class ThrowingSubscriber
+        {
+            public object Subscribe(TestMessage message)
+            {
+                throw new InvalidOperationException("subscriber failed");
+            }
+        }
+
+        public sealed class TestMessage : IMessageContentStandard
+        {
+            public string Content { get; set; } = string.Empty;
         }
     }
 }

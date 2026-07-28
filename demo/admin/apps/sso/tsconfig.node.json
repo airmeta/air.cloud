@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts"]
+}

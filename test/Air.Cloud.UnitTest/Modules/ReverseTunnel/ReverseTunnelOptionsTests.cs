@@ -28,8 +28,15 @@ public class ReverseTunnelOptionsTests
             MaxResponseBodyBytes = 1,
             MaxFramePayloadBytes = 1,
             OutboundFrameQueueCapacity = 1,
+            AgentConnectionCount = 0,
             AgentReconnectInitialDelaySeconds = 0,
             AgentReconnectMaxDelaySeconds = 0,
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                Enabled = true,
+                PathPrefix = " airtunnel-status/ ",
+                SnapshotCollectionIntervalSeconds = 0
+            },
             Routes =
             [
                 new ReverseTunnelRouteOptions
@@ -67,15 +74,58 @@ public class ReverseTunnelOptionsTests
         Assert.Equal(1_024, options.MaxResponseBodyBytes);
         Assert.Equal(1_024, options.MaxFramePayloadBytes);
         Assert.Equal(16, options.OutboundFrameQueueCapacity);
+        Assert.Equal(1, options.AgentConnectionCount);
         Assert.Equal(ReverseTunnelSessionSelectionStrategy.NewestActive, options.SessionSelectionStrategy);
         Assert.Equal(1, options.AgentReconnectInitialDelaySeconds);
         Assert.Equal(1, options.AgentReconnectMaxDelaySeconds);
+        Assert.True(options.Diagnostics.Enabled);
+        Assert.Equal("/airtunnel-status", options.Diagnostics.PathPrefix);
+        Assert.Equal(1, options.Diagnostics.SnapshotCollectionIntervalSeconds);
         Assert.Equal("tunnel-order-service", options.Routes[0].VirtualHost);
         Assert.Equal("order-service", options.Routes[0].ServiceKey);
         Assert.Equal(300, options.Routes[0].TimeoutSeconds);
         Assert.Equal("http://127.0.0.1:5101", options.LocalServices[0].LocalAddress);
         Assert.Equal("AGENT-ALPHA", options.AgentAuthorizations[0].AgentId);
         Assert.Equal(["order-service", "catalog-service"], options.AgentAuthorizations[0].AllowedServiceKeys);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证诊断 API 配置默认关闭，并且空路径会回退到稳定默认路径。</para>
+    /// <para>en-us:Verifies that diagnostic API options are disabled by default and that an empty path falls back to the stable default path.</para>
+    /// </summary>
+    [Fact]
+    public void PostConfigure_should_keep_diagnostics_disabled_by_default()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                PathPrefix = " "
+            }
+        };
+
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        Assert.False(options.Diagnostics.Enabled);
+        Assert.Equal("/airtunnel/diagnostics", options.Diagnostics.PathPrefix);
+        Assert.Equal(15, options.Diagnostics.SnapshotCollectionIntervalSeconds);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Agent 物理连接数会被限制在单进程安全范围内，避免配置错误导致同一进程创建过多长期 gRPC 连接。</para>
+    /// <para>en-us:Verifies that the Agent physical connection count is clamped to a safe per-process range, preventing accidental creation of too many long-lived gRPC connections by configuration mistakes.</para>
+    /// </summary>
+    [Fact]
+    public void PostConfigure_should_clamp_agent_connection_count_to_single_process_limit()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            AgentConnectionCount = 999
+        };
+
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        Assert.Equal(64, options.AgentConnectionCount);
     }
 
     /// <summary>

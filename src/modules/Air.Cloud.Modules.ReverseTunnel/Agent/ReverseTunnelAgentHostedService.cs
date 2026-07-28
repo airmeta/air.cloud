@@ -78,16 +78,32 @@ public sealed class ReverseTunnelAgentHostedService : BackgroundService
         }
 
         await EnsureCertificateAsync(stoppingToken);
-        var retryDelay = GetInitialReconnectDelay();
+        var connectionCount = Math.Max(1, settings.AgentConnectionCount);
+        var connectionTasks = Enumerable.Range(0, connectionCount)
+            .Select(connectionIndex => RunConnectionLoopAsync(connectionIndex, stoppingToken))
+            .ToArray();
 
+        await Task.WhenAll(connectionTasks);
+    }
+
+    private async Task RunConnectionLoopAsync(int connectionIndex, CancellationToken stoppingToken)
+    {
+        var retryDelay = GetInitialReconnectDelay();
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                logger.LogInformation("Connecting reverse tunnel Agent {AgentId} to {ServerAddress}.", settings.AgentId, settings.ServerAddress);
-                await connectionClient.RunOnceAsync(stoppingToken);
+                logger.LogInformation(
+                    "Connecting reverse tunnel Agent {AgentId} connection {ConnectionIndex} to {ServerAddress}.",
+                    options.Value.AgentId,
+                    connectionIndex,
+                    options.Value.ServerAddress);
+                await connectionClient.RunOnceAsync(connectionIndex, stoppingToken);
                 retryDelay = GetInitialReconnectDelay();
-                logger.LogWarning("Reverse tunnel Agent connection ended; reconnecting in {RetryDelaySeconds} seconds.", retryDelay.TotalSeconds);
+                logger.LogWarning(
+                    "Reverse tunnel Agent connection {ConnectionIndex} ended; reconnecting in {RetryDelaySeconds} seconds.",
+                    connectionIndex,
+                    retryDelay.TotalSeconds);
                 await Task.Delay(retryDelay, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -96,7 +112,11 @@ public sealed class ReverseTunnelAgentHostedService : BackgroundService
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Reverse tunnel Agent connection failed; retrying in {RetryDelaySeconds} seconds.", retryDelay.TotalSeconds);
+                logger.LogError(
+                    ex,
+                    "Reverse tunnel Agent connection {ConnectionIndex} failed; retrying in {RetryDelaySeconds} seconds.",
+                    connectionIndex,
+                    retryDelay.TotalSeconds);
                 await Task.Delay(retryDelay, stoppingToken);
                 retryDelay = GetNextReconnectDelay(retryDelay);
             }

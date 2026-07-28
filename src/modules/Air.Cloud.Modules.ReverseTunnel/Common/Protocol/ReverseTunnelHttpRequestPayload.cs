@@ -25,6 +25,12 @@ public sealed record ReverseTunnelHttpRequestPayload
     public string PathAndQuery { get; init; } = "/";
 
     /// <summary>
+    /// <para>zh-cn:是否存在请求体。Server/Gateway 侧根据原始 `HttpRequestMessage.Content` 设置；Agent 侧只有该值为 true 时才会为本地 HTTP 请求创建流式 Content，避免无请求体 GET 被转成 `Transfer-Encoding: chunked`。</para>
+    /// <para>en-us:Indicates whether the request carries a body. The Server/Gateway side sets it from the original `HttpRequestMessage.Content`; the Agent side creates streaming Content for the local HTTP request only when this value is true, avoiding body-less GET requests being converted to `Transfer-Encoding: chunked`.</para>
+    /// </summary>
+    public bool HasBody { get; init; }
+
+    /// <summary>
     /// <para>zh-cn:请求头集合。</para>
     /// <para>en-us:Request header collection.</para>
     /// </summary>

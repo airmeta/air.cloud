@@ -55,12 +55,36 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
             }, Formatting.Indented, new JsonSerializerSettings() { ContractResolver = new LowercaseContractResolver() });
 
         }
+        /// <summary>
+        /// <para>zh-cn:创建天镜盾请求校验中间件。中间件会在进入下游管道前执行路由许可、匿名访问和票据校验，并根据 `SkyMirrorShieldSettings:RequestLog` 控制运行日志输出。</para>
+        /// <para>en-us:Creates the SkyMirrorShield request validation middleware. The middleware runs route permission, anonymous access, and ticket checks before the downstream pipeline, and controls runtime log output through `SkyMirrorShieldSettings:RequestLog`.</para>
+        /// </summary>
+        /// <param name="next">
+        /// <para>zh-cn:下一个 ASP.NET Core 请求委托。</para>
+        /// <para>en-us:The next ASP.NET Core request delegate.</para>
+        /// </param>
+        /// <param name="httpClientFactory">
+        /// <para>zh-cn:用于访问票据校验和应用路由查询接口的 HTTP 客户端工厂。</para>
+        /// <para>en-us:The HTTP client factory used to call ticket validation and application route query endpoints.</para>
+        /// </param>
         public SkyMirrorShieldMiddleware(RequestDelegate next, IHttpClientFactory httpClientFactory)
         {
             this.next = next;
             this.httpClientFactory = httpClientFactory;
 
         }
+        /// <summary>
+        /// <para>zh-cn:执行天镜盾请求校验。该方法不会改变 TraceLog 审计行为；仅对天镜盾自身的放行/拒绝运行日志应用请求日志开关和采样策略。</para>
+        /// <para>en-us:Executes SkyMirrorShield request validation. This method does not change TraceLog audit behavior; it only applies request-log switches and sampling to SkyMirrorShield's own allowed/rejected runtime logs.</para>
+        /// </summary>
+        /// <param name="context">
+        /// <para>zh-cn:当前 HTTP 请求上下文。</para>
+        /// <para>en-us:The current HTTP request context.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:表示中间件异步执行过程的任务。</para>
+        /// <para>en-us:A task representing the asynchronous middleware execution.</para>
+        /// </returns>
         public async Task InvokeAsync(HttpContext context)
         {
             //检查当前请求是否在白名单内
@@ -81,7 +105,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                     var result = internalAccessValidPlugin.ValidInternalAccessToken(dic);
                     if (result)
                     {
-                        AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，该请求由Taxin客户端调用,已跳过检查");
+                        PrintAllowedRequest($"请求路径：{Path}，请求方法：{Method}，该请求由Taxin客户端调用,已跳过检查");
                         await next(context); // 继续处理请求
                         return;
                     }
@@ -116,21 +140,21 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                         {
                             if (!appAuthRoutes.AppExist)
                             {
-                                AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},应用不存在,已拒绝此请求");
+                                PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},应用不存在,已拒绝此请求");
                                 context.Response.StatusCode = 403;
                                 _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "应用异常,已拒绝此请求")));
                                 return;
                             }
                             if (!appAuthRoutes.AppStatus.AppIsEnable)
                             {
-                                AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},应用已被禁用,已拒绝此请求");
+                                PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},应用已被禁用,已拒绝此请求");
                                 context.Response.StatusCode = 403;
                                 _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "该应用已被冻结")));
                                 return;
                             }
                             if (appAuthRoutes.AppStatus.AppIsDelete)
                             {
-                                AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},应用已被删除,已拒绝此请求");
+                                PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},应用已被删除,已拒绝此请求");
                                 context.Response.StatusCode = 403;
                                 _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "该应用已被删除,目标地址已不可达")));
                                 return;
@@ -140,7 +164,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                             RouteMatch = RouteMatches.Any() ? RouteMatches.First() : null;
                             if (RouteMatch == null)
                             {
-                                AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},未查询到匹配的路由,已拒绝此请求");
+                                PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，应用编号: {AppId},未查询到匹配的路由,已拒绝此请求");
                                 context.Response.StatusCode = 403;
                                 _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "未查询到匹配的路由,已拒绝此请求")));
                                 return;
@@ -148,7 +172,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                         }
                         else
                         {
-                            AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，未查询到匹配的路由,已拒绝此请求");
+                            PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，未查询到匹配的路由,已拒绝此请求");
 
                             context.Response.StatusCode = 403;
                             _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "未查询到匹配的路由,已拒绝此请求")));
@@ -157,7 +181,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                     }
                     else
                     {
-                        AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，未查询到匹配的路由,已拒绝此请求");
+                        PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，未查询到匹配的路由,已拒绝此请求");
                         context.Response.StatusCode = 403;
                         _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "未查询到匹配的路由,已拒绝此请求")));
                         return;
@@ -169,7 +193,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                 RouteMatch = ISkyMirrorShieldServerStandard.ServerEndpointDatas[Key];
                 if (RouteMatch == null)
                 {
-                    AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，未查询到匹配的路由,已拒绝此请求");
+                    PrintRejectedRequest($"请求路径：{Path}，请求方法：{Method}，未查询到匹配的路由,已拒绝此请求");
                     context.Response.StatusCode = 403;
                     _ = await context.Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(GetResponseResult(403, "未查询到匹配的路由,已拒绝此请求")));
                     return;
@@ -177,7 +201,7 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
             }
             #endregion
 
-            AppRealization.Output.Print("天镜安全校验", $"请求路径：{Path}，请求方法：{Method}，是否允许匿名访问：{RouteMatch.Value.IsAllowAnonymous},是否需要身份验证：{RouteMatch.Value.RequiresAuthorization}");
+            PrintAllowedRequest($"请求路径：{Path}，请求方法：{Method}，是否允许匿名访问：{RouteMatch.Value.IsAllowAnonymous},是否需要身份验证：{RouteMatch.Value.RequiresAuthorization}");
 
             bool IsAllowAnonymous = RouteMatch.Value.IsAllowAnonymous;
             if (IsAllowAnonymous)
@@ -207,6 +231,22 @@ namespace Air.Cloud.Modules.SkyMirrorShield.Middleware
                 return;
             }
             await next(context);
+        }
+
+        private static void PrintAllowedRequest(string message)
+        {
+            if (SkyMirrorShieldUtil.ShouldLogAllowedRequest())
+            {
+                AppRealization.Output.Print("天镜安全校验", message);
+            }
+        }
+
+        private static void PrintRejectedRequest(string message)
+        {
+            if (SkyMirrorShieldUtil.ShouldLogRejectedRequest())
+            {
+                AppRealization.Output.Print("天镜安全校验", message);
+            }
         }
 
     }
