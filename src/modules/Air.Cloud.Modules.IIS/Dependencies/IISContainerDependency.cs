@@ -13,13 +13,8 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Core.Standard.Container.Model;
 using Air.Cloud.Modules.IIS.Helper;
-using Air.Cloud.Modules.IIS.Model;
-
-using Mapster;
 
 using Microsoft.Web.Administration;
-
-using System.Collections.Concurrent;
 
 namespace Air.Cloud.Modules.IIS.Dependencies
 {
@@ -27,106 +22,117 @@ namespace Air.Cloud.Modules.IIS.Dependencies
     /// <para>zh-cn: 基于IIS的容器标准实现</para>
     /// <para>en-us: Windows IIS container standard dependency</para>
     /// </summary>
-    public class IISContainerDependency : IContainerStandard
+    public class IISContainerDependency : IContainerEngineStandard
     {
         /// <summary>
         /// <para>zh-cn:查询当前 IIS 中的站点实例，并转换为指定的容器实例类型。</para>
         /// <para>en-us:Queries current IIS site instances and converts them to the specified container instance type.</para>
         /// </summary>
-        /// <typeparam name="TIISContainerInstance">
-        /// <para>zh-cn:要返回的 IIS 容器实例类型。</para>
-        /// <para>en-us:The IIS container instance type to return.</para>
-        /// </typeparam>
+        /// <param name="includeStopped">
+        /// <para>zh-cn:是否包含已停止站点；IIS 实现当前始终返回全部站点。</para>
+        /// <para>en-us:Whether stopped sites are included; the IIS implementation currently always returns all sites.</para>
+        /// </param>
+        /// <param name="cancellationToken">
+        /// <para>zh-cn:取消令牌。</para>
+        /// <para>en-us:Cancellation token.</para>
+        /// </param>
         /// <returns>
-        /// <para>zh-cn:包含 IIS 容器实例的并发集合。</para>
-        /// <para>en-us:A concurrent collection that contains IIS container instances.</para>
+        /// <para>zh-cn:包含 IIS 站点实例的集合。</para>
+        /// <para>en-us:A collection that contains IIS site instances.</para>
         /// </returns>
-        public Task<ConcurrentBag<TIISContainerInstance>> QueryAsync<TIISContainerInstance>() where TIISContainerInstance : IContainerInstance, new()
+        public Task<IReadOnlyCollection<ContainerEngineInstance>> ListAsync(bool includeStopped = true, CancellationToken cancellationToken = default)
         {
-            ConcurrentBag<TIISContainerInstance> dockerContainerInstances = new ConcurrentBag<TIISContainerInstance>();
+            return Task.FromResult<IReadOnlyCollection<ContainerEngineInstance>>(IISContainerHelper.ReadIISInstance()?.ToArray() ?? Array.Empty<ContainerEngineInstance>());
+        }
 
-            foreach (var item in IISContainerHelper.ReadIISInstance())
-            {
-                dockerContainerInstances.Add(item.Adapt<TIISContainerInstance>());
-            }
-            return Task.FromResult(dockerContainerInstances);
+        /// <inheritdoc />
+        public Task<ContainerEngineInstance> InspectAsync(string containerNameOrId, CancellationToken cancellationToken = default)
+        {
+            using var serverManager = new ServerManager();
+            var site = ResolveSite(serverManager, containerNameOrId);
+            return Task.FromResult(IISContainerHelper.ToContainerEngineInstance(site));
         }
 
         /// <summary>
         /// <para>zh-cn:启动指定 IIS 容器实例对应的站点和应用程序池。</para>
         /// <para>en-us:Starts the site and application pool that correspond to the specified IIS container instance.</para>
         /// </summary>
-        /// <typeparam name="TIISContainerInstance">
-        /// <para>zh-cn:IIS 容器实例类型。</para>
-        /// <para>en-us:The IIS container instance type.</para>
-        /// </typeparam>
-        /// <param name="Information">
-        /// <para>zh-cn:需要启动的 IIS 容器实例信息。</para>
-        /// <para>en-us:The IIS container instance information to start.</para>
+        /// <param name="containerNameOrId">
+        /// <para>zh-cn:需要启动的 IIS 站点名称或 ID。</para>
+        /// <para>en-us:The IIS site name or id to start.</para>
+        /// </param>
+        /// <param name="cancellationToken">
+        /// <para>zh-cn:取消令牌。</para>
+        /// <para>en-us:Cancellation token.</para>
         /// </param>
         /// <returns>
-        /// <para>zh-cn:启动后的容器实例信息。</para>
-        /// <para>en-us:The container instance information after the start operation.</para>
+        /// <para>zh-cn:启动结果。</para>
+        /// <para>en-us>The start result.</para>
         /// </returns>
-        public Task<TIISContainerInstance> StartAsync<TIISContainerInstance>(TIISContainerInstance Information) where TIISContainerInstance : IContainerInstance, new()
+        public Task<ContainerEngineOperationResult> StartAsync(string containerNameOrId, CancellationToken cancellationToken = default)
         {
-            if (!(Information is IISContainerInstance)) AppRealization.Output.Error(new Exception("该实例非IIS服务器实例,无法启动"));
-            IISContainerInstance containerInstance = Information as IISContainerInstance;
-            using (var serverManager = new ServerManager())
+            using var serverManager = new ServerManager();
+            var site = ResolveSite(serverManager, containerNameOrId);
+            var pool = serverManager.ApplicationPools[site.Applications.FirstOrDefault()?.ApplicationPoolName ?? site.Name] ?? serverManager.ApplicationPools[site.Name];
+            if (pool != null && pool.State != ObjectState.Started)
             {
-                var site = serverManager.Sites[containerInstance.BriefSite.Name];
-                if (site != null)
-                {
-                    var poolObj = serverManager.ApplicationPools[containerInstance.BriefSite.Name];
-                    if (poolObj != null)
-                    {
-                        poolObj.Start();
-                        site.Start();
-                        serverManager.CommitChanges();
-                        return Task.FromResult(Information);
-                    }
-                }
-                return Task.FromResult(Information);
+                pool.Start();
             }
+
+            if (site.State != ObjectState.Started)
+            {
+                site.Start();
+            }
+
+            serverManager.CommitChanges();
+            return Task.FromResult(ContainerEngineOperationResult.Success($"IIS site `{site.Name}` started."));
         }
 
         /// <summary>
         /// <para>zh-cn:停止指定 IIS 容器实例对应的站点和应用程序池。</para>
         /// <para>en-us:Stops the site and application pool that correspond to the specified IIS container instance.</para>
         /// </summary>
-        /// <typeparam name="TIISContainerInstance">
-        /// <para>zh-cn:IIS 容器实例类型。</para>
-        /// <para>en-us:The IIS container instance type.</para>
-        /// </typeparam>
-        /// <param name="Information">
-        /// <para>zh-cn:需要停止的 IIS 容器实例信息。</para>
-        /// <para>en-us:The IIS container instance information to stop.</para>
+        /// <param name="containerNameOrId">
+        /// <para>zh-cn:需要停止的 IIS 站点名称或 ID。</para>
+        /// <para>en-us>The IIS site name or id to stop.</para>
+        /// </param>
+        /// <param name="cancellationToken">
+        /// <para>zh-cn:取消令牌。</para>
+        /// <para>en-us:Cancellation token.</para>
         /// </param>
         /// <returns>
-        /// <para>zh-cn:停止后的容器实例信息。</para>
-        /// <para>en-us:The container instance information after the stop operation.</para>
+        /// <para>zh-cn:停止结果。</para>
+        /// <para>en-us>The stop result.</para>
         /// </returns>
-        public Task<TIISContainerInstance> StopAsync<TIISContainerInstance>(TIISContainerInstance Information) where TIISContainerInstance : IContainerInstance, new()
+        public Task<ContainerEngineOperationResult> StopAsync(string containerNameOrId, CancellationToken cancellationToken = default)
         {
-            if (!(Information is IISContainerInstance)) AppRealization.Output.Error(new Exception("该实例非IIS服务器实例,无法启动"));
-            IISContainerInstance containerInstance = Information as IISContainerInstance;
-            using (var serverManager = new ServerManager())
+            using var serverManager = new ServerManager();
+            var site = ResolveSite(serverManager, containerNameOrId);
+            if (site.State != ObjectState.Stopped)
             {
-                var site = serverManager.Sites[containerInstance.BriefSite.Name];
-                if (site != null)
-                {
-                    site.Stop();
-                    var poolObj = serverManager.ApplicationPools[containerInstance.BriefSite.Name];
-                    if (poolObj != null)
-                    {
-                        poolObj.Stop();
-                    }
-                    serverManager.CommitChanges();
-                    return Task.FromResult(Information);
-                }
-                return Task.FromResult(Information);
+                site.Stop();
             }
-           
+
+            var pool = serverManager.ApplicationPools[site.Applications.FirstOrDefault()?.ApplicationPoolName ?? site.Name] ?? serverManager.ApplicationPools[site.Name];
+            if (pool != null && pool.State != ObjectState.Stopped)
+            {
+                pool.Stop();
+            }
+
+            serverManager.CommitChanges();
+            return Task.FromResult(ContainerEngineOperationResult.Success($"IIS site `{site.Name}` stopped."));
+        }
+
+        private static Site ResolveSite(ServerManager serverManager, string containerNameOrId)
+        {
+            if (string.IsNullOrWhiteSpace(containerNameOrId))
+            {
+                throw new ArgumentException("IIS site name or id is required.", nameof(containerNameOrId));
+            }
+
+            var site = serverManager.Sites[containerNameOrId]
+                ?? serverManager.Sites.FirstOrDefault(item => item.Id.ToString() == containerNameOrId);
+            return site ?? throw new InvalidOperationException($"IIS site `{containerNameOrId}` was not found.");
         }
     }
 }

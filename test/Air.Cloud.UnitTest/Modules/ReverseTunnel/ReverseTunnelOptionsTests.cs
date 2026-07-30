@@ -54,6 +54,58 @@ public class ReverseTunnelOptionsTests
                     LocalAddress = " http://127.0.0.1:5101/ "
                 }
             ],
+            Tcp = new ReverseTunnelTcpOptions
+            {
+                Enabled = true,
+                Listeners =
+                [
+                    new ReverseTunnelTcpListenerOptions
+                    {
+                        Name = " mysql ",
+                        ServiceKey = " mysql-service ",
+                        ListenHost = " ",
+                        ListenPort = 13306,
+                        MaxConnections = 0,
+                        ConnectTimeoutSeconds = 0,
+                        IdleTimeoutSeconds = 1
+                    }
+                ],
+                LocalServices =
+                [
+                    new ReverseTunnelTcpLocalServiceOptions
+                    {
+                        ServiceKey = " mysql-service ",
+                        Host = " ",
+                        Port = 3306
+                    }
+                ]
+            },
+            Udp = new ReverseTunnelUdpOptions
+            {
+                Enabled = true,
+                Listeners =
+                [
+                    new ReverseTunnelUdpListenerOptions
+                    {
+                        Name = " dns ",
+                        ServiceKey = " dns-service ",
+                        ListenHost = " ",
+                        ListenPort = 1053,
+                        MaxFlows = 0,
+                        FlowIdleTimeoutSeconds = 1,
+                        MaxDatagramBytes = 0
+                    }
+                ],
+                LocalServices =
+                [
+                    new ReverseTunnelUdpLocalServiceOptions
+                    {
+                        ServiceKey = " dns-service ",
+                        Host = " ",
+                        Port = 53
+                    }
+                ]
+            },
             AgentAuthorizations =
             [
                 new ReverseTunnelAgentAuthorizationOptions
@@ -85,6 +137,18 @@ public class ReverseTunnelOptionsTests
         Assert.Equal("order-service", options.Routes[0].ServiceKey);
         Assert.Equal(300, options.Routes[0].TimeoutSeconds);
         Assert.Equal("http://127.0.0.1:5101", options.LocalServices[0].LocalAddress);
+        Assert.Equal("mysql-service", options.Tcp.Listeners[0].ServiceKey);
+        Assert.Equal("0.0.0.0", options.Tcp.Listeners[0].ListenHost);
+        Assert.Equal(1, options.Tcp.Listeners[0].MaxConnections);
+        Assert.Equal(1, options.Tcp.Listeners[0].ConnectTimeoutSeconds);
+        Assert.Equal(5, options.Tcp.Listeners[0].IdleTimeoutSeconds);
+        Assert.Equal("127.0.0.1", options.Tcp.LocalServices[0].Host);
+        Assert.Equal("dns-service", options.Udp.Listeners[0].ServiceKey);
+        Assert.Equal("0.0.0.0", options.Udp.Listeners[0].ListenHost);
+        Assert.Equal(1, options.Udp.Listeners[0].MaxFlows);
+        Assert.Equal(5, options.Udp.Listeners[0].FlowIdleTimeoutSeconds);
+        Assert.Equal(1, options.Udp.Listeners[0].MaxDatagramBytes);
+        Assert.Equal("127.0.0.1", options.Udp.LocalServices[0].Host);
         Assert.Equal("AGENT-ALPHA", options.AgentAuthorizations[0].AgentId);
         Assert.Equal(["order-service", "catalog-service"], options.AgentAuthorizations[0].AllowedServiceKeys);
     }
@@ -242,5 +306,117 @@ public class ReverseTunnelOptionsTests
 
         Assert.True(result.Failed);
         Assert.Contains("ReverseTunnelSettings:SessionSelectionStrategy must be one of NewestActive, OldestActive, or RoundRobin.", result.Failures);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证启用 TCP/UDP 穿透时，Server 监听器缺少 ServiceKey 或端口会被配置校验拒绝。</para>
+    /// <para>en-us:Verifies that when TCP/UDP tunneling is enabled, Server listeners without ServiceKey or port are rejected by options validation.</para>
+    /// </summary>
+    [Fact]
+    public void Validate_should_reject_invalid_tcp_and_udp_server_listeners()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Server,
+            Tcp = new ReverseTunnelTcpOptions
+            {
+                Enabled = true,
+                Listeners = [new ReverseTunnelTcpListenerOptions()]
+            },
+            Udp = new ReverseTunnelUdpOptions
+            {
+                Enabled = true,
+                Listeners = [new ReverseTunnelUdpListenerOptions()]
+            }
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        var result = new ReverseTunnelOptionsValidation().Validate(null, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains("ReverseTunnelSettings:Tcp:Listeners:0:ServiceKey is required when TCP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Tcp:Listeners:0:ListenPort must be between 1 and 65535 when TCP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Udp:Listeners:0:ServiceKey is required when UDP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Udp:Listeners:0:ListenPort must be between 1 and 65535 when UDP tunneling is enabled.", result.Failures);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证启用 TCP/UDP 穿透时，Agent 本地目标缺少 ServiceKey 或端口会被配置校验拒绝。</para>
+    /// <para>en-us:Verifies that when TCP/UDP tunneling is enabled, Agent local targets without ServiceKey or port are rejected by options validation.</para>
+    /// </summary>
+    [Fact]
+    public void Validate_should_reject_invalid_tcp_and_udp_agent_local_services()
+    {
+        using var directories = TemporaryAgentDirectories.Create();
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            Roles = ReverseTunnelRole.Agent,
+            AgentId = "agent-alpha",
+            ServerAddress = "https://airtunnel.example.com",
+            AgentCertificate = new ReverseTunnelAgentCertificateOptions
+            {
+                CertificatePath = directories.CertificatePath,
+                PrivateKeyPath = directories.PrivateKeyPath,
+                TrustedIssuerPath = directories.TrustedIssuerPath
+            },
+            Tcp = new ReverseTunnelTcpOptions
+            {
+                Enabled = true,
+                LocalServices = [new ReverseTunnelTcpLocalServiceOptions()]
+            },
+            Udp = new ReverseTunnelUdpOptions
+            {
+                Enabled = true,
+                LocalServices = [new ReverseTunnelUdpLocalServiceOptions()]
+            }
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        var result = new ReverseTunnelOptionsValidation().Validate(null, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains("ReverseTunnelSettings:Tcp:LocalServices:0:ServiceKey is required when TCP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Tcp:LocalServices:0:Port must be between 1 and 65535 when TCP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Udp:LocalServices:0:ServiceKey is required when UDP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Udp:LocalServices:0:Port must be between 1 and 65535 when UDP tunneling is enabled.", result.Failures);
+    }
+
+    private sealed class TemporaryAgentDirectories : IDisposable
+    {
+        private TemporaryAgentDirectories(string directory)
+        {
+            Directory = directory;
+            CertificatePath = Path.Combine(directory, "agent.cer");
+            PrivateKeyPath = Path.Combine(directory, "agent.key");
+            TrustedIssuerPath = Path.Combine(directory, "issuer.cer");
+            File.WriteAllText(CertificatePath, "placeholder");
+            File.WriteAllText(PrivateKeyPath, "placeholder");
+            File.WriteAllText(TrustedIssuerPath, "placeholder");
+        }
+
+        public string Directory { get; }
+
+        public string CertificatePath { get; }
+
+        public string PrivateKeyPath { get; }
+
+        public string TrustedIssuerPath { get; }
+
+        public static TemporaryAgentDirectories Create()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "air-cloud-reverse-tunnel-options-tests", Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(directory);
+            return new TemporaryAgentDirectories(directory);
+        }
+
+        public void Dispose()
+        {
+            if (System.IO.Directory.Exists(Directory))
+            {
+                System.IO.Directory.Delete(Directory, recursive: true);
+            }
+        }
     }
 }

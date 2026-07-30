@@ -28,10 +28,10 @@
 
 - 纯 MVC 页面项目。
 - 大量文件下载、重定向、HTML 页面返回的项目。
-- 已经有完整自定义 Web 框架封装的老项目。
+- 已经有完整自定义 Web 框架封装的已有项目。
 
 如果只是 Web API 服务，推荐直接使用 `AddWebApp()`。  
-如果是老项目迁移，推荐先使用 `AddWebAppCore()`，确认路由、验证、异常都正常后，再启用统一返回。
+如果是已有项目迁移，建议先使用 `AddWebAppCore()`，确认路由、验证、异常都正常后，再启用统一返回。
 
 ### 能力拆分
 
@@ -39,7 +39,7 @@
 | --- | --- | --- |
 | `AddWebAppCore()` | 动态 API、数据验证、友好异常 | Web 服务核心能力，不包装成功返回 |
 | `AddWebAppUnifyResult()` | 统一返回 | 只启用统一返回能力 |
-| `AddWebApp()` | Core + 统一返回 | 新项目推荐入口 |
+| `AddWebApp()` | Core + 统一返回 | 标准接入入口 |
 
 旧入口 `AddInject()` 和 `AddInjectWithUnifyResult()` 已移除。
 

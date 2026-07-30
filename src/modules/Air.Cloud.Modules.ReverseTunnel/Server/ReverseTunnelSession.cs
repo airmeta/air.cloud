@@ -21,6 +21,8 @@ public sealed class ReverseTunnelSession
     private long nextStreamId;
     private readonly Channel<TunnelFrameMessage> outboundFrames;
     private readonly ConcurrentDictionary<long, PendingInvocation> pendingInvocations = new();
+    private readonly ConcurrentDictionary<long, PendingTcpTunnel> pendingTcpTunnels = new();
+    private readonly ConcurrentDictionary<long, PendingUdpFlow> pendingUdpFlows = new();
     private readonly SemaphoreSlim concurrentStreamSlots;
     private readonly int maxFramePayloadBytes;
     private readonly long maxRequestBodyBytes;
@@ -141,6 +143,11 @@ public sealed class ReverseTunnelSession
     public void Touch(DateTimeOffset utcNow) => Interlocked.Exchange(ref lastSeenUtcTicks, utcNow.UtcTicks);
 
     internal ChannelReader<TunnelFrameMessage> OutboundFrames => outboundFrames.Reader;
+
+    internal long AllocateStreamId()
+    {
+        return Interlocked.Increment(ref nextStreamId);
+    }
 
     internal async Task<ReverseTunnelHttpExchangeResult> InvokeAsync(ReverseTunnelHttpRequestPayload request, byte[] body, TimeSpan timeout, CancellationToken cancellationToken)
     {
@@ -300,6 +307,18 @@ public sealed class ReverseTunnelSession
             return;
         }
 
+        if (frame.Kind is TunnelFrameKindMessage.TcpData or TunnelFrameKindMessage.TcpClose or TunnelFrameKindMessage.TcpError)
+        {
+            await HandleTcpFrameAsync(frame, cancellationToken);
+            return;
+        }
+
+        if (frame.Kind is TunnelFrameKindMessage.UdpDatagram or TunnelFrameKindMessage.UdpFlowClose or TunnelFrameKindMessage.UdpError)
+        {
+            await HandleUdpFrameAsync(frame, cancellationToken);
+            return;
+        }
+
         if (!pendingInvocations.TryGetValue(frame.StreamId, out var pendingInvocation))
         {
             return;
@@ -372,6 +391,182 @@ public sealed class ReverseTunnelSession
         }
     }
 
+    internal async Task RunTcpTunnelAsync(
+        ReverseTunnelTcpOpenPayload openPayload,
+        ChannelReader<byte[]> inboundData,
+        Func<ReadOnlyMemory<byte>, CancellationToken, Task> writeClientAsync,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var streamId = AllocateStreamId();
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        linkedCancellation.CancelAfter(timeout);
+        var pendingTunnel = new PendingTcpTunnel(openPayload.ServiceKey, AgentId, writeClientAsync, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+        if (!pendingTcpTunnels.TryAdd(streamId, pendingTunnel))
+        {
+            throw new InvalidOperationException("Reverse tunnel TCP stream identifier could not be allocated.");
+        }
+
+        try
+        {
+            await EnqueueAsync(new TunnelFrameMessage
+            {
+                ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                SessionId = SessionId,
+                StreamId = streamId,
+                Kind = TunnelFrameKindMessage.TcpOpen,
+                Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeTcpOpen(openPayload))
+            }, linkedCancellation.Token);
+
+            var sendTask = SendTcpDataAsync(streamId, openPayload.ServiceKey, inboundData, linkedCancellation.Token);
+            var completed = await Task.WhenAny(sendTask, pendingTunnel.Completion.Task.WaitAsync(linkedCancellation.Token));
+            if (completed == sendTask)
+            {
+                await sendTask;
+                await SendTcpCloseAsync(streamId, "client_closed", "TCP client closed the inbound stream.");
+                pendingTunnel.Completion.TrySetResult();
+            }
+            else
+            {
+                await completed;
+            }
+        }
+        catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
+        {
+            await SendTcpCloseAsync(streamId, "cancelled", "TCP tunnel was cancelled or timed out.");
+            pendingTunnel.Completion.TrySetCanceled(cancellationToken);
+        }
+        finally
+        {
+            pendingTcpTunnels.TryRemove(streamId, out _);
+        }
+    }
+
+    internal async Task SendUdpDatagramAsync(
+        long streamId,
+        ReverseTunnelUdpDatagramPayload datagram,
+        Func<ReverseTunnelUdpDatagramPayload, CancellationToken, Task> writeClientAsync,
+        CancellationToken cancellationToken)
+    {
+        pendingUdpFlows.TryAdd(streamId, new PendingUdpFlow(datagram.ServiceKey, AgentId, writeClientAsync));
+        await EnqueueAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = SessionId,
+            StreamId = streamId,
+            Kind = TunnelFrameKindMessage.UdpDatagram,
+            Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeUdpDatagram(datagram))
+        }, cancellationToken);
+    }
+
+    internal async Task CloseUdpFlowAsync(long streamId, string reason, string message)
+    {
+        pendingUdpFlows.TryRemove(streamId, out _);
+        await EnqueueAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = SessionId,
+            StreamId = streamId,
+            Kind = TunnelFrameKindMessage.UdpFlowClose,
+            Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeError(new ReverseTunnelErrorPayload
+            {
+                Code = reason,
+                Message = message
+            }))
+        }, CancellationToken.None);
+    }
+
+    private async Task SendTcpDataAsync(long streamId, string serviceKey, ChannelReader<byte[]> inboundData, CancellationToken cancellationToken)
+    {
+        await foreach (var chunk in inboundData.ReadAllAsync(cancellationToken))
+        {
+            if (chunk.Length == 0)
+            {
+                continue;
+            }
+
+            ReverseTunnelMetrics.RequestBodyBytes(serviceKey, AgentId, chunk.Length);
+            for (var offset = 0; offset < chunk.Length; offset += maxFramePayloadBytes)
+            {
+                var count = Math.Min(maxFramePayloadBytes, chunk.Length - offset);
+                await EnqueueAsync(new TunnelFrameMessage
+                {
+                    ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                    SessionId = SessionId,
+                    StreamId = streamId,
+                    Kind = TunnelFrameKindMessage.TcpData,
+                    Payload = ByteString.CopyFrom(chunk, offset, count)
+                }, cancellationToken);
+            }
+        }
+    }
+
+    private async Task HandleTcpFrameAsync(TunnelFrameMessage frame, CancellationToken cancellationToken)
+    {
+        if (!pendingTcpTunnels.TryGetValue(frame.StreamId, out var pendingTunnel))
+        {
+            return;
+        }
+
+        switch (frame.Kind)
+        {
+            case TunnelFrameKindMessage.TcpData:
+                ReverseTunnelMetrics.ResponseBodyBytes(pendingTunnel.ServiceKey, pendingTunnel.AgentId, frame.Payload.Length);
+                await pendingTunnel.WriteClientAsync(frame.Payload.ToByteArray(), cancellationToken);
+                break;
+            case TunnelFrameKindMessage.TcpClose:
+                pendingTunnel.Completion.TrySetResult();
+                break;
+            case TunnelFrameKindMessage.TcpError:
+                var error = ReverseTunnelPayloadSerializer.DeserializeError(frame.Payload.ToByteArray());
+                pendingTunnel.Completion.TrySetException(new InvalidOperationException(error.Message));
+                break;
+        }
+    }
+
+    private async Task HandleUdpFrameAsync(TunnelFrameMessage frame, CancellationToken cancellationToken)
+    {
+        if (!pendingUdpFlows.TryGetValue(frame.StreamId, out var flow))
+        {
+            return;
+        }
+
+        switch (frame.Kind)
+        {
+            case TunnelFrameKindMessage.UdpDatagram:
+                var datagram = ReverseTunnelPayloadSerializer.DeserializeUdpDatagram(frame.Payload.ToByteArray());
+                ReverseTunnelMetrics.ResponseBodyBytes(flow.ServiceKey, flow.AgentId, datagram.Data.Length);
+                await flow.WriteClientAsync(datagram, cancellationToken);
+                break;
+            case TunnelFrameKindMessage.UdpFlowClose:
+            case TunnelFrameKindMessage.UdpError:
+                pendingUdpFlows.TryRemove(frame.StreamId, out _);
+                break;
+        }
+    }
+
+    private async Task SendTcpCloseAsync(long streamId, string reason, string message)
+    {
+        try
+        {
+            await EnqueueAsync(new TunnelFrameMessage
+            {
+                ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                SessionId = SessionId,
+                StreamId = streamId,
+                Kind = TunnelFrameKindMessage.TcpClose,
+                Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeTcpClose(new ReverseTunnelTcpClosePayload
+                {
+                    Reason = reason,
+                    Message = message
+                }))
+            }, CancellationToken.None);
+        }
+        catch
+        {
+        }
+    }
+
     private async Task CancelResponseBodyAsync(long streamId, PendingInvocation pendingInvocation, CancellationToken cancellationToken)
     {
         await SendCancelAsync(streamId);
@@ -435,6 +630,17 @@ public sealed class ReverseTunnelSession
 
         public long ResponseBytes;
     }
+
+    private sealed record PendingTcpTunnel(
+        string ServiceKey,
+        string AgentId,
+        Func<ReadOnlyMemory<byte>, CancellationToken, Task> WriteClientAsync,
+        TaskCompletionSource Completion);
+
+    private sealed record PendingUdpFlow(
+        string ServiceKey,
+        string AgentId,
+        Func<ReverseTunnelUdpDatagramPayload, CancellationToken, Task> WriteClientAsync);
 
     private sealed class StreamBackedChannelContent : HttpContent
     {

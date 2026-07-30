@@ -61,7 +61,7 @@
 
 ## 启用方式
 
-新项目通常直接启用完整 WebApp 能力：
+标准接入通常直接启用完整 WebApp 能力：
 
 ```csharp
 builder.Services

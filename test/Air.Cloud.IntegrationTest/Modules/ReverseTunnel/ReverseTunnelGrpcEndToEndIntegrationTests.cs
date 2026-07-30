@@ -21,6 +21,7 @@ using Microsoft.Extensions.Options;
 
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -340,6 +341,121 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         await secondCall.RequestStream.CompleteAsync();
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证 Server 侧 TCP 监听器可以通过真实 gRPC Agent 会话把外部 TCP 客户端流量转发到 Agent 本地 TCP 服务。</para>
+    /// <para>en-us:Verifies that a Server-side TCP listener can forward external TCP client traffic to an Agent-local TCP service through a real gRPC Agent session.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Grpc_connect_should_bridge_tcp_listener_to_agent_local_tcp_service()
+    {
+        var listenPort = GetFreeTcpPort();
+        var targetPort = GetFreeTcpPort();
+        using var targetListener = StartTcpEchoServer(targetPort, "tcp-agent:");
+        using var material = TestCertificateMaterial.Create();
+        var options = CreateOptions(material);
+        options.Tcp = new ReverseTunnelTcpOptions
+        {
+            Enabled = true,
+            Listeners =
+            [
+                new ReverseTunnelTcpListenerOptions
+                {
+                    Name = "tcp-echo",
+                    ServiceKey = "tcp-echo",
+                    ListenHost = "127.0.0.1",
+                    ListenPort = listenPort,
+                    MaxConnections = 10,
+                    ConnectTimeoutSeconds = 5,
+                    IdleTimeoutSeconds = 30
+                }
+            ],
+            LocalServices =
+            [
+                new ReverseTunnelTcpLocalServiceOptions
+                {
+                    ServiceKey = "tcp-echo",
+                    Host = "127.0.0.1",
+                    Port = targetPort
+                }
+            ]
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        await using var app = await StartServerWithAgentCallAsync(options, material);
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await WaitForSessionAsync(app.Application.Services.GetRequiredService<IReverseTunnelSessionRegistry>(), "tcp-echo", timeout.Token);
+            using var tcpClient = await ConnectTcpWithRetryAsync(IPAddress.Loopback, listenPort, timeout.Token);
+            await using var stream = tcpClient.GetStream();
+
+            await stream.WriteAsync("hello"u8.ToArray(), timeout.Token);
+            var buffer = new byte[128];
+            var read = await stream.ReadAsync(buffer, timeout.Token);
+
+            Assert.Equal("tcp-agent:hello", Encoding.UTF8.GetString(buffer, 0, read));
+            await app.Call.RequestStream.CompleteAsync();
+            await app.AgentLoop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Server 侧 UDP 监听器可以通过真实 gRPC Agent 会话把外部 UDP 数据报转发到 Agent 本地 UDP 服务，并把响应回写到原客户端端点。</para>
+    /// <para>en-us:Verifies that a Server-side UDP listener can forward external UDP datagrams to an Agent-local UDP service through a real gRPC Agent session and write responses back to the original client endpoint.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Grpc_connect_should_bridge_udp_listener_to_agent_local_udp_service()
+    {
+        var listenPort = GetFreeTcpPort();
+        var targetPort = GetFreeTcpPort();
+        using var udpEcho = StartUdpEchoServer(targetPort, "udp-agent:");
+        using var material = TestCertificateMaterial.Create();
+        var options = CreateOptions(material);
+        options.Udp = new ReverseTunnelUdpOptions
+        {
+            Enabled = true,
+            Listeners =
+            [
+                new ReverseTunnelUdpListenerOptions
+                {
+                    Name = "udp-echo",
+                    ServiceKey = "udp-echo",
+                    ListenHost = "127.0.0.1",
+                    ListenPort = listenPort,
+                    MaxFlows = 10,
+                    FlowIdleTimeoutSeconds = 30,
+                    MaxDatagramBytes = 1024
+                }
+            ],
+            LocalServices =
+            [
+                new ReverseTunnelUdpLocalServiceOptions
+                {
+                    ServiceKey = "udp-echo",
+                    Host = "127.0.0.1",
+                    Port = targetPort
+                }
+            ]
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        await using var app = await StartServerWithAgentCallAsync(options, material);
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await WaitForSessionAsync(app.Application.Services.GetRequiredService<IReverseTunnelSessionRegistry>(), "udp-echo", timeout.Token);
+            using var udpClient = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+            udpClient.Client.ReceiveTimeout = 10_000;
+
+            await udpClient.SendAsync("hello"u8.ToArray(), 5, new IPEndPoint(IPAddress.Loopback, listenPort));
+            var response = await udpClient.ReceiveAsync(timeout.Token);
+
+            Assert.Equal("udp-agent:hello", Encoding.UTF8.GetString(response.Buffer));
+            await app.Call.RequestStream.CompleteAsync();
+            await app.AgentLoop.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
     private static async Task RunAgentResponseLoopAsync(IReverseTunnelAgentFrameProcessor frameProcessor, AsyncDuplexStreamingCall<TunnelFrameMessage, TunnelFrameMessage> call, CancellationToken cancellationToken)
     {
         using var writeLock = new SemaphoreSlim(1, 1);
@@ -358,6 +474,141 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
                 }
             }, cancellationToken);
         }
+    }
+
+    private static async Task<RunningTunnelApp> StartServerWithAgentCallAsync(ReverseTunnelOptions options, TestCertificateMaterial material)
+    {
+        var optionsAccessor = Options.Create(options);
+        using var agentKey = RSA.Create(2048);
+        var csr = new CertificateRequest("CN=ignored-by-server", agentKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+            .CreateSigningRequest();
+        var certificateAuthority = new MountedReverseTunnelCertificateAuthority(optionsAccessor);
+        using var issuedCertificate = certificateAuthority.SignAgentCertificate("agent-alpha", csr, DateTimeOffset.UtcNow.AddMinutes(-1));
+        var agentCertificate = issuedCertificate.CopyWithPrivateKey(agentKey);
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(optionsAccessor);
+
+        var app = builder.Build();
+        app.UseRouting();
+        app.Use(async (context, next) =>
+        {
+            context.Connection.ClientCertificate = agentCertificate;
+            await next();
+        });
+        app.MapReverseTunnelServer();
+        await app.StartAsync();
+
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions
+        {
+            HttpHandler = app.GetTestServer().CreateHandler()
+        });
+        var transportClient = new ReverseTunnelTransport.ReverseTunnelTransportClient(channel);
+        var call = transportClient.Connect();
+        await call.RequestStream.WriteAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = $"agent-session-{Guid.NewGuid():N}",
+            Kind = TunnelFrameKindMessage.Hello,
+            AgentId = "agent-alpha",
+            ServiceKeys =
+            {
+                options.LocalServices.Select(item => item.ServiceKey)
+                    .Concat(options.Tcp.LocalServices.Select(item => item.ServiceKey))
+                    .Concat(options.Udp.LocalServices.Select(item => item.ServiceKey))
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+            }
+        });
+        var agentLoop = RunAgentResponseLoopAsync(app.Services.GetRequiredService<IReverseTunnelAgentFrameProcessor>(), call, CancellationToken.None);
+        return new RunningTunnelApp(app, call, agentLoop, agentCertificate);
+    }
+
+    private static int GetFreeTcpPort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
+
+    private static async Task<TcpClient> ConnectTcpWithRetryAsync(IPAddress address, int port, CancellationToken cancellationToken)
+    {
+        Exception? lastException = null;
+        for (var i = 0; i < 50; i++)
+        {
+            var client = new TcpClient();
+            try
+            {
+                await client.ConnectAsync(address, port, cancellationToken);
+                return client;
+            }
+            catch (Exception exception)
+            {
+                lastException = exception;
+                client.Dispose();
+                await Task.Delay(50, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException($"TCP listener {address}:{port} did not accept connections.", lastException);
+    }
+
+    private static IDisposable StartTcpEchoServer(int port, string prefix)
+    {
+        var listener = new TcpListener(IPAddress.Loopback, port);
+        listener.Start();
+        var cancellation = new CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var client = await listener.AcceptTcpClientAsync(cancellation.Token);
+                await using var stream = client.GetStream();
+                var buffer = new byte[128];
+                var read = await stream.ReadAsync(buffer, cancellation.Token);
+                var response = Encoding.UTF8.GetBytes(prefix + Encoding.UTF8.GetString(buffer, 0, read));
+                await stream.WriteAsync(response, cancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        return new DelegateDisposable(() =>
+        {
+            cancellation.Cancel();
+            listener.Stop();
+            cancellation.Dispose();
+        });
+    }
+
+    private static IDisposable StartUdpEchoServer(int port, string prefix)
+    {
+        var udpClient = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+        var cancellation = new CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var result = await udpClient.ReceiveAsync(cancellation.Token);
+                var response = Encoding.UTF8.GetBytes(prefix + Encoding.UTF8.GetString(result.Buffer));
+                await udpClient.SendAsync(response, response.Length, result.RemoteEndPoint);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        return new DelegateDisposable(() =>
+        {
+            cancellation.Cancel();
+            udpClient.Dispose();
+            cancellation.Dispose();
+        });
     }
 
     private static async Task WaitForSessionAsync(IReverseTunnelSessionRegistry registry, string serviceKey, CancellationToken cancellationToken)
@@ -591,6 +842,31 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
             {
                 Directory.Delete(directory, recursive: true);
             }
+        }
+    }
+
+    private sealed record RunningTunnelApp(WebApplication Application, AsyncDuplexStreamingCall<TunnelFrameMessage, TunnelFrameMessage> Call, Task AgentLoop, X509Certificate2 AgentCertificate) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            AgentCertificate.Dispose();
+            Call.Dispose();
+            await Application.DisposeAsync();
+        }
+    }
+
+    private sealed class DelegateDisposable : IDisposable
+    {
+        private readonly Action dispose;
+
+        public DelegateDisposable(Action dispose)
+        {
+            this.dispose = dispose;
+        }
+
+        public void Dispose()
+        {
+            dispose();
         }
     }
 }

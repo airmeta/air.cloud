@@ -64,4 +64,56 @@ public class ReverseTunnelProtocolTests
 
         Assert.Contains("Unsupported reverse tunnel protocol version", exception.Message, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// <para>zh-cn:验证 TCP 打开和关闭负载可以稳定序列化，确保新增 TCP 帧不会影响既有 HTTP 帧格式。</para>
+    /// <para>en-us:Verifies stable serialization for TCP open and close payloads, ensuring new TCP frames do not affect existing HTTP frame formats.</para>
+    /// </summary>
+    [Fact]
+    public void Serializer_should_round_trip_tcp_payloads()
+    {
+        var open = new ReverseTunnelTcpOpenPayload
+        {
+            ServiceKey = "mysql-service",
+            ListenerName = "mysql",
+            ConnectTimeoutSeconds = 3,
+            IdleTimeoutSeconds = 120
+        };
+        var close = new ReverseTunnelTcpClosePayload
+        {
+            Reason = "client_closed",
+            Message = "client disconnected"
+        };
+
+        var restoredOpen = ReverseTunnelPayloadSerializer.DeserializeTcpOpen(ReverseTunnelPayloadSerializer.SerializeTcpOpen(open));
+        var restoredClose = ReverseTunnelPayloadSerializer.DeserializeTcpClose(ReverseTunnelPayloadSerializer.SerializeTcpClose(close));
+
+        Assert.Equal("mysql-service", restoredOpen.ServiceKey);
+        Assert.Equal("mysql", restoredOpen.ListenerName);
+        Assert.Equal(3, restoredOpen.ConnectTimeoutSeconds);
+        Assert.Equal(120, restoredOpen.IdleTimeoutSeconds);
+        Assert.Equal("client_closed", restoredClose.Reason);
+        Assert.Equal("client disconnected", restoredClose.Message);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 UDP 数据报负载可以稳定序列化，并保留原始二进制数据。</para>
+    /// <para>en-us:Verifies stable serialization for UDP datagram payloads while preserving the original binary data.</para>
+    /// </summary>
+    [Fact]
+    public void Serializer_should_round_trip_udp_datagram_payload()
+    {
+        var payload = new ReverseTunnelUdpDatagramPayload
+        {
+            ServiceKey = "dns-service",
+            ListenerName = "dns",
+            Data = [1, 2, 3, 4]
+        };
+
+        var restored = ReverseTunnelPayloadSerializer.DeserializeUdpDatagram(ReverseTunnelPayloadSerializer.SerializeUdpDatagram(payload));
+
+        Assert.Equal("dns-service", restored.ServiceKey);
+        Assert.Equal("dns", restored.ListenerName);
+        Assert.Equal([1, 2, 3, 4], restored.Data);
+    }
 }

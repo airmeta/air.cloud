@@ -97,6 +97,11 @@ public sealed class DefaultDynamicAppManifestValidator : IDynamicAppManifestVali
             result.Errors.Add($"ExistingContainer Mod `{mod.Id}` must declare Artifact.Endpoint.");
         }
 
+        if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer && string.IsNullOrWhiteSpace(mod.Artifact.ContainerName))
+        {
+            result.Errors.Add($"ExistingContainer Mod `{mod.Id}` must declare Artifact.ContainerName.");
+        }
+
         if (mod.ExecutionMode == DynamicModExecutionMode.LocalDevelopment && string.IsNullOrWhiteSpace(mod.Artifact.Endpoint))
         {
             result.Errors.Add($"LocalDevelopment Mod `{mod.Id}` must declare Artifact.Endpoint.");

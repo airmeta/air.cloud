@@ -5,7 +5,7 @@
 ## 阅读入口
 
 - [Web服务总览](./webapp/README.md)：使用场景、能力拆分和旧入口替换规则。
-- [创建 Web 服务](./webapp/getting-started.md)：新项目推荐写法、只启用核心能力和拆开注册。
+- [创建 Web 服务](./webapp/getting-started.md)：标准接入写法、只启用核心能力和拆开注册。
 - [统一返回配置](./webapp/unify-result.md)：默认返回结构、配置节、状态码适配和短路状态码边界。
 - [DataValidation 数据验证](./webapp/data-validation.md)：模型验证、手动验证 API、验证失败结果和前端解析建议。
 - [FriendlyException 友好异常](./webapp/friendly-exception.md)：`Oops` 使用方式、业务异常、普通友好异常和错误码。
@@ -15,7 +15,7 @@
 
 ## 推荐顺序
 
-1. 新项目先看 [创建 Web 服务](./webapp/getting-started.md)。
+1. 标准接入先看 [创建 Web 服务](./webapp/getting-started.md)。
 2. 需要统一响应结构时看 [统一返回配置](./webapp/unify-result.md)。
 3. 表单、DTO、业务验证问题看 [DataValidation 数据验证](./webapp/data-validation.md)。
 4. 业务异常和错误码问题看 [FriendlyException 友好异常](./webapp/friendly-exception.md)。

@@ -16,7 +16,7 @@
 | Manager | 提供控制面 API，负责发布、部署、激活、停止、回滚、查询状态和日志 |
 | Gateway | 按路由表把 `/mods/*` 请求转发到当前活动目标 |
 | Host | 管理 Process 模式子进程、日志、健康检查和排空清理 |
-| Orchestrator | 对接受控编排边界，例如命令包装器或已有 Docker 容器 |
+| Orchestrator | 对接受控编排边界，例如命令包装器或已有容器引擎实例 |
 | Panel | 内置控制面板，用于可视化查看和操作 DynamicApp |
 
 ## 执行模式
@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | `Process` | 一个 DynamicApp Host 管理多个轻量子进程 | Host 启停子进程、采集日志、监控退出 |
 | `Container` | 由平台适配器创建、拉取或升级容器/Kubernetes 工作负载 | Orchestrator 负责创建或部署受控工作负载 |
-| `ExistingContainer` | 接管 Compose、1Panel 或运维脚本已创建的容器 | Orchestrator 只启动、停止已有容器，并把流量转发过去 |
+| `ExistingContainer` | 接管 Compose、1Panel 或运维脚本已创建的容器 | Orchestrator 通过容器引擎标准启动、停止已有容器，并把流量转发过去 |
 | `LocalDevelopment` | 接入开发者本机已启动的服务 | 只注册目标、健康检查和切换路由，不关闭本地进程 |
 
 ## 基本边界

@@ -1,4 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Agent;
+using Air.Cloud.Modules.ReverseTunnel.Agent.Tcp;
+using Air.Cloud.Modules.ReverseTunnel.Agent.Udp;
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
@@ -43,7 +45,7 @@ public sealed class ReverseTunnelEndToEndTests
             Content = new StringContent("agent-ok", Encoding.UTF8, "text/plain")
         });
         var localDispatcher = new ReverseTunnelAgentLocalHttpDispatcher(optionsAccessor, new FixedHttpClientFactory(new HttpClient(localHttpHandler)));
-        var frameProcessor = new ReverseTunnelAgentFrameProcessor(localDispatcher, optionsAccessor);
+        var frameProcessor = CreateFrameProcessor(localDispatcher, optionsAccessor);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var agentLoop = RunSingleAgentExchangeAsync(session, frameProcessor, timeout.Token);
         var invoker = new ReverseTunnelInvoker(registry, optionsAccessor);
@@ -86,7 +88,7 @@ public sealed class ReverseTunnelEndToEndTests
             Content = new ByteArrayContent(new byte[2500])
         });
         var localDispatcher = new ReverseTunnelAgentLocalHttpDispatcher(optionsAccessor, new FixedHttpClientFactory(new HttpClient(localHttpHandler)));
-        var frameProcessor = new ReverseTunnelAgentFrameProcessor(localDispatcher, optionsAccessor);
+        var frameProcessor = CreateFrameProcessor(localDispatcher, optionsAccessor);
         var frames = new List<TunnelFrameMessage>();
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await frameProcessor.ProcessAsync(new TunnelFrameMessage
@@ -171,7 +173,7 @@ public sealed class ReverseTunnelEndToEndTests
             Content = new ByteArrayContent(new byte[2048])
         });
         var localDispatcher = new ReverseTunnelAgentLocalHttpDispatcher(optionsAccessor, new FixedHttpClientFactory(new HttpClient(localHttpHandler)));
-        var frameProcessor = new ReverseTunnelAgentFrameProcessor(localDispatcher, optionsAccessor);
+        var frameProcessor = CreateFrameProcessor(localDispatcher, optionsAccessor);
         var frames = new List<TunnelFrameMessage>();
         var errored = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -241,7 +243,7 @@ public sealed class ReverseTunnelEndToEndTests
     {
         var options = CreateOptions();
         var dispatcher = new StreamingStartDispatcher();
-        var frameProcessor = new ReverseTunnelAgentFrameProcessor(dispatcher, Options.Create(options));
+        var frameProcessor = CreateFrameProcessor(dispatcher, Options.Create(options));
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var frames = new List<TunnelFrameMessage>();
         var responseCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -317,7 +319,7 @@ public sealed class ReverseTunnelEndToEndTests
             Content = new StringContent("trace-ok", Encoding.UTF8, "text/plain")
         });
         var localDispatcher = new ReverseTunnelAgentLocalHttpDispatcher(optionsAccessor, new FixedHttpClientFactory(new HttpClient(localHttpHandler)));
-        var frameProcessor = new ReverseTunnelAgentFrameProcessor(localDispatcher, optionsAccessor);
+        var frameProcessor = CreateFrameProcessor(localDispatcher, optionsAccessor);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var agentLoop = RunSingleAgentExchangeAsync(session, frameProcessor, timeout.Token);
         var invoker = new ReverseTunnelInvoker(registry, optionsAccessor);
@@ -391,6 +393,11 @@ public sealed class ReverseTunnelEndToEndTests
         };
         options.PostConfigure(options, new ConfigurationBuilder().Build());
         return options;
+    }
+
+    private static ReverseTunnelAgentFrameProcessor CreateFrameProcessor(IReverseTunnelAgentLocalHttpDispatcher dispatcher, IOptions<ReverseTunnelOptions> options)
+    {
+        return new ReverseTunnelAgentFrameProcessor(dispatcher, new NoopTcpDispatcher(), new NoopUdpDispatcher(), options);
     }
 
     private sealed class FixedHttpClientFactory : IHttpClientFactory
@@ -485,6 +492,37 @@ public sealed class ReverseTunnelEndToEndTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return Task.FromResult(new HttpResponseMessage(statusCode));
+        }
+    }
+
+    private sealed class NoopTcpDispatcher : IReverseTunnelAgentTcpDispatcher
+    {
+        public Task DispatchAsync(
+            ReverseTunnelTcpOpenPayload payload,
+            ChannelReader<byte[]> inboundFrames,
+            Func<ReadOnlyMemory<byte>, CancellationToken, Task> sendDataAsync,
+            Func<CancellationToken, Task> sendCloseAsync,
+            Func<string, string, CancellationToken, Task> sendErrorAsync,
+            CancellationToken cancellationToken)
+        {
+            return sendErrorAsync("noop_tcp_dispatcher", "No TCP dispatcher is configured for this HTTP-only test.", cancellationToken);
+        }
+    }
+
+    private sealed class NoopUdpDispatcher : IReverseTunnelAgentUdpDispatcher
+    {
+        public Task SendAsync(
+            long streamId,
+            ReverseTunnelUdpDatagramPayload payload,
+            Func<ReverseTunnelUdpDatagramPayload, CancellationToken, Task> sendDatagramAsync,
+            Func<string, string, CancellationToken, Task> sendErrorAsync,
+            CancellationToken cancellationToken)
+        {
+            return sendErrorAsync("noop_udp_dispatcher", "No UDP dispatcher is configured for this HTTP-only test.", cancellationToken);
+        }
+
+        public void Close(long streamId)
+        {
         }
     }
 }

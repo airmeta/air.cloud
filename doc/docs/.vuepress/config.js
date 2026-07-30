@@ -12,6 +12,13 @@
             { text: '首页', link: '/' },
             { text: '指南', link: '/guide/' },
             {
+                text: '.NET 版本',
+                items: [
+                    { text: '.NET 6', link: '/guide/dotnet/net6.html' },
+                    { text: '.NET 10', link: '/guide/dotnet/net10.html' }
+                ]
+            },
+            {
                 text: '相关链接',
                 items: [
                     { text: 'GitHub', link: 'https://github.com/AccessCross/air.cloud' },
@@ -27,49 +34,6 @@
                 '/guide/air-cloud-core/concepts.md',
                 '/guide/air-cloud-core/loading-mechanism.md',
                 '/guide/air-cloud-core/config.md',
-                '/guide/air-cloud-core/app-aspect.md',
-                '/guide/air-cloud-core/gateway/standalone.md',
-                {
-                    title: '网络穿透',
-                    path: '/guide/network-tunnel/',
-                    collapsable: true,
-                    children: [
-                        '/guide/network-tunnel/',
-                        '/guide/network-tunnel/scenarios.md',
-                        '/guide/network-tunnel/server-agent.md',
-                        {
-                            title: '隧道接入',
-                            collapsable: true,
-                            children: [
-                                '/guide/network-tunnel/access/ocelot.md'
-                            ]
-                        },
-                        '/guide/network-tunnel/config-security.md',
-                        '/guide/network-tunnel/verification.md',
-                        '/guide/network-tunnel/performance.md'
-                    ]
-                },
-                {
-                    title: '网络穿透模块',
-                    path: '/guide/air-cloud-core/modules/reverse-tunnel.html'
-                },
-                {
-                    title: '动态应用',
-                    path: '/guide/air-cloud-core/dynamic-app/',
-                    collapsable: true,
-                    children: [
-                        '/guide/air-cloud-core/dynamic-app/',
-                        '/guide/air-cloud-core/dynamic-app/architecture.md',
-                        '/guide/air-cloud-core/dynamic-app/lifecycle.md',
-                        '/guide/air-cloud-core/dynamic-app/manager-api.md',
-                        '/guide/air-cloud-core/dynamic-app/panel.md',
-                        '/guide/air-cloud-core/dynamic-app/local-debug.md',
-                        '/guide/air-cloud-core/dynamic-app/publish.md',
-                        '/guide/air-cloud-core/dynamic-app/deployment.md',
-                        '/guide/air-cloud-core/dynamic-app/manifest.md',
-                        '/guide/air-cloud-core/dynamic-app/verification.md'
-                    ]
-                },
                 {
                     title: 'Web服务',
                     path: '/guide/air-cloud-core/webapp.html',
@@ -77,39 +41,68 @@
                     children: [
                         '/guide/air-cloud-core/webapp/',
                         '/guide/air-cloud-core/webapp/getting-started.md',
+                        '/guide/air-cloud-core/app-aspect.md',
                         '/guide/air-cloud-core/webapp/unify-result.md',
                         '/guide/air-cloud-core/webapp/data-validation.md',
                         '/guide/air-cloud-core/webapp/friendly-exception.md',
                         '/guide/air-cloud-core/webapp/exception-handling.md',
                         '/guide/air-cloud-core/webapp/cors.md',
-                        '/guide/air-cloud-core/webapp/customization.md'
+                        '/guide/air-cloud-core/webapp/customization.md',
+                        {
+                            title: '动态应用',
+                            path: '/guide/air-cloud-core/dynamic-app/',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/dynamic-app/',
+                                '/guide/air-cloud-core/dynamic-app/architecture.md',
+                                '/guide/air-cloud-core/dynamic-app/lifecycle.md',
+                                '/guide/air-cloud-core/dynamic-app/manager-api.md',
+                                '/guide/air-cloud-core/dynamic-app/panel.md',
+                                '/guide/air-cloud-core/dynamic-app/local-debug.md',
+                                '/guide/air-cloud-core/dynamic-app/publish.md',
+                                '/guide/air-cloud-core/dynamic-app/deployment.md',
+                                '/guide/air-cloud-core/dynamic-app/manifest.md',
+                                '/guide/air-cloud-core/dynamic-app/verification.md'
+                            ]
+                        }
                     ]
                 },
                 '/guide/air-cloud-core/hostapp.md',
+                {
+                    title: '数据源',
+                    path: '/guide/air-cloud-core/database/',
+                    collapsable: true,
+                    children: [
+                        '/guide/air-cloud-core/database/',
+                        {
+                            title: '基础能力',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/database/efcore-core.md',
+                                '/guide/air-cloud-core/database/options.md',
+                                '/guide/air-cloud-core/database/column-metadata-provider.md'
+                            ]
+                        },
+                        {
+                            title: '数据库 Provider',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/database/mysql.md',
+                                '/guide/air-cloud-core/database/postgresql.md',
+                                '/guide/air-cloud-core/database/oracle.md',
+                                '/guide/air-cloud-core/database/kingbase.md'
+                            ]
+                        }
+                    ]
+                },
                 {
                     title: '标准',
                     path: '/guide/air-cloud-core/standard.html',
                     collapsable: true,
                     children: [
-                        '/guide/air-cloud-core/standards/message-queue.md',
-                        '/guide/air-cloud-core/standards/service-governance.md',
-                        '/guide/air-cloud-core/standards/cache-lock.md',
-                        '/guide/air-cloud-core/standards/runtime-container.md',
-                        '/guide/air-cloud-core/standards/trace-log.md',
-                        '/guide/air-cloud-core/standards/scheduler.md',
-                        '/guide/air-cloud-core/standards/remote-call.md',
-                        '/guide/air-cloud-core/standards/object-storage.md',
-                        '/guide/air-cloud-core/standards/security-plugin.md',
-                        '/guide/air-cloud-core/standards/sky-mirror-shield.md'
-                    ]
-                },
-                {
-                    title: '模块',
-                    path: '/guide/air-cloud-core/libs.html',
-                    collapsable: true,
-                    children: [
                         {
                             title: '服务治理标准',
+                            path: '/guide/air-cloud-core/standards/service-governance.html',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/consul.md',
@@ -118,6 +111,7 @@
                         },
                         {
                             title: '缓存与锁标准',
+                            path: '/guide/air-cloud-core/standards/cache-lock.html',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/redis-cache.md'
@@ -125,14 +119,17 @@
                         },
                         {
                             title: '消息队列标准',
+                            path: '/guide/air-cloud-core/standards/message-queue.html',
                             collapsable: true,
                             children: [
+                                '/guide/air-cloud-core/modules/kafka.md',
                                 '/guide/air-cloud-core/modules/kafka-usage.md',
                                 '/guide/air-cloud-core/modules/rocketmq.md'
                             ]
                         },
+                        '/guide/air-cloud-core/standards/scheduler.md',
                         {
-                            title: 'Actor Cluster',
+                            title: 'Actor 标准',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/akka-application-paradigm.md',
@@ -140,27 +137,31 @@
                             ]
                         },
                         {
-                            title: 'NoSQL 数据访问扩展',
+                            title: '运行容器标准',
+                            path: '/guide/air-cloud-core/standards/runtime-container.html',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/modules/docker.md'
+                            ]
+                        },
+                        {
+                            title: 'NoSQL 数据访问标准',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/modules/elasticsearch.md'
                             ]
+                        },
+                        '/guide/air-cloud-core/standards/trace-log.md',
+                        '/guide/air-cloud-core/standards/remote-call.md',
+                        '/guide/air-cloud-core/standards/object-storage.md',
+                        {
+                            title: '安全标准',
+                            path: '/guide/air-cloud-core/standards/security-plugin.html',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/standards/sky-mirror-shield.md'
+                            ]
                         }
-                    ]
-                },
-                {
-                    title: '数据源',
-                    path: '/guide/air-cloud-core/database/',
-                    collapsable: true,
-                    children: [
-                        '/guide/air-cloud-core/database/',
-                        '/guide/air-cloud-core/database/efcore-core.md',
-                        '/guide/air-cloud-core/database/options.md',
-                        '/guide/air-cloud-core/database/mysql.md',
-                        '/guide/air-cloud-core/database/oracle.md',
-                        '/guide/air-cloud-core/database/postgresql.md',
-                        '/guide/air-cloud-core/database/column-metadata-provider.md',
-                        '/guide/air-cloud-core/database/kingbase.md'
                     ]
                 },
                 {
@@ -173,7 +174,51 @@
                         '/guide/air-cloud-core/plugins/air_swagger.md',
                     ]
                 },
-                '/guide/air-cloud-core/usage-advice.md',
+                {
+                    title: '衍生产品',
+                    collapsable: true,
+                    children: [
+                        {
+                            title: 'AirTunnel',
+                            path: '/guide/network-tunnel/',
+                            collapsable: true,
+                            children: [
+                                '/guide/network-tunnel/',
+                                '/guide/network-tunnel/scenarios.md',
+                                '/guide/network-tunnel/server-agent.md',
+                                {
+                                    title: '隧道接入',
+                                    collapsable: true,
+                                    children: [
+                                        '/guide/network-tunnel/access/ocelot.md',
+                                        '/guide/network-tunnel/access/tcp.md',
+                                        '/guide/network-tunnel/access/udp.md'
+                                    ]
+                                },
+                                '/guide/network-tunnel/config-security.md',
+                                '/guide/network-tunnel/verification.md',
+                                '/guide/network-tunnel/performance.md',
+                                {
+                                    title: '模块实现',
+                                    path: '/guide/air-cloud-core/modules/reverse-tunnel.html',
+                                    collapsable: true,
+                                    children: [
+                                        '/guide/air-cloud-core/modules/reverse-tunnel.md'
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: 'AirGateWay',
+                            path: '/guide/air-cloud-core/gateway/standalone.html',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/gateway/standalone.md',
+                                '/guide/air-cloud-core/gateway/plugins.md'
+                            ]
+                        }
+                    ]
+                },
                 {
                     title: '测试报告',
                     path: '/guide/test-report/',

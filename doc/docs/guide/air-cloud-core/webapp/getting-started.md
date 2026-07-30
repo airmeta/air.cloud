@@ -1,7 +1,7 @@
 ﻿# 创建 Web 服务
 
 
-## 新项目推荐写法
+## 标准接入写法
 
 ```csharp
 using Air.Cloud.WebApp.Extensions;

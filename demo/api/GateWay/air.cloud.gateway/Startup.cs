@@ -9,9 +9,10 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using air.cloud.gateway.Middleware;
 using air.cloud.gateway.Modules.TraceLogModules;
 using air.cloud.gateway.Options;
+using air.cloud.gateway.Plugins.Extensions;
+using air.cloud.gateway.Plugins.Runtime;
 using air.cloud.security.common.Plugins;
 
 using Air.Cloud.Core;
@@ -25,15 +26,10 @@ using Air.Cloud.Modules.Consul.Model;
 using Air.Cloud.Modules.Consul.Util;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Extensions;
-using Air.Cloud.Modules.SkyMirrorShield.Middleware;
-using Air.Cloud.Modules.Taxin.Extensions;
-using Air.Cloud.Modules.Taxin.Server;
-using Air.Cloud.Modules.Taxin.Store;
 
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Options;
 
 using Ocelot.Cache.CacheManager;
@@ -71,14 +67,7 @@ namespace air.cloud.gateway
             {
                 app.UseSkyMirrorShieldServer();
             }
-            app.UseMiddleware<TraceLogMiddleware>();
-            if (enableSkyMirrorShield)
-            {
-                app.UseMiddleware<SkyMirrorShieldMiddleware>();
-            }
-            app.UseMiddleware<SignatureMiddleware>();
-            app.UseMiddleware<WhiteListRequestMiddleware>();
-            app.UseMiddleware<IPMiddleware>();
+            app.UseMiddleware<GatewayPluginHostMiddleware>();
             app.UseOcelot().Wait();
         }
 
@@ -106,6 +95,7 @@ namespace air.cloud.gateway
             services.Configure<ReverseTunnelOptions>(configurationManager.GetSection("ReverseTunnelSettings"));
             services.Configure<AppLogFilterOptions>(configurationManager.GetSection("AppLogFilter"));
             services.Configure<AppLogFilterOptions>(AppConfigurationLoader.InnerConfiguration.GetSection("AppLogFilter"));
+            services.AddGatewayPluginRuntime(AppConfigurationLoader.InnerConfiguration.GetSection("GatewayPluginSettings"));
             //注入网关配置文件
             services.AddOcelot(configurationManager)
                 .AddReverseTunnelDelegatingHandler()

@@ -37,5 +37,26 @@ public enum ReverseTunnelFrameKind
     Cancel = 15,
 
     /// <summary><para>zh-cn:报告连接或请求流错误。</para><para>en-us:Reports a connection or request-stream error.</para></summary>
-    Error = 16
+    Error = 16,
+
+    /// <summary><para>zh-cn:打开一条 TCP 字节流穿透连接。</para><para>en-us:Opens a TCP byte-stream tunnel connection.</para></summary>
+    TcpOpen = 20,
+
+    /// <summary><para>zh-cn:TCP 字节流数据分片。</para><para>en-us:TCP byte-stream data chunk.</para></summary>
+    TcpData = 21,
+
+    /// <summary><para>zh-cn:关闭一条 TCP 字节流穿透连接。</para><para>en-us:Closes a TCP byte-stream tunnel connection.</para></summary>
+    TcpClose = 22,
+
+    /// <summary><para>zh-cn:报告 TCP 字节流穿透连接错误。</para><para>en-us:Reports a TCP byte-stream tunnel connection error.</para></summary>
+    TcpError = 23,
+
+    /// <summary><para>zh-cn:UDP 数据报穿透帧。</para><para>en-us:UDP datagram tunnel frame.</para></summary>
+    UdpDatagram = 30,
+
+    /// <summary><para>zh-cn:关闭一条 UDP 流表项。</para><para>en-us:Closes a UDP flow entry.</para></summary>
+    UdpFlowClose = 31,
+
+    /// <summary><para>zh-cn:报告 UDP 数据报穿透错误。</para><para>en-us:Reports a UDP datagram tunnel error.</para></summary>
+    UdpError = 32
 }

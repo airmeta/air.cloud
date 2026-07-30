@@ -74,7 +74,7 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
             SessionId = sessionId,
             Kind = TunnelFrameKindMessage.Hello,
             AgentId = options.Value.AgentId,
-            ServiceKeys = { options.Value.LocalServices.Select(item => item.ServiceKey).Where(key => !string.IsNullOrWhiteSpace(key)) }
+            ServiceKeys = { GetDeclaredServiceKeys(options.Value) }
         }, cancellationToken);
 
         var heartbeatTask = RunHeartbeatAsync(call.RequestStream, writeLock, sessionId, heartbeatCancellation.Token);
@@ -100,6 +100,16 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
     {
         var normalizedIndex = Math.Max(0, connectionIndex);
         return $"{Guid.NewGuid():N}-{normalizedIndex}";
+    }
+
+    private static IEnumerable<string> GetDeclaredServiceKeys(ReverseTunnelOptions settings)
+    {
+        return settings.LocalServices.Select(item => item.ServiceKey)
+            .Concat(settings.Tcp.LocalServices.Select(item => item.ServiceKey))
+            .Concat(settings.Udp.LocalServices.Select(item => item.ServiceKey))
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .Select(key => key.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task RunHeartbeatAsync(IClientStreamWriter<TunnelFrameMessage> requestStream, SemaphoreSlim writeLock, string sessionId, CancellationToken cancellationToken)

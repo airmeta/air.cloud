@@ -73,6 +73,18 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     public List<ReverseTunnelLocalServiceOptions> LocalServices { get; set; } = [];
 
     /// <summary>
+    /// <para>zh-cn:TCP 穿透配置。Server 角色按监听器绑定端口，Agent 角色按本地服务声明真实目标。</para>
+    /// <para>en-us:TCP tunneling options. The Server role binds ports through listeners, while the Agent role declares real local targets through local services.</para>
+    /// </summary>
+    public ReverseTunnelTcpOptions Tcp { get; set; } = new();
+
+    /// <summary>
+    /// <para>zh-cn:UDP 穿透配置。Server 角色按监听器绑定端口并维护流表，Agent 角色按本地服务声明真实目标。</para>
+    /// <para>en-us:UDP tunneling options. The Server role binds ports and maintains flow entries, while the Agent role declares real local targets through local services.</para>
+    /// </summary>
+    public ReverseTunnelUdpOptions Udp { get; set; } = new();
+
+    /// <summary>
     /// <para>zh-cn:Server 侧 Agent 服务声明授权列表。为空时保持兼容行为，允许已通过 mTLS 认证的 Agent 声明任意 ServiceKey；配置后只允许匹配 AgentId 的白名单 ServiceKey。</para>
     /// <para>en-us:Server-side authorization list for Agent service declarations. When empty, backward compatibility is preserved and an mTLS-authenticated Agent may declare any ServiceKey; once configured, only whitelisted ServiceKeys for the matched AgentId are allowed.</para>
     /// </summary>
@@ -132,6 +144,10 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
 
         Routes ??= [];
         LocalServices ??= [];
+        Tcp ??= new ReverseTunnelTcpOptions();
+        Tcp.Normalize();
+        Udp ??= new ReverseTunnelUdpOptions();
+        Udp.Normalize();
         AgentAuthorizations ??= [];
         CertificateAuthority ??= new ReverseTunnelCertificateAuthorityOptions();
         CertificateAuthority.Normalize();

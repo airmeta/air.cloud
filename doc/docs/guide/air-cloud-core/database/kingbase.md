@@ -1,4 +1,4 @@
-### KingbaseES V9 EF Core 适配
+### KingbaseES V9 Provider
 
 `Air.Cloud.EntityFrameWork.Kingbase` 为 Air.Cloud 数据库访问层提供 KingbaseES V9 的 EF Core Provider 适配。当前主线面向 `net10.0`，接入 `Kdbndp.EntityFrameworkCore.KingbaseES_V9` `10.0.1`，并通过 `IDatabaseConfigure` 接入 Air.Cloud 统一数据库配置入口。
 

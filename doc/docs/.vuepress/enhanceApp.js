@@ -2,23 +2,20 @@
 const SIDEBAR_FILTER_STORAGE_KEY = 'air-cloud-sidebar-filter-value'
 
 const SIDEBAR_GROUPS = [
-  { value: '0', label: '首页' },
-  { value: '1', label: '设计理念' },
-  { value: '2', label: '核心定位' },
-  { value: '3', label: '开源信息' },
-  { value: '4', label: '环境要求' },
-  { value: '5', label: '基本概念' },
-  { value: '6', label: '应用类型' },
-  { value: '7', label: '加载机制' },
+  { value: '0', label: '指南总览' },
+  { value: '1', label: '框架契约' },
+  { value: '2', label: '核心概念' },
+  { value: '3', label: '加载机制' },
+  { value: '4', label: '配置文件' },
+  { value: '5', label: 'Web服务' },
+  { value: '6', label: 'Host服务' },
+  { value: '7', label: '数据源' },
   { value: '8', label: '标准' },
-  { value: '9', label: '模块' },
-  { value: '10', label: '插件' },
-  { value: '11', label: '配置文件' },
-  { value: '12', label: 'Web服务' },
-  { value: '13', label: '测试报告' },
-  { value: '14', label: '使用建议' },
-  { value: '15', label: '其他内容' },
-  { value: '16', label: '技术学习' }
+  { value: '9', label: '插件' },
+  { value: '10', label: '衍生产品' },
+  { value: '11', label: '测试报告' },
+  { value: '12', label: '技术学习' },
+  { value: '13', label: '其他内容' }
 ]
 
 function createSidebarFilter () {

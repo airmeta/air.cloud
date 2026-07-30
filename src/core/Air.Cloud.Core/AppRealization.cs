@@ -55,7 +55,7 @@ namespace Air.Cloud.Core
         /// <para>zh-cn:容器标准实现</para>
         /// <para>en-us:Container standard implementation</para>
         /// </summary>
-        public static IContainerStandard Container => InternalRealization.Container ?? DefaultRealization.Container;
+        public static IContainerEngineStandard Container => InternalRealization.Container ?? DefaultRealization.Container;
         /// <summary>
         /// <para>zh-cn:系统配置文件标准实现</para>
         /// <para>en-us:System configuration file standard implementation</para>
@@ -271,7 +271,7 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:容器标准实现</para>
             /// <para>en-us: Container standard implementation</para>
             /// </summary>
-            public static  IContainerStandard Container => throw new NotImplementedException("未查询到容器标准的实现");
+            public static IContainerEngineStandard Container => throw new NotImplementedException("未查询到容器引擎标准的实现");
             /// <summary>
             /// <para>zh-cn:系统配置文件标准实现</para>
             /// <para>en-us:System configuration file standard implementation</para>
@@ -398,7 +398,7 @@ namespace Air.Cloud.Core
             /// <para>zh-cn:容器标准实现</para>
             /// <para>en-us: Container standard implementation</para>
             /// </summary>
-            public static IContainerStandard Container => AppCore.GetService<IContainerStandard>();
+            public static IContainerEngineStandard Container => AppCore.GetService<IContainerEngineStandard>();
             /// <summary>
             /// <para>zh-cn:系统配置文件标准实现</para>   
             /// <para>en-us: System configuration file standard implementation</para>   

@@ -11,7 +11,7 @@
  */
 using Air.Cloud.Core.Standard.Container;
 using Air.Cloud.Modules.Docker.Dependencies;
-using Air.Cloud.Modules.Docker.Events;
+using Air.Cloud.Modules.Docker.Options;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -41,11 +41,37 @@ namespace Air.Cloud.Modules.Docker.Extensions
         /// </returns>
         public static IServiceCollection AddDockerEngineService(this IServiceCollection services)
         {
-            services.AddSingleton<IContainerStandard, DockerContainerDependency>();
-            DockerEngineEvent.DockerEngineEventSubscription();
+            return services.AddDockerEngineContainerService(options => options.Enabled = true);
+        }
+
+        /// <summary>
+        /// <para>zh-cn:添加 Docker Engine Socket 容器访问服务。该服务默认不会访问 Docker，只有配置 `Enabled=true` 后才会执行容器列表、检查、启动和停止请求。</para>
+        /// <para>en-us:Adds the Docker Engine socket container access service. The service does not access Docker by default and only executes list, inspect, start, and stop requests after `Enabled=true` is configured.</para>
+        /// </summary>
+        /// <param name="services">
+        /// <para>zh-cn:应用服务集合。</para>
+        /// <para>en-us:The application service collection.</para>
+        /// </param>
+        /// <param name="configure">
+        /// <para>zh-cn:Docker Engine 容器访问配置委托。</para>
+        /// <para>en-us>The Docker Engine container access configuration delegate.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:完成 Docker Engine 容器访问服务注册后的服务集合。</para>
+        /// <para>en-us>The service collection after registering the Docker Engine container access service.</para>
+        /// </returns>
+        public static IServiceCollection AddDockerEngineContainerService(this IServiceCollection services, Action<DockerEngineContainerServiceOptions> configure)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configure);
+
+            var options = new DockerEngineContainerServiceOptions();
+            configure(options);
+            services.AddSingleton(options);
+            services.AddSingleton<DockerEngineContainerService>();
+            services.AddSingleton<IContainerEngineStandard>(provider => provider.GetRequiredService<DockerEngineContainerService>());
             return services;
         }
-        
 
     }
 }

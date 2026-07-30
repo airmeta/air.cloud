@@ -105,4 +105,100 @@ public static class ReverseTunnelPayloadSerializer
         return JsonSerializer.Deserialize<ReverseTunnelErrorPayload>(payload, SerializerOptions)
             ?? throw new InvalidOperationException("Reverse tunnel error payload is empty.");
     }
+
+    /// <summary>
+    /// <para>zh-cn:把 TCP 打开信息序列化为 TcpOpen 帧负载。</para>
+    /// <para>en-us:Serializes TCP open information into a TcpOpen frame payload.</para>
+    /// </summary>
+    /// <param name="payload">
+    /// <para>zh-cn:TCP 打开信息。</para>
+    /// <para>en-us:TCP open information.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:UTF-8 JSON 字节。</para>
+    /// <para>en-us:UTF-8 JSON bytes.</para>
+    /// </returns>
+    public static byte[] SerializeTcpOpen(ReverseTunnelTcpOpenPayload payload) => JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);
+
+    /// <summary>
+    /// <para>zh-cn:从 TcpOpen 帧负载反序列化 TCP 打开信息。</para>
+    /// <para>en-us:Deserializes TCP open information from a TcpOpen frame payload.</para>
+    /// </summary>
+    /// <param name="payload">
+    /// <para>zh-cn:UTF-8 JSON 负载字节。</para>
+    /// <para>en-us:UTF-8 JSON payload bytes.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:TCP 打开信息。</para>
+    /// <para>en-us:TCP open information.</para>
+    /// </returns>
+    public static ReverseTunnelTcpOpenPayload DeserializeTcpOpen(byte[] payload)
+    {
+        return JsonSerializer.Deserialize<ReverseTunnelTcpOpenPayload>(payload, SerializerOptions)
+            ?? throw new InvalidOperationException("Reverse tunnel TCP open payload is empty.");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:把 TCP 关闭信息序列化为 TcpClose 帧负载。</para>
+    /// <para>en-us:Serializes TCP close information into a TcpClose frame payload.</para>
+    /// </summary>
+    /// <param name="payload">
+    /// <para>zh-cn:TCP 关闭信息。</para>
+    /// <para>en-us:TCP close information.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:UTF-8 JSON 字节。</para>
+    /// <para>en-us:UTF-8 JSON bytes.</para>
+    /// </returns>
+    public static byte[] SerializeTcpClose(ReverseTunnelTcpClosePayload payload) => JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);
+
+    /// <summary>
+    /// <para>zh-cn:从 TcpClose 帧负载反序列化 TCP 关闭信息。</para>
+    /// <para>en-us:Deserializes TCP close information from a TcpClose frame payload.</para>
+    /// </summary>
+    /// <param name="payload">
+    /// <para>zh-cn:UTF-8 JSON 负载字节。</para>
+    /// <para>en-us:UTF-8 JSON payload bytes.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:TCP 关闭信息。</para>
+    /// <para>en-us:TCP close information.</para>
+    /// </returns>
+    public static ReverseTunnelTcpClosePayload DeserializeTcpClose(byte[] payload)
+    {
+        return JsonSerializer.Deserialize<ReverseTunnelTcpClosePayload>(payload, SerializerOptions)
+            ?? throw new InvalidOperationException("Reverse tunnel TCP close payload is empty.");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:把 UDP 数据报序列化为 UdpDatagram 帧负载。</para>
+    /// <para>en-us:Serializes a UDP datagram into a UdpDatagram frame payload.</para>
+    /// </summary>
+    /// <param name="payload">
+    /// <para>zh-cn:UDP 数据报信息。</para>
+    /// <para>en-us:UDP datagram information.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:UTF-8 JSON 字节。</para>
+    /// <para>en-us:UTF-8 JSON bytes.</para>
+    /// </returns>
+    public static byte[] SerializeUdpDatagram(ReverseTunnelUdpDatagramPayload payload) => JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);
+
+    /// <summary>
+    /// <para>zh-cn:从 UdpDatagram 帧负载反序列化 UDP 数据报信息。</para>
+    /// <para>en-us:Deserializes UDP datagram information from a UdpDatagram frame payload.</para>
+    /// </summary>
+    /// <param name="payload">
+    /// <para>zh-cn:UTF-8 JSON 负载字节。</para>
+    /// <para>en-us:UTF-8 JSON payload bytes.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:UDP 数据报信息。</para>
+    /// <para>en-us:UDP datagram information.</para>
+    /// </returns>
+    public static ReverseTunnelUdpDatagramPayload DeserializeUdpDatagram(byte[] payload)
+    {
+        return JsonSerializer.Deserialize<ReverseTunnelUdpDatagramPayload>(payload, SerializerOptions)
+            ?? throw new InvalidOperationException("Reverse tunnel UDP datagram payload is empty.");
+    }
 }

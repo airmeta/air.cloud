@@ -1,6 +1,6 @@
 # 部署模式
 
-DynamicApp 支持 Process 模式和已有 Docker 容器接管。两种模式都通过 Manager API 进入状态表，并由 Gateway 统一转发业务流量。
+DynamicApp 支持 Process 模式和已有容器接管。两种模式都通过 Manager API 进入状态表，并由 Gateway 统一转发业务流量。
 
 ## Process 模式
 
@@ -64,11 +64,13 @@ frontend/gateway
 
 如果子进程仍使用 `WebInjectInConsul()`，子进程自己的 `appsettings.json` 仍会决定 Consul 地址、服务名和业务环境配置来源；`--urls` 只负责绑定 Kestrel 监听地址。
 
-## 已有 Docker 容器接管
+## 已有容器接管
 
 `DockerExistingContainerDynamicAppOrchestrator` 对应 `ExecutionMode=ExistingContainer`，用于把已经由 Compose、1Panel 或运维脚本创建好的容器纳入 DynamicApp 控制面。
 
-该编排器通过 Docker Engine Unix Socket 调用：
+该编排器不直接访问 Docker Socket。容器列表、检查、启动和停止操作由 Core 的 `IContainerEngineStandard` 提供；如果底层运行时是 Docker，需要同时引入并注册 `Air.Cloud.Modules.Docker`。
+
+Docker 模块负责通过 Docker Engine Unix Socket 调用：
 
 ```text
 /containers/{name}/start
@@ -90,9 +92,13 @@ frontend/gateway
   "DynamicApp": {
     "DockerExistingContainerOrchestrator": {
       "Enabled": true,
-      "DockerSocketPath": "/var/run/docker.sock",
       "ContainerNameTemplate": "air.{modId}",
-      "TargetBaseAddressTemplate": "http://air.{modId}:8080",
+      "TargetBaseAddressTemplate": "http://air.{modId}:8080"
+    },
+    "DockerEngine": {
+      "Enabled": true,
+      "DockerSocketPath": "/var/run/docker.sock",
+      "RequestTimeoutSeconds": 30,
       "StartTimeoutSeconds": 60,
       "StopTimeoutSeconds": 60,
       "StopGracePeriodSeconds": 15
@@ -137,4 +143,5 @@ curl http://127.0.0.1:5110/mods/system/Health
 
 - 该编排器只适合受控内网控制面。
 - `ContainerNameTemplate` 必须收敛到受控容器命名空间，避免误停其他容器。
+- Docker Socket、请求超时和停止优雅退出秒数属于 Docker 模块配置，不属于 DynamicApp 编排器配置。
 - 启动健康检查会在 `StartupTimeoutSeconds` 窗口内重复探测，避免容器刚启动但端口尚未监听时误判失败。

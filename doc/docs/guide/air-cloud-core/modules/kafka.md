@@ -81,7 +81,7 @@ public interface IMessageQueueStandard
 
 1. 添加包引用
 ``` xml
-<PackageReference Include="Air.Cloud.Modules.Kafka" Version="1.0.2" />
+<PackageReference Include="Air.Cloud.Modules.Kafka" Version="10.0.2" />
 ```
    
 

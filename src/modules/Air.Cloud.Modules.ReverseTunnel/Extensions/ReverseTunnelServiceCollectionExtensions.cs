@@ -1,11 +1,15 @@
 using Air.Cloud.Core.Attributes;
 using Air.Cloud.Core.Extensions;
 using Air.Cloud.Modules.ReverseTunnel.Agent;
+using Air.Cloud.Modules.ReverseTunnel.Agent.Tcp;
+using Air.Cloud.Modules.ReverseTunnel.Agent.Udp;
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
 using Air.Cloud.Modules.ReverseTunnel.Gateway;
 using Air.Cloud.Modules.ReverseTunnel.Server;
+using Air.Cloud.Modules.ReverseTunnel.Server.Tcp;
+using Air.Cloud.Modules.ReverseTunnel.Server.Udp;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -55,9 +59,13 @@ public static class ReverseTunnelServiceCollectionExtensions
         services.TryAddSingleton<IReverseTunnelAgentCertificateClient, ReverseTunnelAgentCertificateClient>();
         services.AddHttpClient("AirCloudReverseTunnelAgentLocal");
         services.TryAddSingleton<IReverseTunnelAgentLocalHttpDispatcher, ReverseTunnelAgentLocalHttpDispatcher>();
+        services.TryAddSingleton<IReverseTunnelAgentTcpDispatcher, ReverseTunnelAgentTcpDispatcher>();
+        services.TryAddSingleton<IReverseTunnelAgentUdpDispatcher, ReverseTunnelAgentUdpDispatcher>();
         services.TryAddSingleton<IReverseTunnelAgentFrameProcessor, ReverseTunnelAgentFrameProcessor>();
         services.TryAddSingleton<IReverseTunnelAgentConnectionClient, ReverseTunnelAgentConnectionClient>();
         services.AddHostedService<ReverseTunnelAgentHostedService>();
+        services.AddHostedService<ReverseTunnelTcpListenerHostedService>();
+        services.AddHostedService<ReverseTunnelUdpListenerHostedService>();
         services.TryAddSingleton<IReverseTunnelInvoker, ReverseTunnelInvoker>();
         services.TryAddTransient<ReverseTunnelDelegatingHandler>();
         return services;

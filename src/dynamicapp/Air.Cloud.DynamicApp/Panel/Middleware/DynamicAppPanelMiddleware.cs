@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 
 using Air.Cloud.DynamicApp.Contracts.Lifecycle;
+using Air.Cloud.DynamicApp.Contracts.Manifest;
 using Air.Cloud.DynamicApp.Contracts.Runtime;
 using Air.Cloud.DynamicApp.Manager;
 
@@ -120,13 +121,13 @@ public sealed class DynamicAppPanelMiddleware
 
     private async Task WriteRuntimeStatsAsync(HttpContext context)
     {
-        var payload = GetRuntimeStatsSnapshot(context);
+        var payload = await GetRuntimeStatsSnapshotAsync(context).ConfigureAwait(false);
         context.Response.StatusCode = StatusCodes.Status200OK;
         context.Response.ContentType = "application/json; charset=utf-8";
         await context.Response.WriteAsync(JsonSerializer.Serialize(payload, RuntimeStatsJsonOptions), Encoding.UTF8, context.RequestAborted).ConfigureAwait(false);
     }
 
-    private RuntimeStatsSnapshot GetRuntimeStatsSnapshot(HttpContext context)
+    private async Task<RuntimeStatsSnapshot> GetRuntimeStatsSnapshotAsync(HttpContext context)
     {
         var now = DateTimeOffset.UtcNow;
         lock (_resourceStatsLock)
@@ -135,93 +136,262 @@ public sealed class DynamicAppPanelMiddleware
             {
                 return _cachedRuntimeStats;
             }
+        }
 
-            var stateStore = context.RequestServices.GetService<IDynamicAppStateStore>();
-            var targets = stateStore?.ListTargets() ?? Array.Empty<DynamicAppRouteTarget>();
-            var hostProcess = CreateProcessSnapshot(Process.GetCurrentProcess(), "host", null, null, now);
-            var container = CreateContainerSnapshot(now);
-            var mods = targets
-                .Where(HasProcessInstanceId)
-                .OrderBy(item => item.Key.DynamicAppId.Value, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(item => item.Key.ModId.Value, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(item => item.Key.Version.Value, StringComparer.OrdinalIgnoreCase)
-                .Select(item => CreateModProcessSnapshot(item, now))
-                .ToArray();
-            var activeResourceKeys = new HashSet<string>(mods.Where(item => item.ProcessId > 0).Select(item => "process:" + item.ProcessId), StringComparer.OrdinalIgnoreCase)
+        var stateStore = context.RequestServices.GetService<IDynamicAppStateStore>();
+        var targets = stateStore?.ListTargets() ?? Array.Empty<DynamicAppRouteTarget>();
+        var manifestStore = context.RequestServices.GetService<IDynamicAppManifestStore>();
+        var manifestRecords = manifestStore == null
+            ? Array.Empty<DynamicAppManifestRecord>()
+            : await manifestStore.ListAllAsync(context.RequestAborted).ConfigureAwait(false);
+        var existingContainerCatalog = context.RequestServices.GetService<IDynamicAppExistingContainerCatalog>();
+        var hostProcess = CreateProcessSnapshot(Process.GetCurrentProcess(), "host", null, null, now);
+        var container = CreateContainerSnapshot(now);
+        var mods = await CreateRuntimeResourceSnapshotsAsync(targets, manifestRecords, existingContainerCatalog, now, context.RequestAborted).ConfigureAwait(false);
+        var activeResourceKeys = new HashSet<string>(mods.Where(item => item.ProcessId > 0).Select(item => "process:" + item.ProcessId), StringComparer.OrdinalIgnoreCase)
+        {
+            "process:" + Environment.ProcessId,
+            "container:self"
+        };
+
+        var snapshot = new RuntimeStatsSnapshot
+        {
+            TimestampUtc = now,
+            CacheExpiresAtUtc = now.Add(_resourceStatsSampleInterval),
+            SampleIntervalSeconds = Math.Round(_resourceStatsSampleInterval.TotalSeconds, 2),
+            ProcessorCount = Environment.ProcessorCount,
+            ProcessId = hostProcess.ProcessId,
+            CpuPercent = hostProcess.CpuPercent,
+            WorkingSetBytes = hostProcess.WorkingSetBytes,
+            PrivateMemoryBytes = hostProcess.PrivateMemoryBytes,
+            ManagedMemoryBytes = hostProcess.ManagedMemoryBytes,
+            TotalAvailableMemoryBytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes,
+            ThreadCount = hostProcess.ThreadCount,
+            HandleCount = hostProcess.HandleCount,
+            UptimeSeconds = hostProcess.UptimeSeconds,
+            HostProcess = hostProcess,
+            Container = container,
+            Mods = mods
+        };
+
+        lock (_resourceStatsLock)
+        {
+            if (_cachedRuntimeStats != null && now - _cachedRuntimeStats.TimestampUtc < _resourceStatsSampleInterval)
             {
-                "process:" + Environment.ProcessId,
-                "container:self"
-            };
+                return _cachedRuntimeStats;
+            }
 
             foreach (var key in _resourceCounters.Keys.Where(key => !activeResourceKeys.Contains(key)).ToArray())
             {
                 _resourceCounters.Remove(key);
             }
 
-            _cachedRuntimeStats = new RuntimeStatsSnapshot
-            {
-                TimestampUtc = now,
-                CacheExpiresAtUtc = now.Add(_resourceStatsSampleInterval),
-                SampleIntervalSeconds = Math.Round(_resourceStatsSampleInterval.TotalSeconds, 2),
-                ProcessorCount = Environment.ProcessorCount,
-                ProcessId = hostProcess.ProcessId,
-                CpuPercent = hostProcess.CpuPercent,
-                WorkingSetBytes = hostProcess.WorkingSetBytes,
-                PrivateMemoryBytes = hostProcess.PrivateMemoryBytes,
-                ManagedMemoryBytes = hostProcess.ManagedMemoryBytes,
-                TotalAvailableMemoryBytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes,
-                ThreadCount = hostProcess.ThreadCount,
-                HandleCount = hostProcess.HandleCount,
-                UptimeSeconds = hostProcess.UptimeSeconds,
-                HostProcess = hostProcess,
-                Container = container,
-                Mods = mods
-            };
+            _cachedRuntimeStats = snapshot;
             return _cachedRuntimeStats;
         }
     }
 
-    private ProcessResourceSnapshot CreateModProcessSnapshot(DynamicAppRouteTarget target, DateTimeOffset sampledAtUtc)
+    private async Task<IReadOnlyCollection<RuntimeResourceSnapshot>> CreateRuntimeResourceSnapshotsAsync(
+        IReadOnlyCollection<DynamicAppRouteTarget> targets,
+        IReadOnlyCollection<DynamicAppManifestRecord> manifestRecords,
+        IDynamicAppExistingContainerCatalog? existingContainerCatalog,
+        DateTimeOffset sampledAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var snapshots = new List<RuntimeResourceSnapshot>();
+        var activeKeys = targets.Select(item => item.Key).ToHashSet();
+        var mergedTargets = targets.Concat(CreateManifestOnlyExistingContainerTargets(manifestRecords, activeKeys));
+        foreach (var target in mergedTargets
+            .OrderBy(item => item.Key.DynamicAppId.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Key.ModId.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Key.Version.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            var mod = FindManifestMod(manifestRecords, target.Key);
+            var executionMode = mod?.ExecutionMode ?? ResolveExecutionMode(target);
+            if (executionMode == DynamicModExecutionMode.ExistingContainer)
+            {
+                snapshots.Add(await CreateExistingContainerSnapshotAsync(target, existingContainerCatalog, mod, cancellationToken).ConfigureAwait(false));
+                continue;
+            }
+
+            snapshots.Add(CreateModProcessSnapshot(target, executionMode, sampledAtUtc));
+        }
+
+        return SelectCurrentRuntimeSnapshots(snapshots);
+    }
+
+    private static IReadOnlyCollection<RuntimeResourceSnapshot> SelectCurrentRuntimeSnapshots(IReadOnlyCollection<RuntimeResourceSnapshot> snapshots)
+    {
+        return snapshots
+            .GroupBy(item => (item.DynamicAppId, item.ModId))
+            .Select(group => group
+                .OrderByDescending(GetRuntimeSnapshotRank)
+                .ThenByDescending(item => item.UpdatedAtUtc)
+                .ThenByDescending(item => item.CreatedAtUtc)
+                .ThenByDescending(item => item.Version, StringComparer.OrdinalIgnoreCase)
+                .First())
+            .OrderBy(item => item.DynamicAppId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.ModId, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static int GetRuntimeSnapshotRank(RuntimeResourceSnapshot snapshot)
+    {
+        return snapshot.State.Equals(DynamicModLifecycleState.Active.ToString(), StringComparison.OrdinalIgnoreCase) && snapshot.HealthStatus.Equals(DynamicModHealthStatus.Healthy.ToString(), StringComparison.OrdinalIgnoreCase)
+            ? 1000
+            : snapshot.State.Equals(DynamicModLifecycleState.Starting.ToString(), StringComparison.OrdinalIgnoreCase)
+                ? 700
+                : snapshot.State.Equals(DynamicModLifecycleState.Failed.ToString(), StringComparison.OrdinalIgnoreCase)
+                    ? 300
+                    : snapshot.State.Equals(DynamicModLifecycleState.Stopped.ToString(), StringComparison.OrdinalIgnoreCase)
+                        ? 200
+                        : snapshot.State.Equals(DynamicModLifecycleState.Draining.ToString(), StringComparison.OrdinalIgnoreCase)
+                            ? 50
+                            : 100;
+    }
+
+    private static IReadOnlyCollection<DynamicAppRouteTarget> CreateManifestOnlyExistingContainerTargets(
+        IReadOnlyCollection<DynamicAppManifestRecord> manifestRecords,
+        IEnumerable<DynamicModVersionKey> activeKeys)
+    {
+        var activeKeySet = new HashSet<DynamicModVersionKey>(activeKeys);
+        return manifestRecords
+            .SelectMany(record => record.Manifest.Mods.Select(mod => new { record.Manifest, Mod = mod }))
+            .Where(item => item.Mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+            .GroupBy(item => (item.Manifest.Id, item.Mod.Id))
+            .Select(group => group.First())
+            .Select(item => new DynamicAppRouteTarget
+            {
+                Key = new DynamicModVersionKey(item.Manifest.Id, item.Mod.Id, item.Mod.Version),
+                BaseAddress = Uri.TryCreate(item.Mod.Artifact.Endpoint, UriKind.Absolute, out var endpoint) ? endpoint : new Uri("http://localhost"),
+                RoutePrefix = item.Mod.Route.Prefix,
+                HealthPath = item.Mod.Health.Path,
+                HealthProbeTimeoutSeconds = item.Mod.Health.StartupTimeoutSeconds,
+                State = DynamicModLifecycleState.Pending,
+                HealthStatus = DynamicModHealthStatus.Unknown,
+                InstanceId = item.Mod.Artifact.ContainerName ?? string.Empty,
+                LastStatusMessage = "Registered ExistingContainer manifest has not been written into runtime state."
+            })
+            .Where(target => !activeKeySet.Contains(target.Key))
+            .ToArray();
+    }
+
+    private RuntimeResourceSnapshot CreateModProcessSnapshot(DynamicAppRouteTarget target, DynamicModExecutionMode executionMode, DateTimeOffset sampledAtUtc)
     {
         var key = target.Key.ToString();
         if (!int.TryParse(target.InstanceId, out var processId) || processId <= 0)
         {
-            return ProcessResourceSnapshot.Unavailable("mod", key, target, $"Runtime instance `{target.InstanceId}` is not a process id.");
+            return RuntimeResourceSnapshot.Unavailable("mod", key, target, executionMode, $"Runtime instance `{target.InstanceId}` is not a process id.");
         }
 
         try
         {
             using var process = Process.GetProcessById(processId);
-            return CreateProcessSnapshot(process, "mod", key, target, sampledAtUtc);
+            var snapshot = CreateProcessSnapshot(process, "mod", key, target, sampledAtUtc);
+            snapshot.ExecutionMode = executionMode.ToString();
+            snapshot.RuntimeType = "Mod";
+            return snapshot;
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            return ProcessResourceSnapshot.Unavailable("mod", key, target, $"Process `{processId}` cannot be inspected. {exception.Message}");
+            return RuntimeResourceSnapshot.Unavailable("mod", key, target, executionMode, $"Process `{processId}` cannot be inspected. {exception.Message}");
         }
     }
 
-    private static bool HasProcessInstanceId(DynamicAppRouteTarget target)
+    private async Task<RuntimeResourceSnapshot> CreateExistingContainerSnapshotAsync(
+        DynamicAppRouteTarget target,
+        IDynamicAppExistingContainerCatalog? catalog,
+        DynamicModManifest? mod,
+        CancellationToken cancellationToken)
     {
-        return int.TryParse(target.InstanceId, out var processId) && processId > 0;
+        var key = target.Key.ToString();
+        if (catalog == null)
+        {
+            return RuntimeResourceSnapshot.Unavailable("container", key, target, DynamicModExecutionMode.ExistingContainer, "IDynamicAppExistingContainerCatalog is not registered.");
+        }
+
+        try
+        {
+            var container = await catalog.InspectAsync(target.Key, cancellationToken).ConfigureAwait(false);
+            var state = container.IsRunning ? DynamicModLifecycleState.Active : DynamicModLifecycleState.Stopped;
+            var health = container.IsAvailable
+                ? DynamicModHealthStatus.Healthy
+                : container.IsRunning ? DynamicModHealthStatus.Unhealthy : DynamicModHealthStatus.Stopped;
+            return new RuntimeResourceSnapshot
+            {
+                Scope = "container",
+                Key = key,
+                DynamicAppId = target.Key.DynamicAppId.Value,
+                ApplicationName = target.Key.DynamicAppId.Value,
+                ModId = target.Key.ModId.Value,
+                Version = target.Key.Version.Value,
+                ExecutionMode = DynamicModExecutionMode.ExistingContainer.ToString(),
+                RuntimeType = "Container",
+                ContainerName = string.IsNullOrWhiteSpace(container.Name) ? mod?.Artifact.ContainerName ?? target.InstanceId : container.Name,
+                State = state.ToString(),
+                HealthStatus = health.ToString(),
+                IsAvailable = container.IsAvailable,
+                Message = string.IsNullOrWhiteSpace(container.Status) ? target.LastStatusMessage : container.Status,
+                CreatedAtUtc = target.CreatedAtUtc,
+                UpdatedAtUtc = target.UpdatedAtUtc,
+                ProcessId = 0,
+                CpuPercent = 0,
+                WorkingSetBytes = 0,
+                PrivateMemoryBytes = 0,
+                ManagedMemoryBytes = 0,
+                ThreadCount = -1,
+                HandleCount = -1,
+                UptimeSeconds = 0
+            };
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or OperationCanceledException)
+        {
+            return RuntimeResourceSnapshot.Unavailable("container", key, target, DynamicModExecutionMode.ExistingContainer, exception.Message);
+        }
     }
 
-    private ProcessResourceSnapshot CreateProcessSnapshot(Process process, string scope, string? key, DynamicAppRouteTarget? target, DateTimeOffset sampledAtUtc)
+    private static DynamicModManifest? FindManifestMod(IReadOnlyCollection<DynamicAppManifestRecord> records, DynamicModVersionKey key)
+    {
+        return records
+            .Where(record => record.Manifest.Id == key.DynamicAppId)
+            .SelectMany(record => record.Manifest.Mods)
+            .FirstOrDefault(mod => mod.Id == key.ModId && mod.Version == key.Version);
+    }
+
+    private static DynamicModExecutionMode ResolveExecutionMode(DynamicAppRouteTarget target)
+    {
+        if (int.TryParse(target.InstanceId, out var processId) && processId > 0)
+        {
+            return DynamicModExecutionMode.Process;
+        }
+
+        return string.IsNullOrWhiteSpace(target.InstanceId)
+            ? DynamicModExecutionMode.Process
+            : DynamicModExecutionMode.ExistingContainer;
+    }
+
+    private RuntimeResourceSnapshot CreateProcessSnapshot(Process process, string scope, string? key, DynamicAppRouteTarget? target, DateTimeOffset sampledAtUtc)
     {
         var processId = process.Id;
         var totalCpuMs = SafeTotalProcessorTime(process);
         var cpuPercent = CalculateCpuPercent("process:" + processId, totalCpuMs, sampledAtUtc);
         process.Refresh();
-        return new ProcessResourceSnapshot
+        return new RuntimeResourceSnapshot
         {
             Scope = scope,
             Key = key ?? string.Empty,
             DynamicAppId = target?.Key.DynamicAppId.Value ?? string.Empty,
+            ApplicationName = target?.Key.DynamicAppId.Value ?? string.Empty,
             ModId = target?.Key.ModId.Value ?? string.Empty,
             Version = target?.Key.Version.Value ?? string.Empty,
+            ExecutionMode = scope.Equals("host", StringComparison.OrdinalIgnoreCase) ? string.Empty : DynamicModExecutionMode.Process.ToString(),
+            RuntimeType = scope.Equals("host", StringComparison.OrdinalIgnoreCase) ? string.Empty : "Mod",
             State = target?.State.ToString() ?? string.Empty,
             HealthStatus = target?.HealthStatus.ToString() ?? string.Empty,
             IsAvailable = true,
             Message = string.Empty,
+            CreatedAtUtc = target?.CreatedAtUtc ?? DateTimeOffset.MinValue,
+            UpdatedAtUtc = target?.UpdatedAtUtc ?? DateTimeOffset.MinValue,
             ProcessId = processId,
             CpuPercent = cpuPercent,
             WorkingSetBytes = SafeWorkingSet(process),
@@ -262,21 +432,24 @@ public sealed class DynamicAppPanelMiddleware
 
     private double CalculateCpuPercent(string key, double totalCpuMs, DateTimeOffset sampledAtUtc)
     {
-        if (!_resourceCounters.TryGetValue(key, out var previous))
+        lock (_resourceStatsLock)
         {
+            if (!_resourceCounters.TryGetValue(key, out var previous))
+            {
+                _resourceCounters[key] = new ResourceCounter(totalCpuMs, sampledAtUtc);
+                return 0d;
+            }
+
             _resourceCounters[key] = new ResourceCounter(totalCpuMs, sampledAtUtc);
-            return 0d;
-        }
+            var elapsedMs = (sampledAtUtc - previous.SampledAtUtc).TotalMilliseconds;
+            if (elapsedMs <= 0 || totalCpuMs < previous.TotalCpuMilliseconds)
+            {
+                return 0d;
+            }
 
-        _resourceCounters[key] = new ResourceCounter(totalCpuMs, sampledAtUtc);
-        var elapsedMs = (sampledAtUtc - previous.SampledAtUtc).TotalMilliseconds;
-        if (elapsedMs <= 0 || totalCpuMs < previous.TotalCpuMilliseconds)
-        {
-            return 0d;
+            var percent = (totalCpuMs - previous.TotalCpuMilliseconds) / (elapsedMs * Math.Max(1, Environment.ProcessorCount)) * 100d;
+            return Math.Round(Math.Max(0d, percent), 2);
         }
-
-        var percent = (totalCpuMs - previous.TotalCpuMilliseconds) / (elapsedMs * Math.Max(1, Environment.ProcessorCount)) * 100d;
-        return Math.Round(Math.Max(0d, percent), 2);
     }
 
     private bool IsAuthorized(HttpContext context)
@@ -618,7 +791,7 @@ public sealed class DynamicAppPanelMiddleware
     }
     .resource-section > .runtime-stats-grid,
     .resource-section > .resource-gauge-row,
-    .resource-section > .resource-mod-list {
+    .resource-section > .resource-runtime-list {
       padding: 10px;
     }
     .resource-section > .resource-gauge-row + .runtime-stats-grid {
@@ -729,26 +902,36 @@ public sealed class DynamicAppPanelMiddleware
       background: #e6fffb;
       color: #0f766e;
     }
-    .resource-mod-list {
+    .resource-runtime-list {
       display: grid;
       gap: 8px;
     }
-    .resource-mod-row {
+    .resource-runtime-head,
+    .resource-runtime-row {
       display: grid;
-      grid-template-columns: minmax(180px, 1.3fr) repeat(5, minmax(92px, 0.7fr));
+      grid-template-columns: minmax(130px, .95fr) minmax(110px, .85fr) minmax(110px, .85fr) minmax(80px, .55fr) minmax(150px, 1fr) minmax(74px, .45fr) minmax(86px, .55fr);
       gap: 8px;
       align-items: center;
+    }
+    .resource-runtime-head {
+      padding: 0 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .resource-runtime-row {
       padding: 10px;
       border: 1px solid #eef2f6;
       border-radius: 5px;
       background: #f8fafc;
     }
-    .resource-mod-row strong,
-    .resource-mod-row span {
+    .resource-runtime-row strong,
+    .resource-runtime-row span,
+    .resource-runtime-head span {
       min-width: 0;
       overflow-wrap: anywhere;
     }
-    .resource-mod-row .muted {
+    .resource-runtime-row .muted {
       font-size: 12px;
     }
     .nav-group {
@@ -1245,7 +1428,8 @@ public sealed class DynamicAppPanelMiddleware
       .resource-dashboard-row { grid-template-columns: minmax(0, 1fr); }
       .resource-gauge-row { grid-template-columns: minmax(0, 1fr); }
       .resource-switch-gauge { grid-template-columns: minmax(0, 1fr); }
-      .resource-mod-row { grid-template-columns: minmax(0, 1fr); }
+      .resource-runtime-head { display: none; }
+      .resource-runtime-row { grid-template-columns: minmax(0, 1fr); }
     }
   </style>
 </head>
@@ -1288,7 +1472,7 @@ public sealed class DynamicAppPanelMiddleware
         <button class="nav-button" data-view-target="upload" data-i18n="packageManager">Application Manager</button>
         <button class="nav-button" data-view-target="applications"><span data-i18n="appRuntime">Application Runtime</span> <span id="navAppCount" class="muted"></span></button>
       </div>
-      <div class="nav-group">
+      <div class="nav-group" hidden>
         <div class="nav-title" data-i18n="debug">Debug</div>
         <button class="nav-button" data-view-target="local-debug" data-i18n="localDebugBridge">Local Debug Bridge</button>
       </div>
@@ -1331,6 +1515,7 @@ public sealed class DynamicAppPanelMiddleware
           <label><span data-i18n="quickApi">Quick API</span>
             <select id="apiOperation">
               <option value="GET /targets">GET /targets</option>
+              <option value="GET /containers">GET /containers</option>
               <option value="GET /manifests">GET /manifests</option>
               <option value="GET /self-healing">GET /self-healing</option>
               <option value="GET /archived">GET /archived</option>
@@ -1363,7 +1548,7 @@ public sealed class DynamicAppPanelMiddleware
         </div>
         <div id="archiveList" class="inventory-list"></div>
       </section>
-      <section id="view-local-debug" class="view">
+      <section id="view-local-debug" class="view" hidden>
         <h2 data-i18n="localDebugBridge">Local Debug Bridge</h2>
         <div class="form-grid">
           <label><span data-i18n="dynamicAppId">DynamicApp Id</span><input id="debugApp" value="security-platform"></label>
@@ -1397,6 +1582,7 @@ public sealed class DynamicAppPanelMiddleware
             <div class="toolbar">
               <h3 id="selectedPackageApplicationTitle" style="flex:1" data-i18n="packageInventory">Package Inventory</h3>
               <button class="icon-button" id="refreshPackages" data-i18n-title="refreshPackages" title="Refresh packages" aria-label="Refresh packages"><span aria-hidden="true">↻</span></button>
+              <button id="openExistingContainer" data-i18n="attachExistingContainer">Attach Container</button>
               <button class="primary" id="openPackageUpload" data-i18n="uploadPackage">Upload Package</button>
             </div>
             <div id="packageManagerList" class="inventory-list"></div>
@@ -1478,6 +1664,32 @@ public sealed class DynamicAppPanelMiddleware
         <div class="toolbar actions">
           <button id="cancelPackageUpload" class="close-action" type="button" data-i18n="cancel">Cancel</button>
           <button class="primary" id="submitUpload" data-i18n="uploadAction">Upload</button>
+        </div>
+      </div>
+    </div>
+    <div id="existingContainerModal" class="modal-backdrop" hidden>
+      <div class="modal">
+        <div class="toolbar modal-header">
+          <h2 id="existingContainerTitle" style="flex:1" data-i18n="attachExistingContainer">Attach Container</h2>
+          <button id="closeExistingContainer" class="modal-close-icon close-action" type="button" data-i18n-title="close" aria-label="Close">&times;</button>
+        </div>
+        <div class="form-grid">
+          <input id="existingContainerApp" type="hidden">
+          <label class="full"><span data-i18n="containerName">Container Name</span><select id="existingContainerName"></select><span id="existingContainerStatus" class="field-hint">-</span></label>
+          <label><span data-i18n="modId">Mod Id</span><input id="existingContainerMod" value="auth" data-i18n-placeholder="modId" placeholder="Mod Id"></label>
+          <label><span data-i18n="version">Version</span><input id="existingContainerVersion" value="101-current"></label>
+          <label><span data-i18n="routePrefix">Route Prefix</span><input id="existingContainerRoute" value="/mods/auth"></label>
+          <label><span data-i18n="endpoint">Endpoint</span><input id="existingContainerEndpoint" value="http://air.auth:8080"></label>
+          <input id="existingContainerHealth" type="hidden" value="/Health">
+          <input id="existingContainerTimeout" type="hidden" value="60">
+          <div class="upload-metadata-summary full" role="alert" aria-live="polite">
+            <div class="upload-metadata-item"><strong data-i18n="executionMode">Execution Mode</strong><span class="mono">ExistingContainer</span></div>
+            <div class="upload-metadata-item"><strong data-i18n="selectedApplication">Selected Application</strong><span id="existingContainerAppLabel" class="mono">-</span></div>
+          </div>
+        </div>
+        <div class="toolbar actions">
+          <button id="cancelExistingContainer" class="close-action" type="button" data-i18n="cancel">Cancel</button>
+          <button class="primary" id="submitExistingContainer" data-i18n="attachExistingContainer">Register Container</button>
         </div>
       </div>
     </div>
@@ -1584,6 +1796,11 @@ public sealed class DynamicAppPanelMiddleware
     const uploadMetadataSummary = document.getElementById('uploadMetadataSummary');
     const uploadResultLog = document.getElementById('uploadResultLog');
     const submitUploadButton = document.getElementById('submitUpload');
+    const existingContainerModal = document.getElementById('existingContainerModal');
+    const existingContainerTitle = document.getElementById('existingContainerTitle');
+    const existingContainerNameInput = document.getElementById('existingContainerName');
+    const existingContainerStatus = document.getElementById('existingContainerStatus');
+    const submitExistingContainerButton = document.getElementById('submitExistingContainer');
     const runAccessLogButton = document.getElementById('runAccessLog');
     const closeAccessLogButton = document.getElementById('closeAccessLogModal');
     const accessLogModal = document.getElementById('accessLogModal');
@@ -1611,6 +1828,7 @@ public sealed class DynamicAppPanelMiddleware
     let currentPackageApplicationId = '';
     let packageUploadMode = 'create';
     let packageUploadSourceKey = null;
+    let cachedExistingContainers = [];
     let cachedArchives = [];
 
     // zh-cn: 控制面板内置双语词典，避免引入前端构建链路。
@@ -1651,10 +1869,17 @@ public sealed class DynamicAppPanelMiddleware
         packageApplicationCount: '{count} 个应用',
         selectedApplication: '当前应用',
         uploadPackage: '上传包文件',
+        attachExistingContainer: '登记已有容器',
+        existingContainerSucceeded: '已有容器登记完成。',
+        containerName: '容器名',
+        containerStatus: '容器状态',
+        containerRequired: '请选择要登记的容器。',
+        noExistingContainers: '未读取到可登记的已有容器。',
         refreshPackages: '刷新包清单',
         packageInventory: '包库存',
         noPackages: '暂无已上传的 Mod 包。',
         packageFiles: '版本文件',
+        noPackageFiles: '该登记项没有包文件。',
         packageDetails: '包详情',
         updatePackage: '更新包',
         extractedFiles: '解压文件',
@@ -1739,13 +1964,17 @@ public sealed class DynamicAppPanelMiddleware
         confirmUpdatePackage: '确认更新当前包版本？',
         packageRequired: '必须选择压缩包文件',
         versionRequired: '必须填写新版本。',
+        modRequired: '必须填写 Mod 标识。',
+        endpointRequired: '必须填写端点。',
+        routeRequired: '必须填写路由前缀。',
+        invalidEndpoint: '端点必须是 http 或 https 绝对地址。',
         versionMustChange: '新版本不能与当前版本相同。',
         packageZipRequired: '压缩包文件必须是 .zip 格式',
         confirmOverwrite: '确认覆盖已有包版本？',
         uploadAction: '上传',
         updateAction: '更新',
         deployHint: 'true 表示上传后立即部署、启动并激活；false 只保存包并发布 Manifest，不启动服务。',
-        uploadExecutionModeHint: 'zip 包上传目前只支持 Process 模式；容器接管请使用 Manager API 配置。',
+        uploadExecutionModeHint: 'zip 包上传目前只支持 Process 模式；容器登记请使用“登记已有容器”。',
         overwriteHint: 'true 表示允许替换相同应用、Mod、版本下已经存在的包；false 遇到同版本会拒绝。',
         uploadStarted: '正在上传，请等待...',
         updateStarted: '正在更新，请等待...',
@@ -1803,10 +2032,17 @@ public sealed class DynamicAppPanelMiddleware
         packageApplicationCount: '{count} application(s)',
         selectedApplication: 'Selected Application',
         uploadPackage: 'Upload Package',
+        attachExistingContainer: 'Register Container',
+        existingContainerSucceeded: 'Existing container registered.',
+        containerName: 'Container Name',
+        containerStatus: 'Container Status',
+        containerRequired: 'Select a container to register.',
+        noExistingContainers: 'No existing containers were loaded.',
         refreshPackages: 'Refresh packages',
         packageInventory: 'Package Inventory',
         noPackages: 'No uploaded Mod packages.',
         packageFiles: 'Version files',
+        noPackageFiles: 'This registration has no package files.',
         packageDetails: 'Package Details',
         updatePackage: 'Update Package',
         extractedFiles: 'Extracted files',
@@ -1891,13 +2127,17 @@ public sealed class DynamicAppPanelMiddleware
         confirmUpdatePackage: 'Update the current package version?',
         packageRequired: 'package file is required',
         versionRequired: 'new version is required.',
+        modRequired: 'Mod id is required.',
+        endpointRequired: 'endpoint is required.',
+        routeRequired: 'route prefix is required.',
+        invalidEndpoint: 'endpoint must be an absolute http or https URL.',
         versionMustChange: 'new version must be different from the current version.',
         packageZipRequired: 'package file must be a .zip archive',
         confirmOverwrite: 'Overwrite existing package version?',
         uploadAction: 'Upload',
         updateAction: 'Update',
         deployHint: 'true deploys, starts, and activates the Mod after upload; false only saves the package and publishes the manifest.',
-        uploadExecutionModeHint: 'Zip package upload currently supports Process mode only; use Manager API configuration for container adoption.',
+        uploadExecutionModeHint: 'Zip package upload currently supports Process mode only; use Register Container for existing-container registration.',
         overwriteHint: 'true allows replacing an existing package with the same application, Mod, and version; false rejects duplicate versions.',
         uploadStarted: 'Uploading. Please wait...',
         updateStarted: 'Updating. Please wait...',
@@ -1925,14 +2165,18 @@ public sealed class DynamicAppPanelMiddleware
       resourceMonitor: '资源监控',
       hostProcess: '主进程',
       containerResource: '容器资源',
-      modResource: 'Mod 资源',
+      modResource: '应用运行时',
+      applicationName: '应用名',
+      runtimeType: '运行时类型',
+      runtimeTypeContainer: '容器',
+      runtimeTypeMod: 'Mod',
       lowFrequencySample: '低频采样：每 {seconds} 秒最多采样一次，刷新会复用缓存。',
       sampledAt: '采样时间',
       privateMemory: '私有内存',
       containerMemoryLimit: '容器内存上限',
       unlimited: '无上限',
       resourceUnavailable: '资源不可用',
-      noModResources: '暂无 Mod 资源目标。',
+      noModResources: '暂无应用运行时资源目标。',
       autoRefresh: '定时刷新',
       refreshCountdown: '刷新倒计时: {seconds} s',
       refreshInterval: '刷新间隔',
@@ -1948,14 +2192,18 @@ public sealed class DynamicAppPanelMiddleware
       resourceMonitor: 'Resource Monitor',
       hostProcess: 'Host Process',
       containerResource: 'Container Resource',
-      modResource: 'Mod Resource',
+      modResource: 'Application Runtime',
+      applicationName: 'Application',
+      runtimeType: 'Runtime Type',
+      runtimeTypeContainer: 'Container',
+      runtimeTypeMod: 'Mod',
       lowFrequencySample: 'Low-frequency sample: at most once every {seconds}s; refresh reuses cached data.',
       sampledAt: 'Sampled At',
       privateMemory: 'Private Memory',
       containerMemoryLimit: 'Container Memory Limit',
       unlimited: 'unlimited',
       resourceUnavailable: 'Resource unavailable',
-      noModResources: 'No Mod resource targets.',
+      noModResources: 'No application runtime resource targets.',
       autoRefresh: 'Auto Refresh',
       refreshCountdown: 'Refresh countdown: {seconds} s',
       refreshInterval: 'Refresh Interval',
@@ -2044,6 +2292,7 @@ public sealed class DynamicAppPanelMiddleware
       document.getElementById('createPackageApplication').addEventListener('click', createPackageApplication);
       document.getElementById('refreshPackages').addEventListener('click', loadPackages);
       document.getElementById('openPackageUpload').addEventListener('click', () => openPackageUploadModal());
+      document.getElementById('openExistingContainer').addEventListener('click', openExistingContainerModal);
       document.getElementById('refreshArchives').addEventListener('click', loadArchives);
       document.getElementById('executeApi').addEventListener('click', executeApiConsole);
       document.getElementById('apiOperation').addEventListener('change', fillApiConsoleSample);
@@ -2052,6 +2301,9 @@ public sealed class DynamicAppPanelMiddleware
       document.getElementById('uploadPackage').addEventListener('change', refreshUploadSummary);
       submitUploadButton.addEventListener('click', submitUpload);
       document.getElementById('cancelPackageUpload').addEventListener('click', closePackageUploadModal);
+      document.getElementById('cancelExistingContainer').addEventListener('click', closeExistingContainerModal);
+      existingContainerNameInput.addEventListener('change', syncExistingContainerSelection);
+      submitExistingContainerButton.addEventListener('click', submitExistingContainer);
       document.querySelectorAll('[data-view-target]').forEach(button => {
         button.addEventListener('click', () => showView(button.dataset.viewTarget));
       });
@@ -2059,6 +2311,7 @@ public sealed class DynamicAppPanelMiddleware
       document.getElementById('closeDetailModal').addEventListener('click', closeDetailModal);
       document.getElementById('closePackageDetail').addEventListener('click', closePackageDetailModal);
       document.getElementById('closePackageUpload').addEventListener('click', closePackageUploadModal);
+      document.getElementById('closeExistingContainer').addEventListener('click', closeExistingContainerModal);
       runAccessLogButton.addEventListener('click', runPendingAccessLog);
       closeAccessLogButton.addEventListener('click', () => closeAccessLogModal(false));
       if (ticketInput.value.trim()) {
@@ -2392,7 +2645,7 @@ public sealed class DynamicAppPanelMiddleware
         renderDashboardResourceSection(t('containerResource'), containerGauges, containerItems, containerMeta) +
         renderDashboardResourceSection(t('hostProcess'), hostGauges, hostItems, hostMeta) +
         '</div>' +
-        renderModResourceSection(mods);
+        renderApplicationRuntimeSection(mods);
     }
 
     function renderRuntimeStatsError(message) {
@@ -2608,23 +2861,46 @@ public sealed class DynamicAppPanelMiddleware
       });
     }
 
-    function renderModResourceSection(mods) {
+    function renderApplicationRuntimeSection(mods) {
       if (!mods.length) {
         return '<div class="resource-section"><h3>' + escapeHtml(t('modResource')) + '</h3><div class="muted">' + escapeHtml(t('noModResources')) + '</div></div>';
       }
 
-      return '<div class="resource-section"><h3>' + escapeHtml(t('modResource')) + '</h3><div class="resource-mod-list">' + mods.map(mod => {
-        const title = [mod.dynamicAppId, mod.modId, mod.version].filter(Boolean).join('/');
+      const ordered = mods.slice().sort((left, right) =>
+        String(left.applicationName || left.dynamicAppId || '').localeCompare(String(right.applicationName || right.dynamicAppId || ''), undefined, { sensitivity: 'base' }) ||
+        String(left.modId || '').localeCompare(String(right.modId || ''), undefined, { sensitivity: 'base' }) ||
+        String(left.version || '').localeCompare(String(right.version || ''), undefined, { sensitivity: 'base' })
+      );
+      const head = '<div class="resource-runtime-head">' +
+        '<span>' + escapeHtml(t('applicationName')) + '</span>' +
+        '<span>' + escapeHtml(t('modId')) + '</span>' +
+        '<span>' + escapeHtml(t('version')) + '</span>' +
+        '<span>' + escapeHtml(t('runtimeType')) + '</span>' +
+        '<span>' + escapeHtml(t('statusMessage')) + '</span>' +
+        '<span>' + escapeHtml(t('cpuUsage')) + '</span>' +
+        '<span>' + escapeHtml(t('memoryUsage')) + '</span>' +
+        '</div>';
+      return '<div class="resource-section"><div class="resource-section-title"><h3>' + escapeHtml(t('modResource')) + '</h3></div><div class="resource-runtime-list">' + head + ordered.map(mod => {
+        const runtimeType = String(mod.runtimeType || '').toLowerCase() === 'container' ? t('runtimeTypeContainer') : t('runtimeTypeMod');
+        const statusText = escapeHtml((mod.state || '-') + ' / ' + (mod.healthStatus || '-'));
         const status = mod.isAvailable
-          ? escapeHtml((mod.state || '-') + ' / ' + (mod.healthStatus || '-'))
-          : '<span class="danger">' + escapeHtml(t('resourceUnavailable')) + '</span>';
-        return '<div class="resource-mod-row">' +
-          '<div><strong class="mono">' + escapeHtml(title || mod.key || '-') + '</strong><div class="muted">' + status + '</div></div>' +
-          '<span><strong>' + escapeHtml(t('cpuUsage')) + '</strong><br>' + escapeHtml(Number(mod.cpuPercent || 0).toFixed(2) + '%') + '</span>' +
-          '<span><strong>' + escapeHtml(t('memoryUsage')) + '</strong><br>' + escapeHtml(formatBytes(Number(mod.workingSetBytes || 0))) + '</span>' +
-          '<span><strong>' + escapeHtml(t('privateMemory')) + '</strong><br>' + escapeHtml(formatBytes(Number(mod.privateMemoryBytes || 0))) + '</span>' +
-          '<span><strong>' + escapeHtml(t('uptime')) + '</strong><br>' + escapeHtml(formatDuration(Number(mod.uptimeSeconds || 0))) + '</span>' +
-          '<span><strong>' + escapeHtml(t('processId')) + '</strong><br>' + escapeHtml(mod.processId || mod.message || '-') + '</span>' +
+          ? statusText
+          : statusText + '<div class="danger">' + escapeHtml(t('resourceUnavailable')) + '</div>';
+        const cpu = mod.isAvailable && String(mod.runtimeType || '').toLowerCase() !== 'container'
+          ? Number(mod.cpuPercent || 0).toFixed(2) + '%'
+          : '-';
+        const memory = mod.isAvailable && String(mod.runtimeType || '').toLowerCase() !== 'container'
+          ? formatBytes(Number(mod.workingSetBytes || 0))
+          : '-';
+        const message = mod.message ? '<div class="muted">' + escapeHtml(mod.message) + '</div>' : '';
+        return '<div class="resource-runtime-row">' +
+          '<span><strong class="mono">' + escapeHtml(mod.applicationName || mod.dynamicAppId || '-') + '</strong></span>' +
+          '<span class="mono">' + escapeHtml(mod.modId || '-') + '</span>' +
+          '<span class="mono">' + escapeHtml(mod.version || '-') + '</span>' +
+          '<span>' + escapeHtml(runtimeType) + '</span>' +
+          '<span>' + status + message + '</span>' +
+          '<span>' + escapeHtml(cpu) + '</span>' +
+          '<span>' + escapeHtml(memory) + '</span>' +
           '</div>';
       }).join('') + '</div></div>';
     }
@@ -2649,11 +2925,13 @@ public sealed class DynamicAppPanelMiddleware
         packageApplicationList.innerHTML = '<div class="muted">' + escapeHtml(t('noPackageApplications')) + '</div>';
         selectedPackageApplicationTitle.textContent = t('packageInventory');
         document.getElementById('openPackageUpload').disabled = true;
+        document.getElementById('openExistingContainer').disabled = true;
         packageManagerList.innerHTML = '<div class="muted">' + escapeHtml(t('selectApplicationFirst')) + '</div>';
         return;
       }
 
       document.getElementById('openPackageUpload').disabled = false;
+      document.getElementById('openExistingContainer').disabled = false;
       packageApplicationList.innerHTML = applications.slice()
         .sort((left, right) => String(left.dynamicAppId || '').localeCompare(String(right.dynamicAppId || ''), undefined, { sensitivity: 'base' }))
         .map(item => {
@@ -2708,19 +2986,25 @@ public sealed class DynamicAppPanelMiddleware
         const versions = sortPackageVersions(item.versions || []);
         const current = versions[0];
         const history = versions.slice(1);
+        const isExistingContainer = isExistingContainerPackageVersion(current);
         const payload = current ? encodeURIComponent(JSON.stringify({
           dynamicAppId: current.dynamicAppId || item.dynamicAppId || '',
           modId: current.modId || item.modId || '',
           version: current.version || ''
         })) : '';
-        const actions = current
+        const actions = current && !isExistingContainer
           ? '<div class="toolbar"><button class="primary" data-action="package-update" data-key="' + payload + '"><span aria-hidden="true">⤴</span> ' + escapeHtml(t('updatePackage')) + '</button>' +
             (history.length ? '<button class="warning" data-action="package-history" data-key="' + payload + '"><span aria-hidden="true">⚠</span> ' + escapeHtml(t('viewHistory')) + ' (' + history.length + ')</button>' : '') +
             '</div>'
+          : current
+            ? '<div class="toolbar"><button data-action="package-detail" data-key="' + payload + '">' + escapeHtml(t('details')) + '</button></div>'
+            : '';
+        const modeBadge = current && current.executionMode
+          ? ' <span class="badge">' + escapeHtml(current.executionMode) + '</span>'
           : '';
         return '<div class="card">' +
           '<div class="row"><div><h3>' + escapeHtml(item.dynamicAppId || '') + ' / ' + escapeHtml(item.modId || '') + '</h3>' +
-          '<div class="muted">' + escapeHtml(t('packageInventory')) + ' · ' + versions.length + ' ' + escapeHtml(t('version')) + '</div></div>' +
+          '<div class="muted">' + escapeHtml(t('packageInventory')) + ' · ' + versions.length + ' ' + escapeHtml(t('version')) + modeBadge + '</div></div>' +
           actions + '</div>' +
           (current ? renderPackageVersion(item, current, { isCurrent: true }) : '') +
           '</div>';
@@ -2734,9 +3018,16 @@ public sealed class DynamicAppPanelMiddleware
         modId: version.modId || item.modId || '',
         version: version.version || ''
       }));
+      const modeBadge = version.executionMode
+        ? ' <span class="badge">' + escapeHtml(version.executionMode) + '</span>'
+        : '';
+      const manifestLine = isExistingContainerPackageVersion(version)
+        ? '<div class="muted small">' + escapeHtml(t('containerName')) + ': ' + escapeHtml(version.containerName || '-') + ' · ' + escapeHtml(t('endpoint')) + ': ' + escapeHtml(version.endpoint || '-') + '</div>'
+        : '';
       return '<div class="package-version-row">' +
-        '<div><div><span class="mono">' + escapeHtml(version.version || '') + '</span> <span class="badge">' + escapeHtml(options.isHistory ? t('historyVersions') : t('currentVersion')) + '</span> <span class="badge">' + escapeHtml(formatBytes(version.packageBytes || 0)) + '</span></div>' +
-        '<div class="muted small">' + escapeHtml(t('packageFiles')) + ': ' + files.length + ' · ' + escapeHtml(t('lastModified')) + ': ' + escapeHtml(formatDateTime(version.savedAtUtc)) + '</div></div>' +
+        '<div><div><span class="mono">' + escapeHtml(version.version || '') + '</span> <span class="badge">' + escapeHtml(options.isHistory ? t('historyVersions') : t('currentVersion')) + '</span> <span class="badge">' + escapeHtml(formatBytes(version.packageBytes || 0)) + '</span>' + modeBadge + '</div>' +
+        '<div class="muted small">' + escapeHtml(t('packageFiles')) + ': ' + files.length + ' · ' + escapeHtml(t('lastModified')) + ': ' + escapeHtml(formatDateTime(version.savedAtUtc)) + '</div>' +
+        manifestLine + '</div>' +
         '<div class="toolbar"><button data-action="package-detail" data-key="' + payload + '">' + escapeHtml(t('details')) + '</button></div>' +
         '</div>';
     }
@@ -2752,6 +3043,10 @@ public sealed class DynamicAppPanelMiddleware
 
         return String(right.version || '').localeCompare(String(left.version || ''), undefined, { sensitivity: 'base', numeric: true });
       });
+    }
+
+    function isExistingContainerPackageVersion(version) {
+      return String((version && version.executionMode) || '').toLowerCase() === 'existingcontainer';
     }
 
     function showPackageHistory(key) {
@@ -2782,9 +3077,12 @@ public sealed class DynamicAppPanelMiddleware
       packageDetailContent.innerHTML = '<div class="card">' +
         '<div class="package-detail-summary"><h3>' + escapeHtml(key.dynamicAppId + ' / ' + key.modId) + '</h3>' +
         '<div class="package-detail-summary-item"><span class="muted">' + escapeHtml(t('version')) + '</span><span class="mono">' + escapeHtml(key.version) + '</span></div>' +
+        '<div class="package-detail-summary-item"><span class="muted">' + escapeHtml(t('executionMode')) + '</span><span class="badge">' + escapeHtml(version.executionMode || '-') + '</span></div>' +
+        (version.containerName ? '<div class="package-detail-summary-item"><span class="muted">' + escapeHtml(t('containerName')) + '</span><span class="mono">' + escapeHtml(version.containerName) + '</span></div>' : '') +
+        (version.endpoint ? '<div class="package-detail-summary-item"><span class="muted">' + escapeHtml(t('endpoint')) + '</span><span class="mono">' + escapeHtml(version.endpoint) + '</span></div>' : '') +
         '<div class="package-detail-summary-item"><span class="muted">' + escapeHtml(t('size')) + '</span><span class="badge">' + escapeHtml(formatBytes(version.packageBytes || 0)) + '</span></div>' +
         '<div class="package-detail-summary-item"><span class="muted">' + escapeHtml(t('lastModified')) + '</span><span>' + escapeHtml(formatDateTime(version.savedAtUtc)) + '</span></div></div>' +
-        '<div class="file-list">' + files.map(renderPackageFile).join('') + '</div>' +
+        '<div class="file-list">' + (files.length ? files.map(renderPackageFile).join('') : '<div class="muted">' + escapeHtml(t('noPackageFiles')) + '</div>') + '</div>' +
         '</div>';
       packageDetailModal.hidden = false;
     }
@@ -2829,6 +3127,72 @@ public sealed class DynamicAppPanelMiddleware
     function closePackageUploadModal() {
       packageUploadModal.hidden = true;
       submitUploadButton.disabled = false;
+    }
+
+    async function openExistingContainerModal() {
+      if (!currentPackageApplicationId) {
+        alert(t('selectApplicationFirst'));
+        return;
+      }
+
+      const appId = currentPackageApplicationId;
+      document.getElementById('existingContainerApp').value = appId;
+      document.getElementById('existingContainerAppLabel').textContent = appId;
+      existingContainerTitle.textContent = t('attachExistingContainer') + ' - ' + appId;
+      existingContainerNameInput.innerHTML = '<option value="">' + escapeHtml(t('loading')) + '</option>';
+      existingContainerStatus.textContent = t('loading');
+      existingContainerModal.hidden = false;
+      await loadExistingContainers();
+      syncExistingContainerSelection();
+    }
+
+    function closeExistingContainerModal() {
+      existingContainerModal.hidden = true;
+      submitExistingContainerButton.disabled = false;
+      submitExistingContainerButton.textContent = t('attachExistingContainer');
+    }
+
+    async function loadExistingContainers() {
+      try {
+        const result = await api('/containers');
+        cachedExistingContainers = result && result.data ? result.data : [];
+        renderExistingContainerOptions();
+      } catch (error) {
+        cachedExistingContainers = [];
+        existingContainerNameInput.innerHTML = '<option value="">' + escapeHtml(t('loadFailed', { message: error.message })) + '</option>';
+        existingContainerStatus.textContent = error.message;
+      }
+    }
+
+    function renderExistingContainerOptions() {
+      if (!cachedExistingContainers.length) {
+        existingContainerNameInput.innerHTML = '<option value="">' + escapeHtml(t('noExistingContainers')) + '</option>';
+        existingContainerStatus.textContent = t('noExistingContainers');
+        return;
+      }
+
+      existingContainerNameInput.innerHTML = cachedExistingContainers.map(container => {
+        const label = (container.name || '') + ' | ' + (container.state || '-') + ' | ' + (container.status || '-') + (container.dockerHealthStatus ? ' | ' + container.dockerHealthStatus : '');
+        return '<option value="' + escapeHtml(container.name || '') + '">' + escapeHtml(label) + '</option>';
+      }).join('');
+    }
+
+    function syncExistingContainerSelection() {
+      const container = cachedExistingContainers.find(item => sameText(item.name, existingContainerNameInput.value));
+      if (!container) {
+        existingContainerStatus.textContent = t('containerStatus') + ': -';
+        return;
+      }
+
+      const modId = inferModIdFromContainerName(container.name);
+      document.getElementById('existingContainerMod').value = modId;
+      document.getElementById('existingContainerRoute').value = '/mods/' + modId;
+      document.getElementById('existingContainerEndpoint').value = 'http://' + container.name + ':8080';
+      existingContainerStatus.textContent = t('containerStatus') + ': ' + (container.state || '-') + ' / ' + (container.status || '-') + (container.dockerHealthStatus ? ' / ' + container.dockerHealthStatus : '');
+    }
+
+    function inferModIdFromContainerName(name) {
+      return String(name || '').replace(/^air[._-]/i, '') || 'mod';
     }
 
     function resetPackageUploadForm(dynamicAppId) {
@@ -3041,19 +3405,22 @@ public sealed class DynamicAppPanelMiddleware
       const state = mod.state || 'None';
       const health = mod.healthStatus || 'None';
       const badge = health === 'Healthy' ? 'ok' : (health === 'Unhealthy' || state === 'Failed' ? 'bad' : 'warn');
+      const healthLine = isExistingContainerMode(mod)
+        ? ''
+        : '<div class="muted">' + escapeHtml(t('health')) + ' ' + escapeHtml(mod.healthPath || '') + '</div>';
       const key = encodeURIComponent(JSON.stringify({
         dynamicAppId: mod.dynamicAppId,
         modId: mod.modId,
         version: mod.version
       }));
       const history = options.history || [];
-      const historyButton = options.isCurrent && history.length
+      const historyButton = options.isCurrent && history.length && !isExistingContainerMode(mod)
         ? '<button data-action="history" data-key="' + key + '">' + escapeHtml(t('viewHistory')) + ' (' + history.length + ')</button>'
         : '';
       return '<div class="row mod-row">' +
         '<div><div><strong>' + escapeHtml(mod.modId || '') + '</strong> <span class="mono">' + escapeHtml(mod.version || '') + '</span> <span class="badge">' + escapeHtml(options.isCurrent ? t('currentVersion') : t('historyVersions')) + '</span></div>' +
         '<div class="muted">' + escapeHtml(mod.routePrefix || '') + ' -> ' + escapeHtml(mod.baseAddress || '') + '</div>' +
-        '<div class="muted">' + escapeHtml(t('health')) + ' ' + escapeHtml(mod.healthPath || '') + '</div>' +
+        healthLine +
         '<div class="muted">' + escapeHtml(mod.lastStatusMessage || '') + '</div>' +
         renderSelfHealing(mod.selfHealing) + '</div>' +
         '<div class="toolbar">' +
@@ -3066,6 +3433,7 @@ public sealed class DynamicAppPanelMiddleware
     function renderActionButtons(key, mod, options) {
       const state = normalizeState(mod.state);
       const health = String(mod.healthStatus || '').toLowerCase();
+      const isExistingContainer = isExistingContainerMode(mod);
       const routeAttrs = ' data-route="' + escapeHtml(mod.routePrefix || '') + '" data-health="' + escapeHtml(mod.healthPath || '') + '"';
       const buttons = [];
       if (!['active', 'starting', 'draining'].includes(state)) {
@@ -3080,7 +3448,7 @@ public sealed class DynamicAppPanelMiddleware
       if (!options.isCurrent) {
         buttons.push('<button data-action="activate" data-key="' + key + '">' + escapeHtml(t('activate')) + '</button>');
       }
-      if (options.isCurrent && (options.history || []).length) {
+      if (options.isCurrent && (options.history || []).length && !isExistingContainerMode(mod)) {
         buttons.push('<button data-action="rollback" data-key="' + key + '">' + escapeHtml(t('rollback')) + '</button>');
       }
       if (mod.selfHealing) {
@@ -3089,8 +3457,10 @@ public sealed class DynamicAppPanelMiddleware
       if (mod.hasManifest && (state === 'failed' || health === 'unhealthy' || !options.isCurrent)) {
         buttons.push('<button data-action="archive" data-key="' + key + '" class="danger">' + escapeHtml(t('archive')) + '</button>');
       }
-      buttons.push('<button data-action="health" data-key="' + key + '">' + escapeHtml(t('health')) + '</button>');
-      buttons.push('<button data-action="route-test"' + routeAttrs + '>' + escapeHtml(t('routeTest')) + '</button>');
+      if (!isExistingContainer) {
+        buttons.push('<button data-action="health" data-key="' + key + '">' + escapeHtml(t('health')) + '</button>');
+        buttons.push('<button data-action="route-test"' + routeAttrs + '>' + escapeHtml(t('routeTest')) + '</button>');
+      }
       buttons.push('<button data-action="details" data-key="' + key + '">' + escapeHtml(t('details')) + '</button>');
       return buttons.join('');
     }
@@ -3110,6 +3480,10 @@ public sealed class DynamicAppPanelMiddleware
 
     function normalizeState(value) {
       return String(value || 'None').toLowerCase();
+    }
+
+    function isExistingContainerMode(mod) {
+      return String((mod && mod.executionMode) || '').toLowerCase() === 'existingcontainer';
     }
 
     document.addEventListener('click', async event => {
@@ -3333,6 +3707,7 @@ public sealed class DynamicAppPanelMiddleware
       const app = cachedApps.find(item => String(item.dynamicAppId).toLowerCase() === String(key.dynamicAppId).toLowerCase());
       if (!app) return;
       const group = groupMods(app).find(item => String(item.current.modId).toLowerCase() === String(key.modId).toLowerCase());
+      if (group && isExistingContainerMode(group.current)) return;
       const history = group ? sortHistoryVersions(group.history) : [];
       historyTitle.textContent = t('historyVersions') + ' - ' + key.dynamicAppId + '/' + key.modId;
       if (!history.length) {
@@ -3580,6 +3955,54 @@ public sealed class DynamicAppPanelMiddleware
       document.getElementById('debugDeploy').value = String(sampleLocalDebug.deploy);
     }
 
+    async function submitExistingContainer() {
+      submitExistingContainerButton.disabled = true;
+      submitExistingContainerButton.textContent = t('loading');
+      try {
+        const dynamicAppId = valueOf('existingContainerApp') || currentPackageApplicationId;
+        const containerName = valueOf('existingContainerName').trim();
+        const modId = valueOf('existingContainerMod').trim();
+        const version = valueOf('existingContainerVersion').trim();
+        const routePrefix = valueOf('existingContainerRoute').trim();
+        const endpoint = valueOf('existingContainerEndpoint').trim();
+        if (!dynamicAppId) throw new Error(t('selectApplicationFirst'));
+        if (!containerName) throw new Error(t('containerRequired'));
+        if (!modId) throw new Error(t('modRequired'));
+        if (!version) throw new Error(t('versionRequired'));
+        if (!routePrefix) throw new Error(t('routeRequired'));
+        if (!endpoint) throw new Error(t('endpointRequired'));
+        if (!/^https?:\/\//i.test(endpoint)) throw new Error(t('invalidEndpoint'));
+
+        const request = {
+          dynamicAppId,
+          appVersion: version,
+          deploy: false,
+          gatewayPort: 8080,
+          managerPort: 8081,
+          managerInternalOnly: true,
+          mod: {
+            id: modId,
+            version,
+            executionMode: 'ExistingContainer',
+            artifact: { containerName, endpoint },
+            health: { path: valueOf('existingContainerHealth') || '/Health', startupTimeoutSeconds: Number(valueOf('existingContainerTimeout') || 60) },
+            route: { prefix: routePrefix }
+          }
+        };
+        const result = await api('/mods/configure', { method: 'POST', contentType: 'application/json', body: JSON.stringify(request) });
+        closeExistingContainerModal();
+        await loadPackageApplications();
+        await loadPackages();
+        await loadApplications();
+        alert(result && result.message ? result.message : t('existingContainerSucceeded'));
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        submitExistingContainerButton.disabled = false;
+        submitExistingContainerButton.textContent = t('attachExistingContainer');
+      }
+    }
+
     async function submitUpload() {
       uploadResultLog.hidden = true;
       uploadResultLog.textContent = '';
@@ -3791,11 +4214,11 @@ public sealed class DynamicAppPanelMiddleware
 
         public double UptimeSeconds { get; set; }
 
-        public ProcessResourceSnapshot HostProcess { get; set; } = new();
+        public RuntimeResourceSnapshot HostProcess { get; set; } = new();
 
         public ContainerResourceSnapshot Container { get; set; } = new();
 
-        public IReadOnlyCollection<ProcessResourceSnapshot> Mods { get; set; } = Array.Empty<ProcessResourceSnapshot>();
+        public IReadOnlyCollection<RuntimeResourceSnapshot> Mods { get; set; } = Array.Empty<RuntimeResourceSnapshot>();
     }
 
     private sealed class ContainerResourceSnapshot
@@ -3813,7 +4236,7 @@ public sealed class DynamicAppPanelMiddleware
         public int ProcessorCount { get; set; }
     }
 
-    private sealed class ProcessResourceSnapshot
+    private sealed class RuntimeResourceSnapshot
     {
         public string Scope { get; set; } = string.Empty;
 
@@ -3821,13 +4244,25 @@ public sealed class DynamicAppPanelMiddleware
 
         public string DynamicAppId { get; set; } = string.Empty;
 
+        public string ApplicationName { get; set; } = string.Empty;
+
         public string ModId { get; set; } = string.Empty;
 
         public string Version { get; set; } = string.Empty;
 
+        public string ExecutionMode { get; set; } = string.Empty;
+
+        public string RuntimeType { get; set; } = string.Empty;
+
+        public string ContainerName { get; set; } = string.Empty;
+
         public string State { get; set; } = string.Empty;
 
         public string HealthStatus { get; set; } = string.Empty;
+
+        public DateTimeOffset CreatedAtUtc { get; set; }
+
+        public DateTimeOffset UpdatedAtUtc { get; set; }
 
         public bool IsAvailable { get; set; }
 
@@ -3849,15 +4284,21 @@ public sealed class DynamicAppPanelMiddleware
 
         public double UptimeSeconds { get; set; }
 
-        public static ProcessResourceSnapshot Unavailable(string scope, string key, DynamicAppRouteTarget target, string message) => new()
+        public static RuntimeResourceSnapshot Unavailable(string scope, string key, DynamicAppRouteTarget target, DynamicModExecutionMode executionMode, string message) => new()
         {
             Scope = scope,
             Key = key,
             DynamicAppId = target.Key.DynamicAppId.Value,
+            ApplicationName = target.Key.DynamicAppId.Value,
             ModId = target.Key.ModId.Value,
             Version = target.Key.Version.Value,
+            ExecutionMode = executionMode.ToString(),
+            RuntimeType = executionMode is DynamicModExecutionMode.Container or DynamicModExecutionMode.ExistingContainer ? "Container" : "Mod",
+            ContainerName = executionMode is DynamicModExecutionMode.Container or DynamicModExecutionMode.ExistingContainer ? target.InstanceId : string.Empty,
             State = target.State.ToString(),
             HealthStatus = target.HealthStatus.ToString(),
+            CreatedAtUtc = target.CreatedAtUtc,
+            UpdatedAtUtc = target.UpdatedAtUtc,
             IsAvailable = false,
             Message = message,
             ProcessId = 0

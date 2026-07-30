@@ -6,11 +6,11 @@ Air.Cloud 的数据库能力分为两类：Entity Framework Core 数据访问包
 
 | 包 | 状态 | 作用 |
 | --- | --- | --- |
-| `Air.Cloud.EntityFrameWork.Core` | 推荐 | EF Core 仓储、DbContext 注册、连接配置、列元数据扩展和状态检查基础能力 |
-| `Air.Cloud.EntityFrameWork.MySQL` | 推荐 | MySQL EF Core Provider 适配 |
-| `Air.Cloud.EntityFrameWork.Oracle` | 推荐 | Oracle EF Core Provider 适配，并启用 Oracle 批量操作扩展 |
-| `Air.Cloud.EntityFrameWork.PostgreSQL` | 推荐 | PostgreSQL EF Core Provider 适配 |
-| `Air.Cloud.EntityFrameWork.Kingbase` | 推荐 | KingbaseES V9 EF Core Provider 适配 |
+| `Air.Cloud.EntityFrameWork.Core` | 维护中 | EF Core 仓储、DbContext 注册、连接配置、列元数据扩展和状态检查基础能力 |
+| `Air.Cloud.EntityFrameWork.MySQL` | 维护中 | MySQL EF Core Provider 适配 |
+| `Air.Cloud.EntityFrameWork.Oracle` | 维护中 | Oracle EF Core Provider 适配，并启用 Oracle 批量操作扩展 |
+| `Air.Cloud.EntityFrameWork.PostgreSQL` | 维护中 | PostgreSQL EF Core Provider 适配 |
+| `Air.Cloud.EntityFrameWork.Kingbase` | 维护中 | KingbaseES V9 Provider |
 
 ## 标准接入流程
 

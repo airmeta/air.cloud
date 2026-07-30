@@ -19,6 +19,12 @@ public sealed class DynamicAppModPackageVersionView
     public string ModId { get; set; } = string.Empty;
 
     /// <summary>
+    /// <para>zh-cn:Mod 执行模式，例如 Process、Container、ExistingContainer 或 LocalDevelopment。</para>
+    /// <para>en-us:Mod execution mode, such as Process, Container, ExistingContainer, or LocalDevelopment.</para>
+    /// </summary>
+    public string ExecutionMode { get; set; } = string.Empty;
+
+    /// <summary>
     /// <para>zh-cn:包版本号，对应包存储中的版本目录名。</para>
     /// <para>en-us:Package version, matching the version directory name in the package store.</para>
     /// </summary>
@@ -29,6 +35,24 @@ public sealed class DynamicAppModPackageVersionView
     /// <para>en-us:Absolute server-side original archive path; empty when the file does not exist.</para>
     /// </summary>
     public string PackageFilePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:包视图来源，例如 PackageStore、InstalledMod 或 ManifestOnly；ManifestOnly 表示没有 zip 包文件，仅来自登记的 Manifest。</para>
+    /// <para>en-us:Package view source, such as PackageStore, InstalledMod, or ManifestOnly; ManifestOnly means there is no zip package file and the row comes only from a registered manifest.</para>
+    /// </summary>
+    public string SourceKind { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:ExistingContainer 模式绑定的 Docker 容器名称；非容器接管模式为空。</para>
+    /// <para>en-us:Docker container name bound by ExistingContainer mode; empty for modes that do not adopt an existing container.</para>
+    /// </summary>
+    public string ContainerName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:Manifest 声明的上游端点地址；没有声明时为空。</para>
+    /// <para>en-us:Upstream endpoint declared by the manifest; empty when not declared.</para>
+    /// </summary>
+    public string Endpoint { get; set; } = string.Empty;
 
     /// <summary>
     /// <para>zh-cn:服务端解压目录绝对路径；目录不存在时为空。</para>

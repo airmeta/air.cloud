@@ -1,6 +1,5 @@
-using System.Net;
-using System.Net.Sockets;
-
+using Air.Cloud.Core.Standard.Container;
+using Air.Cloud.Core.Standard.Container.Model;
 using Air.Cloud.DynamicApp.Contracts.Lifecycle;
 using Air.Cloud.DynamicApp.Contracts.Manifest;
 using Air.Cloud.DynamicApp.Contracts.Runtime;
@@ -8,60 +7,51 @@ using Air.Cloud.DynamicApp.Contracts.Runtime;
 namespace Air.Cloud.DynamicApp.Orchestrator;
 
 /// <summary>
-/// <para>zh-cn:已有 Docker 容器编排器，通过 Docker Engine Unix Socket 启动和停止已经存在的容器。</para>
-/// <para>en-us:Existing Docker container orchestrator that starts and stops already-created containers through the Docker Engine Unix socket.</para>
+/// <para>zh-cn:已有容器编排器。该编排器通过 Core 容器引擎标准控制已经存在的容器或托管实例，不直接访问 Docker Socket，也不创建容器或拉取镜像。</para>
+/// <para>en-us:Existing-container orchestrator. It controls already-existing containers or hosted instances through the Core container engine standard, does not access Docker sockets directly, and does not create containers or pull images.</para>
 /// </summary>
-public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppOrchestrator, IDisposable
+public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppOrchestrator, IDynamicAppExistingContainerCatalog
 {
-    private readonly HttpClient _httpClient;
-    private readonly DockerExistingContainerDynamicAppOrchestratorOptions _options;
-    private readonly IDynamicAppStateStore _stateStore;
-    private bool _disposed;
+    private readonly IContainerEngineStandard containerEngine;
+    private readonly IDynamicAppManifestStore manifestStore;
+    private readonly DockerExistingContainerDynamicAppOrchestratorOptions options;
+    private readonly IDynamicAppStateStore stateStore;
 
     /// <summary>
-    /// <para>zh-cn:创建已有 Docker 容器编排器；构造阶段只准备客户端，不会访问 Docker Socket。</para>
-    /// <para>en-us:Creates the existing Docker container orchestrator; construction only prepares the client and does not access the Docker socket.</para>
+    /// <para>zh-cn:创建已有容器编排器。容器生命周期操作由注入的 <see cref="IContainerEngineStandard"/> 完成，因此 DynamicApp 不绑定具体容器平台。</para>
+    /// <para>en-us:Creates the existing-container orchestrator. Container lifecycle operations are performed by the injected <see cref="IContainerEngineStandard"/>, so DynamicApp is not bound to a concrete container platform.</para>
     /// </summary>
     /// <param name="stateStore">
     /// <para>zh-cn:运行状态存储，用于在容器启动成功后登记目标和在停止成功后更新状态。</para>
-    /// <para>en-us:Runtime state store used to register targets after container start and update state after container stop.</para>
+    /// <para>en-us:Runtime state store used to register targets after container start and update state after stop.</para>
+    /// </param>
+    /// <param name="manifestStore">
+    /// <para>zh-cn:Manifest 历史存储，用于运行态缺失时回查容器名称。</para>
+    /// <para>en-us:Manifest history store used to look up container names when runtime state is missing.</para>
+    /// </param>
+    /// <param name="containerEngine">
+    /// <para>zh-cn:Core 容器引擎标准实现。</para>
+    /// <para>en-us:The Core container engine standard implementation.</para>
     /// </param>
     /// <param name="options">
-    /// <para>zh-cn:Docker 编排选项，包含 Socket 路径、容器名称模板和目标地址模板。</para>
-    /// <para>en-us:Docker orchestration options, including socket path, container name template, and target address template.</para>
+    /// <para>zh-cn:已有容器编排选项，包含启用开关、容器名称模板和目标地址模板。</para>
+    /// <para>en-us:Existing-container orchestration options including enable switch, container name template, and target address template.</para>
     /// </param>
     public DockerExistingContainerDynamicAppOrchestrator(
         IDynamicAppStateStore stateStore,
+        IDynamicAppManifestStore manifestStore,
+        IContainerEngineStandard containerEngine,
         DockerExistingContainerDynamicAppOrchestratorOptions options)
     {
-        _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _httpClient = CreateDockerHttpClient(_options.DockerSocketPath);
+        this.stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+        this.manifestStore = manifestStore ?? throw new ArgumentNullException(nameof(manifestStore));
+        this.containerEngine = containerEngine ?? throw new ArgumentNullException(nameof(containerEngine));
+        this.options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
-    /// <summary>
-    /// <para>zh-cn:启动 Manifest 中声明的已有容器，并把该容器登记为 DynamicApp 路由目标；不会创建新容器或拉取镜像。</para>
-    /// <para>en-us:Starts the existing container declared by an ExistingContainer-mode manifest and registers it as a DynamicApp route target; it does not create containers or pull images.</para>
-    /// </summary>
-    /// <param name="manifest">
-    /// <para>zh-cn:所属 DynamicApp Manifest。</para>
-    /// <para>en-us:The owning DynamicApp manifest.</para>
-    /// </param>
-    /// <param name="mod">
-    /// <para>zh-cn:容器模式 Mod Manifest。</para>
-    /// <para>en-us:The ExistingContainer-mode Mod manifest.</para>
-    /// </param>
-    /// <param name="cancellationToken">
-    /// <para>zh-cn:取消令牌。</para>
-    /// <para>en-us:Cancellation token.</para>
-    /// </param>
-    /// <returns>
-    /// <para>zh-cn:启动和登记结果。</para>
-    /// <para>en-us:The start and registration result.</para>
-    /// </returns>
+    /// <inheritdoc />
     public async Task<DynamicAppOperationResult> DeployAsync(DynamicAppManifest manifest, DynamicModManifest mod, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(mod);
 
@@ -78,13 +68,13 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
 
         var key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version);
         var containerName = ResolveContainerName(manifest, mod);
-        var start = await SendDockerRequestAsync(HttpMethod.Post, $"/containers/{Uri.EscapeDataString(containerName)}/start", NormalizeTimeout(_options.StartTimeout), cancellationToken).ConfigureAwait(false);
+        var start = await containerEngine.StartAsync(containerName, cancellationToken).ConfigureAwait(false);
         if (!start.Succeeded)
         {
-            return DynamicAppOperationResult.Failure($"Docker container `{containerName}` could not be started for `{key}`. {start.Message}");
+            return DynamicAppOperationResult.Failure($"Container `{containerName}` could not be started for `{key}`. {start.Message}");
         }
 
-        _stateStore.UpsertTarget(new DynamicAppRouteTarget
+        stateStore.UpsertTarget(new DynamicAppRouteTarget
         {
             Key = key,
             BaseAddress = ResolveTargetBaseAddress(manifest, mod, containerName),
@@ -94,124 +84,81 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
             State = DynamicModLifecycleState.Starting,
             HealthStatus = DynamicModHealthStatus.Starting,
             InstanceId = containerName,
-            LastStatusMessage = $"Existing Docker container `{containerName}` started for `{key}`."
+            LastStatusMessage = $"Existing container `{containerName}` started for `{key}`."
         });
 
-        return DynamicAppOperationResult.Success($"Existing Docker container `{containerName}` started for `{key}`.");
+        return DynamicAppOperationResult.Success($"Existing container `{containerName}` started for `{key}`.");
     }
 
-    /// <summary>
-    /// <para>zh-cn:停止目标键对应的已有 Docker 容器，并把状态更新为 Stopped；容器已停止时视为成功。</para>
-    /// <para>en-us:Stops the existing Docker container for the target key and updates state to Stopped; an already stopped container is treated as success.</para>
-    /// </summary>
-    /// <param name="key">
-    /// <para>zh-cn:要停止的目标版本键。</para>
-    /// <para>en-us:The target version key to stop.</para>
-    /// </param>
-    /// <param name="cancellationToken">
-    /// <para>zh-cn:取消令牌。</para>
-    /// <para>en-us:Cancellation token.</para>
-    /// </param>
-    /// <returns>
-    /// <para>zh-cn:停止结果。</para>
-    /// <para>en-us:The stop result.</para>
-    /// </returns>
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<DynamicAppExistingContainerView>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateOptions();
+        if (!validation.Succeeded)
+        {
+            throw new InvalidOperationException(validation.Message);
+        }
+
+        var containers = await containerEngine.ListAsync(includeStopped: true, cancellationToken).ConfigureAwait(false);
+        return containers.Select(ToDynamicAppView).ToArray();
+    }
+
+    /// <inheritdoc />
+    public async Task<DynamicAppExistingContainerView> InspectAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateOptions();
+        if (!validation.Succeeded)
+        {
+            throw new InvalidOperationException(validation.Message);
+        }
+
+        var containerName = await ResolveContainerNameAsync(key, cancellationToken).ConfigureAwait(false);
+        var container = await containerEngine.InspectAsync(containerName, cancellationToken).ConfigureAwait(false);
+        return ToDynamicAppView(container);
+    }
+
+    /// <inheritdoc />
     public async Task<DynamicAppOperationResult> StopAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         var validation = ValidateOptions();
         if (!validation.Succeeded)
         {
             return validation;
         }
 
-        var containerName = ResolveContainerName(key);
-        var grace = Math.Max(0, _options.StopGracePeriodSeconds);
-        var stop = await SendDockerRequestAsync(HttpMethod.Post, $"/containers/{Uri.EscapeDataString(containerName)}/stop?t={grace}", NormalizeTimeout(_options.StopTimeout), cancellationToken).ConfigureAwait(false);
+        var containerName = await ResolveContainerNameAsync(key, cancellationToken).ConfigureAwait(false);
+        var stop = await containerEngine.StopAsync(containerName, cancellationToken).ConfigureAwait(false);
         if (!stop.Succeeded)
         {
-            return DynamicAppOperationResult.Failure($"Docker container `{containerName}` could not be stopped for `{key}`. {stop.Message}");
+            return DynamicAppOperationResult.Failure($"Container `{containerName}` could not be stopped for `{key}`. {stop.Message}");
         }
 
-        _stateStore.UpdateState(key, DynamicModLifecycleState.Stopped, DynamicModHealthStatus.Stopped, $"Existing Docker container `{containerName}` stopped for `{key}`.");
-        return DynamicAppOperationResult.Success($"Existing Docker container `{containerName}` stopped for `{key}`.");
-    }
-
-    /// <summary>
-    /// <para>zh-cn:释放 Docker HTTP 客户端。</para>
-    /// <para>en-us:Disposes the Docker HTTP client.</para>
-    /// </summary>
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _httpClient.Dispose();
-        _disposed = true;
+        stateStore.UpdateState(key, DynamicModLifecycleState.Stopped, DynamicModHealthStatus.Stopped, $"Existing container `{containerName}` stopped for `{key}`.");
+        return DynamicAppOperationResult.Success($"Existing container `{containerName}` stopped for `{key}`.");
     }
 
     private DynamicAppOperationResult ValidateOptions()
     {
-        if (!_options.Enabled)
+        if (!options.Enabled)
         {
-            return DynamicAppOperationResult.Failure("Docker existing-container DynamicApp orchestrator is not enabled.");
+            return DynamicAppOperationResult.Failure("Existing-container DynamicApp orchestrator is not enabled.");
         }
 
-        if (string.IsNullOrWhiteSpace(_options.DockerSocketPath))
+        if (string.IsNullOrWhiteSpace(options.ContainerNameTemplate))
         {
-            return DynamicAppOperationResult.Failure("Docker socket path is not configured.");
+            return DynamicAppOperationResult.Failure("Container name template is not configured.");
         }
 
-        if (!File.Exists(_options.DockerSocketPath))
-        {
-            return DynamicAppOperationResult.Failure($"Docker socket `{_options.DockerSocketPath}` does not exist.");
-        }
-
-        if (string.IsNullOrWhiteSpace(_options.ContainerNameTemplate))
-        {
-            return DynamicAppOperationResult.Failure("Docker container name template is not configured.");
-        }
-
-        return DynamicAppOperationResult.Success("Docker existing-container orchestrator options are valid.");
-    }
-
-    private async Task<DynamicAppOperationResult> SendDockerRequestAsync(HttpMethod method, string path, TimeSpan timeout, CancellationToken cancellationToken)
-    {
-        using var timeoutSource = new CancellationTokenSource(timeout);
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeoutSource.Token, cancellationToken);
-        using var request = new HttpRequestMessage(method, path);
-        try
-        {
-            using var response = await _httpClient.SendAsync(request, linked.Token).ConfigureAwait(false);
-            if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
-            {
-                return DynamicAppOperationResult.Success($"Docker API returned `{(int)response.StatusCode}`.");
-            }
-
-            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            return DynamicAppOperationResult.Failure($"Docker API returned `{(int)response.StatusCode}`. {body}".Trim());
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return DynamicAppOperationResult.Failure("Docker API request timed out.");
-        }
-        catch (HttpRequestException exception)
-        {
-            return DynamicAppOperationResult.Failure(exception.Message);
-        }
-        catch (SocketException exception)
-        {
-            return DynamicAppOperationResult.Failure(exception.Message);
-        }
+        return DynamicAppOperationResult.Success("Existing-container orchestrator options are valid.");
     }
 
     private Uri ResolveTargetBaseAddress(DynamicAppManifest manifest, DynamicModManifest mod, string containerName)
     {
-        var value = string.IsNullOrWhiteSpace(_options.TargetBaseAddressTemplate)
+        var value = !string.IsNullOrWhiteSpace(mod.Artifact.Endpoint)
             ? mod.Artifact.Endpoint
-            : ApplyTemplate(_options.TargetBaseAddressTemplate, manifest.Id.Value, mod.Id.Value, mod.Version.Value, containerName);
+            : string.IsNullOrWhiteSpace(options.TargetBaseAddressTemplate)
+                ? null
+                : ApplyTemplate(options.TargetBaseAddressTemplate, manifest.Id.Value, mod.Id.Value, mod.Version.Value, containerName);
 
         return Uri.TryCreate(value, UriKind.Absolute, out var uri)
             ? uri
@@ -220,12 +167,42 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
 
     private string ResolveContainerName(DynamicAppManifest manifest, DynamicModManifest mod)
     {
-        return ApplyTemplate(_options.ContainerNameTemplate, manifest.Id.Value, mod.Id.Value, mod.Version.Value, string.Empty);
+        return string.IsNullOrWhiteSpace(mod.Artifact.ContainerName)
+            ? ApplyTemplate(options.ContainerNameTemplate, manifest.Id.Value, mod.Id.Value, mod.Version.Value, string.Empty)
+            : mod.Artifact.ContainerName.Trim();
     }
 
-    private string ResolveContainerName(DynamicModVersionKey key)
+    private async Task<string> ResolveContainerNameAsync(DynamicModVersionKey key, CancellationToken cancellationToken)
     {
-        return ApplyTemplate(_options.ContainerNameTemplate, key.DynamicAppId.Value, key.ModId.Value, key.Version.Value, string.Empty);
+        var target = stateStore.ListTargets().FirstOrDefault(item => item.Key == key);
+        if (!string.IsNullOrWhiteSpace(target?.InstanceId))
+        {
+            return target.InstanceId;
+        }
+
+        var manifestRecord = await manifestStore.FindAsync(key, cancellationToken).ConfigureAwait(false);
+        var mod = manifestRecord?.Manifest.Mods.FirstOrDefault(item => item.Id == key.ModId && item.Version == key.Version);
+        if (!string.IsNullOrWhiteSpace(mod?.Artifact.ContainerName))
+        {
+            return mod.Artifact.ContainerName.Trim();
+        }
+
+        return ApplyTemplate(options.ContainerNameTemplate, key.DynamicAppId.Value, key.ModId.Value, key.Version.Value, string.Empty);
+    }
+
+    private static DynamicAppExistingContainerView ToDynamicAppView(ContainerEngineInstance container)
+    {
+        return new DynamicAppExistingContainerView
+        {
+            Id = container.Id,
+            Name = container.Name,
+            Image = container.Image,
+            State = container.State,
+            Status = container.Status,
+            DockerHealthStatus = container.HealthStatus,
+            IsRunning = container.IsRunning,
+            IsAvailable = container.IsAvailable
+        };
     }
 
     private static string ApplyTemplate(string template, string dynamicAppId, string modId, string version, string containerName)
@@ -235,33 +212,5 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
             .Replace("{modId}", modId, StringComparison.OrdinalIgnoreCase)
             .Replace("{version}", version, StringComparison.OrdinalIgnoreCase)
             .Replace("{containerName}", containerName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static TimeSpan NormalizeTimeout(TimeSpan timeout) => timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(60) : timeout;
-
-    private static HttpClient CreateDockerHttpClient(string socketPath)
-    {
-        var handler = new SocketsHttpHandler
-        {
-            ConnectCallback = async (_, cancellationToken) =>
-            {
-                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                try
-                {
-                    await socket.ConnectAsync(new UnixDomainSocketEndPoint(socketPath), cancellationToken).ConfigureAwait(false);
-                    return new NetworkStream(socket, ownsSocket: true);
-                }
-                catch
-                {
-                    socket.Dispose();
-                    throw;
-                }
-            }
-        };
-
-        return new HttpClient(handler)
-        {
-            BaseAddress = new Uri("http://docker")
-        };
     }
 }

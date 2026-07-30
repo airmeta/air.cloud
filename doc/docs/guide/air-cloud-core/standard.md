@@ -4,6 +4,8 @@
 
 业务代码依赖标准，模块或插件负责实现标准。这是 Air.Cloud 能够按需替换、按需扩展的前提。
 
+本页清单按当前源码中的 `src/core/Air.Cloud.Core/Standard` 和 `src/core/Air.Cloud.Core/Modules/DynamicApp` 同步整理。侧边栏中的“标准”也按同一口径组织：先展示标准能力边界，再把对应模块文档挂到标准下面。
+
 ---
 
 ## 标准解析规则
@@ -90,7 +92,7 @@ AppRealization.SetDependency<IAppConfigurationStandard>(new MyConfigurationStand
 | 名称 | 标准类型 | 默认行为 | 备注 |
 | --- | --- | --- | --- |
 | `Output` | `IAppOutputStandard` | 有默认实现 | 输出日志、启动信息 |
-| `Container` | `IContainerStandard` | 未实现 | 需要模块或业务实现 |
+| `Container` | `IContainerEngineStandard` | 未实现 | 需要 Docker、IIS 等模块或业务实现 |
 | `Configuration` | `IAppConfigurationStandard` | 有默认实现 | 加载本地配置文件 |
 | `DomainExceptionHandler` | `IAppDomainExceptionHandlerStandard` | 有默认实现 | 全局异常兜底 |
 | `AssemblyScanning` | `IAssemblyScanningStandard` | 有默认实现 | 扫描程序集和类型 |
@@ -110,6 +112,44 @@ AppRealization.SetDependency<IAppConfigurationStandard>(new MyConfigurationStand
 | `Lock` | `IDistributedLockStandard` | 未实现 | 分布式锁标准 |
 | `SkyMirrorShieldClient` | `ISkyMirrorShieldClientStandard` | 未实现 | SkyMirrorShield 客户端 |
 | `SkyMirrorShieldServer` | `ISkyMirrorShieldServerStandard` | 未实现 | SkyMirrorShield 服务端 |
+
+---
+
+## 当前源码标准族
+
+下表用于说明源码中实际存在的标准族、主要接口和当前可用的模块实现。`AppRealization` 只暴露其中一部分常用标准；未出现在 `AppRealization` 属性上的接口，仍可能通过 DI、扩展方法、模块 Startup 或业务实现参与运行时。
+
+| 标准族 | 主要接口 | 当前实现或相关模块 | 使用边界 |
+| --- | --- | --- | --- |
+| 标准基类 | `IStandard` | Core | 标准标记接口，用于表达能力边界。 |
+| 账号标准 | `AccountStandard` | Core | 账号基础属性容器，供业务账号模型继承或适配。 |
+| 应用注入标准 | `IAppInjectStandard` | Web/Host 注入实现 | 定义 Web、Host 等应用类型的启动注入入口。 |
+| RESTful 返回标准 | `IRESTfulResultStandard<T>`、`IRESTfulResultStandard` | Web 服务统一结果能力 | 统一接口返回结构、状态和数据载荷。 |
+| 程序集扫描标准 | `IAssemblyScanningStandard` | Core 默认实现 | 扫描 AppStartup、模块、插件、动态服务和标准实现。 |
+| 缓存标准 | `IAppCacheStandard`、`IRedisCacheStandard`、`IRedisCacheKeyStandard` | `Air.Cloud.Modules.RedisCache` | 统一缓存读写、Redis 能力和缓存键策略。 |
+| 分布式锁标准 | `IDistributedLockStandard` | `Air.Cloud.Modules.RedisCache` | 跨进程、跨实例的互斥控制。 |
+| 配置标准 | `IAppConfigurationStandard` | Core 默认实现，Consul/Nacos 可参与远程配置 | 本地配置、公共配置和远程配置加载。 |
+| KV 中心标准 | `IKVCenterStandard` | `Air.Cloud.Modules.Consul`、`Air.Cloud.Modules.Nacos` | 配置中心、键值存储和动态配置读写。 |
+| 服务治理标准 | `IServerCenterStandard` | `Air.Cloud.Modules.Consul`、`Air.Cloud.Modules.Nacos` | 服务注册、服务发现和实例元数据管理。 |
+| 容器引擎标准 | `IContainerEngineStandard` | `Air.Cloud.Modules.Docker`、`Air.Cloud.Modules.IIS` | 容器或运行宿主的列表、检查、启动、停止。 |
+| 消息队列标准 | `IMessageQueueStandard`、`IMessageContentStandard`、`IMessageQueueBuilderStandard`、`IMessageQueueSubscribeStandard<TMessage>`、`IMessageQueueConsumerRecoveryStandard`、`IMessageQueueFailureCompensationStandard` | `Air.Cloud.Modules.Kafka`、`Air.Cloud.Modules.RocketMQ` | 发布订阅、消费者恢复、失败补偿和消息内容约束。 |
+| 调度任务标准 | `ISchedulerStandard<TSchedulerOptions>`、`ISchedulerStandardOptions`、`ISchedulerStandardFactory<TSchedulerStandardOptions>`、`ISchedulerExecutionCoordinatorStandard`、`ISchedulerExecutionRecordStandard` | `Air.Cloud.Modules.Quartz` | 定时任务注册、调度器工厂和分布式执行协调。 |
+| 远程调用标准 | `ITaxinStandard`、`ITaxinClientStandard`、`ITaxinServerStandard`、`ITaxinStoreStandard`、`IStoreStandard<TData,TEventArgs>` | `Air.Cloud.Modules.Taxin` | 服务间调用、路由注册、路由存储和客户端寻址。 |
+| 对象存储标准 | `IAmazonS3Standard`、`IAmazonS3ClientStandard`、`IAmazonS3BucketStandard`、`IAmazonS3ObjectStandard` | `Air.Cloud.Modules.AmazonS3` | S3 客户端、Bucket 和 Object 操作。 |
+| 安全防护标准 | `ISkyMirrorShieldClientStandard`、`ISkyMirrorShieldServerStandard` | `Air.Cloud.Modules.SkyMirrorShield` | 接口元数据上报、网关侧安全防护和服务端规则管理。 |
+| JWT 标准 | `IJwtHandlerStandard` | Core 默认实现 | JWT 创建、解析和验证入口。使用 Ticket 体系的业务可以不直接依赖该标准。 |
+| 异常标准 | `IAppDomainExceptionHandlerStandard`、`IFriendlyExceptionStandard`、`IfExceptionAttributeStandard` | Core 默认实现，Web 服务异常处理 | 全局异常兜底、友好异常和异常切面标记。 |
+| JSON 标准 | `IJsonSerializerStandard` | Core 默认实现 | JSON 序列化、反序列化和格式化输出。 |
+| 压缩标准 | `ICompressStandard` | Core 默认实现 | 数据压缩与解压缩。 |
+| 输出标准 | `IAppOutputStandard` | Core 默认实现 | 控制台输出、启动信息和框架日志输出。 |
+| TraceLog 标准 | `ITraceLogStandard` | Core 默认实现，`Air.Cloud.Modules.SkyWalking` 可替换 | 链路日志、异常日志和外部追踪系统适配。 |
+| 动态应用标准 | `IDynamicAppStoreStandard` | Core 默认实现，OutOfProcess DynamicApp 管理器独立承载运行时管理 | 动态模块扫描、加载和动态服务合并。 |
+| CI/CD 标准 | `ICICDStandard` | 业务或扩展实现 | 构建、发布、部署流水线能力边界。 |
+| Clairvoyance 标准 | `IClairvoyanceStandard` | 业务或扩展实现 | 运行时观测、诊断或预测类扩展能力边界。 |
+
+::: tip 模块与标准的关系
+模块不是单纯的工具包。引入模块时应先确认它实现的是哪个标准，再确认项目是否需要该标准的运行时依赖。例如 RedisCache 同时实现缓存和分布式锁，Consul 与 Nacos 同时实现服务治理和 KV 中心，Kafka 与 RocketMQ 都实现消息队列标准。
+:::
 
 ---
 

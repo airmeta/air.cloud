@@ -11,7 +11,7 @@
  */
 using Air.Cloud.Core;
 using Air.Cloud.Core.Modules.AppPrint;
-using Air.Cloud.Modules.IIS.Model;
+using Air.Cloud.Core.Standard.Container.Model;
 
 using Microsoft.Web.Administration;
 
@@ -35,17 +35,15 @@ namespace Air.Cloud.Modules.IIS.Helper
         ///      并且IIS需要调整config文件允许应用程序进行访问 否则会出现读取不到的情况
         /// 注意: 本机开发环境的IIS Express不支持该方法 需要进入 Windows Server 2012 R2 或者 Windows Server 2016 等服务器环境 方可进行读取
         /// </remarks>
-        public static ConcurrentBag<IISContainerInstance> ReadIISInstance()
+        public static ConcurrentBag<ContainerEngineInstance> ReadIISInstance()
         {
             try
             {
                 var SiteManager = new ServerManager();
-                ConcurrentBag<IISContainerInstance> iISContainerInstances = new ConcurrentBag<IISContainerInstance>();
-                IISContainerInstance iISContainerInstance = null;
+                ConcurrentBag<ContainerEngineInstance> iISContainerInstances = new ConcurrentBag<ContainerEngineInstance>();
                 foreach (var s in SiteManager.Sites)
                 {
-                    iISContainerInstance = new IISContainerInstance(s);
-                    iISContainerInstances.Add(iISContainerInstance);
+                    iISContainerInstances.Add(ToContainerEngineInstance(s));
                 }
                 return iISContainerInstances;
             }
@@ -62,8 +60,39 @@ namespace Air.Cloud.Modules.IIS.Helper
                     Level = AppPrintLevel.Error,
                     Title = "读取站点信息失败"
                 });
-                return null;
+                return new ConcurrentBag<ContainerEngineInstance>();
             }
+        }
+
+        /// <summary>
+        /// <para>zh-cn:将 IIS 站点转换为 Core 容器引擎实例视图。</para>
+        /// <para>en-us:Converts an IIS site into the Core container engine instance view.</para>
+        /// </summary>
+        /// <param name="site">
+        /// <para>zh-cn:IIS 站点。</para>
+        /// <para>en-us:The IIS site.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:容器引擎实例视图。</para>
+        /// <para>en-us:The container engine instance view.</para>
+        /// </returns>
+        public static ContainerEngineInstance ToContainerEngineInstance(Site site)
+        {
+            ArgumentNullException.ThrowIfNull(site);
+            var state = site.State.ToString();
+            var isRunning = site.State == ObjectState.Started || site.State == ObjectState.Starting;
+            return new ContainerEngineInstance
+            {
+                Id = site.Id.ToString(),
+                Name = site.Name,
+                Image = site.Applications.FirstOrDefault()?.VirtualDirectories.FirstOrDefault()?.PhysicalPath ?? string.Empty,
+                Runtime = "IIS",
+                State = state,
+                Status = state,
+                HealthStatus = string.Empty,
+                IsRunning = isRunning,
+                IsAvailable = site.State == ObjectState.Started
+            };
         }
 
 

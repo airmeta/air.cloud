@@ -91,6 +91,8 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
         }
 
         ValidateAgentAuthorizations(options.AgentAuthorizations, failures);
+        ValidateTcpListeners(options.Tcp, failures);
+        ValidateUdpListeners(options.Udp, failures);
     }
 
     private static void ValidateAgentAuthorizations(IEnumerable<ReverseTunnelAgentAuthorizationOptions>? authorizations, ICollection<string> failures)
@@ -159,6 +161,127 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
         if (!string.IsNullOrWhiteSpace(agentCertificate.EnrollmentCredentialPath) && !File.Exists(agentCertificate.EnrollmentCredentialPath))
         {
             failures.Add("ReverseTunnelSettings:AgentCertificate:EnrollmentCredentialPath must point to an existing mounted file when configured.");
+        }
+
+        ValidateTcpLocalServices(options.Tcp, failures);
+        ValidateUdpLocalServices(options.Udp, failures);
+    }
+
+    private static void ValidateTcpListeners(ReverseTunnelTcpOptions? tcp, ICollection<string> failures)
+    {
+        if (tcp?.Enabled != true)
+        {
+            return;
+        }
+
+        for (var index = 0; index < tcp.Listeners.Count; index++)
+        {
+            var listener = tcp.Listeners[index];
+            if (listener is null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(listener.ServiceKey))
+            {
+                failures.Add($"ReverseTunnelSettings:Tcp:Listeners:{index}:ServiceKey is required when TCP tunneling is enabled.");
+            }
+
+            if (listener.ListenPort <= 0)
+            {
+                failures.Add($"ReverseTunnelSettings:Tcp:Listeners:{index}:ListenPort must be between 1 and 65535 when TCP tunneling is enabled.");
+            }
+        }
+    }
+
+    private static void ValidateUdpListeners(ReverseTunnelUdpOptions? udp, ICollection<string> failures)
+    {
+        if (udp?.Enabled != true)
+        {
+            return;
+        }
+
+        for (var index = 0; index < udp.Listeners.Count; index++)
+        {
+            var listener = udp.Listeners[index];
+            if (listener is null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(listener.ServiceKey))
+            {
+                failures.Add($"ReverseTunnelSettings:Udp:Listeners:{index}:ServiceKey is required when UDP tunneling is enabled.");
+            }
+
+            if (listener.ListenPort <= 0)
+            {
+                failures.Add($"ReverseTunnelSettings:Udp:Listeners:{index}:ListenPort must be between 1 and 65535 when UDP tunneling is enabled.");
+            }
+        }
+    }
+
+    private static void ValidateTcpLocalServices(ReverseTunnelTcpOptions? tcp, ICollection<string> failures)
+    {
+        if (tcp?.Enabled != true)
+        {
+            return;
+        }
+
+        for (var index = 0; index < tcp.LocalServices.Count; index++)
+        {
+            var service = tcp.LocalServices[index];
+            if (service is null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(service.ServiceKey))
+            {
+                failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:ServiceKey is required when TCP tunneling is enabled.");
+            }
+
+            if (string.IsNullOrWhiteSpace(service.Host))
+            {
+                failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:Host is required when TCP tunneling is enabled.");
+            }
+
+            if (service.Port <= 0)
+            {
+                failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:Port must be between 1 and 65535 when TCP tunneling is enabled.");
+            }
+        }
+    }
+
+    private static void ValidateUdpLocalServices(ReverseTunnelUdpOptions? udp, ICollection<string> failures)
+    {
+        if (udp?.Enabled != true)
+        {
+            return;
+        }
+
+        for (var index = 0; index < udp.LocalServices.Count; index++)
+        {
+            var service = udp.LocalServices[index];
+            if (service is null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(service.ServiceKey))
+            {
+                failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:ServiceKey is required when UDP tunneling is enabled.");
+            }
+
+            if (string.IsNullOrWhiteSpace(service.Host))
+            {
+                failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:Host is required when UDP tunneling is enabled.");
+            }
+
+            if (service.Port <= 0)
+            {
+                failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:Port must be between 1 and 65535 when UDP tunneling is enabled.");
+            }
         }
     }
 

@@ -19,6 +19,12 @@ public sealed class DynamicModArtifactManifest
     public string? Image { get; set; }
 
     /// <summary>
+    /// <para>zh-cn:ExistingContainer 模式要接管的已有容器名称；用于明确绑定具体 Docker 容器，避免依赖模板反推。</para>
+    /// <para>en-us:Existing container name adopted by ExistingContainer mode; it explicitly binds the Docker container instead of relying on template inference.</para>
+    /// </summary>
+    public string? ContainerName { get; set; }
+
+    /// <summary>
     /// <para>zh-cn:进程启动参数。</para>
     /// <para>en-us:Process startup arguments.</para>
     /// </summary>

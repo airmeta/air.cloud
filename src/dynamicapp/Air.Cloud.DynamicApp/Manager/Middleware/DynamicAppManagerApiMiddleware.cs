@@ -1,3 +1,6 @@
+using System.IO;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -136,6 +139,10 @@ public sealed class DynamicAppManagerApiMiddleware
                 await WriteJsonAsync(context, DynamicAppApiResponse<IReadOnlyCollection<DynamicAppRouteTarget>>.Success(
                     await ListTargetsWithRuntimeSyncAsync(context).ConfigureAwait(false),
                     "DynamicApp targets loaded.")).ConfigureAwait(false);
+                return;
+
+            case "containers" when HttpMethods.IsGet(context.Request.Method):
+                await ListExistingContainersAsync(context).ConfigureAwait(false);
                 return;
 
             case "self-healing" when HttpMethods.IsGet(context.Request.Method):
@@ -329,8 +336,8 @@ public sealed class DynamicAppManagerApiMiddleware
     }
 
     /// <summary>
-    /// <para>zh-cn:执行单 Mod 配置的发布或部署动作，并返回控制面板统一结果。</para>
-    /// <para>en-us:Executes the publish or deploy action for one Mod configuration and returns a unified control-panel result.</para>
+    /// <para>zh-cn:执行单 Mod 配置动作；入口会先生成 Manifest，再按执行模式拆分为 Process、Container、ExistingContainer 或 LocalDevelopment 的配置链路。</para>
+    /// <para>en-us:Executes a single-Mod configuration action; the entry first generates a manifest and then dispatches to the Process, Container, ExistingContainer, or LocalDevelopment configuration path by execution mode.</para>
     /// </summary>
     /// <param name="context">
     /// <para>zh-cn:当前 HTTP 上下文。</para>
@@ -351,11 +358,7 @@ public sealed class DynamicAppManagerApiMiddleware
     private static async Task<DynamicAppConfigureModResult> ConfigureModAsync(HttpContext context, DynamicAppConfigureModRequest request, DynamicAppModPackageRecord? package)
     {
         var manifest = request.ToManifest();
-        var operation = request.Deploy
-            ? await DeployConfiguredManifestAsync(context, manifest).ConfigureAwait(false)
-            : await context.RequestServices.GetRequiredService<IDynamicAppManager>()
-                .PublishAsync(manifest, context.RequestAborted)
-                .ConfigureAwait(false);
+        var operation = await ConfigureManifestByExecutionModeAsync(context, request, manifest).ConfigureAwait(false);
 
         return new DynamicAppConfigureModResult
         {
@@ -363,6 +366,189 @@ public sealed class DynamicAppManagerApiMiddleware
             Package = package,
             Operation = operation
         };
+    }
+
+    /// <summary>
+    /// <para>zh-cn:根据 Mod 执行模式分发动态配置操作；不同模式的登记、部署和运行态写入边界在这里被显式隔离，避免继续用 Deploy 标志做单线处理。</para>
+    /// <para>en-us:Dispatches dynamic configuration by Mod execution mode; registration, deployment, and runtime-state boundaries are explicitly separated here instead of continuing the old single path driven only by the Deploy flag.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于解析依赖服务和请求取消令牌。</para>
+    /// <para>en-us:The current HTTP context used to resolve dependent services and the request cancellation token.</para>
+    /// </param>
+    /// <param name="request">
+    /// <para>zh-cn:动态配置请求；其中 Deploy 表示该类型是否进入立即部署链路。</para>
+    /// <para>en-us:The dynamic configuration request; its Deploy flag indicates whether this execution mode should enter the immediate deployment path.</para>
+    /// </param>
+    /// <param name="manifest">
+    /// <para>zh-cn:由请求生成的单 Mod Manifest。</para>
+    /// <para>en-us:The single-Mod manifest generated from the request.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:按执行模式处理后的操作结果。</para>
+    /// <para>en-us:The operation result after execution-mode-specific processing.</para>
+    /// </returns>
+    private static Task<DynamicAppOperationResult> ConfigureManifestByExecutionModeAsync(HttpContext context, DynamicAppConfigureModRequest request, DynamicAppManifest manifest)
+    {
+        if (manifest.Mods.Count != 1)
+        {
+            throw new ArgumentException("DynamicApp configure request must contain exactly one Mod.", nameof(manifest));
+        }
+
+        var mod = manifest.Mods[0];
+
+        return mod.ExecutionMode switch
+        {
+            DynamicModExecutionMode.Process => ConfigureProcessManifestAsync(context, request, manifest),
+            DynamicModExecutionMode.Container => ConfigureContainerManifestAsync(context, request, manifest),
+            DynamicModExecutionMode.ExistingContainer => ConfigureExistingContainerManifestAsync(context, request, manifest),
+            DynamicModExecutionMode.LocalDevelopment => ConfigureLocalDevelopmentManifestAsync(context, request, manifest),
+            _ => Task.FromResult(DynamicAppOperationResult.Failure($"DynamicApp execution mode `{mod.ExecutionMode}` is not supported."))
+        };
+    }
+
+    /// <summary>
+    /// <para>zh-cn:处理 Process 模式配置；Deploy 为 true 时启动子进程并激活，Deploy 为 false 时只保存包与 Manifest，不写运行态。</para>
+    /// <para>en-us:Handles Process-mode configuration; Deploy true starts and activates the child process, while Deploy false only saves the package and manifest without writing runtime state.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于访问 Host 协调器或 Manifest 存储。</para>
+    /// <para>en-us:The current HTTP context used to access the Host coordinator or manifest store.</para>
+    /// </param>
+    /// <param name="request">
+    /// <para>zh-cn:动态配置请求，Deploy 控制是否立即部署。</para>
+    /// <para>en-us:The dynamic configuration request whose Deploy flag controls immediate deployment.</para>
+    /// </param>
+    /// <param name="manifest">
+    /// <para>zh-cn:Process 模式 Manifest。</para>
+    /// <para>en-us:The Process-mode manifest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:Process 模式配置结果。</para>
+    /// <para>en-us:The Process-mode configuration result.</para>
+    /// </returns>
+    private static Task<DynamicAppOperationResult> ConfigureProcessManifestAsync(HttpContext context, DynamicAppConfigureModRequest request, DynamicAppManifest manifest)
+    {
+        return request.Deploy
+            ? DeployConfiguredManifestAsync(context, manifest)
+            : RegisterConfiguredManifestAsync(context, manifest);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:处理托管 Container 模式配置；Deploy 为 true 时交给容器编排器部署，Deploy 为 false 时仅登记 Manifest。</para>
+    /// <para>en-us:Handles managed Container-mode configuration; Deploy true delegates to the container orchestrator, while Deploy false only registers the manifest.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于访问 Host 协调器或 Manifest 存储。</para>
+    /// <para>en-us:The current HTTP context used to access the Host coordinator or manifest store.</para>
+    /// </param>
+    /// <param name="request">
+    /// <para>zh-cn:动态配置请求，Deploy 控制是否立即部署。</para>
+    /// <para>en-us:The dynamic configuration request whose Deploy flag controls immediate deployment.</para>
+    /// </param>
+    /// <param name="manifest">
+    /// <para>zh-cn:Container 模式 Manifest。</para>
+    /// <para>en-us:The Container-mode manifest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:Container 模式配置结果。</para>
+    /// <para>en-us:The Container-mode configuration result.</para>
+    /// </returns>
+    private static Task<DynamicAppOperationResult> ConfigureContainerManifestAsync(HttpContext context, DynamicAppConfigureModRequest request, DynamicAppManifest manifest)
+    {
+        return request.Deploy
+            ? DeployConfiguredManifestAsync(context, manifest)
+            : RegisterConfiguredManifestAsync(context, manifest);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:处理 ExistingContainer 模式配置；登记已有容器时只持久化 Manifest 和容器名绑定，只有显式 Deploy 时才调用容器引擎生命周期编排。</para>
+    /// <para>en-us:Handles ExistingContainer-mode configuration; registering an existing container only persists the manifest and container-name binding, and Docker lifecycle orchestration runs only when Deploy is explicitly true.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于访问 Host 协调器或 Manifest 存储。</para>
+    /// <para>en-us:The current HTTP context used to access the Host coordinator or manifest store.</para>
+    /// </param>
+    /// <param name="request">
+    /// <para>zh-cn:动态配置请求，Deploy 控制是否显式接管并启动已有容器。</para>
+    /// <para>en-us:The dynamic configuration request whose Deploy flag controls whether the existing container is explicitly adopted and started.</para>
+    /// </param>
+    /// <param name="manifest">
+    /// <para>zh-cn:ExistingContainer 模式 Manifest。</para>
+    /// <para>en-us:The ExistingContainer-mode manifest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:ExistingContainer 模式配置结果。</para>
+    /// <para>en-us:The ExistingContainer-mode configuration result.</para>
+    /// </returns>
+    private static Task<DynamicAppOperationResult> ConfigureExistingContainerManifestAsync(HttpContext context, DynamicAppConfigureModRequest request, DynamicAppManifest manifest)
+    {
+        return request.Deploy
+            ? DeployConfiguredManifestAsync(context, manifest)
+            : RegisterConfiguredManifestAsync(context, manifest);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:处理 LocalDevelopment 模式配置；Deploy 为 true 时注册外部调试目标并执行健康探测，Deploy 为 false 时只保存联调 Manifest。</para>
+    /// <para>en-us:Handles LocalDevelopment-mode configuration; Deploy true registers the external debug target and probes health, while Deploy false only saves the debugging manifest.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于访问 Host 协调器或 Manifest 存储。</para>
+    /// <para>en-us:The current HTTP context used to access the Host coordinator or manifest store.</para>
+    /// </param>
+    /// <param name="request">
+    /// <para>zh-cn:动态配置请求，Deploy 控制是否立即挂载本地联调目标。</para>
+    /// <para>en-us:The dynamic configuration request whose Deploy flag controls whether the local debug target is mounted immediately.</para>
+    /// </param>
+    /// <param name="manifest">
+    /// <para>zh-cn:LocalDevelopment 模式 Manifest。</para>
+    /// <para>en-us:The LocalDevelopment-mode manifest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:LocalDevelopment 模式配置结果。</para>
+    /// <para>en-us:The LocalDevelopment-mode configuration result.</para>
+    /// </returns>
+    private static Task<DynamicAppOperationResult> ConfigureLocalDevelopmentManifestAsync(HttpContext context, DynamicAppConfigureModRequest request, DynamicAppManifest manifest)
+    {
+        return request.Deploy
+            ? DeployConfiguredManifestAsync(context, manifest)
+            : RegisterConfiguredManifestAsync(context, manifest);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:仅登记动态配置生成的 Manifest；该路径会校验并持久化 Manifest，但不会写入 Runtime Target，也不会启动、停止或激活任何 Mod。</para>
+    /// <para>en-us:Registers only the manifest generated by dynamic configuration; this path validates and persists the manifest without writing runtime targets or starting, stopping, or activating any Mod.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于从依赖注入容器获取 Manifest 校验器和存储，并传递请求取消令牌。</para>
+    /// <para>en-us:The current HTTP context used to resolve the manifest validator and store from dependency injection and to pass the request cancellation token.</para>
+    /// </param>
+    /// <param name="manifest">
+    /// <para>zh-cn:需要登记保存的 DynamicApp Manifest。</para>
+    /// <para>en-us:The DynamicApp manifest to register and save.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:登记操作结果；校验失败时返回失败信息，保存成功时返回成功信息。</para>
+    /// <para>en-us:The registration operation result; validation failures return failure messages and successful saves return a success message.</para>
+    /// </returns>
+    private static async Task<DynamicAppOperationResult> RegisterConfiguredManifestAsync(HttpContext context, DynamicAppManifest manifest)
+    {
+        if (context.RequestAborted.IsCancellationRequested)
+        {
+            return DynamicAppOperationResult.Failure("Manifest registration was cancelled.");
+        }
+
+        var validation = context.RequestServices.GetRequiredService<IDynamicAppManifestValidator>().Validate(manifest);
+        if (!validation.IsValid)
+        {
+            return DynamicAppOperationResult.Failure(string.Join(Environment.NewLine, validation.Errors));
+        }
+
+        await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .SaveAsync(manifest, context.RequestAborted)
+            .ConfigureAwait(false);
+
+        return DynamicAppOperationResult.Success($"DynamicApp `{manifest.Id}` manifest registered with {manifest.Mods.Count} Mods.");
     }
 
     private static async Task<DynamicModManifest?> FindLatestManifestModMetadataAsync(HttpContext context, string dynamicAppId, string modId)
@@ -394,6 +580,7 @@ public sealed class DynamicAppManagerApiMiddleware
             Artifact = new DynamicModArtifactManifest
             {
                 File = FirstNotEmpty(mods.Select(mod => mod.Artifact.File)),
+                ContainerName = FirstNotEmpty(mods.Select(mod => mod.Artifact.ContainerName)),
                 Arguments = FirstNotEmpty(mods.Select(mod => mod.Artifact.Arguments)),
                 Endpoint = FirstNotEmpty(mods.Select(mod => mod.Artifact.Endpoint))
             },
@@ -495,6 +682,7 @@ public sealed class DynamicAppManagerApiMiddleware
                 Artifact = new DynamicModArtifactManifest
                 {
                     File = ReadFormString(form, "entryFile", GetFileNameOrEmpty(inherited?.Artifact.File)),
+                    ContainerName = ReadFormNullableString(form, "containerName") ?? inherited?.Artifact.ContainerName,
                     Arguments = ReadFormNullableString(form, "arguments") ?? inherited?.Artifact.Arguments,
                     Endpoint = ReadFormNullableString(form, "endpoint") ?? inherited?.Artifact.Endpoint
                 },
@@ -535,6 +723,20 @@ public sealed class DynamicAppManagerApiMiddleware
         }
 
         return WriteJsonAsync(context, DynamicAppApiResponse<DynamicAppConfigureModResult>.FromOperation(result.Operation, result));
+    }
+
+    private static async Task ListExistingContainersAsync(HttpContext context)
+    {
+        var catalog = context.RequestServices.GetService<IDynamicAppExistingContainerCatalog>();
+        if (catalog == null)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure("IDynamicAppExistingContainerCatalog is not registered.", "dynamicapp.container_catalog_not_registered")).ConfigureAwait(false);
+            return;
+        }
+
+        var containers = await catalog.ListAsync(context.RequestAborted).ConfigureAwait(false);
+        await WriteJsonAsync(context, DynamicAppApiResponse<IReadOnlyCollection<DynamicAppExistingContainerView>>.Success(containers, "DynamicApp existing containers loaded.")).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -595,8 +797,19 @@ public sealed class DynamicAppManagerApiMiddleware
     private async Task RollbackAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppRollbackRequest>(context).ConfigureAwait(false);
+        var dynamicAppId = request.ToDynamicAppId();
+        var modId = request.ToModId();
+        if (await IsExistingContainerModAsync(context, dynamicAppId, modId).ConfigureAwait(false))
+        {
+            await WriteOperationResultAsync<object>(
+                context,
+                DynamicAppOperationResult.Failure($"ExistingContainer Mod `{dynamicAppId}/{modId}` cannot be rolled back; manage its Docker container lifecycle with start, stop, or restart."))
+                .ConfigureAwait(false);
+            return;
+        }
+
         var result = await context.RequestServices.GetRequiredService<IDynamicAppManager>()
-            .RollbackAsync(request.ToDynamicAppId(), request.ToModId(), context.RequestAborted)
+            .RollbackAsync(dynamicAppId, modId, context.RequestAborted)
             .ConfigureAwait(false);
         await WriteOperationResultAsync<object>(context, result).ConfigureAwait(false);
     }
@@ -612,6 +825,39 @@ public sealed class DynamicAppManagerApiMiddleware
         }
 
         await WriteOperationResultAsync<object>(context, result).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:判断指定 DynamicApp/Mod 当前登记的最新 Manifest 是否为 ExistingContainer 模式；用于阻断回滚等不适合接管容器的历史版本操作。</para>
+    /// <para>en-us:Determines whether the latest registered manifest for the specified DynamicApp/Mod is ExistingContainer mode; this blocks historical-version operations such as rollback that are not valid for adopted containers.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于读取 Manifest 历史存储和请求取消令牌。</para>
+    /// <para>en-us:The current HTTP context used to read manifest history storage and the request cancellation token.</para>
+    /// </param>
+    /// <param name="dynamicAppId">
+    /// <para>zh-cn:DynamicApp 应用标识。</para>
+    /// <para>en-us:The DynamicApp application identifier.</para>
+    /// </param>
+    /// <param name="modId">
+    /// <para>zh-cn:Mod 标识。</para>
+    /// <para>en-us:The Mod identifier.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:若最新登记的同名 Mod 为 ExistingContainer 模式则返回 true；没有 Manifest 历史时返回 false。</para>
+    /// <para>en-us:Returns true when the latest registered Mod with the same name is ExistingContainer mode; returns false when no manifest history exists.</para>
+    /// </returns>
+    private static async Task<bool> IsExistingContainerModAsync(HttpContext context, DynamicAppId dynamicAppId, DynamicModId modId)
+    {
+        var records = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .ListAsync(dynamicAppId, context.RequestAborted)
+            .ConfigureAwait(false);
+        var latestMod = records
+            .OrderByDescending(record => record.SavedAtUtc)
+            .SelectMany(record => record.Manifest.Mods)
+            .FirstOrDefault(mod => mod.Id == modId);
+
+        return latestMod?.ExecutionMode == DynamicModExecutionMode.ExistingContainer;
     }
 
     /// <summary>
@@ -639,6 +885,20 @@ public sealed class DynamicAppManagerApiMiddleware
             return;
         }
 
+        var manifestRecord = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .FindAsync(key, context.RequestAborted)
+            .ConfigureAwait(false);
+        var mod = manifestRecord?.Manifest.Mods.FirstOrDefault(item => item.Id == key.ModId && item.Version == key.Version);
+        if (mod?.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+        {
+            var (operation, view) = await InspectExistingContainerStatusAsync(context, key).ConfigureAwait(false);
+            var nextState = view?.IsAvailable == true ? target.State : DynamicModLifecycleState.Failed;
+            var nextHealth = view?.IsAvailable == true ? DynamicModHealthStatus.Healthy : DynamicModHealthStatus.Unhealthy;
+            var dockerStatusUpdate = stateStore.UpdateState(key, nextState, nextHealth, operation.Message);
+            await WriteOperationResultAsync(context, dockerStatusUpdate.Succeeded && operation.Succeeded ? operation : DynamicAppOperationResult.Failure(operation.Message), view).ConfigureAwait(false);
+            return;
+        }
+
         if (target.State == DynamicModLifecycleState.Stopped)
         {
             await WriteOperationResultAsync<object>(context, DynamicAppOperationResult.Failure($"Target `{key}` is stopped and cannot be health-probed.")).ConfigureAwait(false);
@@ -653,10 +913,6 @@ public sealed class DynamicAppManagerApiMiddleware
             return;
         }
 
-        var manifestRecord = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
-            .FindAsync(key, context.RequestAborted)
-            .ConfigureAwait(false);
-        var mod = manifestRecord?.Manifest.Mods.FirstOrDefault(item => item.Id == key.ModId && item.Version == key.Version);
         var health = mod?.Health ?? new DynamicModHealthManifest
         {
             Path = target.HealthPath,
@@ -934,7 +1190,7 @@ public sealed class DynamicAppManagerApiMiddleware
                     continue;
                 }
 
-                var view = TryBuildInstalledModVersion(record.Manifest.Id.Value, mod.Id.Value, mod.Version.Value, mod.Artifact.File);
+                var view = TryBuildInstalledModVersion(record.Manifest.Id.Value, mod, record.SavedAtUtc);
                 if (view != null)
                 {
                     versions.Add(view);
@@ -959,8 +1215,30 @@ public sealed class DynamicAppManagerApiMiddleware
             .ToList();
     }
 
-    private static DynamicAppModPackageVersionView? TryBuildInstalledModVersion(string dynamicAppId, string modId, string version, string? artifactFile)
+    private static DynamicAppModPackageVersionView? TryBuildInstalledModVersion(string dynamicAppId, DynamicModManifest mod, DateTimeOffset savedAtUtc)
     {
+        var modId = mod.Id.Value;
+        var version = mod.Version.Value;
+        if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+        {
+            return new DynamicAppModPackageVersionView
+            {
+                DynamicAppId = dynamicAppId,
+                ModId = modId,
+                ExecutionMode = mod.ExecutionMode.ToString(),
+                Version = version,
+                SourceKind = "ManifestOnly",
+                ContainerName = mod.Artifact.ContainerName ?? string.Empty,
+                Endpoint = mod.Artifact.Endpoint ?? string.Empty,
+                PackageFilePath = string.Empty,
+                ExtractedDirectory = string.Empty,
+                PackageBytes = 0,
+                SavedAtUtc = savedAtUtc,
+                Files = Array.Empty<DynamicAppModPackageFileView>()
+            };
+        }
+
+        var artifactFile = mod.Artifact.File;
         if (string.IsNullOrWhiteSpace(artifactFile))
         {
             return null;
@@ -995,8 +1273,12 @@ public sealed class DynamicAppManagerApiMiddleware
             {
                 DynamicAppId = dynamicAppId,
                 ModId = modId,
+                ExecutionMode = mod.ExecutionMode.ToString(),
                 Version = version,
                 PackageFilePath = string.Empty,
+                SourceKind = "InstalledMod",
+                ContainerName = mod.Artifact.ContainerName ?? string.Empty,
+                Endpoint = mod.Artifact.Endpoint ?? string.Empty,
                 ExtractedDirectory = directory,
                 PackageBytes = files.Sum(file => file.Length),
                 SavedAtUtc = files.Max(file => file.LastModifiedUtc),
@@ -1292,6 +1574,11 @@ public sealed class DynamicAppManagerApiMiddleware
             return DynamicAppOperationResult.Failure($"Target `{key}` was not registered after startup.");
         }
 
+        if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+        {
+            return await ActivateExistingContainerTargetAsync(context, key, target).ConfigureAwait(false);
+        }
+
         var runtime = await InspectProcessRuntimeIfNeededAsync(context, target, mod).ConfigureAwait(false);
         if (!runtime.Succeeded)
         {
@@ -1324,6 +1611,87 @@ public sealed class DynamicAppManagerApiMiddleware
 
         context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(key);
         return DynamicAppOperationResult.Success($"Target `{key}` started, healthy, and active.");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:激活 ExistingContainer 目标；该模式只通过容器引擎标准检查实例状态，不发起 HTTP 健康检查或路由测试。</para>
+    /// <para>en-us:Activates an ExistingContainer target; this mode checks instance status only through the container engine standard and does not issue HTTP health checks or route tests.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于解析 Docker 容器目录、状态存储和 Manager。</para>
+    /// <para>en-us:The current HTTP context used to resolve the Docker container catalog, state store, and manager.</para>
+    /// </param>
+    /// <param name="key">
+    /// <para>zh-cn:目标 Mod 版本键。</para>
+    /// <para>en-us:The target Mod version key.</para>
+    /// </param>
+    /// <param name="target">
+    /// <para>zh-cn:刚启动并写入状态存储的运行目标。</para>
+    /// <para>en-us:The runtime target that was just started and written to the state store.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:容器引擎状态检查和激活结果。</para>
+    /// <para>en-us:The container engine status inspection and activation result.</para>
+    /// </returns>
+    private static async Task<DynamicAppOperationResult> ActivateExistingContainerTargetAsync(HttpContext context, DynamicModVersionKey key, DynamicAppRouteTarget target)
+    {
+        var (operation, view) = await InspectExistingContainerStatusAsync(context, key).ConfigureAwait(false);
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        if (!operation.Succeeded || view?.IsAvailable != true)
+        {
+            var message = operation.Message;
+            stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
+            return DynamicAppOperationResult.Failure(message);
+        }
+
+        var activation = await context.RequestServices.GetRequiredService<IDynamicAppManager>()
+            .ActivateAsync(key, context.RequestAborted)
+            .ConfigureAwait(false);
+        if (!activation.Succeeded)
+        {
+            return activation;
+        }
+
+        context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(key);
+        return DynamicAppOperationResult.Success($"ExistingContainer target `{key}` is active from Docker container `{view.Name}`. {view.Status}");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:读取 ExistingContainer 目标的容器引擎即时状态；缺少已有容器目录或容器引擎访问失败时返回失败结果。</para>
+    /// <para>en-us:Reads the live container engine status for an ExistingContainer target; returns a failed result when the existing-container catalog is missing or the container engine access fails.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，用于解析 Docker 容器目录。</para>
+    /// <para>en-us:The current HTTP context used to resolve the Docker container catalog.</para>
+    /// </param>
+    /// <param name="key">
+    /// <para>zh-cn:目标 Mod 版本键。</para>
+    /// <para>en-us:The target Mod version key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:容器引擎状态检查结果和容器视图；失败时容器视图为空。</para>
+    /// <para>en-us:The container engine status operation and container view; the view is null when inspection fails.</para>
+    /// </returns>
+    private static async Task<(DynamicAppOperationResult Operation, DynamicAppExistingContainerView? View)> InspectExistingContainerStatusAsync(HttpContext context, DynamicModVersionKey key)
+    {
+        var catalog = context.RequestServices.GetService<IDynamicAppExistingContainerCatalog>();
+        if (catalog == null)
+        {
+            return (DynamicAppOperationResult.Failure("IDynamicAppExistingContainerCatalog is not registered."), null);
+        }
+
+        try
+        {
+            var view = await catalog.InspectAsync(key, context.RequestAborted).ConfigureAwait(false);
+            var message = view.IsAvailable
+                ? $"Docker container `{view.Name}` is running for `{key}`. {view.Status}"
+                : $"Docker container `{view.Name}` is not available for `{key}`. {view.Status}";
+            return (view.IsAvailable ? DynamicAppOperationResult.Success(message) : DynamicAppOperationResult.Failure(message), view);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or SocketException or IOException)
+        {
+            return (DynamicAppOperationResult.Failure($"Docker container status inspection failed for `{key}`. {exception.Message}"), null);
+        }
     }
 
     /// <summary>

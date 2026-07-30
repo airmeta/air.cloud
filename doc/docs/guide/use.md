@@ -31,7 +31,7 @@
   <ItemGroup>
     <PackageReference Include="Air.Cloud.Core" Version="1.0.2" />
     <PackageReference Include="Air.Cloud.Core.Extensions"  Version="1.0.2" />
-    <PackageReference Include="Air.Cloud.Modules.Kafka"  Version="1.0.2" />
+    <PackageReference Include="Air.Cloud.Modules.Kafka"  Version="10.0.2" />
     <PackageReference Include="Air.Cloud.Modules.RedisCache"  Version="1.0.2" />
     <PackageReference Include="Air.Cloud.Plugins.Jwt"  Version="1.0.2" />
     <PackageReference Include="Air.Cloud.Plugins.SpecificationDocument" Version="1.0.2" />

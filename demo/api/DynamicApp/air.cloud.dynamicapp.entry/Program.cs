@@ -20,6 +20,7 @@ using Air.Cloud.DynamicApp.Orchestrator;
 using Air.Cloud.DynamicApp.Orchestrator.Extensions;
 using Air.Cloud.DynamicApp.Panel;
 using Air.Cloud.DynamicApp.Panel.Extensions;
+using Air.Cloud.Modules.Docker.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 var dynamicAppSection = builder.Configuration.GetSection("DynamicApp");
@@ -36,6 +37,7 @@ builder.Services.AddDynamicAppHost(
 
 builder.Services.AddFileDynamicAppStateStore(options => ConfigureStateStore(options, dynamicAppSection.GetSection("StateStore")));
 builder.Services.AddFileDynamicAppManifestStore(options => ConfigureManifestStore(options, dynamicAppSection.GetSection("ManifestStore")));
+builder.Services.AddDockerEngineContainerService(options => ConfigureDockerEngine(options, dynamicAppSection.GetSection("DockerEngine")));
 builder.Services.AddDockerExistingContainerDynamicAppOrchestrator(options => ConfigureDockerOrchestrator(options, dynamicAppSection.GetSection("DockerExistingContainerOrchestrator")));
 builder.Services.AddDynamicAppGateway(options => ConfigureGateway(options, dynamicAppSection.GetSection("Gateway")));
 builder.Services.AddDynamicAppPanel(options => ConfigurePanel(options, dynamicAppSection.GetSection("Panel")));
@@ -153,9 +155,15 @@ static void ConfigureArchiveStore(FileDynamicAppTargetArchiveStoreOptions option
 static void ConfigureDockerOrchestrator(DockerExistingContainerDynamicAppOrchestratorOptions options, IConfiguration section)
 {
     options.Enabled = ReadBool(section, "Enabled", options.Enabled);
-    options.DockerSocketPath = ReadString(section, "DockerSocketPath", options.DockerSocketPath);
     options.ContainerNameTemplate = ReadString(section, "ContainerNameTemplate", options.ContainerNameTemplate);
     options.TargetBaseAddressTemplate = ReadNullableString(section, "TargetBaseAddressTemplate") ?? options.TargetBaseAddressTemplate;
+}
+
+static void ConfigureDockerEngine(Air.Cloud.Modules.Docker.Options.DockerEngineContainerServiceOptions options, IConfiguration section)
+{
+    options.Enabled = ReadBool(section, "Enabled", options.Enabled);
+    options.DockerSocketPath = ReadString(section, "DockerSocketPath", options.DockerSocketPath);
+    options.RequestTimeout = TimeSpan.FromSeconds(ReadInt(section, "RequestTimeoutSeconds", (int)options.RequestTimeout.TotalSeconds));
     options.StartTimeout = TimeSpan.FromSeconds(ReadInt(section, "StartTimeoutSeconds", (int)options.StartTimeout.TotalSeconds));
     options.StopTimeout = TimeSpan.FromSeconds(ReadInt(section, "StopTimeoutSeconds", (int)options.StopTimeout.TotalSeconds));
     options.StopGracePeriodSeconds = ReadInt(section, "StopGracePeriodSeconds", options.StopGracePeriodSeconds);

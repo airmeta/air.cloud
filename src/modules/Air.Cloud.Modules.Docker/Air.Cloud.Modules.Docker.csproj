@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-        <PropertyGroup>
+  <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
@@ -11,11 +11,11 @@
     <PackageId>Air.Cloud.Modules.Docker</PackageId>
     <Title>Air.Cloud.Modules.Docker</Title>
     <Authors>AC</Authors>
-    <Company>合肥星曳数据科技有限公司</Company>
+    <Company>AccessCross</Company>
     <Product>air.cloud</Product>
-    <Description>Air.Cloud.Modules.Docker 提供 Docker 容器运行环境相关支持，用于容器化应用的运行时识别、部署辅助和模块扩展。</Description>
-    <PackageDescription>Air.Cloud.Modules.Docker 提供 Docker 容器运行环境相关支持，用于容器化应用的运行时识别、部署辅助和模块扩展。</PackageDescription>
-    <PackageTags>Air.Cloud;Docker;容器;部署;模块</PackageTags>
+    <Description>Air.Cloud.Modules.Docker provides Docker Engine integration for container discovery, lifecycle operations, host runtime support, and Unix socket based container access.</Description>
+    <PackageDescription>Air.Cloud.Modules.Docker provides Docker Engine integration for container discovery, lifecycle operations, host runtime support, and Unix socket based container access.</PackageDescription>
+    <PackageTags>Air.Cloud;Docker;Container;DockerEngine;UnixSocket;Module</PackageTags>
     <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -25,10 +25,10 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>10.0.0</Version>
-    <PackageVersion>10.0.0</PackageVersion>
-    <AssemblyVersion>10.0.0</AssemblyVersion>
-    <FileVersion>10.0.0</FileVersion>
+    <Version>10.0.2</Version>
+    <PackageVersion>10.0.2</PackageVersion>
+    <AssemblyVersion>10.0.2</AssemblyVersion>
+    <FileVersion>10.0.2</FileVersion>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
@@ -44,10 +44,6 @@
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Docker.DotNet" Version="3.125.15" />
   </ItemGroup>
 
   <ItemGroup>

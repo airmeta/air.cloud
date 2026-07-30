@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\dynamicapp\Air.Cloud.DynamicApp\Air.Cloud.DynamicApp.csproj" />
+    <ProjectReference Include="..\..\..\..\src\modules\Air.Cloud.Modules.Docker\Air.Cloud.Modules.Docker.csproj" />
   </ItemGroup>
 
 </Project>

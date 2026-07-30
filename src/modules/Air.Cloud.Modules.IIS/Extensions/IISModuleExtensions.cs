@@ -48,7 +48,7 @@ namespace Air.Cloud.Modules.IIS.Extensions
                 AppRealization.Output.Error(new Exception("IIS服务器状态异常"));
                 return services;
             }
-            services.AddSingleton<IContainerStandard, IISContainerDependency>();
+            services.AddSingleton<IContainerEngineStandard, IISContainerDependency>();
             return services;
         }
     }

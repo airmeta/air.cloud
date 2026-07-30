@@ -1,4 +1,4 @@
-# 独立 Gateway 部署
+# AirGateWay部署
 
 `air.gateway` 可以作为独立服务部署。它负责接收入口 HTTP 请求，通过 Ocelot 路由转发到后端服务，也可以在启用 AirTunnel 时承担入口或后端 Gateway 角色。
 

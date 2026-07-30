@@ -2,6 +2,8 @@ using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Agent.Tcp;
+using Air.Cloud.Modules.ReverseTunnel.Agent.Udp;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Google.Protobuf;
@@ -21,8 +23,11 @@ namespace Air.Cloud.Modules.ReverseTunnel.Agent;
 internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFrameProcessor
 {
     private readonly IReverseTunnelAgentLocalHttpDispatcher localHttpDispatcher;
+    private readonly IReverseTunnelAgentTcpDispatcher tcpDispatcher;
+    private readonly IReverseTunnelAgentUdpDispatcher udpDispatcher;
     private readonly IOptions<ReverseTunnelOptions> options;
     private readonly ConcurrentDictionary<long, PendingRequest> pendingRequests = new();
+    private readonly ConcurrentDictionary<long, PendingTcpConnection> pendingTcpConnections = new();
 
     /// <summary>
     /// <para>zh-cn:创建 Agent 隧道帧处理器。</para>
@@ -32,13 +37,27 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
     /// <para>zh-cn:把隧道 HTTP 请求流式分发给 Agent 本地 HTTP 服务的分发器。</para>
     /// <para>en-us:Dispatcher that streams tunneled HTTP requests to Agent local HTTP services.</para>
     /// </param>
+    /// <param name="tcpDispatcher">
+    /// <para>zh-cn:把隧道 TCP 字节流分发给 Agent 本地 TCP 服务的分发器。</para>
+    /// <para>en-us:Dispatcher that relays tunneled TCP byte streams to Agent local TCP services.</para>
+    /// </param>
+    /// <param name="udpDispatcher">
+    /// <para>zh-cn:把隧道 UDP 数据报分发给 Agent 本地 UDP 服务的分发器。</para>
+    /// <para>en-us:Dispatcher that relays tunneled UDP datagrams to Agent local UDP services.</para>
+    /// </param>
     /// <param name="options">
     /// <para>zh-cn:包含请求体、响应体、帧大小和队列容量限制的网络穿透配置。</para>
     /// <para>en-us:Network tunneling options containing request-body, response-body, frame-size, and queue-capacity limits.</para>
     /// </param>
-    public ReverseTunnelAgentFrameProcessor(IReverseTunnelAgentLocalHttpDispatcher localHttpDispatcher, IOptions<ReverseTunnelOptions> options)
+    public ReverseTunnelAgentFrameProcessor(
+        IReverseTunnelAgentLocalHttpDispatcher localHttpDispatcher,
+        IReverseTunnelAgentTcpDispatcher tcpDispatcher,
+        IReverseTunnelAgentUdpDispatcher udpDispatcher,
+        IOptions<ReverseTunnelOptions> options)
     {
         this.localHttpDispatcher = localHttpDispatcher;
+        this.tcpDispatcher = tcpDispatcher;
+        this.udpDispatcher = udpDispatcher;
         this.options = options;
     }
 
@@ -68,6 +87,23 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
                 break;
             case TunnelFrameKindMessage.Cancel:
                 await CancelRequestAsync(frame);
+                break;
+            case TunnelFrameKindMessage.TcpOpen:
+                await OpenTcpAsync(frame, writeAsync, cancellationToken);
+                break;
+            case TunnelFrameKindMessage.TcpData:
+                await AppendTcpDataAsync(frame, writeAsync, cancellationToken);
+                break;
+            case TunnelFrameKindMessage.TcpClose:
+            case TunnelFrameKindMessage.TcpError:
+                await CloseTcpAsync(frame);
+                break;
+            case TunnelFrameKindMessage.UdpDatagram:
+                await SendUdpDatagramAsync(frame, writeAsync, cancellationToken);
+                break;
+            case TunnelFrameKindMessage.UdpFlowClose:
+            case TunnelFrameKindMessage.UdpError:
+                udpDispatcher.Close(frame.StreamId);
                 break;
             case TunnelFrameKindMessage.Pong:
             case TunnelFrameKindMessage.Welcome:
@@ -232,6 +268,138 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
         }
     }
 
+    private async Task OpenTcpAsync(TunnelFrameMessage frame, Func<TunnelFrameMessage, CancellationToken, Task> writeAsync, CancellationToken cancellationToken)
+    {
+        if (frame.StreamId <= 0)
+        {
+            await writeAsync(CreateError(frame, "invalid_stream", "TcpOpen must use a positive stream identifier."), cancellationToken);
+            return;
+        }
+
+        ReverseTunnelTcpOpenPayload payload;
+        try
+        {
+            payload = ReverseTunnelPayloadSerializer.DeserializeTcpOpen(frame.Payload.ToByteArray());
+        }
+        catch (Exception exception)
+        {
+            await writeAsync(CreateError(frame, "invalid_tcp_open_payload", exception.Message), cancellationToken);
+            return;
+        }
+
+        var pendingConnection = new PendingTcpConnection(
+            payload,
+            Channel.CreateBounded<byte[]>(new BoundedChannelOptions(Math.Max(16, options.Value.OutboundFrameQueueCapacity))
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            }),
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+
+        if (!pendingTcpConnections.TryAdd(frame.StreamId, pendingConnection))
+        {
+            pendingConnection.Cancellation.Dispose();
+            await writeAsync(CreateError(frame, "duplicate_tcp_stream", "TCP stream is already open."), cancellationToken);
+            return;
+        }
+
+        _ = DispatchTcpAsync(frame, pendingConnection, writeAsync);
+    }
+
+    private async Task AppendTcpDataAsync(TunnelFrameMessage frame, Func<TunnelFrameMessage, CancellationToken, Task> writeAsync, CancellationToken cancellationToken)
+    {
+        if (!pendingTcpConnections.TryGetValue(frame.StreamId, out var pendingConnection))
+        {
+            await writeAsync(CreateError(frame, "unknown_tcp_stream", "TCP data arrived for an unknown stream."), cancellationToken);
+            return;
+        }
+
+        await pendingConnection.InboundFrames.Writer.WriteAsync(frame.Payload.ToByteArray(), cancellationToken);
+    }
+
+    private async Task CloseTcpAsync(TunnelFrameMessage frame)
+    {
+        if (!pendingTcpConnections.TryGetValue(frame.StreamId, out var pendingConnection))
+        {
+            return;
+        }
+
+        pendingConnection.InboundFrames.Writer.TryComplete();
+        await pendingConnection.Cancellation.CancelAsync();
+    }
+
+    private async Task DispatchTcpAsync(TunnelFrameMessage openFrame, PendingTcpConnection pendingConnection, Func<TunnelFrameMessage, CancellationToken, Task> writeAsync)
+    {
+        try
+        {
+            await tcpDispatcher.DispatchAsync(
+                pendingConnection.Payload,
+                pendingConnection.InboundFrames.Reader,
+                async (body, token) => await writeAsync(new TunnelFrameMessage
+                {
+                    ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                    SessionId = openFrame.SessionId,
+                    StreamId = openFrame.StreamId,
+                    Kind = TunnelFrameKindMessage.TcpData,
+                    Payload = ByteString.CopyFrom(body.Span)
+                }, token),
+                async token => await writeAsync(new TunnelFrameMessage
+                {
+                    ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                    SessionId = openFrame.SessionId,
+                    StreamId = openFrame.StreamId,
+                    Kind = TunnelFrameKindMessage.TcpClose,
+                    Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeTcpClose(new ReverseTunnelTcpClosePayload
+                    {
+                        Reason = "closed"
+                    }))
+                }, token),
+                async (code, message, token) => await writeAsync(CreateError(openFrame, code, message, TunnelFrameKindMessage.TcpError), token),
+                pendingConnection.Cancellation.Token);
+        }
+        finally
+        {
+            pendingTcpConnections.TryRemove(openFrame.StreamId, out _);
+            pendingConnection.InboundFrames.Writer.TryComplete();
+            pendingConnection.Cancellation.Dispose();
+        }
+    }
+
+    private async Task SendUdpDatagramAsync(TunnelFrameMessage frame, Func<TunnelFrameMessage, CancellationToken, Task> writeAsync, CancellationToken cancellationToken)
+    {
+        ReverseTunnelUdpDatagramPayload payload;
+        try
+        {
+            payload = ReverseTunnelPayloadSerializer.DeserializeUdpDatagram(frame.Payload.ToByteArray());
+        }
+        catch (Exception exception)
+        {
+            await writeAsync(CreateError(frame, "invalid_udp_datagram_payload", exception.Message, TunnelFrameKindMessage.UdpError), cancellationToken);
+            return;
+        }
+
+        if (payload.Data.Length > options.Value.Udp.Listeners.Select(item => item.MaxDatagramBytes).DefaultIfEmpty(65_507).Max())
+        {
+            await writeAsync(CreateError(frame, "udp_datagram_too_large", "UDP datagram exceeds the configured Agent limit.", TunnelFrameKindMessage.UdpError), cancellationToken);
+            return;
+        }
+
+        await udpDispatcher.SendAsync(
+            frame.StreamId,
+            payload,
+            async (datagram, token) => await writeAsync(new TunnelFrameMessage
+            {
+                ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                SessionId = frame.SessionId,
+                StreamId = frame.StreamId,
+                Kind = TunnelFrameKindMessage.UdpDatagram,
+                Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeUdpDatagram(datagram))
+            }, token),
+            async (code, message, token) => await writeAsync(CreateError(frame, code, message, TunnelFrameKindMessage.UdpError), token),
+            cancellationToken);
+    }
+
     private async Task CompletePendingRequestAsync(long streamId, PendingRequest pendingRequest)
     {
         pendingRequests.TryRemove(streamId, out _);
@@ -264,12 +432,17 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
 
     private static TunnelFrameMessage CreateError(TunnelFrameMessage frame, string code, string message)
     {
+        return CreateError(frame, code, message, TunnelFrameKindMessage.Error);
+    }
+
+    private static TunnelFrameMessage CreateError(TunnelFrameMessage frame, string code, string message, TunnelFrameKindMessage kind)
+    {
         return new TunnelFrameMessage
         {
             ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
             SessionId = frame.SessionId,
             StreamId = Math.Max(0, frame.StreamId),
-            Kind = TunnelFrameKindMessage.Error,
+            Kind = kind,
             Payload = ByteString.CopyFrom(ReverseTunnelPayloadSerializer.SerializeError(new ReverseTunnelErrorPayload
             {
                 Code = code,
@@ -310,4 +483,9 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
             return Interlocked.Exchange(ref metricsCompleted, 1) == 0;
         }
     }
+
+    private sealed record PendingTcpConnection(
+        ReverseTunnelTcpOpenPayload Payload,
+        Channel<byte[]> InboundFrames,
+        CancellationTokenSource Cancellation);
 }

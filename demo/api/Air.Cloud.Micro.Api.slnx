@@ -11,6 +11,8 @@
   </Folder>
   <Folder Name="/Gateway/">
     <Project Path="GateWay/air.cloud.gateway/air.cloud.gateway.csproj" />
+    <Project Path="GateWay/air.gateway.plugins.sample/air.gateway.plugins.sample.csproj" />
+    <Project Path="GateWay/air.gateway.plugins.tests/air.gateway.plugins.tests.csproj" />
   </Folder>
   <Folder Name="/Open/">
     <Project Path="Open/air.cloud.open.domain/air.cloud.open.domain.csproj" />

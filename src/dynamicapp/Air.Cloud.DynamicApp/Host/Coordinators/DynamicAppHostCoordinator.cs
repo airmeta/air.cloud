@@ -1,6 +1,11 @@
+using System.IO;
+using System.Net.Http;
+
 using Air.Cloud.DynamicApp.Contracts.Lifecycle;
 using Air.Cloud.DynamicApp.Contracts.Manifest;
 using Air.Cloud.DynamicApp.Contracts.Runtime;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Air.Cloud.DynamicApp.Host;
 
@@ -15,6 +20,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     private readonly IDynamicAppModRunner _modRunner;
     private readonly IDynamicAppOrchestrator _orchestrator;
     private readonly IDynamicAppProcessLogSink _processLogSink;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IDynamicAppStateStore _stateStore;
 
     /// <summary>
@@ -45,13 +51,18 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     /// <para>zh-cn:运行状态存储。</para>
     /// <para>en-us:The runtime state store.</para>
     /// </param>
+    /// <param name="serviceProvider">
+    /// <para>zh-cn:服务提供器，用于按执行模式延迟解析可选的已有容器状态目录。</para>
+    /// <para>en-us:The service provider used to lazily resolve the optional existing-container status catalog by execution mode.</para>
+    /// </param>
     public DynamicAppHostCoordinator(
         IDynamicAppManager manager,
         IDynamicAppModRunner modRunner,
         IDynamicAppOrchestrator orchestrator,
         IDynamicAppHealthProbe healthProbe,
         IDynamicAppProcessLogSink processLogSink,
-        IDynamicAppStateStore stateStore)
+        IDynamicAppStateStore stateStore,
+        IServiceProvider serviceProvider)
     {
         _manager = manager ?? throw new ArgumentNullException(nameof(manager));
         _modRunner = modRunner ?? throw new ArgumentNullException(nameof(modRunner));
@@ -59,6 +70,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
         _healthProbe = healthProbe ?? throw new ArgumentNullException(nameof(healthProbe));
         _processLogSink = processLogSink ?? throw new ArgumentNullException(nameof(processLogSink));
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
     }
 
     /// <summary>
@@ -118,6 +130,17 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
                 return DynamicAppOperationResult.Failure(message);
             }
 
+            if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+            {
+                var existingContainerActivation = await ActivateExistingContainerTargetAsync(key, cancellationToken).ConfigureAwait(false);
+                if (!existingContainerActivation.Succeeded)
+                {
+                    return existingContainerActivation;
+                }
+
+                continue;
+            }
+
             var health = await _healthProbe.ProbeAsync(target, mod.Health, cancellationToken).ConfigureAwait(false);
             if (!health.IsHealthy)
             {
@@ -174,6 +197,57 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
         return mod.ExecutionMode == DynamicModExecutionMode.Process
             ? await _modRunner.InspectAsync(target.Key, cancellationToken).ConfigureAwait(false)
             : DynamicAppOperationResult.Success($"Target `{target.Key}` does not require Process runtime inspection.");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:按容器引擎状态激活 ExistingContainer 目标；该模式不调用业务 HTTP 健康检查端点。</para>
+    /// <para>en-us:Activates an ExistingContainer target from container engine status; this mode does not call the business HTTP health endpoint.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:目标 Mod 版本键。</para>
+    /// <para>en-us:The target Mod version key.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:Cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:容器引擎状态检查和激活结果。</para>
+    /// <para>en-us:The container engine status inspection and activation result.</para>
+    /// </returns>
+    private async Task<DynamicAppOperationResult> ActivateExistingContainerTargetAsync(DynamicModVersionKey key, CancellationToken cancellationToken)
+    {
+        var catalog = _serviceProvider.GetService<IDynamicAppExistingContainerCatalog>();
+        if (catalog == null)
+        {
+            var message = "IDynamicAppExistingContainerCatalog is not registered.";
+            _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
+            return DynamicAppOperationResult.Failure(message);
+        }
+
+        DynamicAppExistingContainerView view;
+        try
+        {
+            view = await catalog.InspectAsync(key, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or IOException)
+        {
+            var message = $"Docker container status inspection failed for `{key}`. {exception.Message}";
+            _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
+            return DynamicAppOperationResult.Failure(message);
+        }
+
+        if (!view.IsAvailable)
+        {
+            var message = $"Docker container `{view.Name}` is not available for `{key}`. {view.Status}";
+            _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
+            return DynamicAppOperationResult.Failure(message);
+        }
+
+        var activation = await _manager.ActivateAsync(key, cancellationToken).ConfigureAwait(false);
+        return activation.Succeeded
+            ? DynamicAppOperationResult.Success($"ExistingContainer target `{key}` is active from Docker container `{view.Name}`. {view.Status}")
+            : activation;
     }
 
     private async Task<string> AppendProcessDiagnosticsAsync(DynamicModVersionKey key, string message, CancellationToken cancellationToken)

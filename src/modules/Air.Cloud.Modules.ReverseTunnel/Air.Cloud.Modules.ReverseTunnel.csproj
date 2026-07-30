@@ -5,18 +5,51 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>Air.Cloud.Modules.ReverseTunnel</PackageId>
     <Title>Air.Cloud.Modules.ReverseTunnel</Title>
-    <Description>Air.Cloud reverse tunnel module for controlled cross-network HTTP forwarding.</Description>
-    <PackageTags>Air.Cloud;ReverseTunnel;Gateway;HTTP;Module</PackageTags>
+    <Authors>AC</Authors>
+    <Company>AccessCross</Company>
+    <Product>air.cloud</Product>
+    <Description>Air.Cloud.Modules.ReverseTunnel provides the AirTunnel HTTP network penetration module, including server access, agent sessions, Ocelot tunnel forwarding, stream relay, runtime limits, metrics, and diagnostics APIs.</Description>
+    <PackageDescription>Air.Cloud.Modules.ReverseTunnel provides the AirTunnel HTTP network penetration module, including server access, agent sessions, Ocelot tunnel forwarding, stream relay, runtime limits, metrics, and diagnostics APIs.</PackageDescription>
+    <PackageTags>Air.Cloud;AirTunnel;ReverseTunnel;NetworkTunnel;Gateway;Ocelot;HTTP;Module</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackAsTool>False</PackAsTool>
+    <Version>10.0.0</Version>
+    <PackageVersion>10.0.0</PackageVersion>
+    <AssemblyVersion>10.0.0</AssemblyVersion>
+    <FileVersion>10.0.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\assets\logo.png" Link="logo.png">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\LICENSE" Link="LICENSE">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Include="..\..\..\README.md" Link="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.70.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.70.0" />
     <PackageReference Include="Grpc.Tools" Version="2.70.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0-preview.6.25358.103" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
     <PackageReference Include="Ocelot" Version="17.0.1" />
     <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
   </ItemGroup>

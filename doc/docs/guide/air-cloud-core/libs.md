@@ -38,8 +38,8 @@ flowchart LR
 | 服务治理标准 | `Air.Cloud.Modules.Consul` | `IServerCenterStandard`、`IKVCenterStandard`、`IConsulServiceOptionsConfigureStandard` | Consul |
 | 缓存标准 | `Air.Cloud.Modules.RedisCache` | `IAppCacheStandard`、`IRedisCacheStandard`、`IRedisCacheKeyStandard` |  |
 | 分布式锁标准 | `Air.Cloud.Modules.RedisCache` | `IDistributedLockStandard` |  |
-| 运行容器标准 | `Air.Cloud.Modules.Docker` | `IContainerStandard` |  |
-| 运行容器标准 | `Air.Cloud.Modules.IIS` | `IContainerStandard` |  |
+| 运行容器标准 | `Air.Cloud.Modules.Docker` | `IContainerEngineStandard` | Docker |
+| 运行容器标准 | `Air.Cloud.Modules.IIS` | `IContainerEngineStandard` |  |
 | 追踪日志标准 | `Air.Cloud.Modules.SkyWalking` | `ITraceLogStandard` |  |
 | 调度任务标准 | `Air.Cloud.Modules.Quartz` | `ISchedulerStandardOptions`、`ISchedulerStandardFactory<T>` |  |
 | 远程调用标准 | `Air.Cloud.Modules.Taxin` | `ITaxinClientStandard`、`ITaxinServerStandard`、`ITaxinStoreStandard` |  |
@@ -63,9 +63,9 @@ flowchart LR
 | `Air.Cloud.Modules.AmazonS3` | 对象存储标准 | S3 对象存储、Bucket、Object、Client 能力 |
 | `Air.Cloud.Modules.Consul` | 服务治理标准 | 配置中心、服务注册发现、KV 中心 |
 | `Air.Cloud.Modules.Courier` | 扩展模块 | 通知、投递或传输扩展能力 |
-| `Air.Cloud.Modules.Docker` | 运行容器标准 | Docker 环境识别、容器信息能力 |
+| `Air.Cloud.Modules.Docker` | 运行容器标准 | Docker Engine 容器列表、检查、启动、停止 |
 | `Air.Cloud.Modules.ElasticSearch` | NoSQL 数据访问扩展 | ElasticSearch 索引、连接池、NoSQL 仓储实现 |
-| `Air.Cloud.Modules.IIS` | 运行容器标准 | IIS 宿主环境适配 |
+| `Air.Cloud.Modules.IIS` | 运行容器标准 | IIS 站点和应用程序池列表、检查、启动、停止 |
 | `Air.Cloud.Modules.Kafka` | 消息队列标准 | 发布订阅、消费补偿、消费恢复 |
 | `Air.Cloud.Modules.MongoDB` | 数据访问扩展 | MongoDB 文档数据库访问 |
 | `Air.Cloud.Modules.Netty` | 扩展模块 | 网络通信扩展 |

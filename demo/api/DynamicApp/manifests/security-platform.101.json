@@ -23,6 +23,7 @@
       },
       "executionMode": "ExistingContainer",
       "artifact": {
+        "containerName": "air.auth",
         "endpoint": "http://air.auth:8080"
       },
       "health": {
@@ -42,6 +43,7 @@
       },
       "executionMode": "ExistingContainer",
       "artifact": {
+        "containerName": "air.account",
         "endpoint": "http://air.account:8080"
       },
       "health": {
@@ -61,6 +63,7 @@
       },
       "executionMode": "ExistingContainer",
       "artifact": {
+        "containerName": "air.system",
         "endpoint": "http://air.system:8080"
       },
       "health": {
