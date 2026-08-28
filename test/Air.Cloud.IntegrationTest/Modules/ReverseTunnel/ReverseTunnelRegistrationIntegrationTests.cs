@@ -1,10 +1,13 @@
 using Air.Cloud.Core.App;
+using Air.Cloud.Modules.ReverseTunnel.Common.Enrollment;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Extensions;
 using Air.Cloud.Modules.ReverseTunnel.Agent;
 using Air.Cloud.Modules.ReverseTunnel.Gateway;
+using Air.Cloud.Modules.ReverseTunnel.Management;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 
 using Microsoft.AspNetCore.Builder;
@@ -19,8 +22,11 @@ using Microsoft.Extensions.Options;
 using Ocelot.DependencyInjection;
 
 using System.Net;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+using System.Text.Json;
 
 namespace Air.Cloud.IntegrationTest.Modules.ReverseTunnel;
 
@@ -31,8 +37,8 @@ namespace Air.Cloud.IntegrationTest.Modules.ReverseTunnel;
 public class ReverseTunnelRegistrationIntegrationTests
 {
     /// <summary>
-    /// <para>zh-cn:验证模块注册可在空服务集合中完成，并能解析配置驱动的路由提供程序。该测试不建立网络连接。</para>
-    /// <para>en-us:Verifies that module registration completes in an empty service collection and resolves the configuration-driven route provider. The test opens no network connection.</para>
+    /// <para>zh-cn:验证模块注册可在空服务集合中完成，且路由提供程序不会读取旧的显式 Routes 配置。该测试不建立网络连接。</para>
+    /// <para>en-us:Verifies that module registration completes in an empty service collection and the route provider ignores legacy explicit Routes configuration. The test opens no network connection.</para>
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
@@ -63,9 +69,8 @@ public class ReverseTunnelRegistrationIntegrationTests
 
         var found = routeProvider.TryResolve("tunnel-integration-service", out var route);
 
-        Assert.True(found);
-        Assert.NotNull(route);
-        Assert.Equal("integration-service", route.ServiceKey);
+        Assert.False(found);
+        Assert.Null(route);
     }
 
     /// <summary>
@@ -88,7 +93,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentCertificateValidator>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentConnectionAuthenticator>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentServiceAuthorizer>());
-        Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelEnrollmentCredentialStore>());
+        Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelEnrollmentReplayStore>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentEnrollmentService>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentCertificateRenewalService>());
         Assert.NotNull(serviceProvider.GetRequiredService<IReverseTunnelAgentCertificateMaterialStore>());
@@ -137,7 +142,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(new ReverseTunnelOptions
         {
             Enabled = false,
-            Roles = ReverseTunnelRole.Server
+            TunnelMode = ReverseTunnelMode.Server
         }));
         using var app = builder.Build();
 
@@ -159,7 +164,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -199,7 +204,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -244,7 +249,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -278,7 +283,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
             AgentId = "agent-diagnostics",
             ServerAddress = "https://airtunnel.example.com",
             Diagnostics = new ReverseTunnelDiagnosticsOptions
@@ -311,6 +316,380 @@ public class ReverseTunnelRegistrationIntegrationTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证模块关闭时仍可挂载诊断路由，运行期关闭开关时请求返回 404。</para>
+    /// <para>en-us:Verifies that diagnostic routes can still be mapped when the module is disabled and return 404 while the runtime switch is off.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void MapReverseTunnelDiagnostics_should_map_when_module_is_disabled()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = false,
+            TunnelMode = ReverseTunnelMode.Agent,
+            Diagnostics = new ReverseTunnelDiagnosticsOptions
+            {
+                Enabled = false
+            }
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+        using var app = builder.Build();
+
+        app.MapReverseTunnelDiagnostics();
+
+        Assert.Contains(((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints), endpoint =>
+            endpoint.DisplayName?.Contains("AirTunnel diagnostics snapshot", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Equal(StatusCodes.Status404NotFound, InvokeEndpoint(app, "AirTunnel diagnostics snapshot"));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Server 管理 endpoint 使用独立管理端口和访问 token；同一路由在非管理端口会返回 404。</para>
+    /// <para>en-us:Verifies that the Server management endpoint uses the dedicated management port and access token; the same route returns 404 on a non-management port.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void MapReverseTunnelManagement_should_require_management_port_and_token()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_TEST_{Guid.NewGuid():N}";
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.Server,
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "https://0.0.0.0:18643",
+                    AccessTokenEnvironmentVariable = tokenVariable
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var builder = WebApplication.CreateBuilder();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            using var app = builder.Build();
+
+            app.MapReverseTunnelManagement();
+
+            Assert.Equal(StatusCodes.Status404NotFound, InvokeEndpoint(app, "AirTunnel management metrics", localPort: 18443, adminToken: "test-admin-token"));
+            Assert.Equal(StatusCodes.Status401Unauthorized, InvokeEndpoint(app, "AirTunnel management metrics", localPort: 18643, adminToken: "wrong-token"));
+            Assert.Equal(StatusCodes.Status200OK, InvokeEndpoint(app, "AirTunnel management metrics", localPort: 18643, adminToken: "test-admin-token"));
+            Assert.Equal(StatusCodes.Status401Unauthorized, InvokeEndpoint(app, "AirTunnel management page", localPort: 18643, adminToken: "wrong-token"));
+            Assert.Equal(StatusCodes.Status200OK, InvokeEndpoint(app, "AirTunnel management page", localPort: 18643, adminToken: "test-admin-token"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 AirTunnel 管理页面提供左侧菜单树和按菜单切换的独立内容区域。</para>
+    /// <para>en-us:Verifies that the AirTunnel management page provides a left navigation tree and separate menu-driven content areas.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void MapReverseTunnelManagement_should_render_menu_tree_and_split_views()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_PAGE_{Guid.NewGuid():N}";
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.Server,
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "https://0.0.0.0:18643",
+                    AccessTokenEnvironmentVariable = tokenVariable
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var builder = WebApplication.CreateBuilder();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            using var app = builder.Build();
+
+            app.MapReverseTunnelManagement();
+
+            var html = InvokeEndpointBody(app, "AirTunnel management page", 18643, "test-admin-token");
+
+            Assert.Contains("data-menu=\"overview\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"agents\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"sessions\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"config\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"agentConfig\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"mappingConfig\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"audit\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-menu=\"backups\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"overviewView\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentsView\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"sessionsView\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"configView\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentConfigView\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"mappingConfigView\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentConfigAgents\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"mappingConfigAgents\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentRuntimeConfig\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentLocalServices\"", html, StringComparison.Ordinal);
+            Assert.Contains("agent-runtime-grid", html, StringComparison.Ordinal);
+            Assert.Contains("agentConnectionGroup", html, StringComparison.Ordinal);
+            Assert.Contains("agentLimitsGroup", html, StringComparison.Ordinal);
+            Assert.Contains("grid-template-columns:300px minmax(0,1fr)", html, StringComparison.Ordinal);
+            Assert.Contains("title=\"'+escapeHtml(id)+'\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentSaveDialog\"", html, StringComparison.Ordinal);
+            Assert.Contains("agentSaveItemCount", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentDetailDialog\"", html, StringComparison.Ordinal);
+            Assert.Contains("function closeAgentDetail", html, StringComparison.Ordinal);
+            Assert.Contains("clients/configuration-requests", html, StringComparison.Ordinal);
+            Assert.Contains("airControlPlaneTicket", html, StringComparison.Ordinal);
+            Assert.Contains("air-control-plane:set-language", html, StringComparison.Ordinal);
+            Assert.Contains("hideHeader", html, StringComparison.Ordinal);
+            Assert.Contains("captureChineseText", html, StringComparison.Ordinal);
+
+            var executableScript = Regex.Replace(html, @"/\*[\s\S]*?\*/", string.Empty);
+            Assert.DoesNotContain("if(lang()===\"zh-CN\"){document.documentElement.lang=\"zh-CN\";document.getElementById(\"languageIcon\").textContent=\"ZH\";return;}", executableScript, StringComparison.Ordinal);
+            Assert.Contains("function updateAgentConfigSelector", executableScript, StringComparison.Ordinal);
+            Assert.Contains("data-mapping-tab", executableScript, StringComparison.Ordinal);
+            Assert.Contains("data-mapping-edit", executableScript, StringComparison.Ordinal);
+            Assert.Contains("data-mapping-delete", executableScript, StringComparison.Ordinal);
+            Assert.Contains("mappingServiceDialog", html, StringComparison.Ordinal);
+            Assert.Contains("function submitMappingServiceDialog", executableScript, StringComparison.Ordinal);
+            Assert.DoesNotContain("data-agent-service-index", executableScript, StringComparison.Ordinal);
+            Assert.Contains("function openAgentSaveDialog", executableScript, StringComparison.Ordinal);
+            Assert.DoesNotContain("openSaveDialog('agent')", executableScript, StringComparison.Ordinal);
+            Assert.DoesNotContain("data-disconnect", executableScript, StringComparison.Ordinal);
+            Assert.DoesNotContain("Takes effect after save", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("保存后运行期生效", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("设置该参数的具体取值和行为", html, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证配置保存接口从 JSON 请求体读取中文变更原因，并将其写入审计记录，避免浏览器自定义 header 的 ByteString 限制。</para>
+    /// <para>en-us:Verifies that configuration save reads a Chinese change reason from the JSON body and persists it to audit records, avoiding the browser ByteString limit for custom headers.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task MapReverseTunnelManagement_should_save_change_reason_from_json_body()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_BODY_{Guid.NewGuid():N}";
+        var root = Path.Combine(Path.GetTempPath(), "air-cloud-reverse-tunnel-body-tests", Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.None,
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "test-server",
+                    AccessTokenEnvironmentVariable = tokenVariable,
+                    ConfigDirectory = Path.Combine(root, "configs"),
+                    BackupDirectory = Path.Combine(root, "backups"),
+                    AllowConfigWrite = true
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var requestOptions = JsonSerializer.Deserialize<ReverseTunnelOptions>(JsonSerializer.Serialize(options))!;
+            requestOptions.Management.BindUrl = "http://0.0.0.0:18643";
+
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            using var app = builder.Build();
+            app.MapReverseTunnelManagement();
+            app.UseRouting();
+            app.UseEndpoints(_ => { });
+            await app.StartAsync();
+            using var client = app.GetTestClient();
+            client.DefaultRequestHeaders.Add("X-AirTunnel-Admin-Token", "test-admin-token");
+            using var legacyResponse = await client.PutAsJsonAsync("/_airtunnel/admin/config", requestOptions);
+            Assert.Equal(HttpStatusCode.BadRequest, legacyResponse.StatusCode);
+            using var response = await client.PutAsJsonAsync(
+                "/_airtunnel/admin/config",
+                new { options = requestOptions, changeReason = "调整中文路由" });
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.True(response.StatusCode == HttpStatusCode.OK, $"status={(int)response.StatusCode}, body={responseBody}");
+
+            var audit = await app.Services.GetRequiredService<IReverseTunnelConfigurationStore>().ListAuditAsync();
+            Assert.Contains(audit, item => item.Reason == "调整中文路由");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证管理端保存 Agent 配置时要求使用公开路径，由 Server 统一生成内部 ServiceKey。</para>
+    /// <para>en-us:Verifies that Agent configuration management requires a public path and lets the Server generate the internal ServiceKey.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task MapReverseTunnelManagement_should_reject_agent_service_key_conflict()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_CONFLICT_{Guid.NewGuid():N}";
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        var existing = ReverseTunnelAgentConfigurationSnapshotSerializer.Create(
+            "agent-a",
+            new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.Agent,
+                AgentId = "agent-a",
+                LocalServices = [new ReverseTunnelLocalServiceOptions
+                {
+                    ServiceKey = "orders",
+                    LocalAddress = "http://127.0.0.1:6101"
+                }]
+            },
+            1);
+        var store = new TestDesiredAgentConfigurationStore(existing);
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.None,
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "test-server",
+                    AccessTokenEnvironmentVariable = tokenVariable,
+                    AllowRemoteClientManagement = true
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            builder.Services.AddSingleton<IReverseTunnelDesiredAgentConfigurationStore>(store);
+            await using var app = builder.Build();
+            app.MapReverseTunnelManagement();
+            await app.StartAsync();
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/_airtunnel/admin/clients/configuration-requests");
+            request.Headers.Add("X-AirTunnel-Admin-Token", "test-admin-token");
+            request.Content = JsonContent.Create(new
+            {
+                agentId = "agent-b",
+                expectedVersion = 1,
+                configuration = new
+                {
+                    agentId = "agent-b",
+                    configuration = new
+                    {
+                        enabled = true,
+                        tunnelMode = "Agent",
+                        agentId = "agent-b",
+                        localServices = new[] { new { serviceKey = "orders", localAddress = "http://127.0.0.1:6102" } }
+                    }
+                }
+            });
+
+            using var response = await app.GetTestClient().SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Contains("agent_route_configuration_invalid", body, StringComparison.Ordinal);
+            Assert.DoesNotContain("agent-b", store.SavedAgentIds);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证管理端使用旧版本保存 Agent 配置时返回 409，并且不会写入新快照。</para>
+    /// <para>en-us:Verifies that saving an Agent configuration with a stale version returns 409 without writing a new snapshot.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task MapReverseTunnelManagement_should_reject_stale_agent_configuration_version()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_VERSION_{Guid.NewGuid():N}";
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        var existing = ReverseTunnelAgentConfigurationSnapshotSerializer.Create(
+            "agent-version",
+            new ReverseTunnelOptions { Enabled = true, TunnelMode = ReverseTunnelMode.Agent, AgentId = "agent-version" },
+            4);
+        var store = new TestDesiredAgentConfigurationStore(existing);
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "test-server",
+                    AccessTokenEnvironmentVariable = tokenVariable,
+                    AllowRemoteClientManagement = true
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            builder.Services.AddSingleton<IReverseTunnelDesiredAgentConfigurationStore>(store);
+            await using var app = builder.Build();
+            app.MapReverseTunnelManagement();
+            await app.StartAsync();
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/_airtunnel/admin/clients/configuration-requests");
+            request.Headers.Add("X-AirTunnel-Admin-Token", "test-admin-token");
+            request.Content = JsonContent.Create(new
+            {
+                agentId = "agent-version",
+                expectedVersion = 3,
+                configuration = new
+                {
+                    agentId = "agent-version",
+                    configuration = new { enabled = true, tunnelMode = "Agent", agentId = "agent-version" }
+                }
+            });
+
+            using var response = await app.GetTestClient().SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.Contains("configuration_version_conflict", body, StringComparison.Ordinal);
+            Assert.Empty(store.SavedAgentIds);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证诊断 endpoint 放在业务中间件之前时会直接返回诊断响应，后续签名、白名单或 Ocelot 类中间件不会拦截该路径。</para>
     /// <para>en-us:Verifies that when diagnostic endpoints are placed before business middlewares, the diagnostic response is returned directly and later signature, whitelist, or Ocelot-like middlewares do not intercept the path.</para>
     /// </summary>
@@ -322,7 +701,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
             AgentId = "agent-diagnostics",
             ServerAddress = "https://airtunnel.example.com",
             Diagnostics = new ReverseTunnelDiagnosticsOptions
@@ -383,7 +762,7 @@ public class ReverseTunnelRegistrationIntegrationTests
             var options = new ReverseTunnelOptions
             {
                 Enabled = true,
-                Roles = ReverseTunnelRole.Server,
+                TunnelMode = ReverseTunnelMode.Server,
                 CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
                 {
                     CertificatePath = material.CaPfxPath,
@@ -427,7 +806,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -450,6 +829,103 @@ public class ReverseTunnelRegistrationIntegrationTests
 
         Assert.Contains(endpoints.DataSources.SelectMany(source => source.Endpoints), endpoint =>
             endpoint.DisplayName?.Contains("ReverseTunnelEnrollment", StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证管理端不再暴露 Enrollment token 生成接口。</para>
+    /// <para>en-us:Verifies that the management endpoint no longer exposes enrollment-token generation.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Management_should_not_generate_enrollment_token()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_TEST_{Guid.NewGuid():N}";
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        using var material = TestCertificateMaterial.Create();
+        var enrollmentDirectory = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(material.CaPfxPath)!, "enrollment-token"));
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.Server,
+                CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
+                {
+                    CertificatePath = material.CaPfxPath,
+                    CertificatePasswordEnvironmentVariable = material.PasswordEnvironmentVariable
+                },
+                Enrollment = new ReverseTunnelEnrollmentOptions
+                {
+                    Enabled = true,
+                    CredentialDirectory = enrollmentDirectory.FullName,
+                    CredentialFileExtension = ".token",
+                    ConsumeOnUse = true
+                },
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "https://0.0.0.0:0",
+                    AccessTokenEnvironmentVariable = tokenVariable,
+                    AllowRemoteClientManagement = true
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            await using var app = builder.Build();
+            app.MapReverseTunnelManagement();
+            await app.StartAsync();
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/_airtunnel/admin/enrollment-tokens");
+            request.Headers.Add("X-AirTunnel-Admin-Token", "test-admin-token");
+            request.Content = JsonContent.Create(new ReverseTunnelEnrollmentTokenRequest
+            {
+                AgentId = "agent-bootstrap",
+                ServerAddress = "https://airtunnel.example.test:18443",
+                ExpiresInHours = 2
+            });
+
+            using var response = await app.GetTestClient().SendAsync(request);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.Empty(Directory.EnumerateFiles(enrollmentDirectory.FullName));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    private sealed class TestDesiredAgentConfigurationStore : IReverseTunnelDesiredAgentConfigurationStore
+    {
+        private readonly Dictionary<string, ReverseTunnelAgentConfigurationSnapshot> snapshots = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<string> savedAgentIds = [];
+
+        public TestDesiredAgentConfigurationStore(params ReverseTunnelAgentConfigurationSnapshot[] initialSnapshots)
+        {
+            foreach (var snapshot in initialSnapshots)
+            {
+                snapshots[snapshot.AgentId] = snapshot;
+            }
+        }
+
+        public IReadOnlyList<string> SavedAgentIds => savedAgentIds;
+
+        public Task<ReverseTunnelAgentConfigurationSnapshot?> GetAsync(string agentId, CancellationToken cancellationToken = default)
+            => Task.FromResult(snapshots.TryGetValue(agentId.Trim(), out var snapshot) ? snapshot : null);
+
+        public Task SaveAsync(ReverseTunnelAgentConfigurationSnapshot snapshot, CancellationToken cancellationToken = default)
+        {
+            snapshots[snapshot.AgentId] = snapshot;
+            savedAgentIds.Add(snapshot.AgentId);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<ReverseTunnelAgentConfigurationSnapshot>> ListAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ReverseTunnelAgentConfigurationSnapshot>>(snapshots.Values.ToArray());
     }
 
     private sealed class TestCertificateMaterial : IDisposable
@@ -493,7 +969,7 @@ public class ReverseTunnelRegistrationIntegrationTests
         }
     }
 
-    private static int InvokeEndpoint(WebApplication app, string displayName)
+    private static int InvokeEndpoint(WebApplication app, string displayName, int? localPort = null, string? adminToken = null)
     {
         var endpoint = ((IEndpointRouteBuilder)app).DataSources
             .SelectMany(source => source.Endpoints)
@@ -503,8 +979,40 @@ public class ReverseTunnelRegistrationIntegrationTests
         {
             RequestServices = app.Services
         };
+        if (localPort is not null)
+        {
+            httpContext.Connection.LocalPort = localPort.Value;
+        }
+
+        if (!string.IsNullOrEmpty(adminToken))
+        {
+            httpContext.Request.Headers["X-AirTunnel-Admin-Token"] = adminToken;
+        }
+
         httpContext.Response.Body = new MemoryStream();
         routeEndpoint.RequestDelegate!(httpContext).GetAwaiter().GetResult();
         return httpContext.Response.StatusCode;
     }
+
+    private static string InvokeEndpointBody(WebApplication app, string displayName, int localPort, string adminToken)
+    {
+        var endpoint = ((IEndpointRouteBuilder)app).DataSources
+            .SelectMany(source => source.Endpoints)
+            .Single(item => item.DisplayName?.Contains(displayName, StringComparison.OrdinalIgnoreCase) == true);
+        var routeEndpoint = Assert.IsType<RouteEndpoint>(endpoint);
+        var httpContext = new DefaultHttpContext
+        {
+            RequestServices = app.Services
+        };
+        httpContext.Connection.LocalPort = localPort;
+        httpContext.Request.Headers["X-AirTunnel-Admin-Token"] = adminToken;
+        httpContext.Response.Body = new MemoryStream();
+        routeEndpoint.RequestDelegate!(httpContext).GetAwaiter().GetResult();
+        Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+        httpContext.Response.Body.Position = 0;
+        using var reader = new StreamReader(httpContext.Response.Body);
+        return reader.ReadToEnd();
+    }
 }
+
+

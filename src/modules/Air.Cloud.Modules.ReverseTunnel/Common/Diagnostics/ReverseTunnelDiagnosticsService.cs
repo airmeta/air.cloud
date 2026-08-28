@@ -1,7 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Server;
-
-using Microsoft.Extensions.Options;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 
@@ -12,7 +11,7 @@ namespace Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 public sealed class ReverseTunnelDiagnosticsService : IReverseTunnelDiagnosticsService
 {
     private readonly IReverseTunnelSessionRegistry sessionRegistry;
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
     private readonly object snapshotLock = new();
     private ReverseTunnelDiagnosticsSnapshot? cachedSnapshot;
 
@@ -28,7 +27,7 @@ public sealed class ReverseTunnelDiagnosticsService : IReverseTunnelDiagnosticsS
     /// <para>zh-cn:AirTunnel 运行配置。</para>
     /// <para>en-us:AirTunnel runtime options.</para>
     /// </param>
-    public ReverseTunnelDiagnosticsService(IReverseTunnelSessionRegistry sessionRegistry, IOptions<ReverseTunnelOptions> options)
+    public ReverseTunnelDiagnosticsService(IReverseTunnelSessionRegistry sessionRegistry, IReverseTunnelRuntimeOptionsAccessor options)
     {
         this.sessionRegistry = sessionRegistry;
         this.options = options;
@@ -57,13 +56,14 @@ public sealed class ReverseTunnelDiagnosticsService : IReverseTunnelDiagnosticsS
     public ReverseTunnelDiagnosticsSnapshot RefreshSnapshot()
     {
         var generatedAtUtc = DateTimeOffset.UtcNow;
-        var settings = options.Value;
+        var settings = options.Current;
         var diagnostics = ReverseTunnelDiagnosticsConfigurationReader.Read(settings);
         var snapshot = new ReverseTunnelDiagnosticsSnapshot
         {
             GeneratedAtUtc = generatedAtUtc,
             Enabled = settings.Enabled,
-            Roles = settings.Roles.ToString(),
+            TunnelMode = settings.TunnelMode.ToString(),
+            EnableTunnelProxy = settings.EnableTunnelProxy,
             SessionSelectionStrategy = settings.SessionSelectionStrategy.ToString(),
             MaxConcurrentStreams = settings.MaxConcurrentStreams,
             AgentConnectionCount = settings.AgentConnectionCount,

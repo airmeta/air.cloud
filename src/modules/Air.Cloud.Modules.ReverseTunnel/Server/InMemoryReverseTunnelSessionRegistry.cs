@@ -1,5 +1,7 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 
@@ -13,7 +15,7 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
 {
     private readonly ConcurrentDictionary<string, ReverseTunnelSession> sessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, long> roundRobinCounters = new(StringComparer.OrdinalIgnoreCase);
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
 
     /// <summary>
     /// <para>zh-cn:创建内存会话注册表。空闲摘除阈值从 ReverseTunnelSettings:SessionIdleTimeoutSeconds 读取。</para>
@@ -23,7 +25,21 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
     /// <para>zh-cn:反向隧道配置选项。</para>
     /// <para>en-us:Reverse tunnel configuration options.</para>
     /// </param>
-    public InMemoryReverseTunnelSessionRegistry(IOptions<ReverseTunnelOptions> options) => this.options = options;
+    [ActivatorUtilitiesConstructor]
+    public InMemoryReverseTunnelSessionRegistry(IReverseTunnelRuntimeOptionsAccessor options) => this.options = options;
+
+    /// <summary>
+    /// <para>zh-cn:使用静态 IOptions 创建内存会话注册表。该构造函数用于兼容已有测试和只读宿主；生产热更新路径应使用运行期配置访问器。</para>
+    /// <para>en-us:Creates the in-memory session registry from static IOptions. This constructor preserves existing tests and read-only hosts; production hot-update paths should use the runtime-options accessor.</para>
+    /// </summary>
+    /// <param name="options">
+    /// <para>zh-cn:静态 AirTunnel 配置。</para>
+    /// <para>en-us:Static AirTunnel options.</para>
+    /// </param>
+    public InMemoryReverseTunnelSessionRegistry(IOptions<ReverseTunnelOptions> options)
+        : this(new ReverseTunnelRuntimeOptionsAccessor(options))
+    {
+    }
 
     /// <inheritdoc />
     public void Register(ReverseTunnelSession session)
@@ -61,10 +77,22 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
     }
 
     /// <inheritdoc />
+    public bool Disconnect(string sessionId, string reason)
+    {
+        if (!sessions.TryRemove(sessionId, out var session))
+        {
+            return false;
+        }
+
+        session.CompleteOutbound(new InvalidOperationException(string.IsNullOrWhiteSpace(reason) ? "Session disconnected by management endpoint." : reason));
+        return true;
+    }
+
+    /// <inheritdoc />
     public int RemoveExpired(DateTimeOffset utcNow)
     {
-        var threshold = TimeSpan.FromSeconds(options.Value.SessionIdleTimeoutSeconds);
-        return sessions.Values.Where(session => utcNow - session.LastSeenUtc >= threshold).Count(session => Remove(session.SessionId));
+        var threshold = TimeSpan.FromSeconds(options.Current.SessionIdleTimeoutSeconds);
+        return sessions.Values.Where(session => utcNow - session.LastSeenUtc >= threshold).Count(session => Disconnect(session.SessionId, "Session expired because it was idle."));
     }
 
     /// <inheritdoc />
@@ -84,7 +112,15 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
                     ConnectedAtUtc = session.ConnectedAtUtc,
                     LastSeenUtc = lastSeenUtc,
                     IdleSeconds = Math.Max(0, (utcNow - lastSeenUtc).TotalSeconds),
-                    ActiveStreamCount = session.ActiveStreamCount
+                    ActiveStreamCount = session.ActiveStreamCount,
+                    ConfigurationVersion = session.ConfigurationVersion,
+                    DesiredConfigurationVersion = session.DesiredConfigurationVersion,
+                    ConfigurationDeliveryStatus = session.ConfigurationDeliveryStatus,
+                    ConfigurationDeliveryFailureReason = session.ConfigurationDeliveryFailureReason,
+                    ConfigurationDeliveryAtUtc = session.ConfigurationDeliveryAtUtc,
+                    CertificateIssuerThumbprint = session.CertificateIssuerThumbprint,
+                    CertificateSerialNumber = session.CertificateSerialNumber,
+                    CertificateSubject = session.CertificateSubject
                 };
             })
             .ToArray();
@@ -97,7 +133,7 @@ public sealed class InMemoryReverseTunnelSessionRegistry : IReverseTunnelSession
             return null;
         }
 
-        return options.Value.SessionSelectionStrategy switch
+        return options.Current.SessionSelectionStrategy switch
         {
             ReverseTunnelSessionSelectionStrategy.OldestActive => candidates
                 .OrderBy(item => item.LastSeenUtc)

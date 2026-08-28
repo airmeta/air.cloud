@@ -1,0 +1,9 @@
+{
+  "ReverseTunnelSettings": {
+    "Diagnostics": {
+      "Enabled": true,
+      "PathPrefix": "/_airtunnel/diagnostics",
+      "SnapshotCollectionIntervalSeconds": 5
+    }
+  }
+}

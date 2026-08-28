@@ -416,8 +416,11 @@ public class ReverseTunnelSessionRegistryTests
     {
         return new InMemoryReverseTunnelSessionRegistry(Options.Create(new ReverseTunnelOptions
         {
+            HeartbeatIntervalSeconds = 5,
             SessionIdleTimeoutSeconds = timeoutSeconds,
             SessionSelectionStrategy = selectionStrategy
         }));
     }
 }
+
+

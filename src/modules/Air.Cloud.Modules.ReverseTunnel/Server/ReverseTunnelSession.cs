@@ -1,6 +1,7 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Google.Protobuf;
@@ -24,9 +25,13 @@ public sealed class ReverseTunnelSession
     private readonly ConcurrentDictionary<long, PendingTcpTunnel> pendingTcpTunnels = new();
     private readonly ConcurrentDictionary<long, PendingUdpFlow> pendingUdpFlows = new();
     private readonly SemaphoreSlim concurrentStreamSlots;
-    private readonly int maxFramePayloadBytes;
-    private readonly long maxRequestBodyBytes;
-    private readonly long maxResponseBodyBytes;
+    private readonly Func<ReverseTunnelSessionLimits> limitsAccessor;
+    private readonly ConcurrentDictionary<long, TaskCompletionSource<ReverseTunnelAgentConfigurationResult>> configurationOffers = new();
+    private long configurationVersion;
+    private long desiredConfigurationVersion;
+    private string configurationDeliveryStatus = "not_started";
+    private string? configurationDeliveryFailureReason;
+    private long configurationDeliveryAtUtcTicks;
 
     /// <summary>
     /// <para>zh-cn:创建 Agent 会话快照，并标准化服务键集合。last seen 初始值等于 connectedAtUtc。</para>
@@ -68,6 +73,26 @@ public sealed class ReverseTunnelSession
     /// <para>zh-cn:Gateway 发送请求体给 Agent 时允许的最大字节数，超限会发送 Cancel 帧并返回失败。</para>
     /// <para>en-us:Maximum bytes allowed while the Gateway sends the request body to the Agent. Exceeding the limit sends a Cancel frame and returns a failure.</para>
     /// </param>
+    /// <param name="limitsAccessor">
+    /// <para>zh-cn:运行期限制访问器。提供后，新 HTTP 请求和数据帧会读取最新限制；为空时使用构造函数传入的静态限制。</para>
+    /// <para>en-us:Runtime limit accessor. When provided, new HTTP requests and data frames read the latest limits; when null, constructor limits are used statically.</para>
+    /// </param>
+    /// <param name="certificateIssuerThumbprint">
+    /// <para>zh-cn:签发 Agent 证书的 CA 指纹。</para>
+    /// <para>en-us:Thumbprint of the CA that issued the Agent certificate.</para>
+    /// </param>
+    /// <param name="certificateSerialNumber">
+    /// <para>zh-cn:Agent 证书序列号。</para>
+    /// <para>en-us:Agent certificate serial number.</para>
+    /// </param>
+    /// <param name="certificateSubject">
+    /// <para>zh-cn:Agent 证书 Subject。</para>
+    /// <para>en-us:Agent certificate Subject.</para>
+    /// </param>
+    /// <param name="configurationVersion">
+    /// <para>zh-cn:Agent 在 Hello 中上报的当前配置版本。</para>
+    /// <para>en-us:Configuration version reported by the Agent in its Hello frame.</para>
+    /// </param>
     public ReverseTunnelSession(
         string sessionId,
         string agentId,
@@ -77,17 +102,24 @@ public sealed class ReverseTunnelSession
         int outboundFrameQueueCapacity = 1024,
         int maxFramePayloadBytes = 64 * 1024,
         long maxResponseBodyBytes = 10 * 1024 * 1024,
-        long maxRequestBodyBytes = 10 * 1024 * 1024)
+        long maxRequestBodyBytes = 10 * 1024 * 1024,
+        Func<ReverseTunnelSessionLimits>? limitsAccessor = null,
+        string? certificateIssuerThumbprint = null,
+        string? certificateSerialNumber = null,
+        string? certificateSubject = null,
+        long configurationVersion = 0)
     {
         SessionId = sessionId;
         AgentId = agentId;
         ServiceKeys = serviceKeys.Where(key => !string.IsNullOrWhiteSpace(key)).Select(key => key.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
         ConnectedAtUtc = connectedAtUtc;
+        CertificateIssuerThumbprint = certificateIssuerThumbprint ?? string.Empty;
+        CertificateSerialNumber = certificateSerialNumber ?? string.Empty;
+        CertificateSubject = certificateSubject ?? string.Empty;
+        this.configurationVersion = configurationVersion;
         lastSeenUtcTicks = connectedAtUtc.UtcTicks;
-        concurrentStreamSlots = new SemaphoreSlim(Math.Max(1, maxConcurrentStreams), Math.Max(1, maxConcurrentStreams));
-        this.maxFramePayloadBytes = Math.Max(1_024, maxFramePayloadBytes);
-        this.maxRequestBodyBytes = Math.Max(1_024, maxRequestBodyBytes);
-        this.maxResponseBodyBytes = Math.Max(1_024, maxResponseBodyBytes);
+        concurrentStreamSlots = new SemaphoreSlim(4_096, 4_096);
+        this.limitsAccessor = limitsAccessor ?? (() => new ReverseTunnelSessionLimits(maxConcurrentStreams, outboundFrameQueueCapacity, maxFramePayloadBytes, maxRequestBodyBytes, maxResponseBodyBytes));
         outboundFrames = Channel.CreateBounded<TunnelFrameMessage>(new BoundedChannelOptions(Math.Max(16, outboundFrameQueueCapacity))
         {
             SingleReader = true,
@@ -115,6 +147,24 @@ public sealed class ReverseTunnelSession
     public IReadOnlySet<string> ServiceKeys { get; }
 
     /// <summary>
+    /// <para>zh-cn:签发该 Agent 证书的 CA 指纹。该值仅用于管理端诊断和吊销操作，不包含私钥材料。</para>
+    /// <para>en-us:Thumbprint of the CA that issued the Agent certificate. It is used only for management diagnostics and revocation and contains no private-key material.</para>
+    /// </summary>
+    public string CertificateIssuerThumbprint { get; }
+
+    /// <summary>
+    /// <para>zh-cn:Agent 证书序列号。该值可用于管理端吊销证书。</para>
+    /// <para>en-us:Agent certificate serial number. It can be used by the management endpoint to revoke the certificate.</para>
+    /// </summary>
+    public string CertificateSerialNumber { get; }
+
+    /// <summary>
+    /// <para>zh-cn:Agent 证书 Subject，用于只读诊断展示。</para>
+    /// <para>en-us:Agent certificate Subject used for read-only diagnostics.</para>
+    /// </summary>
+    public string CertificateSubject { get; }
+
+    /// <summary>
     /// <para>zh-cn:会话建立的 UTC 时间。</para>
     /// <para>en-us:UTC time when the session was established.</para>
     /// </summary>
@@ -131,6 +181,28 @@ public sealed class ReverseTunnelSession
     /// <para>en-us:Current number of unfinished HTTP request streams in this session. The value is intended for diagnostics and capacity checks and represents only an in-process instant state.</para>
     /// </summary>
     public int ActiveStreamCount => pendingInvocations.Count;
+
+    /// <summary><para>zh-cn:Agent 在 Hello 中上报的当前配置版本。</para><para>en-us:Configuration version reported by the Agent when the session connected.</para></summary>
+    public long ConfigurationVersion => Interlocked.Read(ref configurationVersion);
+
+    /// <summary><para>zh-cn:Server 当前期望下发给 Agent 的配置版本。</para><para>en-us:Configuration version currently desired by the Server for this session.</para></summary>
+    public long DesiredConfigurationVersion => Interlocked.Read(ref desiredConfigurationVersion);
+
+    /// <summary><para>zh-cn:最近一次配置下发状态。</para><para>en-us:Latest configuration delivery status.</para></summary>
+    public string ConfigurationDeliveryStatus => Volatile.Read(ref configurationDeliveryStatus) ?? "not_started";
+
+    /// <summary><para>zh-cn:最近一次配置下发失败原因。</para><para>en-us:Latest configuration delivery failure reason.</para></summary>
+    public string? ConfigurationDeliveryFailureReason => Volatile.Read(ref configurationDeliveryFailureReason);
+
+    /// <summary><para>zh-cn:最近一次配置下发时间。</para><para>en-us:UTC time of the latest configuration delivery.</para></summary>
+    public DateTimeOffset? ConfigurationDeliveryAtUtc
+    {
+        get
+        {
+            var ticks = Interlocked.Read(ref configurationDeliveryAtUtcTicks);
+            return ticks == 0 ? null : new DateTimeOffset(ticks, TimeSpan.Zero);
+        }
+    }
 
     /// <summary>
     /// <para>zh-cn:刷新会话最后活跃时间。调用方应传入可信 UTC 时间。</para>
@@ -173,7 +245,8 @@ public sealed class ReverseTunnelSession
 
     internal async Task<ReverseTunnelHttpExchangeResult> InvokeAsync(ReverseTunnelHttpRequestPayload request, HttpContent? content, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        if (!await concurrentStreamSlots.WaitAsync(0, cancellationToken))
+        var limits = limitsAccessor();
+        if (pendingInvocations.Count >= limits.MaxConcurrentStreams || !await concurrentStreamSlots.WaitAsync(0, cancellationToken))
         {
             ReverseTunnelMetrics.RequestRejected(request.ServiceKey, AgentId, "too_many_concurrent_streams");
             return ReverseTunnelHttpExchangeResult.Failure("too_many_concurrent_streams", "Reverse tunnel Agent session is at the configured concurrent stream limit.");
@@ -181,7 +254,7 @@ public sealed class ReverseTunnelSession
 
         var streamId = Interlocked.Increment(ref nextStreamId);
         var startedAt = Stopwatch.GetTimestamp();
-        var pendingInvocation = new PendingInvocation(request.ServiceKey, AgentId, startedAt, Math.Max(16, maxFramePayloadBytes / 1024));
+        var pendingInvocation = new PendingInvocation(request.ServiceKey, AgentId, startedAt, Math.Max(16, limits.MaxFramePayloadBytes / 1024));
         if (!pendingInvocations.TryAdd(streamId, pendingInvocation))
         {
             concurrentStreamSlots.Release();
@@ -251,13 +324,14 @@ public sealed class ReverseTunnelSession
         }
 
         await using var contentStream = await content.ReadAsStreamAsync(cancellationToken);
-        var buffer = new byte[maxFramePayloadBytes];
+        var limits = limitsAccessor();
+        var buffer = new byte[limits.MaxFramePayloadBytes];
         long totalBytes = 0;
         int read;
         while ((read = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
         {
             totalBytes += read;
-            if (totalBytes > maxRequestBodyBytes)
+            if (totalBytes > limits.MaxRequestBodyBytes)
             {
                 throw new ReverseTunnelHttpLimitExceededException("request_body_too_large", "Reverse tunnel request body exceeds the configured Gateway limit.");
             }
@@ -285,6 +359,68 @@ public sealed class ReverseTunnelSession
         await outboundFrames.Writer.WriteAsync(frame, cancellationToken);
     }
 
+    /// <summary>
+    /// <para>zh-cn:向 Agent 下发配置快照并等待 ACK 或 Reject。超时只结束本次下发，不会中断现有业务流。</para>
+    /// <para>en-us:Sends a configuration snapshot and waits for ACK or Reject. A timeout ends only this push attempt and does not interrupt existing business streams.</para>
+    /// </summary>
+    internal async Task<ReverseTunnelAgentConfigurationResult> PushConfigurationAsync(
+        ReverseTunnelAgentConfigurationSnapshot snapshot,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        Interlocked.Exchange(ref desiredConfigurationVersion, snapshot.Version);
+        Volatile.Write(ref configurationDeliveryStatus, "pending");
+        Volatile.Write(ref configurationDeliveryFailureReason, null);
+        Interlocked.Exchange(ref configurationDeliveryAtUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
+        var completion = new TaskCompletionSource<ReverseTunnelAgentConfigurationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!configurationOffers.TryAdd(snapshot.Version, completion))
+        {
+            return new ReverseTunnelAgentConfigurationResult
+            {
+                Version = snapshot.Version,
+                AgentId = AgentId,
+                Accepted = false,
+                FailureReason = "A configuration push with the same version is already pending."
+            };
+        }
+
+        try
+        {
+            await EnqueueAsync(new TunnelFrameMessage
+            {
+                ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                SessionId = SessionId,
+                StreamId = 0,
+                Kind = TunnelFrameKindMessage.ConfigurationOffer,
+                Payload = ByteString.CopyFrom(System.Text.Encoding.UTF8.GetBytes(
+                    ReverseTunnelAgentConfigurationSnapshotSerializer.Serialize(snapshot)))
+            }, cancellationToken);
+
+            using var timeoutCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCancellation.CancelAfter(timeout);
+            try
+            {
+                return await completion.Task.WaitAsync(timeoutCancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                var timeoutResult = new ReverseTunnelAgentConfigurationResult
+                {
+                    Version = snapshot.Version,
+                    AgentId = AgentId,
+                    Accepted = false,
+                    FailureReason = "Agent did not acknowledge the configuration before the timeout."
+                };
+                MarkConfigurationResult(timeoutResult);
+                return timeoutResult;
+            }
+        }
+        finally
+        {
+            configurationOffers.TryRemove(snapshot.Version, out _);
+        }
+    }
+
     internal void CompleteOutbound(Exception? exception = null)
     {
         outboundFrames.Writer.TryComplete(exception);
@@ -302,6 +438,25 @@ public sealed class ReverseTunnelSession
     internal async Task HandleInboundFrameAsync(TunnelFrameMessage frame, CancellationToken cancellationToken)
     {
         Touch(DateTimeOffset.UtcNow);
+        if (frame.Kind is TunnelFrameKindMessage.ConfigurationAck or TunnelFrameKindMessage.ConfigurationReject)
+        {
+            try
+            {
+                var result = System.Text.Json.JsonSerializer.Deserialize<ReverseTunnelAgentConfigurationResult>(frame.Payload.Span);
+                if (result is not null && configurationOffers.TryGetValue(result.Version, out var completion))
+                {
+                    result.Accepted = frame.Kind == TunnelFrameKindMessage.ConfigurationAck && result.Accepted;
+                    MarkConfigurationResult(result);
+                    completion.TrySetResult(result);
+                }
+            }
+            catch
+            {
+            }
+
+            return;
+        }
+
         if (frame.StreamId <= 0)
         {
             return;
@@ -337,7 +492,7 @@ public sealed class ReverseTunnelSession
                     break;
                 case TunnelFrameKindMessage.ResponseBody:
                     var responseBytes = Interlocked.Add(ref pendingInvocation.ResponseBytes, frame.Payload.Length);
-                    if (responseBytes > maxResponseBodyBytes)
+                    if (responseBytes > limitsAccessor().MaxResponseBodyBytes)
                     {
                         pendingInvocation.Body.Writer.TryComplete(new InvalidOperationException("Reverse tunnel response body exceeds the configured Gateway limit."));
                         CompleteInvocationWithFailure(frame.StreamId, pendingInvocation, "response_body_too_large", "Reverse tunnel response body exceeds the configured Gateway limit.");
@@ -372,6 +527,31 @@ public sealed class ReverseTunnelSession
             pendingInvocation.Body.Writer.TryComplete(exception);
             CompleteInvocationWithFailure(frame.StreamId, pendingInvocation, "invalid_agent_response", exception.Message);
         }
+    }
+
+    internal void MarkConfigurationOffer(long version)
+    {
+        Interlocked.Exchange(ref desiredConfigurationVersion, version);
+        Volatile.Write(ref configurationDeliveryStatus, "pending");
+        Volatile.Write(ref configurationDeliveryFailureReason, null);
+        Interlocked.Exchange(ref configurationDeliveryAtUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
+    }
+
+    private void MarkConfigurationResult(ReverseTunnelAgentConfigurationResult result)
+    {
+        if (result.Accepted)
+        {
+            Interlocked.Exchange(ref configurationVersion, Math.Max(ConfigurationVersion, result.Version));
+            Volatile.Write(ref configurationDeliveryStatus, "acknowledged");
+            Volatile.Write(ref configurationDeliveryFailureReason, null);
+        }
+        else
+        {
+            Volatile.Write(ref configurationDeliveryStatus, "rejected");
+            Volatile.Write(ref configurationDeliveryFailureReason, result.FailureReason);
+        }
+
+        Interlocked.Exchange(ref configurationDeliveryAtUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
     }
 
     private async Task SendCancelAsync(long streamId)
@@ -486,6 +666,7 @@ public sealed class ReverseTunnelSession
             }
 
             ReverseTunnelMetrics.RequestBodyBytes(serviceKey, AgentId, chunk.Length);
+            var maxFramePayloadBytes = limitsAccessor().MaxFramePayloadBytes;
             for (var offset = 0; offset < chunk.Length; offset += maxFramePayloadBytes)
             {
                 var count = Math.Min(maxFramePayloadBytes, chunk.Length - offset);

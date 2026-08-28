@@ -1,0 +1,14 @@
+{
+  "ReverseTunnelSettings": {
+    "Tcp": {
+      "Enabled": true,
+      "Listeners": [
+        
+      ]
+    },
+    "Udp": {
+      "Enabled": false,
+      "Listeners": []
+    }
+  }
+}

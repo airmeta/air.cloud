@@ -14,7 +14,7 @@ public sealed class ReverseTunnelAgentAuthorizationOptions
 
     /// <summary>
     /// <para>zh-cn:该 Agent 允许在 Hello 帧中声明的 ServiceKey 集合。为空时该授权项无效，校验器会在 Server 角色启用时拒绝配置。</para>
-    /// <para>en-us:ServiceKeys this Agent may declare in the Hello frame. An empty collection makes the authorization entry invalid and is rejected by the validator when the Server role is enabled.</para>
+    /// <para>en-us:ServiceKeys this Agent may declare in the Hello frame. An empty collection makes the authorization entry invalid and is rejected by the validator when Server mode is enabled.</para>
     /// </summary>
     public List<string> AllowedServiceKeys { get; set; } = [];
 

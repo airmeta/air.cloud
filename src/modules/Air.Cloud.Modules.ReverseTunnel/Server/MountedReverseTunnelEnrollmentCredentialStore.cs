@@ -1,4 +1,5 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Enrollment;
 
 using Microsoft.Extensions.Options;
 
@@ -66,8 +67,41 @@ public sealed class MountedReverseTunnelEnrollmentCredentialStore : IReverseTunn
             return false;
         }
 
-        var expectedCredential = File.ReadAllText(credentialPath, Encoding.UTF8).Trim();
-        if (!FixedTimeEquals(expectedCredential, credential.Trim()))
+        var storedTokenText = File.ReadAllText(credentialPath, Encoding.UTF8).Trim();
+        var providedTokenText = credential.Trim();
+        try
+        {
+            var storedToken = ReverseTunnelEnrollmentToken.Parse(storedTokenText);
+            var providedToken = ReverseTunnelEnrollmentToken.Parse(providedTokenText);
+
+            if (!string.IsNullOrWhiteSpace(storedToken.AgentId) &&
+                !string.Equals(storedToken.AgentId, agentId.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                failureReason = "Enrollment credential is bound to a different AgentId.";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(providedToken.AgentId) &&
+                !string.Equals(providedToken.AgentId, agentId.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                failureReason = "Enrollment credential is bound to a different AgentId.";
+                return false;
+            }
+
+            if (storedToken.ExpiresAtUtc is { } storedExpiresAtUtc &&
+                storedExpiresAtUtc <= DateTimeOffset.UtcNow)
+            {
+                failureReason = "Enrollment credential has expired.";
+                return false;
+            }
+
+            if (!FixedTimeEquals(storedToken.Credential, providedToken.Credential))
+            {
+                failureReason = "Enrollment credential is invalid.";
+                return false;
+            }
+        }
+        catch (ArgumentException)
         {
             failureReason = "Enrollment credential is invalid.";
             return false;

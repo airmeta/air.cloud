@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/AirTunnel/">
+    <Project Path="air.cloud.airtunnel/air.cloud.airtunnel.csproj" />
+  </Folder>
+</Solution>

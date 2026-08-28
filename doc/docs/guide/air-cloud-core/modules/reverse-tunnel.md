@@ -1,6 +1,8 @@
 # 网络穿透（AirTunnel）模块
 
-`Air.Cloud.Modules.ReverseTunnel` 是 Air.Cloud 的 HTTP 网络穿透模块，产品能力名称为 AirTunnel。本文提供接入、配置、验证和运行参考；能力边界与拓扑概览见[网络穿透概览](/guide/network-tunnel/)。
+`Air.Cloud.Modules.ReverseTunnel` 是 Air.Cloud 的网络穿透模块，产品能力名称为 AirTunnel。它既可以作为类库接入现有 Gateway 或其它 HTTP Web 应用，也可以通过 `demo/airTunnel` 作为独立产品宿主运行。本文提供接入、配置、验证和运行参考；能力边界与拓扑概览见[网络穿透概览](/guide/network-tunnel/)。
+
+> 当前路由模型已切换为 Agent 配置驱动：HTTP 使用 `LocalServices[].PublicPath`，TCP/UDP 使用 `ServerListenHost/ServerListenPort`，`ServiceKey` 在保存时由系统计算 MD5。Gateway 在 Ocelot 之前按公开路径匹配并转发。旧的 `Routes`、`VirtualHost`、手工 `ServiceKey` 和 `ReverseTunnelDelegatingHandler` 配置不再读取，本文后续如出现旧字段均视为历史说明。
 
 ---
 
@@ -63,7 +65,7 @@ A 环境 Gateway
 
 - Agent 可以访问 AirTunnel Server。
 - Agent 的 `LocalServices` 指向目标环境中实际可访问的 HTTP 地址。
-- Gateway 路由中的虚拟下游主机能匹配 `ReverseTunnelSettings:Routes`。
+- Gateway 能读取 Server 保存的 Agent 路由目录，并按 `PublicPath` 匹配请求。
 - 业务服务使用的配置、数据库、鉴权和服务发现来源符合该环境要求。
 
 ### 与 DynamicApp 的关系
@@ -83,6 +85,17 @@ DynamicApp 可以部署在 AirTunnel 链路任意一侧，也可以完全不使�
 
 AirTunnel 使用 gRPC 双向流建立 Server 与 Agent 之间的长连接。Agent 主动连接 Server，Server 通过会话表把 Gateway 请求发送给可处理目标 `ServiceKey` 的 Agent。
 
+AirTunnel 支持两种宿主形态：
+
+- 产品形态：直接运行 `demo/airTunnel`，把 AirTunnel 当作独立网络隧道程序部署。
+- 类库形态：在现有 Gateway 或其它 HTTP Web 应用中引用 `Air.Cloud.Modules.ReverseTunnel`，由该 Web 应用内嵌承载 Server、Agent 或 Ocelot handler。
+
+独立产品宿主位于：
+
+```text
+demo/airTunnel
+```
+
 ### 注册模块
 
 在需要使用 AirTunnel 的宿主服务中注册模块：
@@ -93,25 +106,52 @@ services.AddReverseTunnel();
 
 该注册会加入配置绑定、路由解析、会话注册表、证书控制面、Agent 出站连接客户端、本地 HTTP 分发器和 Gateway 调用器。
 
-`AddReverseTunnel()` 只注册服务，不会自动开放 gRPC endpoint，也不会自动接管 Ocelot 路由。Server endpoint 和 Ocelot handler 都必须由宿主显式配置。
+`AddReverseTunnel()` 只注册服务，不会自动开放 gRPC endpoint，也不会自动接管 Ocelot 路由。Server endpoint、Gateway 远程调用入口和 Ocelot handler 都必须由宿主显式配置。
 
 ### Server 侧配置
 
-Server 侧负责接收 Agent 连接和管理 Agent 证书。典型宿主配置：
+### 管理页面的结构化配置
+
+启用 AirTunnel 管理端后，ControlPlaneAuth 中的 AirTunnel 管理页面会以结构化表单展示 `ReverseTunnelSettings`。对象会按配置分组展开，数组支持新增、删除和逐项编辑；布尔值使用下拉框，数字值使用数字输入框，避免直接编辑 JSON 时破坏层级或类型。
+
+点击“保存配置”后必须在弹框中填写变更原因，页面才会发送保存请求。操作人由管理端统一记录为 `management-page`，变更原因写入配置审计记录。字段旁的“需重启”标记表示该字段由启动阶段绑定、监听器或证书材料决定，保存后需要重启宿主；显示“保存后生效”的字段使用运行期配置访问器，保存后即可影响新请求或下一轮后台循环。
+
+保存前可以点击“校验配置”检查服务端约束。校验和保存都使用与原 JSON 编辑器相同的 `/config/validate` 与 `/config` API，因此不会改变配置文件拆分、备份和审计行为。
+
+Server 侧负责接收 Agent 连接、接收入口 Gateway 的远程调用、管理 Agent 证书，并按 TCP/UDP 配置绑定穿透监听端口。产品宿主配置示例见：
+
+```text
+demo/airTunnel/air.cloud.airtunnel/appsettings.Server.example.json
+```
+
+如果在自定义宿主中注册 Server endpoint，典型配置为：
 
 ```csharp
 app.UseRouting();
 app.UseReverseTunnelServer();
 ```
 
+Server gRPC 入口使用 mTLS 校验 Agent 身份。宿主使用 Kestrel 暴露 HTTPS 时，必须允许接收客户端证书；否则 Agent 已携带证书也无法在 Server 侧完成会话注册：
+
+```csharp
+services.Configure<KestrelServerOptions>(options =>
+{
+    options.ConfigureHttpsDefaults(httpsOptions =>
+    {
+        httpsOptions.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
+        httpsOptions.ClientCertificateValidation = (_, _, _) => true;
+    });
+});
+```
+
 映射 Server endpoint 时会检查：
 
 - `ReverseTunnelSettings:Enabled=true`。
-- `ReverseTunnelSettings:Roles` 包含 `Server`。
+- `ReverseTunnelSettings:TunnelMode` 配置为 `Server`。
 - CA PFX 挂载文件存在。
 - CA PFX 密码环境变量存在且有值。
 - CA PFX 可加载并包含私钥。
-- 如果 `Enrollment.Enabled=true`，Enrollment 凭据目录存在。
+- 如果 `Enrollment.Enabled=true`，Server CA PFX 可加载且 `ReplayWindowSeconds` 配置有效。
 
 Server 公开的 gRPC 服务：
 
@@ -121,9 +161,21 @@ Server 公开的 gRPC 服务：
 | `ReverseTunnelCertificateManagement.Renew` | Agent 使用当前 mTLS 证书续签 |
 | `ReverseTunnelEnrollment.Enroll` | Agent 使用一次性凭据申请首张证书；仅在 `Enrollment.Enabled=true` 时映射 |
 
+Server 同时公开 Gateway 远程调用入口，默认路径为：
+
+```text
+/_airtunnel/gateway/{serviceKey}/{**path}
+```
+
+入口 Gateway 命中 Ocelot 隧道路由后，会把原始 HTTP method、path、query、headers 和 body 转发到该入口。Server 根据 `{serviceKey}` 从当前进程会话表选择 Agent，再复用已有 AirTunnel HTTP 帧协议转发到后端环境。
+
 ### Agent 侧配置
 
-当 `ReverseTunnelSettings:Enabled=true` 且 `Roles` 包含 `Agent` 时，宿主进程内的 `ReverseTunnelAgentHostedService` 会启动 Agent 出站连接循环。
+当 `ReverseTunnelSettings:Enabled=true` 且 `TunnelMode=Agent` 时，宿主进程内的 `ReverseTunnelAgentHostedService` 会启动 Agent 出站连接循环。产品宿主配置示例见：
+
+```text
+demo/airTunnel/air.cloud.airtunnel/appsettings.Agent.example.json
+```
 
 `AgentConnectionCount` 控制单个 Agent 进程向 Server 建立的物理隧道连接数量。默认值为 `1`。调高后仍使用同一个 `AgentId` 和同一套 mTLS 证书作为安全身份，但每条物理连接会在 Server 侧注册为独立会话。入口侧将 `SessionSelectionStrategy` 设置为 `RoundRobin` 时，可以在单 Gateway/Server 进程内把同一个 `ServiceKey` 的请求分摊到这些连接上。
 
@@ -133,7 +185,7 @@ Agent 连接流程：
 2. 如果证书不存在，且配置了 Enrollment 凭据文件，则向 Server 申请首张证书。
 3. 如果证书进入续签窗口，则向 Server 申请续签证书。
 4. 使用 `ServerAddress` 打开 gRPC 双向流。
-5. 发送 Hello 帧，携带 `AgentId` 和 `LocalServices.ServiceKey` 集合。
+5. 发送 Hello 帧，携带 `AgentId` 和系统根据公开路由生成的 `ServiceKey` 集合。
 6. 按 `HeartbeatIntervalSeconds` 周期发送 Ping。
 7. 接收 Server 下发的 HTTP 请求帧。
 8. 按 `LocalServices` 分发到本地 HTTP 服务。
@@ -158,19 +210,17 @@ Agent 只允许把请求分发到 `ReverseTunnelSettings:LocalServices` 声明�
 
 ### ServiceKey 约定
 
-`ServiceKey` 是 Gateway、Server 和 Agent 之间的逻辑服务标识。
+`ServiceKey` 是 Gateway、Server 和 Agent 之间的内部服务标识，不由用户配置。HTTP 由 `MD5("http:" + PublicPath)` 生成；TCP 和 UDP 分别由 `MD5("tcp://ServerListenHost:ServerListenPort")`、`MD5("udp://ServerListenHost:ServerListenPort")` 生成。Server 侧只使用 Agent 配置目录中的派生结果，`AgentAuthorizations` 如启用也必须填写对应生成值。
 
-- Gateway 侧 `Routes[].ServiceKey` 表示某个虚拟下游主机要转发到哪个逻辑服务。
-- Agent 侧 `LocalServices[].ServiceKey` 表示本 Agent 可以代理哪个逻辑服务。
-- Server 侧 `AgentAuthorizations` 可以限制某个 Agent 允许声明的 `ServiceKey`。
+多个 Agent 可以声明同一个 `ServiceKey`。Server 默认选择最近活跃的会话；如需改变行为，可通过 `ReverseTunnelSettings:SessionSelectionStrategy` 设置为 `NewestActive`、`OldestActive` 或 `RoundRobin`。`RoundRobin` 只在当前 Server 进程内轮询，不是跨 Server 进程全局负载均衡。
 
-多个 Agent 可以声明同一个 `ServiceKey`。Server 默认选择最近活跃的会话；如需改变行为，可通过 `ReverseTunnelSettings:SessionSelectionStrategy` 设置为 `NewestActive`、`OldestActive` 或 `RoundRobin`。`RoundRobin` 只在当前 Gateway/Server 进程内轮询，不是跨进程全局负载均衡。
-
-建议使用稳定、可读、与部署地址无关的名称，例如 `order-service`、`payment-api`、`customer-gateway`。不要把 IP、端口、临时机器名或环境私有路径写入 `ServiceKey`。
+服务展示名称请填写在 `ServiceName`；不要把 IP、端口或临时机器名写入可维护配置中的内部键。
 
 ---
 
-## Ocelot 隧道接入
+## Ocelot 隧道接入（历史说明）
+
+本节保留旧版 Ocelot handler 的背景资料，仅用于理解历史部署；新部署不要按本节配置。当前 Gateway 应使用 `UseReverseTunnelGateway()`，由 Agent 配置目录按 `PublicPath` 直接匹配，Ocelot 不再注册隧道 handler。
 
 Ocelot 隧道接入用于把 AirTunnel 接入到已有 Ocelot Gateway 链路中。入口环境的 Ocelot Gateway 负责接收外部请求并选择是否进入 AirTunnel；后端环境的 Ocelot Gateway 负责在请求穿透后继续按本环境的 Ocelot、Consul、鉴权、白名单和服务治理规则转发到业务服务。
 
@@ -199,14 +249,14 @@ Ocelot 隧道接入主要用于多个网络环境下的 HTTP 请求协同运行�
   -> 后端业务服务
 ```
 
-后端环境的 Agent 可以是独立宿主进程，也可以内置在后端 Ocelot Gateway 进程中。Agent 内置在后端 Gateway 时，Agent 把穿透请求交给后端 Gateway，再由后端 Gateway 按已有 Ocelot 路由寻址业务服务。
+后端环境的 Agent 可以使用 `demo/airTunnel` 独立运行，也可以以内嵌库方式运行在后端 Web/Gateway 进程中。Agent 可以把 `LocalServices` 指向后端 Ocelot Gateway，也可以直接指向后端业务服务。指向后端 Gateway 时，Agent 把穿透请求交给后端 Gateway，再由后端 Gateway 按已有 Ocelot 路由寻址业务服务。
 
 ### 入口 Gateway 配置
 
 入口 Gateway 负责两个动作：
 
-1. 暴露 AirTunnel Server，接收后端 Agent 主动连接。
-2. 在命中指定 Ocelot 路由时，把请求送入 AirTunnel。
+1. 注册 `ReverseTunnelDelegatingHandler`。
+2. 在命中指定 Ocelot 路由时，把请求送入 AirTunnel。Server 可以与 Gateway 同进程承载，也可以由独立 `demo/airTunnel` 进程承载。
 
 #### 注册 Ocelot Handler
 
@@ -245,18 +295,18 @@ AirTunnel 路由使用“虚拟下游主机”作为稳定路由键。该地址�
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Server, Gateway",
+    "TunnelMode": "None",
+    "EnableTunnelProxy": true,
+    "Gateway": {
+      "RemoteServerAddress": "https://airtunnel-server.example.com:18443",
+      "InvokePathPrefix": "/_airtunnel/gateway",
+      "AccessTokenEnvironmentVariable": "AIR_TUNNEL_GATEWAY_TOKEN"
+    },
     "Routes": [
       {
         "VirtualHost": "tunnel-branch-gateway",
         "ServiceKey": "branch-gateway",
         "TimeoutSeconds": 30
-      }
-    ],
-    "AgentAuthorizations": [
-      {
-        "AgentId": "branch-gateway-agent",
-        "AllowedServiceKeys": [ "branch-gateway" ]
       }
     ]
   }
@@ -265,24 +315,22 @@ AirTunnel 路由使用“虚拟下游主机”作为稳定路由键。该地址�
 
 `VirtualHost` 必须与入口 Ocelot 路由中的虚拟下游主机一致。`ServiceKey` 是入口 Gateway、AirTunnel Server 和后端 Agent 之间的逻辑服务标识。
 
-Server 侧还需要配置 CA、证书签发、Enrollment 或 Agent 证书材料。证书与密钥配置方式见[配置与安全](../config-security.md)。
+Server 侧还需要配置 `TunnelMode=Server`、CA、证书签发、Enrollment 和 Agent 授权；如果 Server 与 Gateway 同进程，再设置 `EnableTunnelProxy=true`。TCP/UDP 对外 listener 不再在 Server 配置页重复维护，而是从 Agent 配置中的 `Tcp.LocalServices`、`Udp.LocalServices` 自动派生。Server 可以由当前 Gateway 进程以内嵌库方式承载，也可以由 `demo/airTunnel` 独立产品进程承载。证书与密钥配置方式见[配置与安全](../config-security.md)。
 
 ### 后端 Gateway 配置
 
-后端 Gateway 负责两个动作：
+后端 Gateway 只负责本环境内的 HTTP 路由治理。Agent 可以把 `LocalServices` 指向后端 Gateway 地址；请求到达后端 Gateway 后，再由后端 Gateway 按已有 Ocelot、Consul、鉴权、白名单和插件规则转发到业务服务。
 
-1. 作为 Agent 主动连接入口 AirTunnel Server。
-2. 接收 Agent 转交的 HTTP 请求，并继续按后端 Ocelot 路由转发到业务服务。
+#### 启动 Agent
 
-#### 启用 Agent
-
-后端 Gateway 内启用 Agent 角色，并把 `LocalServices.LocalAddress` 指向后端 Gateway 自己可访问的 HTTP 监听地址：
+在后端环境启动 AirTunnel Agent，并把 `LocalServices.LocalAddress` 指向后端 Gateway 可访问的 HTTP 监听地址。Agent 可以来自 `demo/airTunnel` 独立产品，也可以来自内嵌库的 Web/Gateway 宿主：
 
 ```json
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Agent",
+    "TunnelMode": "Agent",
+    "EnableTunnelProxy": false,
     "AgentId": "branch-gateway-agent",
     "ServerAddress": "https://air-tunnel.example.com",
     "LocalServices": [
@@ -295,7 +343,7 @@ Server 侧还需要配置 CA、证书签发、Enrollment 或 Agent 证书材料�
 }
 ```
 
-如果 Agent 与后端 Gateway 运行在同一进程，`LocalAddress` 应填写该进程对 Agent 可访问的 Gateway HTTP 地址。该地址只在后端环境内部使用，不暴露给入口环境。
+`LocalAddress` 只在后端环境内部使用，不暴露给入口环境。它可以是后端 Gateway 地址，也可以是具体业务服务地址；选择后端 Gateway 时，后续寻址继续由后端 Gateway 的 Ocelot 配置负责。
 
 #### 配置后端 Ocelot 路由
 
@@ -318,9 +366,9 @@ Server 侧还需要配置 CA、证书签发、Enrollment 或 Agent 证书材料�
 ### 运行时行为
 
 - 未声明 `ReverseTunnelDelegatingHandler` 的路由继续走 Ocelot 原有下游链路。
-- 声明 handler 但未命中 `ReverseTunnelSettings:Routes` 的路由继续走 Ocelot 原有下游链路。
-- 命中 AirTunnel 路由后，不访问虚拟下游地址，而是由 `IReverseTunnelInvoker` 发送隧道帧给 Agent。
-- 当前 Gateway 进程没有可处理该 `ServiceKey` 的 Agent 会话时，返回 `503 ServiceUnavailable`。
+- 声明 handler 但未命中 `ReverseTunnelSettings:Routes` 的路由继续走 Ocelot 原有下游链路；如果 Ocelot 当前 `HttpRequestMessage.Content` 为空，而原始 ASP.NET Core 请求仍携带请求体，handler 会先恢复请求体和 `Content-Type`，再回落到普通下游链路，避免入口 Gateway 代理普通 POST 请求时丢失 body。
+- 命中 AirTunnel 路由后，不访问虚拟下游地址，而是由 `IReverseTunnelInvoker` 使用当前进程内会话表，或按 `Gateway.RemoteServerAddress` 调用独立 AirTunnel Server。
+- 当前 Server 进程没有可处理该 `ServiceKey` 的 Agent 会话时，返回 `503 ServiceUnavailable`。
 - Agent 调用超时时返回 `504 GatewayTimeout`。
 - Agent 返回错误帧时按错误类型返回 `502`、`503`、`413` 或 `429`。
 - 请求体超过 `MaxRequestBodyBytes` 时，返回 `413 RequestEntityTooLarge`。
@@ -353,17 +401,18 @@ Server 侧还需要配置 CA、证书签发、Enrollment 或 Agent 证书材料�
 
 ## 配置与安全
 
-AirTunnel 配置节为 `ReverseTunnelSettings`。模块默认禁用，必须显式设置 `Enabled=true` 和对应 `Roles` 后才会建立连接或处理 Gateway 路由。
+AirTunnel 配置节为 `ReverseTunnelSettings`。模块默认禁用；启用 Server/Agent 连接端时设置 `TunnelMode`，是否拦截 Gateway 动态路由由 `EnableTunnelProxy` 单独控制。
 
 ### 最小配置
 
-Server + Gateway 侧：
+Server 侧：
 
 ```json
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Server, Gateway",
+    "TunnelMode": "Server",
+    "EnableTunnelProxy": false,
     "HeartbeatIntervalSeconds": 15,
     "SessionIdleTimeoutSeconds": 45,
     "MaxConcurrentStreams": 128,
@@ -372,6 +421,10 @@ Server + Gateway 侧：
     "MaxFramePayloadBytes": 65536,
     "OutboundFrameQueueCapacity": 1024,
     "SessionSelectionStrategy": "NewestActive",
+    "Gateway": {
+      "InvokePathPrefix": "/_airtunnel/gateway",
+      "AccessTokenEnvironmentVariable": "AIR_TUNNEL_GATEWAY_TOKEN"
+    },
     "CertificateAuthority": {
       "CertificatePath": "/mnt/secrets/airtunnel/ca.pfx",
       "CertificatePasswordEnvironmentVariable": "AIRTUNNEL_CA_PASSWORD",
@@ -380,17 +433,34 @@ Server + Gateway 侧：
       "RenewalWindowDays": 7,
       "RenewalOverlapHours": 24
     },
+    "AgentAuthorizations": [
+      {
+        "AgentId": "agent-order",
+        "AllowedServiceKeys": [ "order-service" ]
+      }
+    ]
+  }
+}
+```
+
+入口 Gateway 侧：
+
+```json
+{
+  "ReverseTunnelSettings": {
+    "Enabled": true,
+    "TunnelMode": "None",
+    "EnableTunnelProxy": true,
+    "Gateway": {
+      "RemoteServerAddress": "https://air-tunnel.example.com",
+      "InvokePathPrefix": "/_airtunnel/gateway",
+      "AccessTokenEnvironmentVariable": "AIR_TUNNEL_GATEWAY_TOKEN"
+    },
     "Routes": [
       {
         "VirtualHost": "tunnel-order-service",
         "ServiceKey": "order-service",
         "TimeoutSeconds": 30
-      }
-    ],
-    "AgentAuthorizations": [
-      {
-        "AgentId": "agent-order",
-        "AllowedServiceKeys": [ "order-service" ]
       }
     ]
   }
@@ -403,7 +473,8 @@ Agent 侧：
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Agent",
+    "TunnelMode": "Agent",
+    "EnableTunnelProxy": false,
     "AgentId": "agent-order",
     "ServerAddress": "https://air-tunnel.example.com",
     "AgentConnectionCount": 1,
@@ -423,23 +494,51 @@ Agent 侧：
       "CertificatePath": "/var/lib/air-cloud/airtunnel/agent.cer",
       "PrivateKeyPath": "/var/lib/air-cloud/airtunnel/agent.key",
       "TrustedIssuerPath": "/var/lib/air-cloud/airtunnel/ca.cer",
-      "EnrollmentCredentialPath": "/mnt/secrets/airtunnel/enrollment.token",
       "PrivateKeySizeBits": 2048
     }
   }
 }
 ```
 
-示例中的域名、路径和服务名需要替换为实际部署值。不要把私钥、证书内容、CA 密码或 Enrollment token 明文写入普通配置文件、数据库或 Consul。
+示例中的域名、路径和服务名需要替换为实际部署值。首次 Enrollment 使用 `TrustedIssuerPath` 对应 CA 公钥加密随机 GUID，Server 使用同一 CA PFX 私钥解密并防重放。不要把私钥、证书内容或 CA 密码写入普通配置文件、数据库或 Consul。
+
+### Agent 配置派生 Server 路由
+
+HTTP `LocalServices` 现在以 Agent 配置为唯一配置入口。Server 会从挂载目录中的 Agent 目标配置快照汇总服务，并自动生成只读路由索引，因此 Server 配置页不再需要重复维护 HTTP `LocalServices`。
+
+当 Agent 的 `LocalServices` 中出现以下配置时：
+
+```json
+{
+  "ServiceKey": "order-service",
+  "LocalAddress": "http://127.0.0.1:6101"
+}
+```
+
+Server 会自动生成：
+
+```text
+VirtualHost: tunnel-order-service
+ServiceKey: order-service
+TimeoutSeconds: 30
+```
+
+如果该 Agent 配置同时包含同一 `ServiceKey` 的 `Routes` 项，则使用其中的 `VirtualHost` 和 `TimeoutSeconds`，否则使用 `tunnel-{ServiceKey}` 和 30 秒默认值。多个 Agent 可以声明同一个 `ServiceKey`，Server 只生成一个逻辑入口，实际连接仍由 `SessionSelectionStrategy` 选择。
+
+Agent 配置保存成功后，Server 会立即刷新派生索引；Server 重启时会从 `Management.ConfigDirectory` 下的 Agent 配置快照恢复。管理总览中的“Agent 派生路由”区域可用于确认当前索引。
 
 ### 配置项说明
 
 | 配置项 | 作用 |
 | --- | --- |
 | `Enabled` | 是否启用模块，默认 `false` |
-| `Roles` | 当前进程角色，可组合 `Server`、`Gateway`、`Agent` |
+| `TunnelMode` | 连接端模式：Server 接收 Agent，Agent 主动连接 Server；`None` 仅用于管理或独立远程 Gateway |
+| `EnableTunnelProxy` | 是否由当前 Gateway 进程在 Ocelot 之前拦截动态隧道路由 |
 | `AgentId` | Agent 稳定身份，必须与证书身份匹配 |
 | `ServerAddress` | Agent 主动连接的 Server 地址 |
+| `Gateway.RemoteServerAddress` | 入口 Gateway 调用独立 AirTunnel Server 的地址 |
+| `Gateway.InvokePathPrefix` | Gateway 到 Server 的 HTTP 调用入口前缀，默认 `/_airtunnel/gateway` |
+| `Gateway.AccessTokenEnvironmentVariable` | Gateway 到 Server 的可选访问令牌环境变量名 |
 | `AgentConnectionCount` | 单个 Agent 进程主动建立的物理隧道连接数，默认 `1`，范围 `1-64` |
 | `HeartbeatIntervalSeconds` | Agent 心跳间隔 |
 | `SessionIdleTimeoutSeconds` | Server 侧会话空闲摘除阈值 |
@@ -451,11 +550,13 @@ Agent 侧：
 | `SessionSelectionStrategy` | 多个 Agent 声明相同 `ServiceKey` 时的会话选择策略 |
 | `AgentReconnectInitialDelaySeconds` | Agent 重连初始等待秒数 |
 | `AgentReconnectMaxDelaySeconds` | Agent 重连最大退避秒数 |
-| `Routes` | Gateway 侧虚拟下游主机到 `ServiceKey` 的映射 |
-| `LocalServices` | Agent 侧 `ServiceKey` 到本地 HTTP 地址的映射 |
+| `Routes` | 兼容旧配置；Agent 配置包含同一 `ServiceKey` 的显式入口时可由 Agent 派生，Server 配置页不再编辑 HTTP 路由 |
+| `LocalServices` | Agent 侧 `ServiceKey` 到本地 HTTP 地址的唯一配置入口；Server 从 Agent 目标配置自动汇总 |
+| `Tcp.LocalServices` | Agent 侧 TCP 本地目标和 Server 对外 `ServerListenHost`/`ServerListenPort`；Server 自动派生 TCP listener |
+| `Udp.LocalServices` | Agent 侧 UDP 本地目标和 Server 对外 `ServerListenHost`/`ServerListenPort`；Server 自动派生 UDP listener |
 | `AgentAuthorizations` | Server 侧 Agent 可声明 `ServiceKey` 的授权规则 |
 | `CertificateAuthority` | Server 侧 CA 挂载路径和签发策略 |
-| `Enrollment` | Agent 首次注册或证书恢复的凭据目录 |
+| `Enrollment` | Agent 首次注册开关及加密 GUID replay 窗口 |
 | `AgentCertificate` | Agent 侧证书、私钥和信任 CA 的挂载路径 |
 | `Diagnostics` | 当前进程内诊断 HTTP API 和快照采集配置，默认关闭 |
 
@@ -606,7 +707,7 @@ app.UseReverseTunnelDiagnostics();
 
 ### 证书和凭据
 
-证书、私钥和一次性 Enrollment token 只应通过挂载磁盘或 Secret 管理。配置中只保存路径和环境变量名称。
+证书、私钥和 CA 密码只应通过挂载磁盘或 Secret 管理。配置中只保存路径和环境变量名称。
 
 不得写入配置中心的内容：
 
@@ -615,20 +716,11 @@ app.UseReverseTunnelDiagnostics();
 - CA PFX 密码。
 - Agent 私钥。
 - Agent 证书内容。
-- Enrollment token 明文。
 - 证书吊销状态明细。
 
 ### Enrollment
 
-`Enrollment` 用于新 Agent 首次申请证书，或失效 Agent 恢复证书。
-
-凭据文件名规则：
-
-```text
-sha256(lowercase(trim(agentId))) + CredentialFileExtension
-```
-
-文件内容是一次性 token 明文。`ConsumeOnUse=true` 时，token 验证成功后会被重命名为 `.used-{ticks}` 文件，防止重复签发。
+`Enrollment` 用于新 Agent 首次申请证书，或失效 Agent 恢复证书。Agent 从 `TrustedIssuerPath` 读取 Server CA 公钥，生成随机 GUID 并使用 RSA-OAEP-SHA256 加密；Server 使用同一 CA PFX 私钥解密，并在 `ReplayWindowSeconds` 窗口内拒绝重复 GUID。流程不需要 token 文件或凭据目录。
 
 ### 证书续签
 
@@ -672,16 +764,16 @@ AirTunnel 验证应从四个边界依次确认：Server endpoint、Agent 会话�
 确认 Server 进程已启动，并且配置满足：
 
 - `ReverseTunnelSettings:Enabled=true`。
-- `ReverseTunnelSettings:Roles` 包含 `Server`。
+- `ReverseTunnelSettings:TunnelMode` 配置为 `Server`。
 - `UseReverseTunnelServer()` 或 `MapReverseTunnelServer()` 已被调用。
 - CA PFX 文件可读，且密码环境变量存在。
-- 如果启用 Enrollment，凭据目录存在且 Server 进程可读写。
+- 如果启用 Enrollment，Server CA PFX 私钥可加载，且 `ReplayWindowSeconds` 在有效范围内。
 
 常见错误：
 
 | 现象 | 检查项 |
 | --- | --- |
-| Server 启动时报配置校验失败 | CA 文件路径、CA 密码环境变量、Enrollment 目录 |
+| Server 启动时报配置校验失败 | CA 文件路径、CA 密码环境变量、`Enrollment.Enabled` 和证书材料 |
 | Agent 连接返回 `Unauthenticated` | Agent 客户端证书是否由 Server 信任 CA 签发，证书 AgentId 是否匹配 |
 | Agent 连接返回 `PermissionDenied` | `AgentAuthorizations` 是否允许该 Agent 声明对应 `ServiceKey` |
 
@@ -695,7 +787,8 @@ Agent 侧配置至少应包含：
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Agent",
+    "TunnelMode": "Agent",
+    "EnableTunnelProxy": false,
     "AgentId": "agent-order",
     "ServerAddress": "https://air-tunnel.example.com",
     "LocalServices": [
@@ -736,7 +829,8 @@ Agent 侧配置至少应包含：
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Gateway",
+    "TunnelMode": "None",
+    "EnableTunnelProxy": true,
     "Routes": [
       {
         "VirtualHost": "tunnel-order-service",

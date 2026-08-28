@@ -1,0 +1,53 @@
+{
+  "Kestrel": {
+    "Endpoints": {
+      "GatewayHttp": {
+        "Url": "http://0.0.0.0:8080",
+        "Protocols": "Http1AndHttp2"
+      },
+      "AirTunnel": {
+        "Url": "https://0.0.0.0:18443",
+        "Protocols": "Http1AndHttp2",
+        "ClientCertificateMode": "AllowCertificate",
+        "Certificate": {
+          "Path": "/app/data/airtunnel/server.crt",
+          "KeyPath": "/app/data/airtunnel/server.key"
+        }
+      }
+    }
+  },
+  "ReverseTunnelSettings": {
+    "Enabled": true,
+    "TunnelMode": "Server",
+    "EnableTunnelProxy": true,
+    "SessionSelectionStrategy": "RoundRobin",
+    "MaxConcurrentStreams": 512,
+    "MaxRequestBodyBytes": 104857600,
+    "MaxResponseBodyBytes": 104857600,
+    "MaxFramePayloadBytes": 65536,
+    "Gateway": {
+      "InvokePathPrefix": "/_airtunnel/gateway",
+      "AccessTokenEnvironmentVariable": "AIR_TUNNEL_GATEWAY_TOKEN"
+    },
+    "CertificateAuthority": {
+      "CertificatePath": "/app/data/airtunnel/ca.pfx",
+      "TrustedIssuerPath": "/app/data/airtunnel/ca.crt",
+      "CertificatePasswordEnvironmentVariable": "AIR_TUNNEL_CA_PASSWORD",
+      "AgentCertificateLifetimeDays": 30,
+      "RenewalWindowDays": 7,
+      "RenewalOverlapHours": 24
+    },
+    "Enrollment": {
+      "Enabled": true,
+      "ReplayWindowSeconds": 300
+    },
+    "Diagnostics": {
+      "Enabled": true,
+      "PathPrefix": "/_airtunnel/diagnostics",
+      "SnapshotPeriodSeconds": 5
+    },
+    "Management": {
+      "Enabled": false
+    }
+  }
+}

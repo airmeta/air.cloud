@@ -1,0 +1,11 @@
+{
+  "ReverseTunnelSettings": {
+    "MaxConcurrentStreams": 512,
+    "MaxRequestBodyBytes": 104857600,
+    "MaxResponseBodyBytes": 104857600,
+    "MaxFramePayloadBytes": 65536,
+    "OutboundFrameQueueCapacity": 1024,
+    "AgentReconnectInitialDelaySeconds": 5,
+    "AgentReconnectMaxDelaySeconds": 60
+  }
+}

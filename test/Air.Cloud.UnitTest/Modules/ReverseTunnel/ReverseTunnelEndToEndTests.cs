@@ -5,6 +5,7 @@ using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Gateway;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
@@ -28,8 +29,8 @@ namespace Air.Cloud.UnitTest.Modules.ReverseTunnel;
 public sealed class ReverseTunnelEndToEndTests
 {
     /// <summary>
-    /// <para>zh-cn:验证 Ocelot opt-in handler 发起的请求可以经过 Gateway 调用器、Server 会话队列、Agent 帧处理器和本地 HTTP 分发器后返回响应。</para>
-    /// <para>en-us:Verifies that a request started by the Ocelot opt-in handler can flow through the Gateway invoker, Server session queue, Agent frame processor, and local HTTP dispatcher and return a response.</para>
+    /// <para>zh-cn:验证 Gateway 调用器发起的请求可以经过 Server 会话队列、Agent 帧处理器和本地 HTTP 分发器后返回响应。</para>
+    /// <para>en-us:Verifies that a request started by the Gateway invoker can flow through the Server session queue, Agent frame processor, and local HTTP dispatcher and return a response.</para>
     /// </summary>
     [Fact]
     public async Task Gateway_handler_should_complete_in_memory_tunnel_http_exchange()
@@ -49,18 +50,13 @@ public sealed class ReverseTunnelEndToEndTests
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var agentLoop = RunSingleAgentExchangeAsync(session, frameProcessor, timeout.Token);
         var invoker = new ReverseTunnelInvoker(registry, optionsAccessor);
-        using var handler = new ReverseTunnelDelegatingHandler(new ReverseTunnelRouteProvider(optionsAccessor), invoker, optionsAccessor)
-        {
-            InnerHandler = new StaticResponseHandler(HttpStatusCode.BadRequest)
-        };
-        using var client = new HttpMessageInvoker(handler);
         using var request = new HttpRequestMessage(HttpMethod.Post, "http://tunnel-order-service/api/orders?id=9")
         {
             Content = new StringContent("gateway-body", Encoding.UTF8, "application/json")
         };
         request.Headers.TryAddWithoutValidation("X-Trace-Id", "trace-e2e");
 
-        using var response = await client.SendAsync(request, timeout.Token);
+        using var response = await invoker.InvokeAsync(options.Routes[0], request, timeout.Token);
         await agentLoop;
         var responseBody = await response.Content!.ReadAsStringAsync(timeout.Token);
 
@@ -337,6 +333,123 @@ public sealed class ReverseTunnelEndToEndTests
         Assert.Equal(200, activity.GetTagItem("http.response.status_code"));
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证 Agent 接收配置下发后保存快照并立即更新运行期配置。</para>
+    /// <para>en-us:Verifies that the Agent persists an accepted configuration offer and updates runtime options immediately.</para>
+    /// </summary>
+    [Fact]
+    public async Task Agent_should_apply_and_persist_configuration_offer()
+    {
+        var options = CreateOptions();
+        options.AgentId = "agent-alpha";
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var startupOptions = Options.Create(options);
+        var runtimeOptions = new ReverseTunnelRuntimeOptionsAccessor(startupOptions);
+        var snapshotPath = Path.Combine(Path.GetTempPath(), "air-cloud-reverse-tunnel", Guid.NewGuid().ToString("N"), "agent.snapshot.json");
+        try
+        {
+            var store = new MountedReverseTunnelAgentConfigurationStore(Options.Create(new ReverseTunnelOptions
+            {
+                AgentId = "agent-alpha",
+                AgentCertificate = new ReverseTunnelAgentCertificateOptions
+                {
+                    CertificatePath = Path.Combine(Path.GetDirectoryName(snapshotPath)!, "agent.cer"),
+                    ConfigurationSnapshotPath = snapshotPath
+                }
+            }));
+            var processor = new ReverseTunnelAgentFrameProcessor(
+                new StreamingStartDispatcher(),
+                new NoopTcpDispatcher(),
+                new NoopUdpDispatcher(),
+                startupOptions,
+                runtimeOptions,
+                store);
+            var pushedConfiguration = ReverseTunnelOptionsCloner.CloneAndNormalize(options);
+            pushedConfiguration.MaxConcurrentStreams = 256;
+            pushedConfiguration.LocalServices[0].LocalAddress = "http://127.0.0.1:6101";
+            var snapshot = ReverseTunnelAgentConfigurationSnapshotSerializer.Create("agent-alpha", pushedConfiguration, 2);
+
+            var responses = await processor.ProcessAsync(CreateConfigurationOffer(snapshot));
+            var response = Assert.Single(responses);
+            Assert.Equal(TunnelFrameKindMessage.ConfigurationAck, response.Kind);
+            Assert.Equal(2, store.CurrentVersion);
+            Assert.Equal(256, runtimeOptions.Current.MaxConcurrentStreams);
+            Assert.Equal("http://127.0.0.1:6101", runtimeOptions.Current.LocalServices[0].LocalAddress);
+            Assert.True(File.Exists(snapshotPath));
+        }
+        finally
+        {
+            var directory = Path.GetDirectoryName(snapshotPath);
+            if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+            {
+                Directory.Delete(directory, true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证配置哈希不匹配时 Agent 拒绝下发并保留旧配置。</para>
+    /// <para>en-us:Verifies that a hash mismatch is rejected and the previous runtime configuration remains active.</para>
+    /// </summary>
+    [Fact]
+    public async Task Agent_should_reject_tampered_configuration_and_keep_previous_options()
+    {
+        var options = CreateOptions();
+        options.AgentId = "agent-alpha";
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var startupOptions = Options.Create(options);
+        var runtimeOptions = new ReverseTunnelRuntimeOptionsAccessor(startupOptions);
+        var snapshotPath = Path.Combine(Path.GetTempPath(), "air-cloud-reverse-tunnel", Guid.NewGuid().ToString("N"), "agent.snapshot.json");
+        try
+        {
+            var store = new MountedReverseTunnelAgentConfigurationStore(Options.Create(new ReverseTunnelOptions
+            {
+                AgentId = "agent-alpha",
+                AgentCertificate = new ReverseTunnelAgentCertificateOptions
+                {
+                    CertificatePath = Path.Combine(Path.GetDirectoryName(snapshotPath)!, "agent.cer"),
+                    ConfigurationSnapshotPath = snapshotPath
+                }
+            }));
+            var processor = new ReverseTunnelAgentFrameProcessor(
+                new StreamingStartDispatcher(),
+                new NoopTcpDispatcher(),
+                new NoopUdpDispatcher(),
+                startupOptions,
+                runtimeOptions,
+                store);
+            var tampered = ReverseTunnelAgentConfigurationSnapshotSerializer.Create("agent-alpha", options, 2);
+            tampered.Configuration.MaxConcurrentStreams = 1024;
+
+            var responses = await processor.ProcessAsync(CreateConfigurationOffer(tampered));
+            var response = Assert.Single(responses);
+            Assert.Equal(TunnelFrameKindMessage.ConfigurationReject, response.Kind);
+            Assert.Equal(128, runtimeOptions.Current.MaxConcurrentStreams);
+            Assert.Equal(0, store.CurrentVersion);
+            Assert.False(File.Exists(snapshotPath));
+        }
+        finally
+        {
+            var directory = Path.GetDirectoryName(snapshotPath);
+            if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+            {
+                Directory.Delete(directory, true);
+            }
+        }
+    }
+
+    private static TunnelFrameMessage CreateConfigurationOffer(ReverseTunnelAgentConfigurationSnapshot snapshot)
+    {
+        return new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = "session-alpha",
+            StreamId = 0,
+            Kind = TunnelFrameKindMessage.ConfigurationOffer,
+            Payload = ByteString.CopyFromUtf8(ReverseTunnelAgentConfigurationSnapshotSerializer.Serialize(snapshot))
+        };
+    }
+
     private static async Task RunSingleAgentExchangeAsync(ReverseTunnelSession session, ReverseTunnelAgentFrameProcessor frameProcessor, CancellationToken cancellationToken)
     {
         var responseCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -369,7 +482,8 @@ public sealed class ReverseTunnelEndToEndTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Gateway | ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
+            EnableTunnelProxy = true,
             MaxRequestBodyBytes = 1024 * 1024,
             MaxResponseBodyBytes = maxResponseBodyBytes,
             MaxFramePayloadBytes = maxFramePayloadBytes,
@@ -526,3 +640,5 @@ public sealed class ReverseTunnelEndToEndTests
         }
     }
 }
+
+

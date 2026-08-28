@@ -8,7 +8,7 @@ public sealed class ReverseTunnelCertificateAuthorityOptions
 {
     /// <summary>
     /// <para>zh-cn:挂载到 Server 容器或主机的 CA PFX 文件路径。仅当模块启用且当前进程包含 Server 角色时才要求存在。</para>
-    /// <para>en-us:Path to the CA PFX file mounted into the Server container or host. The file is required only when the module is enabled and the current process includes the Server role.</para>
+    /// <para>en-us:Path to the CA PFX file mounted into the Server container or host. The file is required only when the module is enabled and the current process uses Server mode.</para>
     /// </summary>
     public string CertificatePath { get; set; } = string.Empty;
 

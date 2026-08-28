@@ -1,5 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Options;
 
@@ -14,19 +15,25 @@ namespace Air.Cloud.Modules.ReverseTunnel.Agent.Tcp;
 /// </summary>
 public sealed class ReverseTunnelAgentTcpDispatcher : IReverseTunnelAgentTcpDispatcher
 {
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
 
     /// <summary>
     /// <para>zh-cn:创建 TCP 穿透分发器。</para>
     /// <para>en-us:Creates a TCP tunnel dispatcher.</para>
     /// </summary>
-    /// <param name="options">
+    /// <param name="startupOptions">
     /// <para>zh-cn:包含 Agent 本地 TCP 服务目标、帧大小和队列策略的 AirTunnel 配置。</para>
     /// <para>en-us:AirTunnel options containing Agent-local TCP targets, frame size, and queue policy.</para>
     /// </param>
-    public ReverseTunnelAgentTcpDispatcher(IOptions<ReverseTunnelOptions> options)
+    /// <param name="runtimeOptions">
+    /// <para>zh-cn:可选的运行期配置访问器。</para>
+    /// <para>en-us:Optional runtime options accessor.</para>
+    /// </param>
+    public ReverseTunnelAgentTcpDispatcher(
+        IOptions<ReverseTunnelOptions> startupOptions,
+        IReverseTunnelRuntimeOptionsAccessor? runtimeOptions = null)
     {
-        this.options = options;
+        this.options = runtimeOptions ?? new ReverseTunnelRuntimeOptionsAccessor(startupOptions);
     }
 
     /// <inheritdoc />
@@ -38,7 +45,8 @@ public sealed class ReverseTunnelAgentTcpDispatcher : IReverseTunnelAgentTcpDisp
         Func<string, string, CancellationToken, Task> sendErrorAsync,
         CancellationToken cancellationToken)
     {
-        var service = options.Value.Tcp.LocalServices.FirstOrDefault(item => string.Equals(item.ServiceKey, payload.ServiceKey, StringComparison.OrdinalIgnoreCase));
+        var current = options.Current;
+        var service = current.Tcp.LocalServices.FirstOrDefault(item => string.Equals(item.ServiceKey, payload.ServiceKey, StringComparison.OrdinalIgnoreCase));
         if (service is null)
         {
             await sendErrorAsync("tcp_service_not_found", $"TCP ServiceKey '{payload.ServiceKey}' is not configured on the Agent.", cancellationToken);
@@ -85,7 +93,7 @@ public sealed class ReverseTunnelAgentTcpDispatcher : IReverseTunnelAgentTcpDisp
 
     private async Task ReadLocalAsync(NetworkStream networkStream, Func<ReadOnlyMemory<byte>, CancellationToken, Task> sendDataAsync, CancellationToken cancellationToken)
     {
-        var buffer = new byte[Math.Max(1_024, options.Value.MaxFramePayloadBytes)];
+        var buffer = new byte[Math.Max(1_024, options.Current.MaxFramePayloadBytes)];
         while (!cancellationToken.IsCancellationRequested)
         {
             var read = await networkStream.ReadAsync(buffer, cancellationToken);

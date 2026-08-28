@@ -6,11 +6,14 @@ namespace Air.Cloud.Modules.ReverseTunnel.Server;
 /// </summary>
 public sealed class ReverseTunnelCertificateValidationResult
 {
-    private ReverseTunnelCertificateValidationResult(bool succeeded, string? agentId, string? failureReason)
+    private ReverseTunnelCertificateValidationResult(bool succeeded, string? agentId, string? failureReason, string? issuerThumbprint, string? serialNumber, string? subject)
     {
         Succeeded = succeeded;
         AgentId = agentId;
         FailureReason = failureReason;
+        IssuerThumbprint = issuerThumbprint;
+        SerialNumber = serialNumber;
+        Subject = subject;
     }
 
     /// <summary>
@@ -32,6 +35,24 @@ public sealed class ReverseTunnelCertificateValidationResult
     public string? FailureReason { get; }
 
     /// <summary>
+    /// <para>zh-cn:签发者证书指纹。仅成功结果保证可用于吊销。</para>
+    /// <para>en-us:Issuer certificate thumbprint. Only successful results guarantee it can be used for revocation.</para>
+    /// </summary>
+    public string? IssuerThumbprint { get; }
+
+    /// <summary>
+    /// <para>zh-cn:Agent 证书序列号。仅成功结果保证可用于吊销。</para>
+    /// <para>en-us:Agent certificate serial number. Only successful results guarantee it can be used for revocation.</para>
+    /// </summary>
+    public string? SerialNumber { get; }
+
+    /// <summary>
+    /// <para>zh-cn:Agent 证书 Subject，用于管理端只读诊断。</para>
+    /// <para>en-us:Agent certificate Subject used for read-only management diagnostics.</para>
+    /// </summary>
+    public string? Subject { get; }
+
+    /// <summary>
     /// <para>zh-cn:创建成功校验结果。</para>
     /// <para>en-us:Creates a successful validation result.</para>
     /// </summary>
@@ -39,13 +60,25 @@ public sealed class ReverseTunnelCertificateValidationResult
     /// <para>zh-cn:证书中确认的 Agent 稳定身份。</para>
     /// <para>en-us:Stable Agent identity confirmed from the certificate.</para>
     /// </param>
+    /// <param name="issuerThumbprint">
+    /// <para>zh-cn:签发者证书指纹。</para>
+    /// <para>en-us:Issuer certificate thumbprint.</para>
+    /// </param>
+    /// <param name="serialNumber">
+    /// <para>zh-cn:Agent 证书序列号。</para>
+    /// <para>en-us:Agent certificate serial number.</para>
+    /// </param>
+    /// <param name="subject">
+    /// <para>zh-cn:Agent 证书 Subject。</para>
+    /// <para>en-us:Agent certificate Subject.</para>
+    /// </param>
     /// <returns>
     /// <para>zh-cn:成功结果。</para>
     /// <para>en-us:A successful result.</para>
     /// </returns>
-    public static ReverseTunnelCertificateValidationResult Success(string agentId)
+    public static ReverseTunnelCertificateValidationResult Success(string agentId, string? issuerThumbprint = null, string? serialNumber = null, string? subject = null)
     {
-        return new ReverseTunnelCertificateValidationResult(true, agentId, null);
+        return new ReverseTunnelCertificateValidationResult(true, agentId, null, issuerThumbprint, serialNumber, subject);
     }
 
     /// <summary>
@@ -62,6 +95,6 @@ public sealed class ReverseTunnelCertificateValidationResult
     /// </returns>
     public static ReverseTunnelCertificateValidationResult Failure(string failureReason)
     {
-        return new ReverseTunnelCertificateValidationResult(false, null, failureReason);
+        return new ReverseTunnelCertificateValidationResult(false, null, failureReason, null, null, null);
     }
 }

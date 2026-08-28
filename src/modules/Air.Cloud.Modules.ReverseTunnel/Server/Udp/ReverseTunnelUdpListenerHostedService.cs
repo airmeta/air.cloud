@@ -1,9 +1,10 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using System.Collections.Concurrent;
 using System.Net;
@@ -17,13 +18,15 @@ namespace Air.Cloud.Modules.ReverseTunnel.Server.Udp;
 /// </summary>
 public sealed class ReverseTunnelUdpListenerHostedService : BackgroundService
 {
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
     private readonly IReverseTunnelSessionRegistry sessionRegistry;
+    private readonly IReverseTunnelAgentRouteCatalog? agentRouteCatalog;
     private readonly ILogger<ReverseTunnelUdpListenerHostedService> logger;
+    private readonly ConcurrentDictionary<string, ListenerRegistration> listeners = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// <para>zh-cn:创建 UDP 监听后台服务。服务只在模块启用、当前进程包含 Server 角色且 UDP 配置启用时绑定端口。</para>
-    /// <para>en-us:Creates the UDP listener background service. It binds ports only when the module is enabled, the current process includes the Server role, and UDP options are enabled.</para>
+    /// <para>en-us:Creates the UDP listener background service. It binds ports only when the module is enabled, the current process uses Server mode, and UDP options are enabled.</para>
     /// </summary>
     /// <param name="options">
     /// <para>zh-cn:AirTunnel 配置访问器。</para>
@@ -37,13 +40,19 @@ public sealed class ReverseTunnelUdpListenerHostedService : BackgroundService
     /// <para>zh-cn:日志记录器。</para>
     /// <para>en-us:Logger.</para>
     /// </param>
+    /// <param name="agentRouteCatalog">
+    /// <para>zh-cn:由 Agent 本地服务配置派生的监听器目录，可选。</para>
+    /// <para>en-us:Optional catalog of listeners derived from Agent local-service configuration.</para>
+    /// </param>
     public ReverseTunnelUdpListenerHostedService(
-        IOptions<ReverseTunnelOptions> options,
+        IReverseTunnelRuntimeOptionsAccessor options,
         IReverseTunnelSessionRegistry sessionRegistry,
-        ILogger<ReverseTunnelUdpListenerHostedService> logger)
+        ILogger<ReverseTunnelUdpListenerHostedService> logger,
+        IReverseTunnelAgentRouteCatalog? agentRouteCatalog = null)
     {
         this.options = options;
         this.sessionRegistry = sessionRegistry;
+        this.agentRouteCatalog = agentRouteCatalog;
         this.logger = logger;
     }
 
@@ -61,14 +70,96 @@ public sealed class ReverseTunnelUdpListenerHostedService : BackgroundService
     /// </returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var settings = options.Value;
-        if (!settings.Enabled || !settings.Roles.HasFlag(ReverseTunnelRole.Server) || !settings.Udp.Enabled)
+        try
         {
-            return;
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await ReconcileListenersAsync(stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            await StopAllListenersAsync();
+        }
+    }
+
+    private async Task ReconcileListenersAsync(CancellationToken stoppingToken)
+    {
+        var settings = options.Current;
+        var desired = settings.Enabled && settings.TunnelMode == ReverseTunnelMode.Server && settings.Udp.Enabled
+            ? settings.Udp.Listeners
+                .Concat(agentRouteCatalog?.ListUdpListeners() ?? [])
+                .Where(IsRunnable)
+                .GroupBy(CreateBindingKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToDictionary(CreateListenerKey, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, ReverseTunnelUdpListenerOptions>(StringComparer.OrdinalIgnoreCase);
+
+        var stopped = new List<ListenerRegistration>();
+        foreach (var item in listeners.ToArray())
+        {
+            if (item.Value.Task.IsCompleted || !desired.ContainsKey(item.Key))
+            {
+                if (listeners.TryRemove(item.Key, out var registration))
+                {
+                    registration.Stop();
+                    stopped.Add(registration);
+                }
+            }
         }
 
-        var tasks = settings.Udp.Listeners.Select(listener => RunListenerAsync(listener, stoppingToken)).ToArray();
-        await Task.WhenAll(tasks);
+        foreach (var registration in stopped)
+        {
+            await ObserveAndDisposeAsync(registration);
+        }
+
+        foreach (var item in desired)
+        {
+            listeners.GetOrAdd(item.Key, _ =>
+            {
+                var cancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                var task = Task.Run(() => RunListenerAsync(item.Value, cancellation.Token), CancellationToken.None);
+                return new ListenerRegistration(cancellation, task);
+            });
+        }
+    }
+
+    private async Task StopAllListenersAsync()
+    {
+        var registrations = listeners.ToArray();
+        listeners.Clear();
+        foreach (var item in registrations)
+        {
+            item.Value.Stop();
+        }
+
+        foreach (var item in registrations)
+        {
+            await ObserveAndDisposeAsync(item.Value);
+        }
+    }
+
+    private async Task ObserveAndDisposeAsync(ListenerRegistration registration)
+    {
+        try
+        {
+            await registration.Task;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "AirTunnel UDP listener stopped with an error.");
+        }
+        finally
+        {
+            registration.Dispose();
+        }
     }
 
     private async Task RunListenerAsync(ReverseTunnelUdpListenerOptions listenerOptions, CancellationToken cancellationToken)
@@ -175,6 +266,51 @@ public sealed class ReverseTunnelUdpListenerHostedService : BackgroundService
         return IPAddress.TryParse(host, out var address)
             ? new IPEndPoint(address, port)
             : new IPEndPoint(Dns.GetHostAddresses(host).First(), port);
+    }
+
+    private static bool IsRunnable(ReverseTunnelUdpListenerOptions listener)
+    {
+        return listener is not null &&
+            !string.IsNullOrWhiteSpace(listener.ServiceKey) &&
+            listener.ListenPort > 0;
+    }
+
+    private static string CreateListenerKey(ReverseTunnelUdpListenerOptions listener)
+    {
+        return string.Join('|',
+            listener.Name,
+            listener.ServiceKey,
+            listener.ListenHost,
+            listener.ListenPort,
+            listener.MaxFlows,
+            listener.FlowIdleTimeoutSeconds,
+            listener.MaxDatagramBytes);
+    }
+
+    private static string CreateBindingKey(ReverseTunnelUdpListenerOptions listener)
+        => string.Join('|', listener.ServiceKey, listener.ListenHost, listener.ListenPort);
+
+    private sealed class ListenerRegistration : IDisposable
+    {
+        public ListenerRegistration(CancellationTokenSource cancellation, Task task)
+        {
+            Cancellation = cancellation;
+            Task = task;
+        }
+
+        public CancellationTokenSource Cancellation { get; }
+
+        public Task Task { get; }
+
+        public void Stop()
+        {
+            Cancellation.Cancel();
+        }
+
+        public void Dispose()
+        {
+            Cancellation.Dispose();
+        }
     }
 
     private sealed class UdpFlowEntry

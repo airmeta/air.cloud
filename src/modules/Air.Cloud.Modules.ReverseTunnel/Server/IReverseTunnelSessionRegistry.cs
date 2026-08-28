@@ -37,8 +37,8 @@ public interface IReverseTunnelSessionRegistry
     bool TryGet(string sessionId, out ReverseTunnelSession? session);
 
     /// <summary>
-    /// <para>zh-cn:按逻辑服务键查找当前进程内可处理该服务的活跃 Agent 会话。首版只返回本进程会话，不跨 Gateway 查找。</para>
-    /// <para>en-us:Finds an active Agent session in the current process that can handle the logical service key. The first version returns only local-process sessions and does not search across Gateways.</para>
+    /// <para>zh-cn:按逻辑服务键查找当前 Server 进程内可处理该服务的活跃 Agent 会话。当前接口只返回本进程会话，不提供跨 Server 实例的全局会话查找。</para>
+    /// <para>en-us:Finds an active Agent session in the current Server process that can handle the logical service key. The current interface returns only local-process sessions and does not provide global lookup across Server instances.</para>
     /// </summary>
     /// <param name="serviceKey">
     /// <para>zh-cn:需要转发的逻辑服务键。</para>
@@ -67,6 +67,24 @@ public interface IReverseTunnelSessionRegistry
     /// <para>en-us:Returns true when a session was removed; false when it did not exist.</para>
     /// </returns>
     bool Remove(string sessionId);
+
+    /// <summary>
+    /// <para>zh-cn:由管理端或空闲清理流程主动断开会话。实现必须从注册表移除会话，并完成出站帧队列，使底层长连接尽快结束。</para>
+    /// <para>en-us:Actively disconnects a session from the management endpoint or idle cleanup. Implementations must remove the session from the registry and complete the outbound frame queue so the underlying long-lived connection ends promptly.</para>
+    /// </summary>
+    /// <param name="sessionId">
+    /// <para>zh-cn:需要断开的会话标识。</para>
+    /// <para>en-us:Session identifier to disconnect.</para>
+    /// </param>
+    /// <param name="reason">
+    /// <para>zh-cn:断开原因，用于诊断和异常信息。</para>
+    /// <para>en-us:Disconnect reason used for diagnostics and exception messages.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:找到并断开会话返回 true；会话不存在返回 false。</para>
+    /// <para>en-us:Returns true when the session was found and disconnected; false when it did not exist.</para>
+    /// </returns>
+    bool Disconnect(string sessionId, string reason);
 
     /// <summary>
     /// <para>zh-cn:移除超过配置空闲阈值的会话。空闲阈值来自 ReverseTunnelSettings:SessionIdleTimeoutSeconds。</para>

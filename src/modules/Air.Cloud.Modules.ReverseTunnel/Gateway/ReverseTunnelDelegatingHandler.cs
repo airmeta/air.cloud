@@ -7,8 +7,8 @@ using Microsoft.Extensions.Options;
 namespace Air.Cloud.Modules.ReverseTunnel.Gateway;
 
 /// <summary>
-/// <para>zh-cn:Ocelot opt-in 反向隧道处理器。只有 Ocelot 路由显式声明该 DelegatingHandler 且虚拟下游主机能解析到隧道路由时，才会把请求交给隧道调用器。</para>
-/// <para>en-us:Ocelot opt-in reverse tunnel handler. A request is handed to the tunnel invoker only when the Ocelot route explicitly declares this DelegatingHandler and the virtual downstream host resolves to a tunnel route.</para>
+/// <para>zh-cn:已废弃的 Ocelot 反向隧道处理器。新 Gateway 不再注册或使用该处理器，隧道路由由 `UseReverseTunnelGateway()` 按 Agent 公开路径直接匹配。</para>
+/// <para>en-us:Deprecated Ocelot reverse tunnel handler. New Gateways do not register or use this handler; tunnel routes are matched directly by `UseReverseTunnelGateway()` from Agent public paths.</para>
 /// </summary>
 public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
 {
@@ -30,12 +30,12 @@ public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
     /// <para>en-us:Tunnel invoker that sends HTTP requests to connected Agents.</para>
     /// </param>
     /// <param name="options">
-    /// <para>zh-cn:反向隧道配置，用于确认模块和 Gateway 角色是否启用。</para>
-    /// <para>en-us:Reverse tunnel options used to confirm whether the module and Gateway role are enabled.</para>
+    /// <para>zh-cn:反向隧道配置，用于确认模块和 Gateway 隧道代理是否启用。</para>
+    /// <para>en-us:Reverse tunnel options used to confirm whether the module and Gateway tunnel proxy are enabled.</para>
     /// </param>
     /// <param name="httpContextAccessor">
-    /// <para>zh-cn:当前 ASP.NET Core 请求上下文访问器。Ocelot 在部分场景下传入的 `HttpRequestMessage.Content` 为空时，处理器会使用它从原始请求恢复请求体和内容头，避免 POST/PUT/PATCH 经隧道后丢失 `Content-Type`。</para>
-    /// <para>en-us:Accessor for the current ASP.NET Core request context. When Ocelot provides an empty `HttpRequestMessage.Content` in some scenarios, the handler uses it to restore the original request body and content headers so POST/PUT/PATCH requests do not lose `Content-Type` after entering the tunnel.</para>
+    /// <para>zh-cn:当前 ASP.NET Core 请求上下文访问器。Ocelot 在部分场景下传入的 `HttpRequestMessage.Content` 为空或被构造成长度为 0 的空内容时，处理器会使用它从原始请求恢复请求体和内容头，避免 POST/PUT/PATCH 在进入隧道或回落到普通下游链路时丢失 `Content-Type`。</para>
+    /// <para>en-us:Accessor for the current ASP.NET Core request context. When Ocelot provides a missing `HttpRequestMessage.Content` or an empty zero-length content in some scenarios, the handler uses it to restore the original request body and content headers so POST/PUT/PATCH requests do not lose `Content-Type` either when entering the tunnel or when falling back to the ordinary downstream chain.</para>
     /// </param>
     public ReverseTunnelDelegatingHandler(IReverseTunnelRouteProvider routeProvider, IReverseTunnelInvoker invoker, IOptions<ReverseTunnelOptions> options, IHttpContextAccessor? httpContextAccessor = null)
     {
@@ -46,8 +46,8 @@ public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
     }
 
     /// <summary>
-    /// <para>zh-cn:处理 Ocelot 当前请求。模块未启用、Gateway 角色未启用或虚拟主机未命中隧道路由时，会继续执行 Ocelot 原有下游处理链。</para>
-    /// <para>en-us:Handles the current Ocelot request. When the module is disabled, the Gateway role is disabled, or the virtual host does not match a tunnel route, the original Ocelot downstream handler chain continues.</para>
+    /// <para>zh-cn:处理 Ocelot 当前请求。方法会先从当前 ASP.NET Core 请求恢复 Ocelot 可能丢失的请求体和内容头，再判断是否进入隧道；模块未启用、EnableTunnelProxy 未启用或虚拟主机未命中隧道路由时，会继续执行 Ocelot 原有下游处理链。</para>
+    /// <para>en-us:Handles the current Ocelot request. The method first restores request content and content headers that Ocelot may have omitted from the current ASP.NET Core request, then decides whether to enter the tunnel; when the module is disabled, EnableTunnelProxy is disabled, or the virtual host does not match a tunnel route, the original Ocelot downstream handler chain continues.</para>
     /// </summary>
     /// <param name="request">
     /// <para>zh-cn:Ocelot 当前下游请求。</para>
@@ -63,9 +63,11 @@ public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
     /// </returns>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        RestoreHttpContextContentIfRequired(request);
+
         var host = request.RequestUri?.Host;
         if (!options.Value.Enabled ||
-            !options.Value.Roles.HasFlag(ReverseTunnelRole.Gateway) ||
+            !options.Value.EnableTunnelProxy ||
             string.IsNullOrWhiteSpace(host) ||
             !routeProvider.TryResolve(host, out var route) ||
             route is null)
@@ -73,7 +75,6 @@ public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
             return base.SendAsync(request, cancellationToken);
         }
 
-        RestoreHttpContextContentIfRequired(request);
         return invoker.InvokeAsync(route, request, cancellationToken);
     }
 
@@ -85,14 +86,19 @@ public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
             return;
         }
 
-        if (request.Content is null && ShouldRestoreContent(httpRequest))
+        if (ShouldReplaceContent(request, httpRequest))
         {
             if (httpRequest.Body.CanSeek)
             {
                 httpRequest.Body.Position = 0;
             }
 
+            request.Content?.Dispose();
             request.Content = new StreamContent(httpRequest.Body);
+            if (httpRequest.ContentLength.HasValue)
+            {
+                request.Content.Headers.ContentLength = httpRequest.ContentLength.Value;
+            }
         }
 
         if (request.Content is null)
@@ -106,6 +112,28 @@ public sealed class ReverseTunnelDelegatingHandler : DelegatingHandler
         CopyContentHeaderIfPresent(httpRequest, request, "Content-Location");
         CopyContentHeaderIfPresent(httpRequest, request, "Content-MD5");
         CopyContentHeaderIfPresent(httpRequest, request, "Content-Range");
+    }
+
+    private static bool ShouldReplaceContent(HttpRequestMessage request, HttpRequest httpRequest)
+    {
+        if (!ShouldRestoreContent(httpRequest))
+        {
+            return false;
+        }
+
+        if (request.Content is null)
+        {
+            return true;
+        }
+
+        if (httpRequest.ContentLength is > 0 &&
+            request.Content.Headers.ContentLength != httpRequest.ContentLength)
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(httpRequest.ContentType) &&
+            request.Content.Headers.ContentType is null;
     }
 
     private static bool ShouldRestoreContent(HttpRequest httpRequest)

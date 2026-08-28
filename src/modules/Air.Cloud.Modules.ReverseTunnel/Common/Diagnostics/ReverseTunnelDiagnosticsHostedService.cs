@@ -1,7 +1,7 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 
@@ -12,7 +12,7 @@ namespace Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 public sealed class ReverseTunnelDiagnosticsHostedService : BackgroundService
 {
     private readonly ReverseTunnelDiagnosticsService diagnosticsService;
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
 
     /// <summary>
     /// <para>zh-cn:创建诊断快照后台采集服务。构造阶段不启动采集，实际周期由运行时配置决定。</para>
@@ -26,7 +26,7 @@ public sealed class ReverseTunnelDiagnosticsHostedService : BackgroundService
     /// <para>zh-cn:AirTunnel 选项，作为 `AppCore.Configuration` 不可用时的回退配置。</para>
     /// <para>en-us:AirTunnel options used as fallback configuration when `AppCore.Configuration` is unavailable.</para>
     /// </param>
-    public ReverseTunnelDiagnosticsHostedService(ReverseTunnelDiagnosticsService diagnosticsService, IOptions<ReverseTunnelOptions> options)
+    public ReverseTunnelDiagnosticsHostedService(ReverseTunnelDiagnosticsService diagnosticsService, IReverseTunnelRuntimeOptionsAccessor options)
     {
         this.diagnosticsService = diagnosticsService;
         this.options = options;
@@ -44,8 +44,9 @@ public sealed class ReverseTunnelDiagnosticsHostedService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var diagnostics = ReverseTunnelDiagnosticsConfigurationReader.Read(options.Value);
-            if (options.Value.Enabled && diagnostics.Enabled)
+            var current = options.Current;
+            var diagnostics = ReverseTunnelDiagnosticsConfigurationReader.Read(current);
+            if (current.Enabled && diagnostics.Enabled)
             {
                 diagnosticsService.RefreshSnapshot();
             }

@@ -25,7 +25,7 @@ public sealed class ReverseTunnelCertificateTests
         var options = new ReverseTunnelOptions
         {
             Enabled = false,
-            Roles = ReverseTunnelRole.Server
+            TunnelMode = ReverseTunnelMode.Server
         };
         options.PostConfigure(options, new ConfigurationBuilder().Build());
 
@@ -44,7 +44,7 @@ public sealed class ReverseTunnelCertificateTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = "X:\\missing-reverse-tunnel-ca.pfx",
@@ -61,17 +61,17 @@ public sealed class ReverseTunnelCertificateTests
     }
 
     /// <summary>
-    /// <para>zh-cn:验证启用 Enrollment 时必须配置存在的挂载凭据目录。</para>
-    /// <para>en-us:Verifies that enabling enrollment requires an existing mounted credential directory.</para>
+    /// <para>zh-cn:验证启用 Enrollment 时不再要求挂载 token 凭据目录。</para>
+    /// <para>en-us:Verifies that enabling enrollment no longer requires a mounted token credential directory.</para>
     /// </summary>
     [Fact]
-    public void Options_validation_should_require_enrollment_credential_directory_when_enrollment_is_enabled()
+    public void Options_validation_should_not_require_enrollment_credential_directory_when_enrollment_is_enabled()
     {
         using var material = TestCertificateMaterial.Create();
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -87,8 +87,7 @@ public sealed class ReverseTunnelCertificateTests
 
         var result = new ReverseTunnelOptionsValidation().Validate(null, options);
 
-        Assert.True(result.Failed);
-        Assert.Contains("Enrollment:CredentialDirectory", string.Join(";", result.Failures));
+        Assert.False(result.Failed);
     }
 
     /// <summary>
@@ -325,7 +324,7 @@ public sealed class ReverseTunnelCertificateTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -402,3 +401,5 @@ public sealed class ReverseTunnelCertificateTests
         }
     }
 }
+
+

@@ -1,5 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Grpc.Core;
@@ -12,17 +13,20 @@ internal sealed class ReverseTunnelTransportService : ReverseTunnelTransport.Rev
     private readonly IReverseTunnelAgentConnectionAuthenticator connectionAuthenticator;
     private readonly IReverseTunnelAgentServiceAuthorizer serviceAuthorizer;
     private readonly IReverseTunnelSessionRegistry sessionRegistry;
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelDesiredAgentConfigurationStore desiredConfigurations;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
 
     public ReverseTunnelTransportService(
         IReverseTunnelAgentConnectionAuthenticator connectionAuthenticator,
         IReverseTunnelAgentServiceAuthorizer serviceAuthorizer,
         IReverseTunnelSessionRegistry sessionRegistry,
-        IOptions<ReverseTunnelOptions> options)
+        IReverseTunnelDesiredAgentConfigurationStore desiredConfigurations,
+        IReverseTunnelRuntimeOptionsAccessor options)
     {
         this.connectionAuthenticator = connectionAuthenticator;
         this.serviceAuthorizer = serviceAuthorizer;
         this.sessionRegistry = sessionRegistry;
+        this.desiredConfigurations = desiredConfigurations;
         this.options = options;
     }
 
@@ -53,7 +57,7 @@ internal sealed class ReverseTunnelTransportService : ReverseTunnelTransport.Rev
         }
 
         var sessionId = string.IsNullOrWhiteSpace(hello.SessionId) ? Guid.NewGuid().ToString("N") : hello.SessionId.Trim();
-        var settings = options.Value;
+        var settings = options.Current;
         var session = new ReverseTunnelSession(
             sessionId,
             authentication.AgentId,
@@ -63,7 +67,21 @@ internal sealed class ReverseTunnelTransportService : ReverseTunnelTransport.Rev
             settings.OutboundFrameQueueCapacity,
             settings.MaxFramePayloadBytes,
             settings.MaxResponseBodyBytes,
-            settings.MaxRequestBodyBytes);
+            settings.MaxRequestBodyBytes,
+            () =>
+            {
+                var current = options.Current;
+                return new ReverseTunnelSessionLimits(
+                    current.MaxConcurrentStreams,
+                    current.OutboundFrameQueueCapacity,
+                    current.MaxFramePayloadBytes,
+                    current.MaxRequestBodyBytes,
+                    current.MaxResponseBodyBytes);
+            },
+            authentication.IssuerThumbprint,
+            authentication.SerialNumber,
+            authentication.Subject,
+            hello.ConfigurationVersion);
         sessionRegistry.Register(session);
         var outboundWriterTask = WriteOutboundFramesAsync(session, responseStream, context.CancellationToken);
 
@@ -74,6 +92,33 @@ internal sealed class ReverseTunnelTransportService : ReverseTunnelTransport.Rev
             Kind = TunnelFrameKindMessage.Welcome,
             AgentId = session.AgentId
         }, context.CancellationToken);
+
+        var desiredSnapshot = await desiredConfigurations.GetAsync(session.AgentId, context.CancellationToken);
+        // A standalone Server replays only an explicitly stored desired snapshot.
+        // A combined Server+Agent host keeps the existing local synchronization fallback.
+        if (desiredSnapshot is null &&
+            settings.TunnelMode == ReverseTunnelMode.Agent &&
+            string.Equals(settings.AgentId, session.AgentId, StringComparison.OrdinalIgnoreCase))
+        {
+            desiredSnapshot = ReverseTunnelAgentConfigurationSnapshotSerializer.Create(
+                session.AgentId,
+                settings,
+                Math.Max(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+        }
+
+        if (desiredSnapshot is not null && desiredSnapshot.Version > hello.ConfigurationVersion)
+        {
+            session.MarkConfigurationOffer(desiredSnapshot.Version);
+            await session.EnqueueAsync(new TunnelFrameMessage
+            {
+                ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+                SessionId = sessionId,
+                StreamId = 0,
+                Kind = TunnelFrameKindMessage.ConfigurationOffer,
+                Payload = Google.Protobuf.ByteString.CopyFrom(System.Text.Encoding.UTF8.GetBytes(
+                    ReverseTunnelAgentConfigurationSnapshotSerializer.Serialize(desiredSnapshot)))
+            }, context.CancellationToken);
+        }
 
         try
         {

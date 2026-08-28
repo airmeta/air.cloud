@@ -112,6 +112,11 @@ public class ReverseTunnelOptionsTests
                 {
                     AgentId = " AGENT-ALPHA ",
                     AllowedServiceKeys = [" order-service ", "ORDER-SERVICE", " catalog-service "]
+                },
+                new ReverseTunnelAgentAuthorizationOptions
+                {
+                    AgentId = " agent-alpha ",
+                    AllowedServiceKeys = [" system-service ", "ORDER-SERVICE"]
                 }
             ]
         };
@@ -149,8 +154,12 @@ public class ReverseTunnelOptionsTests
         Assert.Equal(5, options.Udp.Listeners[0].FlowIdleTimeoutSeconds);
         Assert.Equal(1, options.Udp.Listeners[0].MaxDatagramBytes);
         Assert.Equal("127.0.0.1", options.Udp.LocalServices[0].Host);
+        Assert.Single(options.AgentAuthorizations);
         Assert.Equal("AGENT-ALPHA", options.AgentAuthorizations[0].AgentId);
-        Assert.Equal(["order-service", "catalog-service"], options.AgentAuthorizations[0].AllowedServiceKeys);
+        Assert.Equal(["order-service", "catalog-service", "system-service"], options.AgentAuthorizations[0].AllowedServiceKeys);
+        Assert.False(options.Management.Enabled);
+        Assert.Equal("https://0.0.0.0:18643", options.Management.BindUrl);
+        Assert.Equal("/_airtunnel/admin", options.Management.PathPrefix);
     }
 
     /// <summary>
@@ -193,11 +202,11 @@ public class ReverseTunnelOptionsTests
     }
 
     /// <summary>
-    /// <para>zh-cn:验证路由解析器仅在模块已显式启用时按不区分大小写的虚拟主机返回已配置服务。</para>
-    /// <para>en-us:Verifies that the route resolver returns a configured service by case-insensitive virtual host only when the module has been explicitly enabled.</para>
+    /// <para>zh-cn:验证路由解析器不会再读取旧的 Server Routes/VirtualHost 配置。</para>
+    /// <para>en-us:Verifies that the route resolver no longer reads legacy server-side Routes/VirtualHost configuration.</para>
     /// </summary>
     [Fact]
-    public void TryResolve_should_require_enabled_module_and_match_normalized_virtual_host()
+    public void TryResolve_should_ignore_legacy_explicit_routes()
     {
         var options = new ReverseTunnelOptions
         {
@@ -214,11 +223,10 @@ public class ReverseTunnelOptionsTests
         options.PostConfigure(options, new ConfigurationBuilder().Build());
         var provider = new ReverseTunnelRouteProvider(Options.Create(options));
 
-        var found = provider.TryResolve("TUNNEL-ORDER-SERVICE.", out var route);
+        var found = provider.TryResolve("/orders", out var route);
 
-        Assert.True(found);
-        Assert.NotNull(route);
-        Assert.Equal("order-service", route.ServiceKey);
+        Assert.False(found);
+        Assert.Null(route);
     }
 
     /// <summary>
@@ -259,7 +267,7 @@ public class ReverseTunnelOptionsTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             AgentAuthorizations =
             [
                 new ReverseTunnelAgentAuthorizationOptions
@@ -298,7 +306,8 @@ public class ReverseTunnelOptionsTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Gateway,
+            TunnelMode = ReverseTunnelMode.None,
+            EnableTunnelProxy = true,
             SessionSelectionStrategy = (ReverseTunnelSessionSelectionStrategy)999
         };
 
@@ -306,6 +315,35 @@ public class ReverseTunnelOptionsTests
 
         Assert.True(result.Failed);
         Assert.Contains("ReverseTunnelSettings:SessionSelectionStrategy must be one of NewestActive, OldestActive, or RoundRobin.", result.Failures);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证启用远程管理端时必须配置管理 token 环境变量，避免 Server 管理端在公网端口裸露。</para>
+    /// <para>en-us:Verifies that enabling the remote management endpoint requires the management-token environment variable, preventing the Server management port from being exposed without authentication.</para>
+    /// </summary>
+    [Fact]
+    public void Validate_should_require_management_token_environment_variable_when_management_is_enabled()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_TEST_{Guid.NewGuid():N}";
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.None,
+            EnableTunnelProxy = true,
+            Management = new ReverseTunnelManagementOptions
+            {
+                Enabled = true,
+                BindUrl = "https://0.0.0.0:18643",
+                AccessTokenEnvironmentVariable = tokenVariable,
+                AllowAnonymousLoopback = false
+            }
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        var result = new ReverseTunnelOptionsValidation().Validate(null, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains($"Environment variable '{tokenVariable}' must contain the AirTunnel management access token.", result.Failures);
     }
 
     /// <summary>
@@ -318,7 +356,7 @@ public class ReverseTunnelOptionsTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             Tcp = new ReverseTunnelTcpOptions
             {
                 Enabled = true,
@@ -352,7 +390,7 @@ public class ReverseTunnelOptionsTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
             AgentId = "agent-alpha",
             ServerAddress = "https://airtunnel.example.com",
             AgentCertificate = new ReverseTunnelAgentCertificateOptions
@@ -377,10 +415,32 @@ public class ReverseTunnelOptionsTests
         var result = new ReverseTunnelOptionsValidation().Validate(null, options);
 
         Assert.True(result.Failed);
-        Assert.Contains("ReverseTunnelSettings:Tcp:LocalServices:0:ServiceKey is required when TCP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Tcp:LocalServices:0:ServiceKey must be generated from the Server listener endpoint when TCP tunneling is enabled.", result.Failures);
         Assert.Contains("ReverseTunnelSettings:Tcp:LocalServices:0:Port must be between 1 and 65535 when TCP tunneling is enabled.", result.Failures);
-        Assert.Contains("ReverseTunnelSettings:Udp:LocalServices:0:ServiceKey is required when UDP tunneling is enabled.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:Udp:LocalServices:0:ServiceKey must be generated from the Server listener endpoint when UDP tunneling is enabled.", result.Failures);
         Assert.Contains("ReverseTunnelSettings:Udp:LocalServices:0:Port must be between 1 and 65535 when UDP tunneling is enabled.", result.Failures);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证周期配置同步的默认值和安全范围。</para>
+    /// <para>en-us:Verifies the default value and safe range of periodic configuration synchronization.</para>
+    /// </summary>
+    [Fact]
+    public void PostConfigure_should_normalize_configuration_sync_interval()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            ConfigurationSync = new ReverseTunnelConfigurationSyncOptions
+            {
+                Enabled = true,
+                IntervalSeconds = 1
+            }
+        };
+
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        Assert.True(options.ConfigurationSync.Enabled);
+        Assert.Equal(5, options.ConfigurationSync.IntervalSeconds);
     }
 
     private sealed class TemporaryAgentDirectories : IDisposable
@@ -420,3 +480,5 @@ public class ReverseTunnelOptionsTests
         }
     }
 }
+
+

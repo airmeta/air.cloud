@@ -80,7 +80,7 @@ public sealed class ReverseTunnelAgentCertificateValidator : IReverseTunnelAgent
             return ReverseTunnelCertificateValidationResult.Failure("Agent certificate chain is not trusted by the mounted CA.");
         }
 
-        return ReverseTunnelCertificateValidationResult.Success(agentId);
+        return ReverseTunnelCertificateValidationResult.Success(agentId, issuer.Thumbprint, certificate.SerialNumber, certificate.Subject);
     }
 
     private static bool HasClientAuthenticationUsage(X509Certificate2 certificate)

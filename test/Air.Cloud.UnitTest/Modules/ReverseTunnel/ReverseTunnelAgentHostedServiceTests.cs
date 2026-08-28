@@ -1,4 +1,5 @@
 using Air.Cloud.Modules.ReverseTunnel.Agent;
+using Air.Cloud.Modules.ReverseTunnel.Common.Enrollment;
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 
 using Microsoft.Extensions.Logging;
@@ -27,7 +28,7 @@ public sealed class ReverseTunnelAgentHostedServiceTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
             AgentId = "agent-alpha",
             ServerAddress = "https://airtunnel.example.com",
             AgentConnectionCount = 3,
@@ -53,6 +54,114 @@ public sealed class ReverseTunnelAgentHostedServiceTests
         Assert.Equal([0, 1, 2], connectionClient.ConnectionIndexes.Order().ToArray());
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证运行期增加 AgentConnectionCount 后会创建新的连接循环，而无需重启宿主进程。</para>
+    /// <para>en-us:Verifies that increasing AgentConnectionCount at runtime creates additional connection loops without restarting the host process.</para>
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_should_reconcile_connection_count_after_runtime_update()
+    {
+        using var certificate = CreateCertificate();
+        using var certificateFiles = TemporaryCertificateFiles.Create();
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Agent,
+            AgentId = "agent-alpha",
+            ServerAddress = "https://airtunnel.example.com",
+            AgentConnectionCount = 1,
+            AgentCertificate = new ReverseTunnelAgentCertificateOptions
+            {
+                CertificatePath = certificateFiles.CertificatePath,
+                PrivateKeyPath = certificateFiles.PrivateKeyPath
+            }
+        };
+        options.PostConfigure(options, new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+        var runtimeOptions = new Air.Cloud.Modules.ReverseTunnel.Common.Runtime.ReverseTunnelRuntimeOptionsAccessor(Options.Create(options));
+        var connectionClient = new CapturingConnectionClient(expectedConnectionCount: 3);
+        var service = new ReverseTunnelAgentHostedService(
+            runtimeOptions,
+            new InMemoryReverseTunnelAgentConfigurationStore(),
+            new NonRenewingCertificateMaterialStore(certificate),
+            new NoopCertificateClient(),
+            connectionClient,
+            new NoopLogger<ReverseTunnelAgentHostedService>());
+
+        await service.StartAsync(CancellationToken.None);
+        await connectionClient.WaitForConnectionCountAsync(1);
+
+        var updated = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Agent,
+            AgentId = "agent-alpha",
+            ServerAddress = "https://airtunnel.example.com",
+            AgentConnectionCount = 3,
+            AgentCertificate = options.AgentCertificate
+        };
+        updated.PostConfigure(updated, new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+        runtimeOptions.Update(updated);
+
+        await connectionClient.AllConnectionsStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.Contains(2, connectionClient.ConnectionIndexes);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证运行期减少 AgentConnectionCount 时，多余连接会收到取消信号并优雅退出。</para>
+    /// <para>en-us:Verifies that reducing AgentConnectionCount at runtime cancels surplus loops and lets them exit gracefully.</para>
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_should_stop_surplus_connection_loops_after_runtime_decrease()
+    {
+        using var certificate = CreateCertificate();
+        using var certificateFiles = TemporaryCertificateFiles.Create();
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Agent,
+            AgentId = "agent-alpha",
+            ServerAddress = "https://airtunnel.example.com",
+            AgentConnectionCount = 3,
+            AgentCertificate = new ReverseTunnelAgentCertificateOptions
+            {
+                CertificatePath = certificateFiles.CertificatePath,
+                PrivateKeyPath = certificateFiles.PrivateKeyPath
+            }
+        };
+        options.PostConfigure(options, new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+        var runtimeOptions = new Air.Cloud.Modules.ReverseTunnel.Common.Runtime.ReverseTunnelRuntimeOptionsAccessor(Options.Create(options));
+        var connectionClient = new CapturingConnectionClient(expectedConnectionCount: 3);
+        var service = new ReverseTunnelAgentHostedService(
+            runtimeOptions,
+            new InMemoryReverseTunnelAgentConfigurationStore(),
+            new NonRenewingCertificateMaterialStore(certificate),
+            new NoopCertificateClient(),
+            connectionClient,
+            new NoopLogger<ReverseTunnelAgentHostedService>());
+
+        await service.StartAsync(CancellationToken.None);
+        await connectionClient.AllConnectionsStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connectionClient.WaitForActiveConnectionCountAsync(3);
+
+        var updated = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Agent,
+            AgentId = "agent-alpha",
+            ServerAddress = "https://airtunnel.example.com",
+            AgentConnectionCount = 1,
+            AgentCertificate = options.AgentCertificate
+        };
+        updated.PostConfigure(updated, new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+        runtimeOptions.Update(updated);
+
+        await connectionClient.WaitForActiveConnectionCountAsync(1);
+        Assert.Equal(1, connectionClient.ActiveConnectionCount);
+        await service.StopAsync(CancellationToken.None);
+    }
+
     private static X509Certificate2 CreateCertificate()
     {
         using var key = RSA.Create(2048);
@@ -64,6 +173,7 @@ public sealed class ReverseTunnelAgentHostedServiceTests
     {
         private readonly int expectedConnectionCount;
         private int startedConnectionCount;
+        private int activeConnectionCount;
 
         public CapturingConnectionClient(int expectedConnectionCount)
         {
@@ -73,6 +183,24 @@ public sealed class ReverseTunnelAgentHostedServiceTests
         public TaskCompletionSource AllConnectionsStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public List<int> ConnectionIndexes { get; } = [];
+
+        public int ActiveConnectionCount => Volatile.Read(ref activeConnectionCount);
+
+        public async Task WaitForConnectionCountAsync(int count)
+        {
+            while (true)
+            {
+                lock (ConnectionIndexes)
+                {
+                    if (ConnectionIndexes.Count >= count)
+                    {
+                        return;
+                    }
+                }
+
+                await Task.Delay(10);
+            }
+        }
 
         public Task RunOnceAsync(CancellationToken cancellationToken = default)
         {
@@ -91,7 +219,31 @@ public sealed class ReverseTunnelAgentHostedServiceTests
                 AllConnectionsStarted.TrySetResult();
             }
 
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            Interlocked.Increment(ref activeConnectionCount);
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref activeConnectionCount);
+            }
+        }
+
+        public async Task WaitForActiveConnectionCountAsync(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (ActiveConnectionCount == count)
+                {
+                    return;
+                }
+
+                await Task.Delay(10);
+            }
+
+            throw new TimeoutException($"Expected {count} active connections, actual {ActiveConnectionCount}.");
         }
     }
 
@@ -114,9 +266,13 @@ public sealed class ReverseTunnelAgentHostedServiceTests
 
         public X509Certificate2 LoadCertificate() => X509CertificateLoader.LoadCertificate(certificate.RawData);
 
+        public X509Certificate2 LoadTrustedIssuerCertificate() => X509CertificateLoader.LoadCertificate(certificate.RawData);
+
         public bool ShouldRenew(X509Certificate2 certificate, int renewalWindowDays, DateTimeOffset utcNow) => false;
 
         public string ReadEnrollmentCredential() => string.Empty;
+
+        public ReverseTunnelEnrollmentToken ReadEnrollmentToken() => ReverseTunnelEnrollmentToken.Parse("test-token");
     }
 
     private sealed class NoopCertificateClient : IReverseTunnelAgentCertificateClient
@@ -129,6 +285,20 @@ public sealed class ReverseTunnelAgentHostedServiceTests
         public Task<ReverseTunnelAgentCertificateClientResult> RenewAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(ReverseTunnelAgentCertificateClientResult.Success(DateTimeOffset.UtcNow.AddDays(30)));
+        }
+    }
+
+    private sealed class InMemoryReverseTunnelAgentConfigurationStore : IReverseTunnelAgentConfigurationStore
+    {
+        public long CurrentVersion { get; private set; }
+
+        public Task<Air.Cloud.Modules.ReverseTunnel.Common.Runtime.ReverseTunnelAgentConfigurationSnapshot?> LoadAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Air.Cloud.Modules.ReverseTunnel.Common.Runtime.ReverseTunnelAgentConfigurationSnapshot?>(null);
+
+        public Task SaveAsync(Air.Cloud.Modules.ReverseTunnel.Common.Runtime.ReverseTunnelAgentConfigurationSnapshot snapshot, CancellationToken cancellationToken = default)
+        {
+            CurrentVersion = snapshot.Version;
+            return Task.CompletedTask;
         }
     }
 
@@ -178,3 +348,5 @@ public sealed class ReverseTunnelAgentHostedServiceTests
         }
     }
 }
+
+

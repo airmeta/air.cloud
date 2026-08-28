@@ -1,4 +1,5 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Server;
 
 using Microsoft.Extensions.Configuration;
@@ -112,6 +113,37 @@ public sealed class ReverseTunnelAgentServiceAuthorizerTests
         Assert.Equal(["Account", "System"], options.AgentAuthorizations[0].AllowedServiceKeys);
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证授权器读取运行期配置访问器，AgentAuthorizations 热更新后新授权请求立即按新白名单判断。</para>
+    /// <para>en-us:Verifies that the authorizer reads the runtime-options accessor so new authorization requests use the updated allowlist after AgentAuthorizations hot updates.</para>
+    /// </summary>
+    [Fact]
+    public void Authorize_should_use_runtime_authorization_updates()
+    {
+        var initial = CreateAuthorizedOptions();
+        var accessor = new ReverseTunnelRuntimeOptionsAccessor(Options.Create(initial));
+        var authorizer = new ReverseTunnelAgentServiceAuthorizer(accessor);
+
+        Assert.True(authorizer.Authorize("agent-alpha", ["account"]).Succeeded);
+
+        var updated = new ReverseTunnelOptions
+        {
+            AgentAuthorizations =
+            [
+                new ReverseTunnelAgentAuthorizationOptions
+                {
+                    AgentId = "agent-alpha",
+                    AllowedServiceKeys = ["system"]
+                }
+            ]
+        };
+        updated.PostConfigure(updated, new ConfigurationBuilder().Build());
+        accessor.Update(updated);
+
+        Assert.False(authorizer.Authorize("agent-alpha", ["account"]).Succeeded);
+        Assert.True(authorizer.Authorize("agent-alpha", ["system"]).Succeeded);
+    }
+
     private static ReverseTunnelAgentServiceAuthorizer CreateAuthorizer(ReverseTunnelOptions options)
     {
         return new ReverseTunnelAgentServiceAuthorizer(Options.Create(options));
@@ -134,3 +166,5 @@ public sealed class ReverseTunnelAgentServiceAuthorizerTests
         return options;
     }
 }
+
+

@@ -20,8 +20,8 @@ public sealed class MountedReverseTunnelAgentCertificateMaterialStore : IReverse
     /// <para>en-us:Creates an Agent certificate material store backed by mounted file paths.</para>
     /// </summary>
     /// <param name="options">
-    /// <para>zh-cn:包含 Agent 证书、私钥、可信签发者和 Enrollment token 路径的反向隧道配置。</para>
-    /// <para>en-us:Reverse tunnel options containing Agent certificate, private-key, trusted-issuer, and enrollment-token paths.</para>
+    /// <para>zh-cn:包含 Agent 证书、私钥和可信签发者路径的反向隧道配置。</para>
+    /// <para>en-us:Reverse tunnel options containing Agent certificate, private-key, and trusted-issuer paths.</para>
     /// </param>
     public MountedReverseTunnelAgentCertificateMaterialStore(IOptions<ReverseTunnelOptions> options)
     {
@@ -98,26 +98,20 @@ public sealed class MountedReverseTunnelAgentCertificateMaterialStore : IReverse
     }
 
     /// <inheritdoc />
-    public string ReadEnrollmentCredential()
+    public X509Certificate2 LoadTrustedIssuerCertificate()
     {
-        var path = options.Value.AgentCertificate.EnrollmentCredentialPath;
+        var path = options.Value.AgentCertificate.TrustedIssuerPath;
         if (string.IsNullOrWhiteSpace(path))
         {
-            throw new InvalidOperationException("ReverseTunnelSettings:AgentCertificate:EnrollmentCredentialPath is required for Agent enrollment.");
+            throw new InvalidOperationException("ReverseTunnelSettings:AgentCertificate:TrustedIssuerPath is required for Agent enrollment.");
         }
 
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException("Agent enrollment credential file was not found.", path);
+            throw new FileNotFoundException("Agent trusted issuer certificate was not found.", path);
         }
 
-        var credential = File.ReadAllText(path).Trim();
-        if (string.IsNullOrWhiteSpace(credential))
-        {
-            throw new InvalidOperationException("Agent enrollment credential file is empty.");
-        }
-
-        return credential;
+        return X509CertificateLoader.LoadCertificateFromFile(path);
     }
 
     private RSA LoadOrCreatePrivateKey()

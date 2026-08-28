@@ -115,7 +115,7 @@ public sealed class ReverseTunnelAgentCertificateMaterialTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server,
+            TunnelMode = ReverseTunnelMode.Server,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
                 CertificatePath = material.CaPfxPath,
@@ -131,7 +131,7 @@ public sealed class ReverseTunnelAgentCertificateMaterialTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
             AgentId = " agent-alpha ",
             ServerAddress = " https://reverse-tunnel.example.test/ ",
             AgentCertificate = new ReverseTunnelAgentCertificateOptions
@@ -139,7 +139,6 @@ public sealed class ReverseTunnelAgentCertificateMaterialTests
                 CertificatePath = Path.Combine(material.Directory, "agent.cer"),
                 PrivateKeyPath = Path.Combine(material.Directory, "agent.key"),
                 TrustedIssuerPath = Path.Combine(material.Directory, "issuer.cer"),
-                EnrollmentCredentialPath = material.EnrollmentTokenPath,
                 PrivateKeySizeBits = 1024
             }
         };
@@ -149,12 +148,11 @@ public sealed class ReverseTunnelAgentCertificateMaterialTests
 
     private sealed class TestAgentMaterial : IDisposable
     {
-        private TestAgentMaterial(string directory, string caPfxPath, string passwordEnvironmentVariable, string enrollmentTokenPath)
+        private TestAgentMaterial(string directory, string caPfxPath, string passwordEnvironmentVariable)
         {
             Directory = directory;
             CaPfxPath = caPfxPath;
             PasswordEnvironmentVariable = passwordEnvironmentVariable;
-            EnrollmentTokenPath = enrollmentTokenPath;
         }
 
         public string Directory { get; }
@@ -163,15 +161,12 @@ public sealed class ReverseTunnelAgentCertificateMaterialTests
 
         public string PasswordEnvironmentVariable { get; }
 
-        public string EnrollmentTokenPath { get; }
-
         public static TestAgentMaterial Create()
         {
             var directory = System.IO.Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "air-cloud-reverse-tunnel-agent-tests", Guid.NewGuid().ToString("N"))).FullName;
             var passwordEnvironmentVariable = $"AIR_CLOUD_REVERSE_TUNNEL_AGENT_TEST_CA_PASSWORD_{Guid.NewGuid():N}";
             const string password = "test-ca-password";
             var caPfxPath = Path.Combine(directory, "ca.pfx");
-            var enrollmentTokenPath = Path.Combine(directory, "enrollment.token");
 
             using var caKey = RSA.Create(2048);
             var request = new CertificateRequest("CN=AirCloudReverseTunnelAgentTestCa", caKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -179,10 +174,9 @@ public sealed class ReverseTunnelAgentCertificateMaterialTests
             request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
             using var caCertificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
             File.WriteAllBytes(caPfxPath, caCertificate.Export(X509ContentType.Pkcs12, password));
-            File.WriteAllText(enrollmentTokenPath, "one-time-token");
             Environment.SetEnvironmentVariable(passwordEnvironmentVariable, password);
 
-            return new TestAgentMaterial(directory, caPfxPath, passwordEnvironmentVariable, enrollmentTokenPath);
+            return new TestAgentMaterial(directory, caPfxPath, passwordEnvironmentVariable);
         }
 
         public void Dispose()

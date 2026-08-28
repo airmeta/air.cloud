@@ -1,8 +1,8 @@
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 
 /// <summary>
-/// <para>zh-cn:反向隧道中的统一帧模型。Payload 的编码由 FrameKind 决定；首版通过该稳定模型冻结帧边界，后续再映射到 Protobuf 消息。</para>
-/// <para>en-us:Unified frame model for the reverse tunnel. FrameKind determines Payload encoding; the first version freezes the frame boundary with this stable model before mapping it to Protobuf messages.</para>
+/// <para>zh-cn:AirTunnel 的统一帧模型。`Payload` 的编码由 `FrameKind` 决定；该模型用于在业务协议负载和 gRPC Protobuf 消息之间保持稳定的帧边界。</para>
+/// <para>en-us:Unified AirTunnel frame model. `FrameKind` determines `Payload` encoding; this model keeps a stable frame boundary between business protocol payloads and gRPC Protobuf messages.</para>
 /// </summary>
 public sealed class ReverseTunnelFrame
 {
@@ -37,8 +37,8 @@ public sealed class ReverseTunnelFrame
     public byte[] Payload { get; set; } = Array.Empty<byte>();
 
     /// <summary>
-    /// <para>zh-cn:验证帧是否满足首版协议边界。该方法仅检查传输前可判定的结构，不解析具体帧载荷。</para>
-    /// <para>en-us:Validates that a frame satisfies the first-version protocol boundary. It only checks structure determinable before transport and does not parse the frame-specific payload.</para>
+    /// <para>zh-cn:验证帧是否满足当前协议边界。该方法仅检查传输前可判定的结构，不解析具体帧载荷。</para>
+    /// <para>en-us:Validates that a frame satisfies the current protocol boundary. It only checks structure determinable before transport and does not parse the frame-specific payload.</para>
     /// </summary>
     /// <exception cref="InvalidOperationException">
     /// <para>zh-cn:协议版本、会话标识或流标识不符合当前帧类型时抛出。</para>
@@ -82,6 +82,9 @@ public sealed class ReverseTunnelFrame
         return Kind is ReverseTunnelFrameKind.Hello
             or ReverseTunnelFrameKind.Welcome
             or ReverseTunnelFrameKind.Ping
-            or ReverseTunnelFrameKind.Pong;
+            or ReverseTunnelFrameKind.Pong
+            or ReverseTunnelFrameKind.ConfigurationOffer
+            or ReverseTunnelFrameKind.ConfigurationAck
+            or ReverseTunnelFrameKind.ConfigurationReject;
     }
 }

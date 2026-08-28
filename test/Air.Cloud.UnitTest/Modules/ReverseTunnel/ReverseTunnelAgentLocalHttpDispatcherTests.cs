@@ -117,6 +117,68 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证 Agent 使用拆分后的 Protocol、Host、Port 组成本地 HTTP 目标。</para>
+    /// <para>en-us:Verifies that the Agent builds its local HTTP target from the split Protocol, Host, and Port fields.</para>
+    /// </summary>
+    [Fact]
+    public async Task Dispatcher_should_build_target_from_split_address_fields()
+    {
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK));
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Agent,
+            LocalServices =
+            [
+                new ReverseTunnelLocalServiceOptions
+                {
+                    ServiceKey = "order-service",
+                    Protocol = "https",
+                    Host = "orders.internal",
+                    Port = 8443
+                }
+            ]
+        };
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+        var dispatcher = new ReverseTunnelAgentLocalHttpDispatcher(Options.Create(options), new FixedHttpClientFactory(new HttpClient(handler)));
+
+        await dispatcher.DispatchAsync(new ReverseTunnelHttpRequestPayload
+        {
+            ServiceKey = "order-service",
+            Method = "GET",
+            PathAndQuery = "/health"
+        }, Array.Empty<byte>());
+
+        Assert.Equal(new Uri("https://orders.internal:8443/health"), handler.LastRequestUri);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Agent 兼容旧 Gateway 将查询分隔符编码为 `%3F` 的请求负载，并恢复原始 path/query 语义。</para>
+    /// <para>en-us:Verifies that the Agent accepts legacy Gateway payloads with an encoded `%3F` query separator and restores the original path/query semantics.</para>
+    /// </summary>
+    [Fact]
+    public async Task Dispatcher_should_restore_encoded_query_separator()
+    {
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"data\":1}", System.Text.Encoding.UTF8, "application/json")
+        });
+        var dispatcher = new ReverseTunnelAgentLocalHttpDispatcher(
+            Options.Create(CreateOptions()),
+            new FixedHttpClientFactory(new HttpClient(handler)));
+
+        var response = await dispatcher.DispatchAsync(new ReverseTunnelHttpRequestPayload
+        {
+            ServiceKey = "order-service",
+            Method = "GET",
+            PathAndQuery = "/prod-api/system/quickEntry/statistics%3FentryType=SERVICE"
+        }, Array.Empty<byte>());
+
+        Assert.Equal(new Uri("http://127.0.0.1:5101/prod-api/system/quickEntry/statistics?entryType=SERVICE"), handler.LastRequestUri);
+        Assert.Equal("{\"data\":1}", System.Text.Encoding.UTF8.GetString(response.Body));
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证无请求体的 GET 经 Agent 本地分发时不会创建 HttpContent，避免本地 Ocelot 收到 `Transfer-Encoding: chunked` 后转下游失败。</para>
     /// <para>en-us:Verifies that a body-less GET dispatched by the Agent does not create HttpContent, avoiding local Ocelot downstream failures caused by `Transfer-Encoding: chunked`.</para>
     /// </summary>
@@ -157,20 +219,21 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
     /// <para>en-us:Verifies that absolute URIs in request payloads are rejected so the Server cannot make the Agent access arbitrary unconfigured targets.</para>
     /// </summary>
     [Fact]
-    public async Task Dispatcher_should_reject_absolute_uri_from_request_payload()
+    public async Task Dispatcher_should_normalize_absolute_uri_to_configured_local_service()
     {
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK));
         var dispatcher = new ReverseTunnelAgentLocalHttpDispatcher(
             Options.Create(CreateOptions()),
-            new FixedHttpClientFactory(new HttpClient(new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)))));
+            new FixedHttpClientFactory(new HttpClient(handler)));
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => dispatcher.DispatchAsync(new ReverseTunnelHttpRequestPayload
+        await dispatcher.DispatchAsync(new ReverseTunnelHttpRequestPayload
         {
             ServiceKey = "order-service",
             Method = "GET",
             PathAndQuery = "http://169.254.169.254/latest/meta-data"
-        }, Array.Empty<byte>()));
+        }, Array.Empty<byte>());
 
-        Assert.Contains("must not be an absolute URI", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(new Uri("http://127.0.0.1:5101/latest/meta-data"), handler.LastRequestUri);
     }
 
     /// <summary>
@@ -203,7 +266,7 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcherTests
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Agent,
+            TunnelMode = ReverseTunnelMode.Agent,
             MaxRequestBodyBytes = 1024,
             MaxResponseBodyBytes = maxResponseBodyBytes,
             LocalServices =

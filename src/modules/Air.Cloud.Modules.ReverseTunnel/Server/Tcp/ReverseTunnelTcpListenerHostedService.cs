@@ -1,12 +1,14 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Server.Tcp;
@@ -17,13 +19,15 @@ namespace Air.Cloud.Modules.ReverseTunnel.Server.Tcp;
 /// </summary>
 public sealed class ReverseTunnelTcpListenerHostedService : BackgroundService
 {
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
     private readonly IReverseTunnelSessionRegistry sessionRegistry;
+    private readonly IReverseTunnelAgentRouteCatalog? agentRouteCatalog;
     private readonly ILogger<ReverseTunnelTcpListenerHostedService> logger;
+    private readonly ConcurrentDictionary<string, ListenerRegistration> listeners = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// <para>zh-cn:创建 TCP 监听后台服务。服务只在模块启用、当前进程包含 Server 角色且 TCP 配置启用时绑定端口。</para>
-    /// <para>en-us:Creates the TCP listener background service. It binds ports only when the module is enabled, the current process includes the Server role, and TCP options are enabled.</para>
+    /// <para>en-us:Creates the TCP listener background service. It binds ports only when the module is enabled, the current process uses Server mode, and TCP options are enabled.</para>
     /// </summary>
     /// <param name="options">
     /// <para>zh-cn:AirTunnel 配置访问器。</para>
@@ -37,13 +41,19 @@ public sealed class ReverseTunnelTcpListenerHostedService : BackgroundService
     /// <para>zh-cn:日志记录器。</para>
     /// <para>en-us:Logger.</para>
     /// </param>
+    /// <param name="agentRouteCatalog">
+    /// <para>zh-cn:由 Agent 本地服务配置派生的监听器目录，可选。</para>
+    /// <para>en-us:Optional catalog of listeners derived from Agent local-service configuration.</para>
+    /// </param>
     public ReverseTunnelTcpListenerHostedService(
-        IOptions<ReverseTunnelOptions> options,
+        IReverseTunnelRuntimeOptionsAccessor options,
         IReverseTunnelSessionRegistry sessionRegistry,
-        ILogger<ReverseTunnelTcpListenerHostedService> logger)
+        ILogger<ReverseTunnelTcpListenerHostedService> logger,
+        IReverseTunnelAgentRouteCatalog? agentRouteCatalog = null)
     {
         this.options = options;
         this.sessionRegistry = sessionRegistry;
+        this.agentRouteCatalog = agentRouteCatalog;
         this.logger = logger;
     }
 
@@ -61,14 +71,96 @@ public sealed class ReverseTunnelTcpListenerHostedService : BackgroundService
     /// </returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var settings = options.Value;
-        if (!settings.Enabled || !settings.Roles.HasFlag(ReverseTunnelRole.Server) || !settings.Tcp.Enabled)
+        try
         {
-            return;
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await ReconcileListenersAsync(stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            await StopAllListenersAsync();
+        }
+    }
+
+    private async Task ReconcileListenersAsync(CancellationToken stoppingToken)
+    {
+        var settings = options.Current;
+        var desired = settings.Enabled && settings.TunnelMode == ReverseTunnelMode.Server && settings.Tcp.Enabled
+            ? settings.Tcp.Listeners
+                .Concat(agentRouteCatalog?.ListTcpListeners() ?? [])
+                .Where(IsRunnable)
+                .GroupBy(CreateBindingKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToDictionary(CreateListenerKey, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, ReverseTunnelTcpListenerOptions>(StringComparer.OrdinalIgnoreCase);
+
+        var stopped = new List<ListenerRegistration>();
+        foreach (var item in listeners.ToArray())
+        {
+            if (item.Value.Task.IsCompleted || !desired.ContainsKey(item.Key))
+            {
+                if (listeners.TryRemove(item.Key, out var registration))
+                {
+                    registration.Stop();
+                    stopped.Add(registration);
+                }
+            }
         }
 
-        var tasks = settings.Tcp.Listeners.Select(listener => RunListenerAsync(listener, stoppingToken)).ToArray();
-        await Task.WhenAll(tasks);
+        foreach (var registration in stopped)
+        {
+            await ObserveAndDisposeAsync(registration);
+        }
+
+        foreach (var item in desired)
+        {
+            listeners.GetOrAdd(item.Key, _ =>
+            {
+                var cancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                var task = Task.Run(() => RunListenerAsync(item.Value, cancellation.Token), CancellationToken.None);
+                return new ListenerRegistration(cancellation, task);
+            });
+        }
+    }
+
+    private async Task StopAllListenersAsync()
+    {
+        var registrations = listeners.ToArray();
+        listeners.Clear();
+        foreach (var item in registrations)
+        {
+            item.Value.Stop();
+        }
+
+        foreach (var item in registrations)
+        {
+            await ObserveAndDisposeAsync(item.Value);
+        }
+    }
+
+    private async Task ObserveAndDisposeAsync(ListenerRegistration registration)
+    {
+        try
+        {
+            await registration.Task;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "AirTunnel TCP listener stopped with an error.");
+        }
+        finally
+        {
+            registration.Dispose();
+        }
     }
 
     private async Task RunListenerAsync(ReverseTunnelTcpListenerOptions listenerOptions, CancellationToken cancellationToken)
@@ -121,7 +213,8 @@ public sealed class ReverseTunnelTcpListenerHostedService : BackgroundService
                 using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                 var idleTimeout = TimeSpan.FromSeconds(listenerOptions.IdleTimeoutSeconds);
                 linkedCancellation.CancelAfter(idleTimeout);
-                var inboundData = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(Math.Max(16, options.Value.OutboundFrameQueueCapacity))
+                var currentOptions = options.Current;
+                var inboundData = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(Math.Max(16, currentOptions.OutboundFrameQueueCapacity))
                 {
                     SingleReader = true,
                     SingleWriter = true,
@@ -163,7 +256,7 @@ public sealed class ReverseTunnelTcpListenerHostedService : BackgroundService
 
     private async Task ReadClientAsync(NetworkStream networkStream, ChannelWriter<byte[]> writer, CancellationTokenSource cancellation, TimeSpan idleTimeout)
     {
-        var buffer = new byte[Math.Max(1_024, options.Value.MaxFramePayloadBytes)];
+        var buffer = new byte[Math.Max(1_024, options.Current.MaxFramePayloadBytes)];
         try
         {
             while (!cancellation.IsCancellationRequested)
@@ -199,5 +292,50 @@ public sealed class ReverseTunnelTcpListenerHostedService : BackgroundService
         return IPAddress.TryParse(host, out var address)
             ? new IPEndPoint(address, port)
             : new IPEndPoint(Dns.GetHostAddresses(host).First(), port);
+    }
+
+    private static bool IsRunnable(ReverseTunnelTcpListenerOptions listener)
+    {
+        return listener is not null &&
+            !string.IsNullOrWhiteSpace(listener.ServiceKey) &&
+            listener.ListenPort > 0;
+    }
+
+    private static string CreateListenerKey(ReverseTunnelTcpListenerOptions listener)
+    {
+        return string.Join('|',
+            listener.Name,
+            listener.ServiceKey,
+            listener.ListenHost,
+            listener.ListenPort,
+            listener.MaxConnections,
+            listener.ConnectTimeoutSeconds,
+            listener.IdleTimeoutSeconds);
+    }
+
+    private static string CreateBindingKey(ReverseTunnelTcpListenerOptions listener)
+        => string.Join('|', listener.ServiceKey, listener.ListenHost, listener.ListenPort);
+
+    private sealed class ListenerRegistration : IDisposable
+    {
+        public ListenerRegistration(CancellationTokenSource cancellation, Task task)
+        {
+            Cancellation = cancellation;
+            Task = task;
+        }
+
+        public CancellationTokenSource Cancellation { get; }
+
+        public Task Task { get; }
+
+        public void Stop()
+        {
+            Cancellation.Cancel();
+        }
+
+        public void Dispose()
+        {
+            Cancellation.Dispose();
+        }
     }
 }

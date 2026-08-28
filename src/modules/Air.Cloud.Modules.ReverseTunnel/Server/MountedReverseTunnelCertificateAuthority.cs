@@ -32,17 +32,27 @@ public sealed class MountedReverseTunnelCertificateAuthority : IReverseTunnelCer
     public X509Certificate2 LoadIssuerCertificate()
     {
         var certificateAuthority = options.Value.CertificateAuthority;
-        var password = Environment.GetEnvironmentVariable(certificateAuthority.CertificatePasswordEnvironmentVariable);
+        var password = Environment.GetEnvironmentVariable(certificateAuthority.CertificatePasswordEnvironmentVariable)?.Trim();
         if (string.IsNullOrEmpty(password))
         {
             throw new InvalidOperationException($"Environment variable '{certificateAuthority.CertificatePasswordEnvironmentVariable}' must contain the mounted CA PFX password.");
         }
 
-        var certificate = X509CertificateLoader.LoadPkcs12FromFile(
-            certificateAuthority.CertificatePath,
-            password,
-            X509KeyStorageFlags.EphemeralKeySet,
-            Pkcs12LoaderLimits.Defaults);
+        X509Certificate2 certificate;
+        try
+        {
+            certificate = X509CertificateLoader.LoadPkcs12FromFile(
+                certificateAuthority.CertificatePath,
+                password,
+                X509KeyStorageFlags.EphemeralKeySet,
+                Pkcs12LoaderLimits.Defaults);
+        }
+        catch (CryptographicException exception)
+        {
+            throw new InvalidOperationException(
+                $"Reverse tunnel CA PFX could not be opened. Path='{certificateAuthority.CertificatePath}', password environment variable='{certificateAuthority.CertificatePasswordEnvironmentVariable}'. Verify that the mounted ca.pfx and the environment variable come from the same certificate bundle; trailing line breaks are ignored.",
+                exception);
+        }
 
         if (!certificate.HasPrivateKey)
         {

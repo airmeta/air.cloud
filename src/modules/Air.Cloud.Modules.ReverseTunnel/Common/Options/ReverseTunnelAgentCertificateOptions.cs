@@ -25,10 +25,10 @@ public sealed class ReverseTunnelAgentCertificateOptions
     public string TrustedIssuerPath { get; set; } = string.Empty;
 
     /// <summary>
-    /// <para>zh-cn:可选的一次性 Enrollment token 挂载文件路径。配置只保存路径，token 内容只从该文件读取。</para>
-    /// <para>en-us:Optional mounted-file path for the one-time enrollment token. Configuration stores only the path, and the token value is read only from that file.</para>
+    /// <para>zh-cn:Agent 运行期配置快照的本地文件路径。留空时使用证书文件所在目录下的 `airtunnel.agent.snapshot.json`；快照只保存配置，不保存私钥或 Enrollment token。</para>
+    /// <para>en-us:Local path for the Agent runtime configuration snapshot. When empty, `airtunnel.agent.snapshot.json` is stored beside the certificate; the snapshot contains configuration only and never private keys or enrollment tokens.</para>
     /// </summary>
-    public string EnrollmentCredentialPath { get; set; } = string.Empty;
+    public string ConfigurationSnapshotPath { get; set; } = string.Empty;
 
     /// <summary>
     /// <para>zh-cn:Agent 本地生成 RSA 私钥时使用的位数。默认 2048，后置配置会限制在 2048 到 4096。</para>
@@ -41,7 +41,7 @@ public sealed class ReverseTunnelAgentCertificateOptions
         CertificatePath = CertificatePath?.Trim() ?? string.Empty;
         PrivateKeyPath = PrivateKeyPath?.Trim() ?? string.Empty;
         TrustedIssuerPath = TrustedIssuerPath?.Trim() ?? string.Empty;
-        EnrollmentCredentialPath = EnrollmentCredentialPath?.Trim() ?? string.Empty;
+        ConfigurationSnapshotPath = ConfigurationSnapshotPath?.Trim() ?? string.Empty;
         PrivateKeySizeBits = Math.Clamp(PrivateKeySizeBits, 2048, 4096);
     }
 }

@@ -26,4 +26,28 @@ public sealed class ReverseTunnelSessionDiagnosticsSnapshot
 
     /// <summary><para>zh-cn:该会话当前未完成的 HTTP 请求流数量。</para><para>en-us:Number of unfinished HTTP request streams in this session.</para></summary>
     public int ActiveStreamCount { get; init; }
+
+    /// <summary><para>zh-cn:Agent 在 Hello 中上报的当前配置版本。</para><para>en-us:Configuration version reported by the Agent in its Hello frame.</para></summary>
+    public long ConfigurationVersion { get; init; }
+
+    /// <summary><para>zh-cn:Server 期望下发的配置版本。</para><para>en-us:Configuration version currently desired by the Server.</para></summary>
+    public long DesiredConfigurationVersion { get; init; }
+
+    /// <summary><para>zh-cn:最近一次配置下发状态。</para><para>en-us:Latest configuration delivery status.</para></summary>
+    public string ConfigurationDeliveryStatus { get; init; } = string.Empty;
+
+    /// <summary><para>zh-cn:最近一次配置下发失败原因。</para><para>en-us:Failure reason from the latest configuration delivery.</para></summary>
+    public string? ConfigurationDeliveryFailureReason { get; init; }
+
+    /// <summary><para>zh-cn:最近一次配置下发时间。</para><para>en-us:UTC time of the latest configuration delivery.</para></summary>
+    public DateTimeOffset? ConfigurationDeliveryAtUtc { get; init; }
+
+    /// <summary><para>zh-cn:签发该 Agent 证书的 CA 指纹。</para><para>en-us:Thumbprint of the CA that issued the Agent certificate.</para></summary>
+    public string CertificateIssuerThumbprint { get; init; } = string.Empty;
+
+    /// <summary><para>zh-cn:Agent 证书序列号。</para><para>en-us:Agent certificate serial number.</para></summary>
+    public string CertificateSerialNumber { get; init; } = string.Empty;
+
+    /// <summary><para>zh-cn:Agent 证书 Subject。</para><para>en-us:Agent certificate Subject.</para></summary>
+    public string CertificateSubject { get; init; } = string.Empty;
 }

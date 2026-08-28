@@ -6,8 +6,8 @@ using Microsoft.Extensions.Configuration;
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Options;
 
 /// <summary>
-/// <para>zh-cn:反向隧道模块配置。模块默认禁用，必须显式设置 Enabled 并选择运行角色后才会在后续阶段建立网络连接或接管 Ocelot 路由。</para>
-/// <para>en-us:Reverse tunnel module configuration. The module is disabled by default; a later phase establishes network connections or handles Ocelot routes only after Enabled and runtime roles are explicitly configured.</para>
+/// <para>zh-cn:反向隧道模块配置。模块默认禁用；启用后由 TunnelMode 决定连接端角色，由 EnableTunnelProxy 独立决定是否接管动态 HTTP 路由。</para>
+/// <para>en-us:Reverse tunnel module configuration. The module is disabled by default; when enabled, TunnelMode selects the connection endpoint role and EnableTunnelProxy independently controls dynamic HTTP route interception.</para>
 /// </summary>
 [ConfigurationInfo("ReverseTunnelSettings")]
 public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOptions, ReverseTunnelOptionsValidation>
@@ -15,13 +15,16 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     /// <summary><para>zh-cn:是否启用模块。默认 false。</para><para>en-us:Whether the module is enabled. The default is false.</para></summary>
     public bool Enabled { get; set; }
 
-    /// <summary><para>zh-cn:当前进程启用的运行角色。</para><para>en-us:Runtime roles enabled by the current process.</para></summary>
-    public ReverseTunnelRole Roles { get; set; } = ReverseTunnelRole.None;
+    /// <summary><para>zh-cn:当前进程的隧道连接模式。Server 接收 Agent，Agent 主动连接 Server；None 仅用于不承载连接端的管理或独立远程 Gateway 场景。</para><para>en-us:Connection mode for the current process. Server accepts Agents, Agent actively connects to Server, and None is reserved for management-only or standalone remote Gateway scenarios.</para></summary>
+    public ReverseTunnelMode TunnelMode { get; set; }
 
-    /// <summary><para>zh-cn:Agent 稳定身份。仅 Agent 角色需要配置。</para><para>en-us:Stable Agent identity. Only the Agent role requires this value.</para></summary>
+    /// <summary><para>zh-cn:是否启用 Gateway 动态隧道代理。该开关只控制 HTTP 路由拦截，不改变 Server 或 Agent 的连接职责。</para><para>en-us:Whether to enable Gateway dynamic tunnel proxying. This switch controls only HTTP route interception and does not change the Server or Agent connection responsibility.</para></summary>
+    public bool EnableTunnelProxy { get; set; }
+
+    /// <summary><para>zh-cn:Agent 稳定身份。仅 Agent 模式需要配置。</para><para>en-us:Stable Agent identity. Only Agent mode requires this value.</para></summary>
     public string AgentId { get; set; } = string.Empty;
 
-    /// <summary><para>zh-cn:Agent 主动连接的 Server 地址。仅 Agent 角色需要配置。</para><para>en-us:Server address to which the Agent actively connects. Only the Agent role requires this value.</para></summary>
+    /// <summary><para>zh-cn:Agent 主动连接的 Server 地址。仅 Agent 模式需要配置。</para><para>en-us:Server address to which the Agent actively connects. Only Agent mode requires this value.</para></summary>
     public string ServerAddress { get; set; } = string.Empty;
 
     /// <summary>
@@ -66,21 +69,33 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     /// <summary><para>zh-cn:Agent 指数退避重连的最大等待秒数。默认 60 秒。</para><para>en-us:Maximum reconnect delay in seconds for Agent exponential backoff. The default is 60 seconds.</para></summary>
     public int AgentReconnectMaxDelaySeconds { get; set; } = 60;
 
-    /// <summary><para>zh-cn:由 Ocelot 虚拟主机定位的隧道路由集合。</para><para>en-us:Tunnel route collection located by Ocelot virtual hosts.</para></summary>
+    /// <summary>
+    /// <para>zh-cn:Agent 周期主动查询 Server 目标配置的设置。默认每 30 秒查询一次。</para>
+    /// <para>en-us:Settings for the Agent's periodic active queries of Server desired configuration. The default interval is 30 seconds.</para>
+    /// </summary>
+    public ReverseTunnelConfigurationSyncOptions ConfigurationSync { get; set; } = new();
+
+    /// <summary><para>zh-cn:已废弃的显式隧道路由集合。新 Gateway 只使用 Agent 配置目录派生路由，该集合不会被读取。</para><para>en-us:Deprecated explicit tunnel route collection. The new Gateway uses only routes derived from the Agent configuration catalog and never reads this collection.</para></summary>
     public List<ReverseTunnelRouteOptions> Routes { get; set; } = [];
 
     /// <summary><para>zh-cn:Agent 可代理的本地服务集合。</para><para>en-us:Collection of local services that an Agent can proxy.</para></summary>
     public List<ReverseTunnelLocalServiceOptions> LocalServices { get; set; } = [];
 
     /// <summary>
+    /// <para>zh-cn:Gateway 侧远程调用配置。用于 Gateway 不承载 Server 角色时，把 Ocelot 命中的隧道请求转发给独立 AirTunnel Server 进程。</para>
+    /// <para>en-us:Gateway-side remote invocation options. These settings are used when the Gateway process does not use Server mode and needs to forward Ocelot tunnel requests to a standalone AirTunnel Server process.</para>
+    /// </summary>
+    public ReverseTunnelGatewayOptions Gateway { get; set; } = new();
+
+    /// <summary>
     /// <para>zh-cn:TCP 穿透配置。Server 角色按监听器绑定端口，Agent 角色按本地服务声明真实目标。</para>
-    /// <para>en-us:TCP tunneling options. The Server role binds ports through listeners, while the Agent role declares real local targets through local services.</para>
+    /// <para>en-us:TCP tunneling options. Server mode binds ports through listeners, while Agent mode declares real local targets through local services.</para>
     /// </summary>
     public ReverseTunnelTcpOptions Tcp { get; set; } = new();
 
     /// <summary>
     /// <para>zh-cn:UDP 穿透配置。Server 角色按监听器绑定端口并维护流表，Agent 角色按本地服务声明真实目标。</para>
-    /// <para>en-us:UDP tunneling options. The Server role binds ports and maintains flow entries, while the Agent role declares real local targets through local services.</para>
+    /// <para>en-us:UDP tunneling options. Server mode binds ports and maintains flow entries, while Agent mode declares real local targets through local services.</para>
     /// </summary>
     public ReverseTunnelUdpOptions Udp { get; set; } = new();
 
@@ -97,8 +112,8 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     public ReverseTunnelCertificateAuthorityOptions CertificateAuthority { get; set; } = new();
 
     /// <summary>
-    /// <para>zh-cn:Agent 首次注册或证书恢复使用的 Enrollment 配置。配置中只保存挂载目录，不保存一次性凭据内容。</para>
-    /// <para>en-us:Enrollment configuration used for initial Agent registration or certificate recovery. Configuration stores only the mounted directory and never stores one-time credential values.</para>
+    /// <para>zh-cn:Agent 首次注册或证书恢复使用的 Enrollment 配置。首次注册通过 CA 加密 GUID 和服务端 replay store 完成。</para>
+    /// <para>en-us:Enrollment configuration used for initial Agent registration or certificate recovery. Initial registration uses a CA-encrypted GUID and the Server replay store.</para>
     /// </summary>
     public ReverseTunnelEnrollmentOptions Enrollment { get; set; } = new();
 
@@ -113,6 +128,12 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     /// <para>en-us:Diagnostic HTTP API options. These options only control read-only in-process snapshot APIs and do not enable an external observability platform or remote collector.</para>
     /// </summary>
     public ReverseTunnelDiagnosticsOptions Diagnostics { get; set; } = new();
+
+    /// <summary>
+    /// <para>zh-cn:Server 远程管理端配置。管理端应使用独立监听端口，并通过访问 token 控制配置写入和客户端运维动作。</para>
+    /// <para>en-us:Server remote-management options. The management endpoint should use a dedicated listen port and protect configuration writes and client operations with an access token.</para>
+    /// </summary>
+    public ReverseTunnelManagementOptions Management { get; set; } = new();
 
     /// <summary>
     /// <para>zh-cn:标准化配置默认值和字符串键。该过程不自动启用模块，也不允许通过默认值创建可访问的网络入口。</para>
@@ -141,9 +162,13 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
         OutboundFrameQueueCapacity = Math.Clamp(OutboundFrameQueueCapacity, 16, 65_536);
         AgentReconnectInitialDelaySeconds = Math.Clamp(AgentReconnectInitialDelaySeconds, 1, 300);
         AgentReconnectMaxDelaySeconds = Math.Clamp(Math.Max(AgentReconnectMaxDelaySeconds, AgentReconnectInitialDelaySeconds), AgentReconnectInitialDelaySeconds, 3600);
+        ConfigurationSync ??= new ReverseTunnelConfigurationSyncOptions();
+        ConfigurationSync.Normalize();
 
         Routes ??= [];
         LocalServices ??= [];
+        Gateway ??= new ReverseTunnelGatewayOptions();
+        Gateway.Normalize();
         Tcp ??= new ReverseTunnelTcpOptions();
         Tcp.Normalize();
         Udp ??= new ReverseTunnelUdpOptions();
@@ -157,6 +182,8 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
         AgentCertificate.Normalize();
         Diagnostics ??= new ReverseTunnelDiagnosticsOptions();
         Diagnostics.Normalize();
+        Management ??= new ReverseTunnelManagementOptions();
+        Management.Normalize();
 
         foreach (var route in Routes)
         {
@@ -168,9 +195,35 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
             localService?.Normalize();
         }
 
-        foreach (var authorization in AgentAuthorizations)
+        NormalizeAgentAuthorizations();
+    }
+
+    private void NormalizeAgentAuthorizations()
+    {
+        var merged = new Dictionary<string, ReverseTunnelAgentAuthorizationOptions>(StringComparer.OrdinalIgnoreCase);
+        foreach (var authorization in AgentAuthorizations.Where(authorization => authorization is not null))
         {
-            authorization?.Normalize();
+            authorization.Normalize();
+            if (string.IsNullOrWhiteSpace(authorization.AgentId))
+            {
+                merged[$"__invalid_{merged.Count}"] = authorization;
+                continue;
+            }
+
+            if (!merged.TryGetValue(authorization.AgentId, out var existing))
+            {
+                merged[authorization.AgentId] = authorization;
+                continue;
+            }
+
+            existing.AllowedServiceKeys = existing.AllowedServiceKeys
+                .Concat(authorization.AllowedServiceKeys)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
+
+        AgentAuthorizations = merged.Values.ToList();
     }
 }

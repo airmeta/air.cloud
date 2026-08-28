@@ -1,8 +1,8 @@
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
 
 /// <summary>
-/// <para>zh-cn:反向隧道首版协议常量。当前版本仅定义 HTTP 请求转发所需的帧语义，传输层会在后续阶段实现为 gRPC 双向流。</para>
-/// <para>en-us:Reverse tunnel first-version protocol constants. This version defines frame semantics required for HTTP forwarding; a later phase will implement the transport as a bidirectional gRPC stream.</para>
+/// <para>zh-cn:AirTunnel 协议常量。当前协议版本通过 gRPC 双向流承载控制帧、HTTP 请求/响应流、TCP 字节流和 UDP 数据报帧。</para>
+/// <para>en-us:AirTunnel protocol constants. The current protocol version uses bidirectional gRPC streams to carry control frames, HTTP request/response streams, TCP byte streams, and UDP datagram frames.</para>
 /// </summary>
 public static class ReverseTunnelProtocol
 {

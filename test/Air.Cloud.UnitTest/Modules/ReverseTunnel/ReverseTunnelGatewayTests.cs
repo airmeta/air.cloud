@@ -22,8 +22,8 @@ namespace Air.Cloud.UnitTest.Modules.ReverseTunnel;
 public sealed class ReverseTunnelGatewayTests
 {
     /// <summary>
-    /// <para>zh-cn:验证 Ocelot opt-in 处理器在虚拟主机命中隧道路由时，不继续访问普通下游地址，而是调用隧道调用器。</para>
-    /// <para>en-us:Verifies that the Ocelot opt-in handler invokes the tunnel invoker instead of continuing to an ordinary downstream address when the virtual host matches a tunnel route.</para>
+    /// <para>zh-cn:验证旧 Ocelot 虚拟主机配置不会再触发隧道调用器。</para>
+    /// <para>en-us:Verifies that legacy Ocelot virtual-host configuration no longer invokes the tunnel invoker.</para>
     /// </summary>
     [Fact]
     public async Task Delegating_handler_should_invoke_tunnel_for_matching_virtual_host()
@@ -38,8 +38,8 @@ public sealed class ReverseTunnelGatewayTests
 
         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://tunnel-order-service/orders"), CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.Equal("order-service", invoker.LastRoute?.ServiceKey);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(invoker.LastRoute);
     }
 
     /// <summary>
@@ -69,10 +69,82 @@ public sealed class ReverseTunnelGatewayTests
 
         var response = await client.SendAsync(request, CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.NotNull(invoker.LastRequest?.Content);
-        Assert.Equal("application/json", invoker.LastRequest.Content!.Headers.ContentType?.MediaType);
-        Assert.Equal("{}", await invoker.LastRequest.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(invoker.LastRequest);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Ocelot 请求没有命中 AirTunnel 虚拟主机并回落到普通下游链路时，处理器仍会从当前 ASP.NET 请求恢复缺失的请求体和内容头，避免入口 Gateway 代理普通 POST 请求时把下游请求变成空体、无媒体类型请求。</para>
+    /// <para>en-us:Verifies that when an Ocelot request does not match an AirTunnel virtual host and falls back to the ordinary downstream chain, the handler still restores missing request content and content headers from the current ASP.NET request so an entry Gateway proxying a normal POST request does not turn the downstream request into an empty media-type-less request.</para>
+    /// </summary>
+    [Fact]
+    public async Task Delegating_handler_should_restore_content_before_fallback_to_inner_handler()
+    {
+        var options = CreateGatewayOptions(enabled: true);
+        var invoker = new CapturingInvoker(new HttpResponseMessage(HttpStatusCode.Accepted));
+        var innerHandler = new StaticResponseHandler(HttpStatusCode.OK);
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Post;
+        httpContext.Request.ContentType = "application/json";
+        httpContext.Request.ContentLength = 2;
+        httpContext.Request.Body = new MemoryStream("{}"u8.ToArray());
+        using var handler = new ReverseTunnelDelegatingHandler(
+            new ReverseTunnelRouteProvider(Options.Create(options)),
+            invoker,
+            Options.Create(options),
+            new HttpContextAccessor { HttpContext = httpContext })
+        {
+            InnerHandler = innerHandler
+        };
+        using var client = new HttpMessageInvoker(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "http://old-gateway/hffcj_auth_api/route/validate");
+
+        var response = await client.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(invoker.LastRoute);
+        Assert.NotNull(innerHandler.LastRequest?.Content);
+        Assert.Equal("application/json", innerHandler.LastRequest.Content!.Headers.ContentType?.MediaType);
+        Assert.Equal(2, innerHandler.LastRequest.Content.Headers.ContentLength);
+        Assert.Equal("{}", await innerHandler.LastRequest.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Ocelot 已创建长度为 0 的空请求内容、但原始 ASP.NET 请求仍有请求体时，处理器会替换该空内容，避免下游发送阶段因为实际写入字节超过 `Content-Length: 0` 而返回 502。</para>
+    /// <para>en-us:Verifies that when Ocelot has already created an empty zero-length request content while the original ASP.NET request still has a body, the handler replaces that empty content so the downstream send stage does not return 502 because the actual written bytes exceed `Content-Length: 0`.</para>
+    /// </summary>
+    [Fact]
+    public async Task Delegating_handler_should_replace_zero_length_content_from_http_context()
+    {
+        var options = CreateGatewayOptions(enabled: true);
+        var invoker = new CapturingInvoker(new HttpResponseMessage(HttpStatusCode.Accepted));
+        var innerHandler = new StaticResponseHandler(HttpStatusCode.OK);
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Post;
+        httpContext.Request.ContentType = "application/json";
+        httpContext.Request.ContentLength = 2;
+        httpContext.Request.Body = new MemoryStream("{}"u8.ToArray());
+        using var handler = new ReverseTunnelDelegatingHandler(
+            new ReverseTunnelRouteProvider(Options.Create(options)),
+            invoker,
+            Options.Create(options),
+            new HttpContextAccessor { HttpContext = httpContext })
+        {
+            InnerHandler = innerHandler
+        };
+        using var client = new HttpMessageInvoker(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "http://old-gateway/hffcj_auth_api/route/validate")
+        {
+            Content = new ByteArrayContent(Array.Empty<byte>())
+        };
+
+        var response = await client.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(invoker.LastRoute);
+        Assert.NotNull(innerHandler.LastRequest?.Content);
+        Assert.Equal("application/json", innerHandler.LastRequest.Content!.Headers.ContentType?.MediaType);
+        Assert.Equal("{}", await innerHandler.LastRequest.Content.ReadAsStringAsync());
     }
 
     /// <summary>
@@ -218,7 +290,8 @@ public sealed class ReverseTunnelGatewayTests
         var options = new ReverseTunnelOptions
         {
             Enabled = enabled,
-            Roles = ReverseTunnelRole.Gateway,
+            TunnelMode = ReverseTunnelMode.None,
+            EnableTunnelProxy = true,
             MaxRequestBodyBytes = maxRequestBodyBytes,
             Routes =
             [
@@ -275,9 +348,14 @@ public sealed class ReverseTunnelGatewayTests
             this.statusCode = statusCode;
         }
 
+        public HttpRequestMessage? LastRequest { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            LastRequest = request;
             return Task.FromResult(new HttpResponseMessage(statusCode));
         }
     }
 }
+
+

@@ -1,0 +1,23 @@
+{
+  "ReverseTunnelSettings": {
+    "Enabled": true,
+    "TunnelMode": "Server",
+    "EnableTunnelProxy": true,
+    "SessionSelectionStrategy": "RoundRobin",
+    "Gateway": {
+      "InvokePathPrefix": "/_airtunnel/gateway",
+      "AccessTokenEnvironmentVariable": "AIR_TUNNEL_GATEWAY_TOKEN"
+    },
+    "CertificateAuthority": {
+      "CertificatePath": "X:/air-cloud-reverse-tunnel/server/ca.pfx",
+      "CertificatePasswordEnvironmentVariable": "AIR_TUNNEL_CA_PASSWORD",
+      "AgentCertificateLifetimeDays": 30,
+      "RenewalWindowDays": 7,
+      "RenewalOverlapHours": 24
+    },
+    "Enrollment": {
+      "Enabled": true,
+      "ReplayWindowSeconds": 300
+    }
+  }
+}

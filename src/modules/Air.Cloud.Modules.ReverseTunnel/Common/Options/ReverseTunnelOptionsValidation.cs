@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
 
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Options;
 
 /// <summary>
-/// <para>zh-cn:反向隧道选项验证器。当前只在模块启用且进程包含 Server 角色时强制校验 CA 挂载路径和密码环境变量，避免默认禁用或 Agent-only 配置受到 Server 密钥要求影响。</para>
-/// <para>en-us:Options validator for reverse tunnel settings. It enforces CA mounted paths and the password environment variable only when the module is enabled and the process includes the Server role, so disabled or Agent-only configurations are not affected by Server key requirements.</para>
+/// <para>zh-cn:反向隧道选项验证器。当前只在模块启用且 TunnelMode=Server 时强制校验 CA 挂载路径和密码环境变量，避免 Agent 配置受到 Server 密钥要求影响。</para>
+/// <para>en-us:Options validator for reverse tunnel settings. It enforces CA mounted paths and the password environment variable only when the module is enabled and TunnelMode=Server, so Agent configurations are not affected by Server key requirements.</para>
 /// </summary>
 public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTunnelOptions>
 {
@@ -37,24 +38,56 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
         }
 
         var failures = new List<string>();
+        if (!Enum.IsDefined(options.TunnelMode))
+        {
+            failures.Add("ReverseTunnelSettings:TunnelMode must be None, Server, or Agent.");
+        }
+
         if (!Enum.IsDefined(options.SessionSelectionStrategy))
         {
             failures.Add("ReverseTunnelSettings:SessionSelectionStrategy must be one of NewestActive, OldestActive, or RoundRobin.");
         }
 
-        if (options.Roles.HasFlag(ReverseTunnelRole.Agent))
+        if (options.TunnelMode == ReverseTunnelMode.Agent)
         {
             ValidateAgentOptions(options, failures);
         }
 
-        if (options.Roles.HasFlag(ReverseTunnelRole.Server))
+        if (options.TunnelMode == ReverseTunnelMode.Server)
         {
             ValidateServerOptions(options, failures);
         }
 
+        ValidateManagementOptions(options.Management, failures);
+
         return failures.Count == 0
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(failures);
+    }
+
+    private static void ValidateManagementOptions(ReverseTunnelManagementOptions? management, ICollection<string> failures)
+    {
+        if (management?.Enabled != true)
+        {
+            return;
+        }
+
+        if (!Uri.TryCreate(management.BindUrl, UriKind.Absolute, out var uri) || uri.Port <= 0)
+        {
+            failures.Add("ReverseTunnelSettings:Management:BindUrl must be an absolute URL with a port when management is enabled.");
+        }
+
+        if (!management.AllowAnonymousLoopback)
+        {
+            if (string.IsNullOrWhiteSpace(management.AccessTokenEnvironmentVariable))
+            {
+                failures.Add("ReverseTunnelSettings:Management:AccessTokenEnvironmentVariable is required when management is enabled.");
+            }
+            else if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(management.AccessTokenEnvironmentVariable)))
+            {
+                failures.Add($"Environment variable '{management.AccessTokenEnvironmentVariable}' must contain the AirTunnel management access token.");
+            }
+        }
     }
 
     private static void ValidateServerOptions(ReverseTunnelOptions options, ICollection<string> failures)
@@ -65,7 +98,7 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
 
         if (string.IsNullOrWhiteSpace(certificateAuthority.CertificatePasswordEnvironmentVariable))
         {
-            failures.Add("ReverseTunnelSettings:CertificateAuthority:CertificatePasswordEnvironmentVariable is required when the Server role is enabled.");
+            failures.Add("ReverseTunnelSettings:CertificateAuthority:CertificatePasswordEnvironmentVariable is required when Server mode is enabled.");
         }
         else if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(certificateAuthority.CertificatePasswordEnvironmentVariable)))
         {
@@ -75,19 +108,6 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
         if (!string.IsNullOrWhiteSpace(certificateAuthority.TrustedIssuerPath))
         {
             ValidateRequiredMountedFile(certificateAuthority.TrustedIssuerPath, "ReverseTunnelSettings:CertificateAuthority:TrustedIssuerPath", failures);
-        }
-
-        var enrollment = options.Enrollment ?? new ReverseTunnelEnrollmentOptions();
-        if (enrollment.Enabled)
-        {
-            if (string.IsNullOrWhiteSpace(enrollment.CredentialDirectory))
-            {
-                failures.Add("ReverseTunnelSettings:Enrollment:CredentialDirectory is required when Server enrollment is enabled.");
-            }
-            else if (!Directory.Exists(enrollment.CredentialDirectory))
-            {
-                failures.Add("ReverseTunnelSettings:Enrollment:CredentialDirectory must point to an existing mounted directory.");
-            }
         }
 
         ValidateAgentAuthorizations(options.AgentAuthorizations, failures);
@@ -140,17 +160,17 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
     {
         if (string.IsNullOrWhiteSpace(options.AgentId))
         {
-            failures.Add("ReverseTunnelSettings:AgentId is required when the Agent role is enabled.");
+            failures.Add("ReverseTunnelSettings:AgentId is required when Agent mode is enabled.");
         }
 
         if (string.IsNullOrWhiteSpace(options.ServerAddress))
         {
-            failures.Add("ReverseTunnelSettings:ServerAddress is required when the Agent role is enabled.");
+            failures.Add("ReverseTunnelSettings:ServerAddress is required when Agent mode is enabled.");
         }
         else if (!Uri.TryCreate(options.ServerAddress, UriKind.Absolute, out var serverAddress) ||
             (serverAddress.Scheme != Uri.UriSchemeHttp && serverAddress.Scheme != Uri.UriSchemeHttps))
         {
-            failures.Add("ReverseTunnelSettings:ServerAddress must be an absolute HTTP or HTTPS URI when the Agent role is enabled.");
+            failures.Add("ReverseTunnelSettings:ServerAddress must be an absolute HTTP or HTTPS URI when Agent mode is enabled.");
         }
 
         var agentCertificate = options.AgentCertificate ?? new ReverseTunnelAgentCertificateOptions();
@@ -158,13 +178,60 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
         ValidateRequiredPathDirectory(agentCertificate.PrivateKeyPath, "ReverseTunnelSettings:AgentCertificate:PrivateKeyPath", failures);
         ValidateRequiredPathDirectory(agentCertificate.TrustedIssuerPath, "ReverseTunnelSettings:AgentCertificate:TrustedIssuerPath", failures);
 
-        if (!string.IsNullOrWhiteSpace(agentCertificate.EnrollmentCredentialPath) && !File.Exists(agentCertificate.EnrollmentCredentialPath))
-        {
-            failures.Add("ReverseTunnelSettings:AgentCertificate:EnrollmentCredentialPath must point to an existing mounted file when configured.");
-        }
-
+        ValidateHttpLocalServices(options.LocalServices, failures);
         ValidateTcpLocalServices(options.Tcp, failures);
         ValidateUdpLocalServices(options.Udp, failures);
+    }
+
+    private static void ValidateHttpLocalServices(IEnumerable<ReverseTunnelLocalServiceOptions>? services, ICollection<string> failures)
+    {
+        if (services is null)
+        {
+            return;
+        }
+
+        var index = 0;
+        foreach (var service in services)
+        {
+            if (service is null)
+            {
+                index++;
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(service.PublicPath) ||
+                string.IsNullOrEmpty(ReverseTunnelServiceKeyFactory.NormalizeHttpPublicPath(service.PublicPath)))
+            {
+                failures.Add($"ReverseTunnelSettings:LocalServices:{index}:PublicPath must start with '/' and cannot contain a query string or fragment.");
+            }
+            else if (!string.IsNullOrWhiteSpace(service.PublicPath) && !ReverseTunnelServiceKeyFactory.HasDerivedHttpServiceKey(service))
+            {
+                failures.Add($"ReverseTunnelSettings:LocalServices:{index}:ServiceKey must be generated from PublicPath.");
+            }
+
+            if (!string.IsNullOrEmpty(service.RewritePath) && string.IsNullOrEmpty(ReverseTunnelRouteTemplate.NormalizeRewritePath(service.RewritePath)))
+            {
+                failures.Add($"ReverseTunnelSettings:LocalServices:{index}:RewritePath must be a valid path template.");
+            }
+
+            if (string.IsNullOrWhiteSpace(service.Host))
+            {
+                failures.Add($"ReverseTunnelSettings:LocalServices:{index}:Host is required for an HTTP tunnel service.");
+            }
+
+            if (service.Port is < 1 or > 65_535)
+            {
+                failures.Add($"ReverseTunnelSettings:LocalServices:{index}:Port must be between 1 and 65535 for an HTTP tunnel service.");
+            }
+
+            if (!string.Equals(service.Protocol, "http", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(service.Protocol, "https", StringComparison.OrdinalIgnoreCase))
+            {
+                failures.Add($"ReverseTunnelSettings:LocalServices:{index}:Protocol must be http or https for an HTTP tunnel service.");
+            }
+
+            index++;
+        }
     }
 
     private static void ValidateTcpListeners(ReverseTunnelTcpOptions? tcp, ICollection<string> failures)
@@ -236,9 +303,10 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(service.ServiceKey))
+            if (string.IsNullOrWhiteSpace(service.ServiceKey) ||
+                (service.ServerListenPort > 0 && !ReverseTunnelServiceKeyFactory.HasDerivedTcpServiceKey(service)))
             {
-                failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:ServiceKey is required when TCP tunneling is enabled.");
+                failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:ServiceKey must be generated from the Server listener endpoint when TCP tunneling is enabled.");
             }
 
             if (string.IsNullOrWhiteSpace(service.Host))
@@ -249,6 +317,11 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
             if (service.Port <= 0)
             {
                 failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:Port must be between 1 and 65535 when TCP tunneling is enabled.");
+            }
+
+            if (service.ServerListenPort <= 0 && string.IsNullOrWhiteSpace(service.ServiceKey))
+            {
+                failures.Add($"ReverseTunnelSettings:Tcp:LocalServices:{index}:ServerListenPort must be between 1 and 65535 when TCP tunneling is enabled.");
             }
         }
     }
@@ -268,9 +341,10 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(service.ServiceKey))
+            if (string.IsNullOrWhiteSpace(service.ServiceKey) ||
+                (service.ServerListenPort > 0 && !ReverseTunnelServiceKeyFactory.HasDerivedUdpServiceKey(service)))
             {
-                failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:ServiceKey is required when UDP tunneling is enabled.");
+                failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:ServiceKey must be generated from the Server listener endpoint when UDP tunneling is enabled.");
             }
 
             if (string.IsNullOrWhiteSpace(service.Host))
@@ -282,6 +356,11 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
             {
                 failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:Port must be between 1 and 65535 when UDP tunneling is enabled.");
             }
+
+            if (service.ServerListenPort <= 0 && string.IsNullOrWhiteSpace(service.ServiceKey))
+            {
+                failures.Add($"ReverseTunnelSettings:Udp:LocalServices:{index}:ServerListenPort must be between 1 and 65535 when UDP tunneling is enabled.");
+            }
         }
     }
 
@@ -289,7 +368,7 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            failures.Add($"{configurationKey} is required when the Server role is enabled.");
+            failures.Add($"{configurationKey} is required when Server mode is enabled.");
             return;
         }
 
@@ -303,14 +382,14 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            failures.Add($"{configurationKey} is required when the Agent role is enabled.");
+            failures.Add($"{configurationKey} is required when Agent mode is enabled.");
             return;
         }
 
         var directory = Path.GetDirectoryName(path);
         if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
         {
-            failures.Add($"{configurationKey} must be located in an existing mounted directory when the Agent role is enabled.");
+            failures.Add($"{configurationKey} must be located in an existing mounted directory when Agent mode is enabled.");
         }
     }
 }

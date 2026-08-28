@@ -12,8 +12,11 @@ public sealed class ReverseTunnelDiagnosticsSnapshot
     /// <summary><para>zh-cn:AirTunnel 模块是否启用。</para><para>en-us:Whether the AirTunnel module is enabled.</para></summary>
     public bool Enabled { get; init; }
 
-    /// <summary><para>zh-cn:当前进程启用的 AirTunnel 角色。</para><para>en-us:AirTunnel roles enabled in the current process.</para></summary>
-    public string Roles { get; init; } = string.Empty;
+    /// <summary><para>zh-cn:当前进程的 AirTunnel 连接模式。</para><para>en-us:AirTunnel connection mode for the current process.</para></summary>
+    public string TunnelMode { get; init; } = string.Empty;
+
+    /// <summary><para>zh-cn:当前进程是否启用动态隧道代理。</para><para>en-us:Whether dynamic tunnel proxying is enabled for the current process.</para></summary>
+    public bool EnableTunnelProxy { get; init; }
 
     /// <summary><para>zh-cn:当前进程内同 ServiceKey 会话选择策略。</para><para>en-us:Session selection strategy for sessions sharing the same ServiceKey in the current process.</para></summary>
     public string SessionSelectionStrategy { get; init; } = string.Empty;

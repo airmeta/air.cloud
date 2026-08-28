@@ -1,4 +1,5 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Options;
 
@@ -10,7 +11,7 @@ namespace Air.Cloud.Modules.ReverseTunnel.Server;
 /// </summary>
 public sealed class ReverseTunnelAgentServiceAuthorizer : IReverseTunnelAgentServiceAuthorizer
 {
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
 
     /// <summary>
     /// <para>zh-cn:创建默认授权器。授权器只读取服务端策略配置，不读取 token、私钥、证书字节或一次性凭据内容。</para>
@@ -20,9 +21,22 @@ public sealed class ReverseTunnelAgentServiceAuthorizer : IReverseTunnelAgentSer
     /// <para>zh-cn:反向隧道配置访问器。</para>
     /// <para>en-us:Reverse tunnel options accessor.</para>
     /// </param>
-    public ReverseTunnelAgentServiceAuthorizer(IOptions<ReverseTunnelOptions> options)
+    public ReverseTunnelAgentServiceAuthorizer(IReverseTunnelRuntimeOptionsAccessor options)
     {
         this.options = options;
+    }
+
+    /// <summary>
+    /// <para>zh-cn:使用静态 IOptions 创建授权器。该构造函数用于兼容已有单元测试和只读宿主；生产热更新路径应使用运行期配置访问器。</para>
+    /// <para>en-us:Creates the authorizer from static IOptions. This constructor preserves existing unit tests and read-only hosts; production hot-update paths should use the runtime-options accessor.</para>
+    /// </summary>
+    /// <param name="options">
+    /// <para>zh-cn:静态 AirTunnel 配置。</para>
+    /// <para>en-us:Static AirTunnel options.</para>
+    /// </param>
+    public ReverseTunnelAgentServiceAuthorizer(IOptions<ReverseTunnelOptions> options)
+        : this(new ReverseTunnelRuntimeOptionsAccessor(options))
+    {
     }
 
     /// <inheritdoc />
@@ -33,7 +47,7 @@ public sealed class ReverseTunnelAgentServiceAuthorizer : IReverseTunnelAgentSer
             return ReverseTunnelAgentServiceAuthorizationResult.Failure("Authenticated AgentId is required for service authorization.");
         }
 
-        var authorizations = options.Value.AgentAuthorizations ?? [];
+        var authorizations = options.Current.AgentAuthorizations ?? [];
         if (authorizations.Count == 0)
         {
             return ReverseTunnelAgentServiceAuthorizationResult.Success();

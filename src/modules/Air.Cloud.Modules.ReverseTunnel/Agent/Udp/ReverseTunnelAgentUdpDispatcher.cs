@@ -1,5 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Options;
 
@@ -14,20 +15,26 @@ namespace Air.Cloud.Modules.ReverseTunnel.Agent.Udp;
 /// </summary>
 public sealed class ReverseTunnelAgentUdpDispatcher : IReverseTunnelAgentUdpDispatcher
 {
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
     private readonly ConcurrentDictionary<long, UdpFlow> flows = new();
 
     /// <summary>
     /// <para>zh-cn:创建 UDP 穿透分发器。</para>
     /// <para>en-us:Creates a UDP tunnel dispatcher.</para>
     /// </summary>
-    /// <param name="options">
+    /// <param name="startupOptions">
     /// <para>zh-cn:包含 Agent 本地 UDP 服务目标的 AirTunnel 配置。</para>
     /// <para>en-us:AirTunnel options containing Agent-local UDP targets.</para>
     /// </param>
-    public ReverseTunnelAgentUdpDispatcher(IOptions<ReverseTunnelOptions> options)
+    /// <param name="runtimeOptions">
+    /// <para>zh-cn:可选的运行期配置访问器。</para>
+    /// <para>en-us:Optional runtime options accessor.</para>
+    /// </param>
+    public ReverseTunnelAgentUdpDispatcher(
+        IOptions<ReverseTunnelOptions> startupOptions,
+        IReverseTunnelRuntimeOptionsAccessor? runtimeOptions = null)
     {
-        this.options = options;
+        this.options = runtimeOptions ?? new ReverseTunnelRuntimeOptionsAccessor(startupOptions);
     }
 
     /// <inheritdoc />
@@ -38,7 +45,7 @@ public sealed class ReverseTunnelAgentUdpDispatcher : IReverseTunnelAgentUdpDisp
         Func<string, string, CancellationToken, Task> sendErrorAsync,
         CancellationToken cancellationToken)
     {
-        var service = options.Value.Udp.LocalServices.FirstOrDefault(item => string.Equals(item.ServiceKey, payload.ServiceKey, StringComparison.OrdinalIgnoreCase));
+        var service = options.Current.Udp.LocalServices.FirstOrDefault(item => string.Equals(item.ServiceKey, payload.ServiceKey, StringComparison.OrdinalIgnoreCase));
         if (service is null)
         {
             await sendErrorAsync("udp_service_not_found", $"UDP ServiceKey '{payload.ServiceKey}' is not configured on the Agent.", cancellationToken);

@@ -77,6 +77,9 @@ public sealed class ReverseTunnelTcpListenerOptions
 /// </summary>
 public sealed class ReverseTunnelTcpLocalServiceOptions
 {
+    /// <summary><para>zh-cn:服务展示名称，仅用于管理页面、日志和运维识别。</para><para>en-us:Service display name used only by management pages, logs, and operations.</para></summary>
+    public string ServiceName { get; set; } = string.Empty;
+
     /// <summary><para>zh-cn:逻辑服务键。</para><para>en-us:Logical service key.</para></summary>
     public string ServiceKey { get; set; } = string.Empty;
 
@@ -86,10 +89,25 @@ public sealed class ReverseTunnelTcpLocalServiceOptions
     /// <summary><para>zh-cn:Agent 所在网络可访问的本地 TCP 端口。</para><para>en-us:Local TCP port reachable from the Agent network.</para></summary>
     public int Port { get; set; }
 
+    /// <summary>
+    /// <para>zh-cn:Server 对外监听的绑定地址。为空时使用 0.0.0.0。</para>
+    /// <para>en-us:Server-side bind address. Empty values use 0.0.0.0.</para>
+    /// </summary>
+    public string ServerListenHost { get; set; } = "0.0.0.0";
+
+    /// <summary>
+    /// <para>zh-cn:Server 对外监听端口。该值与 Agent 本地目标端口独立；为 0 时不派生 Server listener。</para>
+    /// <para>en-us:Server-side exposed port. It is independent from the Agent target port; zero disables Server-listener derivation.</para>
+    /// </summary>
+    public int ServerListenPort { get; set; }
+
     internal void Normalize()
     {
+        ServiceName = ServiceName?.Trim() ?? string.Empty;
         ServiceKey = ServiceKey?.Trim() ?? string.Empty;
         Host = string.IsNullOrWhiteSpace(Host) ? "127.0.0.1" : Host.Trim();
         Port = Math.Clamp(Port, 0, 65_535);
+        ServerListenHost = string.IsNullOrWhiteSpace(ServerListenHost) ? "0.0.0.0" : ServerListenHost.Trim();
+        ServerListenPort = Math.Clamp(ServerListenPort, 0, 65_535);
     }
 }

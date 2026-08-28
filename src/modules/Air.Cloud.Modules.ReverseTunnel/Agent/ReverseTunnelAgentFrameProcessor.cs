@@ -2,12 +2,14 @@ using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Diagnostics;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Agent.Tcp;
 using Air.Cloud.Modules.ReverseTunnel.Agent.Udp;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Google.Protobuf;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using System.Collections.Concurrent;
@@ -25,7 +27,9 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
     private readonly IReverseTunnelAgentLocalHttpDispatcher localHttpDispatcher;
     private readonly IReverseTunnelAgentTcpDispatcher tcpDispatcher;
     private readonly IReverseTunnelAgentUdpDispatcher udpDispatcher;
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
+    private readonly IReverseTunnelAgentConfigurationStore configurationStore;
+    private readonly IEnumerable<IValidateOptions<ReverseTunnelOptions>> validators;
     private readonly ConcurrentDictionary<long, PendingRequest> pendingRequests = new();
     private readonly ConcurrentDictionary<long, PendingTcpConnection> pendingTcpConnections = new();
 
@@ -45,20 +49,37 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
     /// <para>zh-cn:把隧道 UDP 数据报分发给 Agent 本地 UDP 服务的分发器。</para>
     /// <para>en-us:Dispatcher that relays tunneled UDP datagrams to Agent local UDP services.</para>
     /// </param>
-    /// <param name="options">
+    /// <param name="startupOptions">
     /// <para>zh-cn:包含请求体、响应体、帧大小和队列容量限制的网络穿透配置。</para>
     /// <para>en-us:Network tunneling options containing request-body, response-body, frame-size, and queue-capacity limits.</para>
+    /// </param>
+    /// <param name="runtimeOptions">
+    /// <para>zh-cn:可选的运行期配置访问器。</para>
+    /// <para>en-us:Optional runtime options accessor.</para>
+    /// </param>
+    /// <param name="configurationStore">
+    /// <para>zh-cn:可选的 Agent 配置快照存储。</para>
+    /// <para>en-us:Optional Agent configuration snapshot store.</para>
+    /// </param>
+    /// <param name="validators">
+    /// <para>zh-cn:用于校验下发配置的选项校验器集合。</para>
+    /// <para>en-us:Option validators used to validate pushed configuration.</para>
     /// </param>
     public ReverseTunnelAgentFrameProcessor(
         IReverseTunnelAgentLocalHttpDispatcher localHttpDispatcher,
         IReverseTunnelAgentTcpDispatcher tcpDispatcher,
         IReverseTunnelAgentUdpDispatcher udpDispatcher,
-        IOptions<ReverseTunnelOptions> options)
+        IOptions<ReverseTunnelOptions> startupOptions,
+        IReverseTunnelRuntimeOptionsAccessor? runtimeOptions = null,
+        IReverseTunnelAgentConfigurationStore? configurationStore = null,
+        IEnumerable<IValidateOptions<ReverseTunnelOptions>>? validators = null)
     {
         this.localHttpDispatcher = localHttpDispatcher;
         this.tcpDispatcher = tcpDispatcher;
         this.udpDispatcher = udpDispatcher;
-        this.options = options;
+        this.options = runtimeOptions ?? new ReverseTunnelRuntimeOptionsAccessor(startupOptions);
+        this.configurationStore = configurationStore ?? new InMemoryReverseTunnelAgentConfigurationStore();
+        this.validators = validators ?? [];
     }
 
     /// <inheritdoc />
@@ -76,6 +97,9 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
 
         switch (frame.Kind)
         {
+            case TunnelFrameKindMessage.ConfigurationOffer:
+                await ProcessConfigurationOfferAsync(frame, writeAsync, cancellationToken);
+                break;
             case TunnelFrameKindMessage.OpenRequest:
                 await OpenRequestAsync(frame, writeAsync, cancellationToken);
                 break;
@@ -112,6 +136,92 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
                 await writeAsync(CreateError(frame, "unsupported_frame", $"Agent does not support inbound frame kind '{frame.Kind}'."), cancellationToken);
                 break;
         }
+    }
+
+    private async Task ProcessConfigurationOfferAsync(
+        TunnelFrameMessage frame,
+        Func<TunnelFrameMessage, CancellationToken, Task> writeAsync,
+        CancellationToken cancellationToken)
+    {
+        ReverseTunnelAgentConfigurationSnapshot snapshot;
+        try
+        {
+            snapshot = ReverseTunnelAgentConfigurationSnapshotSerializer.Deserialize(frame.Payload.Span);
+            if (!ReverseTunnelAgentConfigurationSnapshotSerializer.VerifyHash(snapshot))
+            {
+                throw new InvalidOperationException("Configuration snapshot SHA-256 validation failed.");
+            }
+
+            var current = options.Current;
+            if (!string.Equals(snapshot.AgentId, current.AgentId, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Configuration snapshot AgentId '{snapshot.AgentId}' does not match '{current.AgentId}'.");
+            }
+
+            if (snapshot.Version <= configurationStore.CurrentVersion)
+            {
+                throw new InvalidOperationException($"Configuration snapshot version {snapshot.Version} is not newer than {configurationStore.CurrentVersion}.");
+            }
+
+            var normalized = ReverseTunnelAgentConfigurationMerger.Merge(options.Current, snapshot.Configuration);
+            var failures = validators
+                .Select(validator => validator.Validate(Options.DefaultName, normalized))
+                .Where(result => result.Failed)
+                .SelectMany(result => result.Failures ?? [])
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (failures.Length > 0)
+            {
+                throw new InvalidOperationException(string.Join("; ", failures));
+            }
+
+            snapshot.Configuration = normalized;
+            ReverseTunnelAgentConfigurationSnapshotSerializer.RefreshHash(snapshot);
+            await configurationStore.SaveAsync(snapshot, cancellationToken);
+            options.Update(normalized);
+            await writeAsync(CreateConfigurationResult(frame, snapshot, true, null), cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            var version = 0L;
+            try
+            {
+                version = ReverseTunnelAgentConfigurationSnapshotSerializer.Deserialize(frame.Payload.Span).Version;
+            }
+            catch
+            {
+            }
+
+            await writeAsync(CreateConfigurationResult(frame, new ReverseTunnelAgentConfigurationSnapshot
+            {
+                Version = version,
+                AgentId = options.Current.AgentId
+            }, false, exception.Message), cancellationToken);
+        }
+    }
+
+    private static TunnelFrameMessage CreateConfigurationResult(
+        TunnelFrameMessage source,
+        ReverseTunnelAgentConfigurationSnapshot snapshot,
+        bool accepted,
+        string? failureReason)
+    {
+        var result = new ReverseTunnelAgentConfigurationResult
+        {
+            Version = snapshot.Version,
+            AgentId = snapshot.AgentId,
+            Accepted = accepted,
+            FailureReason = failureReason
+        };
+        return new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = source.SessionId,
+            StreamId = 0,
+            Kind = accepted ? TunnelFrameKindMessage.ConfigurationAck : TunnelFrameKindMessage.ConfigurationReject,
+            Payload = ByteString.CopyFrom(System.Text.Encoding.UTF8.GetBytes(
+                System.Text.Json.JsonSerializer.Serialize(result)))
+        };
     }
 
     internal async Task<IReadOnlyList<TunnelFrameMessage>> ProcessAsync(TunnelFrameMessage frame, CancellationToken cancellationToken = default)
@@ -488,4 +598,18 @@ internal sealed class ReverseTunnelAgentFrameProcessor : IReverseTunnelAgentFram
         ReverseTunnelTcpOpenPayload Payload,
         Channel<byte[]> InboundFrames,
         CancellationTokenSource Cancellation);
+
+    private sealed class InMemoryReverseTunnelAgentConfigurationStore : IReverseTunnelAgentConfigurationStore
+    {
+        public long CurrentVersion { get; private set; }
+
+        public Task<ReverseTunnelAgentConfigurationSnapshot?> LoadAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<ReverseTunnelAgentConfigurationSnapshot?>(null);
+
+        public Task SaveAsync(ReverseTunnelAgentConfigurationSnapshot snapshot, CancellationToken cancellationToken = default)
+        {
+            CurrentVersion = snapshot.Version;
+            return Task.CompletedTask;
+        }
+    }
 }

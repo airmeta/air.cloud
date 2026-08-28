@@ -14,6 +14,8 @@ using Grpc.Net.Client;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +23,7 @@ using Microsoft.Extensions.Options;
 
 using System.Diagnostics;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -120,6 +123,109 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         Assert.True(localHttpHandler.LastRequestHeaders.TryGetValue("traceparent", out var traceparent));
         Assert.StartsWith("00-", traceparent, StringComparison.Ordinal);
         Assert.Contains(stoppedActivities, item => item.OperationName == "airtunnel.gateway.invoke" && Equals(item.GetTagItem("reverse_tunnel.agent_id"), "agent-alpha"));
+
+        await call.RequestStream.CompleteAsync();
+        await agentLoop.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Gateway 进程不承载 Server 角色时，可以通过 `Gateway.RemoteServerAddress` 调用独立 AirTunnel Server，再由 Server 复用当前进程内的 Agent 会话完成 HTTP 穿透。</para>
+    /// <para>en-us:Verifies that when a Gateway process does not host the Server role it can call a standalone AirTunnel Server through `Gateway.RemoteServerAddress`, and the Server can reuse its in-process Agent session to complete HTTP tunneling.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Gateway_invoker_should_call_standalone_server_when_gateway_does_not_host_server()
+    {
+        using var material = TestCertificateMaterial.Create();
+        var serverOptions = CreateOptions(material);
+        serverOptions.TunnelMode = ReverseTunnelMode.Server;
+        serverOptions.PostConfigure(serverOptions, new ConfigurationBuilder().Build());
+        var serverOptionsAccessor = Options.Create(serverOptions);
+        using var agentCertificate = CreateAgentCertificate("agent-alpha", serverOptionsAccessor);
+        var localHttpHandler = new CapturingLocalHttpHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("standalone-server-ok", Encoding.UTF8, "text/plain")
+        });
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(serverOptionsAccessor);
+        builder.Services.AddSingleton<IReverseTunnelAgentLocalHttpDispatcher>(_ =>
+            new ReverseTunnelAgentLocalHttpDispatcher(serverOptionsAccessor, new FixedHttpClientFactory(new HttpClient(localHttpHandler))));
+
+        await using var app = builder.Build();
+        app.UseRouting();
+        app.Use(async (context, next) =>
+        {
+            context.Connection.ClientCertificate = agentCertificate;
+            await next();
+        });
+        app.MapReverseTunnelServer();
+        await app.StartAsync();
+
+        var channel = GrpcChannel.ForAddress("http://airtunnel-server", new GrpcChannelOptions
+        {
+            HttpHandler = app.GetTestServer().CreateHandler()
+        });
+        var transportClient = new ReverseTunnelTransport.ReverseTunnelTransportClient(channel);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var call = transportClient.Connect(cancellationToken: timeout.Token);
+        await call.RequestStream.WriteAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = "agent-session-standalone-server",
+            Kind = TunnelFrameKindMessage.Hello,
+            AgentId = "agent-alpha",
+            ServiceKeys = { "order-service" }
+        }, timeout.Token);
+
+        var agentLoop = RunAgentResponseLoopAsync(app.Services.GetRequiredService<IReverseTunnelAgentFrameProcessor>(), call, timeout.Token);
+        await WaitForSessionAsync(app.Services.GetRequiredService<IReverseTunnelSessionRegistry>(), "order-service", timeout.Token);
+
+        var gatewayOptions = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.None,
+            EnableTunnelProxy = true,
+            Gateway = new ReverseTunnelGatewayOptions
+            {
+                RemoteServerAddress = "http://airtunnel-server",
+                InvokePathPrefix = "/_airtunnel/gateway"
+            },
+            Routes =
+            [
+                new ReverseTunnelRouteOptions
+                {
+                    VirtualHost = "tunnel-order-service",
+                    ServiceKey = "order-service",
+                    TimeoutSeconds = 5
+                }
+            ]
+        };
+        gatewayOptions.PostConfigure(gatewayOptions, new ConfigurationBuilder().Build());
+        var gatewayOptionsAccessor = Options.Create(gatewayOptions);
+        using var gatewayRequest = new HttpRequestMessage(HttpMethod.Post, "http://tunnel-order-service/api/orders?id=9")
+        {
+            Content = new StringContent("remote-gateway-body", Encoding.UTF8, "application/json")
+        };
+        var gatewayInvoker = new ReverseTunnelInvoker(
+            new InMemoryReverseTunnelSessionRegistry(gatewayOptionsAccessor),
+            gatewayOptionsAccessor,
+            new FixedHttpClientFactory(new HttpClient(app.GetTestServer().CreateHandler())
+            {
+                BaseAddress = new Uri("http://airtunnel-server")
+            }));
+
+        using var response = await gatewayInvoker.InvokeAsync(gatewayOptions.Routes[0], gatewayRequest, timeout.Token);
+        var responseBody = await response.Content!.ReadAsStringAsync(timeout.Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("standalone-server-ok", responseBody);
+        Assert.Equal(new Uri("http://127.0.0.1:5101/api/orders?id=9"), localHttpHandler.LastRequestUri);
+        Assert.Equal("remote-gateway-body", localHttpHandler.LastBody);
+        Assert.Equal("application/json", localHttpHandler.LastContentType);
 
         await call.RequestStream.CompleteAsync();
         await agentLoop.WaitAsync(TimeSpan.FromSeconds(5));
@@ -339,6 +445,67 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
 
         await firstCall.RequestStream.CompleteAsync();
         await secondCall.RequestStream.CompleteAsync();
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证真实 Kestrel HTTPS 监听在允许客户端证书时，可以把 Agent mTLS 客户端证书传递给 AirTunnel Server 并完成会话注册。</para>
+    /// <para>en-us:Verifies that a real Kestrel HTTPS listener passes the Agent mTLS client certificate to the AirTunnel Server and registers the session when client certificates are allowed.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Grpc_connect_over_real_kestrel_should_register_agent_when_client_certificate_is_allowed()
+    {
+        var port = GetFreeTcpPort();
+        using var material = TestCertificateMaterial.Create();
+        var options = CreateOptions(material);
+        var optionsAccessor = Options.Create(options);
+        using var agentCertificate = CreateAgentCertificate("agent-alpha", optionsAccessor);
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.ConfigureKestrel(serverOptions =>
+        {
+            serverOptions.ListenLocalhost(port, listenOptions =>
+            {
+                listenOptions.Protocols = HttpProtocols.Http2;
+                listenOptions.UseHttps(material.ServerPfxPath, material.CertificatePassword, httpsOptions =>
+                {
+                    httpsOptions.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
+                    httpsOptions.ClientCertificateValidation = (_, _, _) => true;
+                });
+            });
+        });
+        builder.Services.AddReverseTunnel();
+        builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(optionsAccessor);
+
+        await using var app = builder.Build();
+        app.UseRouting();
+        app.MapReverseTunnelServer();
+        await app.StartAsync();
+
+        using var handler = new HttpClientHandler();
+        handler.ClientCertificates.Add(agentCertificate);
+        handler.ServerCertificateCustomValidationCallback = (_, certificate, _, errors) =>
+            ValidateServerCertificate(certificate, material.CaCrtPath, errors);
+        using var channel = GrpcChannel.ForAddress($"https://localhost:{port}", new GrpcChannelOptions
+        {
+            HttpHandler = handler
+        });
+        var transportClient = new ReverseTunnelTransport.ReverseTunnelTransportClient(channel);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var call = transportClient.Connect(cancellationToken: timeout.Token);
+
+        await call.RequestStream.WriteAsync(new TunnelFrameMessage
+        {
+            ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
+            SessionId = "real-kestrel-agent-session",
+            Kind = TunnelFrameKindMessage.Hello,
+            AgentId = "agent-alpha",
+            ServiceKeys = { "order-service" }
+        }, timeout.Token);
+
+        await WaitForSessionIdAsync(app.Services.GetRequiredService<IReverseTunnelSessionRegistry>(), "real-kestrel-agent-session", timeout.Token);
+        await call.RequestStream.CompleteAsync();
     }
 
     /// <summary>
@@ -637,12 +804,50 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         }
     }
 
+    private static X509Certificate2 CreateAgentCertificate(string agentId, IOptions<ReverseTunnelOptions> optionsAccessor)
+    {
+        using var agentKey = RSA.Create(2048);
+        var csr = new CertificateRequest($"CN={agentId}", agentKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+            .CreateSigningRequest();
+        var certificateAuthority = new MountedReverseTunnelCertificateAuthority(optionsAccessor);
+        using var issuedCertificate = certificateAuthority.SignAgentCertificate(agentId, csr, DateTimeOffset.UtcNow.AddMinutes(-1));
+        using var certificateWithPrivateKey = issuedCertificate.CopyWithPrivateKey(agentKey);
+        return X509CertificateLoader.LoadPkcs12(
+            certificateWithPrivateKey.Export(X509ContentType.Pkcs12),
+            password: null,
+            X509KeyStorageFlags.Exportable);
+    }
+
+    private static bool ValidateServerCertificate(X509Certificate? certificate, string trustedIssuerPath, SslPolicyErrors errors)
+    {
+        if ((errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+        {
+            return false;
+        }
+
+        if (certificate is null)
+        {
+            return false;
+        }
+
+        using var trustedIssuer = X509CertificateLoader.LoadCertificateFromFile(trustedIssuerPath);
+        using var serverCertificate = certificate is X509Certificate2 certificate2
+            ? new X509Certificate2(certificate2)
+            : new X509Certificate2(certificate);
+        using var chain = new X509Chain();
+        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+        chain.ChainPolicy.CustomTrustStore.Add(trustedIssuer);
+        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+        return chain.Build(serverCertificate);
+    }
+
     private static ReverseTunnelOptions CreateOptions(TestCertificateMaterial material)
     {
         var options = new ReverseTunnelOptions
         {
             Enabled = true,
-            Roles = ReverseTunnelRole.Server | ReverseTunnelRole.Gateway,
+            TunnelMode = ReverseTunnelMode.Server,
+            EnableTunnelProxy = true,
             MaxRequestBodyBytes = 1024 * 1024,
             CertificateAuthority = new ReverseTunnelCertificateAuthorityOptions
             {
@@ -806,15 +1011,24 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
 
     private sealed class TestCertificateMaterial : IDisposable
     {
-        private TestCertificateMaterial(string caPfxPath, string passwordEnvironmentVariable)
+        private TestCertificateMaterial(string caPfxPath, string caCrtPath, string serverPfxPath, string passwordEnvironmentVariable, string certificatePassword)
         {
             CaPfxPath = caPfxPath;
+            CaCrtPath = caCrtPath;
+            ServerPfxPath = serverPfxPath;
             PasswordEnvironmentVariable = passwordEnvironmentVariable;
+            CertificatePassword = certificatePassword;
         }
 
         public string CaPfxPath { get; }
 
+        public string CaCrtPath { get; }
+
+        public string ServerPfxPath { get; }
+
         public string PasswordEnvironmentVariable { get; }
+
+        public string CertificatePassword { get; }
 
         public static TestCertificateMaterial Create()
         {
@@ -822,16 +1036,41 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
             var passwordEnvironmentVariable = $"AIR_CLOUD_REVERSE_TUNNEL_GRPC_CA_PASSWORD_{Guid.NewGuid():N}";
             const string password = "test-ca-password";
             var caPfxPath = Path.Combine(directory.FullName, "ca.pfx");
+            var caCrtPath = Path.Combine(directory.FullName, "ca.crt");
+            var serverPfxPath = Path.Combine(directory.FullName, "server.pfx");
 
             using var caKey = RSA.Create(2048);
             var request = new CertificateRequest("CN=AirCloudReverseTunnelGrpcTestCa", caKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             request.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
             request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
+            request.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(request.PublicKey, false));
             using var caCertificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
             File.WriteAllBytes(caPfxPath, caCertificate.Export(X509ContentType.Pkcs12, password));
+            File.WriteAllBytes(caCrtPath, caCertificate.Export(X509ContentType.Cert));
+            File.WriteAllBytes(serverPfxPath, CreateServerCertificate(caCertificate, password));
             Environment.SetEnvironmentVariable(passwordEnvironmentVariable, password);
 
-            return new TestCertificateMaterial(caPfxPath, passwordEnvironmentVariable);
+            return new TestCertificateMaterial(caPfxPath, caCrtPath, serverPfxPath, passwordEnvironmentVariable, password);
+        }
+
+        private static byte[] CreateServerCertificate(X509Certificate2 caCertificate, string password)
+        {
+            using var serverKey = RSA.Create(2048);
+            var request = new CertificateRequest("CN=localhost", serverKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
+            request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, true));
+            request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection
+            {
+                new Oid("1.3.6.1.5.5.7.3.1", "Server Authentication")
+            }, true));
+            var subjectAlternativeName = new SubjectAlternativeNameBuilder();
+            subjectAlternativeName.AddDnsName("localhost");
+            subjectAlternativeName.AddIpAddress(IPAddress.Loopback);
+            request.CertificateExtensions.Add(subjectAlternativeName.Build());
+
+            using var serverCertificate = request.Create(caCertificate, DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddMonths(1), RandomNumberGenerator.GetBytes(16));
+            using var serverCertificateWithPrivateKey = serverCertificate.CopyWithPrivateKey(serverKey);
+            return serverCertificateWithPrivateKey.Export(X509ContentType.Pkcs12, password);
         }
 
         public void Dispose()
@@ -870,3 +1109,5 @@ public sealed class ReverseTunnelGrpcEndToEndIntegrationTests
         }
     }
 }
+
+

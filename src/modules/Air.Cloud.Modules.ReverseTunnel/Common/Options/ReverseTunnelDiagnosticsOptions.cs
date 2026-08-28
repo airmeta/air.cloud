@@ -2,7 +2,7 @@ namespace Air.Cloud.Modules.ReverseTunnel.Common.Options;
 
 /// <summary>
 /// <para>zh-cn:AirTunnel 诊断 HTTP API 配置。该能力默认关闭；显式映射诊断 endpoint 后，开启该配置会暴露当前进程内的指标和会话快照，不要求当前进程一定包含 Server 角色。</para>
-/// <para>en-us:AirTunnel diagnostic HTTP API options. The capability is disabled by default; after diagnostic endpoints are explicitly mapped, enabling this option exposes in-process metric and session snapshots without requiring the current process to include the Server role.</para>
+/// <para>en-us:AirTunnel diagnostic HTTP API options. The capability is disabled by default; after diagnostic endpoints are explicitly mapped, enabling this option exposes in-process metric and session snapshots without requiring the current process to use Server mode.</para>
 /// </summary>
 public sealed class ReverseTunnelDiagnosticsOptions
 {

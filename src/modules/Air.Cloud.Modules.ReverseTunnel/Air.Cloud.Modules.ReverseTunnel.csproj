@@ -56,6 +56,7 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\reverse_tunnel.proto" GrpcServices="Both" Access="Internal" />
+    <EmbeddedResource Include="Management\management.html" />
   </ItemGroup>
 
 </Project>

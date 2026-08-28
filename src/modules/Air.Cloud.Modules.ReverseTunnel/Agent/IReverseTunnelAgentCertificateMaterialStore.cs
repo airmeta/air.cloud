@@ -79,12 +79,12 @@ public interface IReverseTunnelAgentCertificateMaterialStore
     bool ShouldRenew(X509Certificate2 certificate, int renewalWindowDays, DateTimeOffset utcNow);
 
     /// <summary>
-    /// <para>zh-cn:从可选的挂载 token 文件读取 Enrollment 凭据。该方法不从配置、数据库或 Consul 读取 token 内容。</para>
-    /// <para>en-us:Reads the enrollment credential from the optional mounted token file. The method does not read token values from configuration, databases, or Consul.</para>
+    /// <para>zh-cn:加载用于首次 Enrollment 的 Server CA 公钥证书。Agent 只使用公钥加密随机 GUID，不读取或保存 Server 私钥。</para>
+    /// <para>en-us:Loads the Server CA public certificate used for initial enrollment. The Agent uses only the public key to encrypt a random GUID and never reads or stores the Server private key.</para>
     /// </summary>
     /// <returns>
-    /// <para>zh-cn:去除首尾空白后的一次性 Enrollment token。</para>
-    /// <para>en-us:The one-time enrollment token after trimming surrounding whitespace.</para>
+    /// <para>zh-cn:不含私钥的 Server CA 证书；调用方负责释放。</para>
+    /// <para>en-us:Server CA certificate without a private key; the caller owns and disposes it.</para>
     /// </returns>
-    string ReadEnrollmentCredential();
+    X509Certificate2 LoadTrustedIssuerCertificate();
 }

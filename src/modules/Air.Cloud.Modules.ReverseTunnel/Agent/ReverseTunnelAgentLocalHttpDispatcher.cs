@@ -1,6 +1,7 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Http;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 
 using Microsoft.Extensions.Options;
 
@@ -29,24 +30,31 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
         "Content-Length"
     };
 
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
     private readonly IHttpClientFactory httpClientFactory;
 
     /// <summary>
     /// <para>zh-cn:创建 Agent 本地 HTTP 分发器。</para>
     /// <para>en-us:Creates an Agent local HTTP dispatcher.</para>
     /// </summary>
-    /// <param name="options">
+    /// <param name="startupOptions">
     /// <para>zh-cn:包含 LocalServices 和请求体大小限制的反向隧道配置。</para>
     /// <para>en-us:Reverse tunnel options containing LocalServices and request-body size limits.</para>
+    /// </param>
+    /// <param name="runtimeOptions">
+    /// <para>zh-cn:可选的运行期配置访问器。</para>
+    /// <para>en-us:Optional runtime options accessor.</para>
     /// </param>
     /// <param name="httpClientFactory">
     /// <para>zh-cn:用于创建本地 HTTP 调用客户端的工厂。</para>
     /// <para>en-us:Factory used to create clients for local HTTP calls.</para>
     /// </param>
-    public ReverseTunnelAgentLocalHttpDispatcher(IOptions<ReverseTunnelOptions> options, IHttpClientFactory httpClientFactory)
+    public ReverseTunnelAgentLocalHttpDispatcher(
+        IOptions<ReverseTunnelOptions> startupOptions,
+        IHttpClientFactory httpClientFactory,
+        IReverseTunnelRuntimeOptionsAccessor? runtimeOptions = null)
     {
-        this.options = options;
+        this.options = runtimeOptions ?? new ReverseTunnelRuntimeOptionsAccessor(startupOptions);
         this.httpClientFactory = httpClientFactory;
     }
 
@@ -78,7 +86,8 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
             throw new ArgumentNullException(nameof(onResponseBody));
         }
 
-        var targetBaseAddress = ResolveLocalService(request.ServiceKey);
+        var current = options.Current;
+        var targetBaseAddress = ResolveLocalService(current, request.ServiceKey);
         var targetUri = BuildTargetUri(targetBaseAddress, request.PathAndQuery);
         using var httpRequest = new HttpRequestMessage(new HttpMethod(NormalizeMethod(request.Method)), targetUri);
 
@@ -103,7 +112,7 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
             return;
         }
 
-        await StreamContentWithLimitAsync(response.Content, options.Value.MaxResponseBodyBytes, Math.Max(1_024, options.Value.MaxFramePayloadBytes), onResponseBody, cancellationToken);
+        await StreamContentWithLimitAsync(response.Content, current.MaxResponseBodyBytes, Math.Max(1_024, current.MaxFramePayloadBytes), onResponseBody, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -115,7 +124,7 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
             HasBody = request.HasBody || body.Length > 0
         };
 
-        if (body.LongLength > options.Value.MaxRequestBodyBytes)
+        if (body.LongLength > options.Current.MaxRequestBodyBytes)
         {
             throw new InvalidOperationException("Reverse tunnel request body exceeds the configured Agent limit.");
         }
@@ -156,39 +165,63 @@ public sealed class ReverseTunnelAgentLocalHttpDispatcher : IReverseTunnelAgentL
         };
     }
 
-    private Uri ResolveLocalService(string serviceKey)
+    private static Uri ResolveLocalService(ReverseTunnelOptions options, string serviceKey)
     {
         if (string.IsNullOrWhiteSpace(serviceKey))
         {
             throw new InvalidOperationException("Reverse tunnel request ServiceKey is required.");
         }
 
-        var service = options.Value.LocalServices.FirstOrDefault(item => string.Equals(item.ServiceKey, serviceKey.Trim(), StringComparison.OrdinalIgnoreCase));
+        var service = options.LocalServices.FirstOrDefault(item => string.Equals(item.ServiceKey, serviceKey.Trim(), StringComparison.OrdinalIgnoreCase));
         if (service is null)
         {
             throw new InvalidOperationException($"Reverse tunnel local service '{serviceKey}' is not configured on this Agent.");
         }
 
-        if (!Uri.TryCreate(service.LocalAddress, UriKind.Absolute, out var localAddress) ||
-            (localAddress.Scheme != Uri.UriSchemeHttp && localAddress.Scheme != Uri.UriSchemeHttps))
+        var protocol = service.Protocol?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(service.Host) || service.Port is < 1 or > 65_535 ||
+            (protocol != Uri.UriSchemeHttp && protocol != Uri.UriSchemeHttps))
         {
-            throw new InvalidOperationException($"Reverse tunnel local service '{serviceKey}' must use an absolute HTTP or HTTPS address.");
+            throw new InvalidOperationException($"Reverse tunnel local service '{serviceKey}' must specify a valid HTTP/HTTPS Protocol, Host, and Port.");
         }
 
-        return localAddress;
+        var host = service.Host.Contains(':', StringComparison.Ordinal) && !service.Host.StartsWith("[", StringComparison.Ordinal)
+            ? "[" + service.Host + "]"
+            : service.Host;
+        return new Uri($"{protocol}://{host}:{service.Port}", UriKind.Absolute);
     }
 
     private static Uri BuildTargetUri(Uri baseAddress, string pathAndQuery)
     {
         var normalizedPath = string.IsNullOrWhiteSpace(pathAndQuery) ? "/" : pathAndQuery.Trim();
-        if (Uri.TryCreate(normalizedPath, UriKind.Absolute, out _))
+        if (Uri.TryCreate(normalizedPath, UriKind.Absolute, out var absoluteUri))
         {
-            throw new InvalidOperationException("Reverse tunnel request PathAndQuery must not be an absolute URI.");
+            normalizedPath = absoluteUri.PathAndQuery;
+        }
+
+        // Older Gateway/Ocelot paths could escape the query separator as %3F.
+        // Recover that separator at the Agent boundary so the configured local
+        // service receives the same path and query semantics as the original request.
+        var encodedQuerySeparator = normalizedPath.IndexOf("%3F", StringComparison.OrdinalIgnoreCase);
+        if (encodedQuerySeparator >= 0)
+        {
+            normalizedPath = normalizedPath[..encodedQuerySeparator] + "?" + normalizedPath[(encodedQuerySeparator + 3)..];
         }
 
         if (!normalizedPath.StartsWith("/", StringComparison.Ordinal))
         {
             throw new InvalidOperationException("Reverse tunnel request PathAndQuery must start with '/'.");
+        }
+
+        var querySeparator = normalizedPath.IndexOf('?');
+        if (querySeparator >= 0)
+        {
+            var uriBuilder = new UriBuilder(baseAddress)
+            {
+                Path = normalizedPath[..querySeparator],
+                Query = normalizedPath[(querySeparator + 1)..]
+            };
+            return uriBuilder.Uri;
         }
 
         return new Uri(baseAddress, normalizedPath);

@@ -14,8 +14,8 @@ namespace Air.Cloud.Modules.ReverseTunnel;
 public sealed class Startup : AppStartup
 {
     /// <summary>
-    /// <para>zh-cn:配置反向隧道模块的应用管道。首个交付阶段不注册 HTTP 端点或中间件，因此不会改变现有 Ocelot 转发链。</para>
-    /// <para>en-us:Configures the reverse tunnel application pipeline. The first delivery phase registers no HTTP endpoint or middleware, so it does not alter the existing Ocelot forwarding pipeline.</para>
+    /// <para>zh-cn:配置反向隧道模块的应用管道。模块自动启动项只注册依赖，不在这里隐式映射 Server、Gateway 或诊断 HTTP endpoint；宿主必须通过 `MapReverseTunnelServer`、`UseReverseTunnelServer` 或 `MapReverseTunnelDiagnostics` 显式开放入口。</para>
+    /// <para>en-us:Configures the reverse tunnel module pipeline. The auto-startup path only registers dependencies and does not implicitly map Server, Gateway, or diagnostic HTTP endpoints here; the host must explicitly expose entries through `MapReverseTunnelServer`, `UseReverseTunnelServer`, or `MapReverseTunnelDiagnostics`.</para>
     /// </summary>
     /// <param name="app">
     /// <para>zh-cn:应用程序构建器。</para>

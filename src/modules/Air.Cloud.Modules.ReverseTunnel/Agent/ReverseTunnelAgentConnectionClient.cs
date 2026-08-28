@@ -1,5 +1,6 @@
 using Air.Cloud.Modules.ReverseTunnel.Common.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Protocol;
+using Air.Cloud.Modules.ReverseTunnel.Common.Runtime;
 using Air.Cloud.Modules.ReverseTunnel.Server.Grpc;
 
 using Google.Protobuf;
@@ -8,6 +9,7 @@ using Grpc.Core;
 using Grpc.Net.Client;
 
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 
 using System.Net.Http;
 using System.Net.Security;
@@ -21,7 +23,8 @@ namespace Air.Cloud.Modules.ReverseTunnel.Agent;
 /// </summary>
 internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentConnectionClient
 {
-    private readonly IOptions<ReverseTunnelOptions> options;
+    private readonly IReverseTunnelRuntimeOptionsAccessor options;
+    private readonly IReverseTunnelAgentConfigurationStore configurationStore;
     private readonly IReverseTunnelAgentCertificateMaterialStore materialStore;
     private readonly IReverseTunnelAgentFrameProcessor frameProcessor;
 
@@ -33,6 +36,10 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
     /// <para>zh-cn:包含 AgentId、ServerAddress、LocalServices 和心跳间隔的反向隧道配置。</para>
     /// <para>en-us:Reverse tunnel options containing AgentId, ServerAddress, LocalServices, and heartbeat interval.</para>
     /// </param>
+    /// <param name="configurationStore">
+    /// <para>zh-cn:用于读取当前已应用的远程配置版本并写入 Hello 帧。</para>
+    /// <para>en-us:Store used to read the applied remote configuration version and include it in the Hello frame.</para>
+    /// </param>
     /// <param name="materialStore">
     /// <para>zh-cn:用于加载当前 mTLS 客户端证书和可信签发者证书的 Agent 证书材料存储。</para>
     /// <para>en-us:Agent certificate material store used to load the current mTLS client certificate and trusted issuer certificate.</para>
@@ -41,14 +48,33 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
     /// <para>zh-cn:处理 Server 下发请求帧的 Agent 帧处理器。</para>
     /// <para>en-us:Agent frame processor that handles request frames sent by the Server.</para>
     /// </param>
+    [ActivatorUtilitiesConstructor]
     public ReverseTunnelAgentConnectionClient(
-        IOptions<ReverseTunnelOptions> options,
+        IReverseTunnelRuntimeOptionsAccessor options,
+        IReverseTunnelAgentConfigurationStore configurationStore,
         IReverseTunnelAgentCertificateMaterialStore materialStore,
         IReverseTunnelAgentFrameProcessor frameProcessor)
     {
         this.options = options;
+        this.configurationStore = configurationStore;
         this.materialStore = materialStore;
         this.frameProcessor = frameProcessor;
+    }
+
+    /// <summary>
+    /// <para>zh-cn:兼容静态 IOptions 调用方。</para>
+    /// <para>en-us:Compatibility constructor for static IOptions callers.</para>
+    /// </summary>
+    internal ReverseTunnelAgentConnectionClient(
+        IOptions<ReverseTunnelOptions> options,
+        IReverseTunnelAgentCertificateMaterialStore materialStore,
+        IReverseTunnelAgentFrameProcessor frameProcessor)
+        : this(
+            new ReverseTunnelRuntimeOptionsAccessor(options),
+            new InMemoryReverseTunnelAgentConfigurationStore(),
+            materialStore,
+            frameProcessor)
+    {
     }
 
     /// <inheritdoc />
@@ -73,8 +99,9 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
             ProtocolVersion = ReverseTunnelProtocol.CurrentVersion,
             SessionId = sessionId,
             Kind = TunnelFrameKindMessage.Hello,
-            AgentId = options.Value.AgentId,
-            ServiceKeys = { GetDeclaredServiceKeys(options.Value) }
+            AgentId = options.Current.AgentId,
+            ServiceKeys = { GetDeclaredServiceKeys(options.Current) },
+            ConfigurationVersion = configurationStore.CurrentVersion
         }, cancellationToken);
 
         var heartbeatTask = RunHeartbeatAsync(call.RequestStream, writeLock, sessionId, heartbeatCancellation.Token);
@@ -114,7 +141,7 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
 
     private async Task RunHeartbeatAsync(IClientStreamWriter<TunnelFrameMessage> requestStream, SemaphoreSlim writeLock, string sessionId, CancellationToken cancellationToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(options.Value.HeartbeatIntervalSeconds));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(options.Current.HeartbeatIntervalSeconds));
         while (await timer.WaitForNextTickAsync(cancellationToken))
         {
             await WriteFrameAsync(requestStream, writeLock, new TunnelFrameMessage
@@ -156,7 +183,7 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
 
     private GrpcChannel CreateChannel(X509Certificate2 clientCertificate)
     {
-        var settings = options.Value;
+        var settings = options.Current;
         if (string.IsNullOrWhiteSpace(settings.ServerAddress))
         {
             throw new InvalidOperationException("ReverseTunnelSettings:ServerAddress is required for Agent connections.");
@@ -200,5 +227,19 @@ internal sealed class ReverseTunnelAgentConnectionClient : IReverseTunnelAgentCo
             customChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             return customChain.Build(serverCertificate);
         };
+    }
+
+    private sealed class InMemoryReverseTunnelAgentConfigurationStore : IReverseTunnelAgentConfigurationStore
+    {
+        public long CurrentVersion { get; private set; }
+
+        public Task<ReverseTunnelAgentConfigurationSnapshot?> LoadAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<ReverseTunnelAgentConfigurationSnapshot?>(null);
+
+        public Task SaveAsync(ReverseTunnelAgentConfigurationSnapshot snapshot, CancellationToken cancellationToken = default)
+        {
+            CurrentVersion = snapshot.Version;
+            return Task.CompletedTask;
+        }
     }
 }
