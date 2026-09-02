@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 using System.Collections.Concurrent;
 using System.Data.Common;
+using System.Reflection;
 
 namespace Air.Cloud.EntityFrameWork.Core.ContextPools;
 
@@ -132,10 +133,15 @@ public class DbContextPool : IDbContextPool
     /// <returns></returns>
     public int SavePoolNow()
     {
-        // 查找所有已改变的数据库上下文并保存更改
-        return _dbContexts
-            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges() && !_failedDbContexts.Contains(u))
-            .Select(u => u.Value.SaveChanges()).Count();
+        // DbContext 不支持并发操作；即使池本身是线程安全集合，保存也必须串行执行。
+        var savedContextCount = 0;
+        foreach (var item in GetPendingDbContexts())
+        {
+            item.Value.SaveChanges();
+            savedContextCount++;
+        }
+
+        return savedContextCount;
     }
 
     /// <summary>
@@ -145,10 +151,15 @@ public class DbContextPool : IDbContextPool
     /// <returns></returns>
     public int SavePoolNow(bool acceptAllChangesOnSuccess)
     {
-        // 查找所有已改变的数据库上下文并保存更改
-        return _dbContexts
-            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges() && !_failedDbContexts.Contains(u))
-            .Select(u => u.Value.SaveChanges(acceptAllChangesOnSuccess)).Count();
+        // DbContext 不支持并发操作；即使池本身是线程安全集合，保存也必须串行执行。
+        var savedContextCount = 0;
+        foreach (var item in GetPendingDbContexts())
+        {
+            item.Value.SaveChanges(acceptAllChangesOnSuccess);
+            savedContextCount++;
+        }
+
+        return savedContextCount;
     }
 
     /// <summary>
@@ -158,14 +169,15 @@ public class DbContextPool : IDbContextPool
     /// <returns></returns>
     public async Task<int> SavePoolNowAsync(CancellationToken cancellationToken = default)
     {
-        // 查找所有已改变的数据库上下文并保存更改
-        var tasks = _dbContexts
-            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges() && !_failedDbContexts.Contains(u))
-            .Select(u => u.Value.SaveChangesAsync(cancellationToken));
+        // DbContext 不支持并发操作；多个上下文也必须按顺序保存，避免同一上下文重入。
+        var savedContextCount = 0;
+        foreach (var item in GetPendingDbContexts())
+        {
+            await item.Value.SaveChangesAsync(cancellationToken);
+            savedContextCount++;
+        }
 
-        // 等待所有异步完成
-        var results = await Task.WhenAll(tasks);
-        return results.Length;
+        return savedContextCount;
     }
 
     /// <summary>
@@ -176,14 +188,15 @@ public class DbContextPool : IDbContextPool
     /// <returns></returns>
     public async Task<int> SavePoolNowAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
-        // 查找所有已改变的数据库上下文并保存更改
-        var tasks = _dbContexts
-            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges() && !_failedDbContexts.Contains(u))
-            .Select(u => u.Value.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken));
+        // DbContext 不支持并发操作；多个上下文也必须按顺序保存，避免同一上下文重入。
+        var savedContextCount = 0;
+        foreach (var item in GetPendingDbContexts())
+        {
+            await item.Value.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            savedContextCount++;
+        }
 
-        // 等待所有异步完成
-        var results = await Task.WhenAll(tasks);
-        return results.Length;
+        return savedContextCount;
     }
 
     /// <summary>
@@ -193,43 +206,50 @@ public class DbContextPool : IDbContextPool
     /// <returns></returns>
     public void BeginTransaction(bool ensureTransaction = false)
     {
-        // 判断 dbContextPool 中是否包含DbContext，如果是，则使用第一个数据库上下文开启事务，并应用于其他数据库上下文
-        EnsureTransaction: if (_dbContexts.Any())
+        var transactionContexts = GetUnitOfWorkContexts();
+
+        // 没有已经解析的上下文时，按原有 ensureTransaction 语义创建默认上下文。
+        if (transactionContexts.Count == 0 && ensureTransaction)
         {
-            // 如果共享事务不为空，则直接共享
-            if (DbContextTransaction != null) goto ShareTransaction;
-            // 先判断是否已经有上下文开启了事务
-            var transactionDbContext = _dbContexts.FirstOrDefault(u => u.Value.Database.CurrentTransaction != null);
-            DbContextTransaction = transactionDbContext.Value?.Database.CurrentTransaction
-                   // 如果没有任何上下文有事务，则将第一个开启事务
-                   ?? _dbContexts.First().Value.Database.BeginTransaction();
-            // 共享事务
-            ShareTransaction:
-            if (DbContextTransaction == null) return;
-            ShareTransaction(DbContextTransaction.GetDbTransaction());
-            // 打印数据库关闭信息
-            AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
-            {
-                Title = "数据库事务状态更新",
-                Level = AppPrintLevel.Information,
-                Content = $"事务已开启",
-                State = true,
-                Type = AppPrintConstType.ORM_EXEC_TYPE
-            }), Db.TraceLogTags);
+            // 只允许通过明确的 MasterDbContextLocator 解析默认上下文，避免依赖描述器枚举顺序。
+            var newDbContext = Db.GetDbContext(_serviceProvider);
+            transactionContexts = GetUnitOfWorkContexts();
+            if (!transactionContexts.Contains(newDbContext)) transactionContexts.Add(newDbContext);
+        }
+
+        if (transactionContexts.Count == 0) return;
+
+        // 已经开启的事务只允许在相同 Provider、相同连接实例的上下文之间共享。
+        if (DbContextTransaction != null)
+        {
+            ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
+            return;
+        }
+
+        var transactionDbContext = transactionContexts.FirstOrDefault(u => u.Database.CurrentTransaction != null);
+        if (transactionDbContext != null)
+        {
+            EnsureCompatibleConnections(transactionDbContext, transactionContexts);
+            DbContextTransaction = transactionDbContext.Database.CurrentTransaction;
         }
         else
         {
-            // 判断是否确保事务强制可用（此处是无奈之举）
-            if (!ensureTransaction) return;
-
-            var defaultDbContextLocator = Penetrates.DbContextDescriptors.LastOrDefault();
-            if (defaultDbContextLocator.Key == null) return;
-
-            // 创建一个新的上下文
-            var newDbContext = Db.GetDbContext(defaultDbContextLocator.Key, _serviceProvider);
-            DbContextTransaction = newDbContext.Database.BeginTransaction();
-            goto EnsureTransaction;
+            EnsureCompatibleConnections(transactionContexts[0], transactionContexts);
+            DbContextTransaction = transactionContexts[0].Database.BeginTransaction();
         }
+
+        if (DbContextTransaction == null) return;
+
+        ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
+
+        AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
+        {
+            Title = "数据库事务状态更新",
+            Level = AppPrintLevel.Information,
+            Content = "事务已开启",
+            State = true,
+            Type = AppPrintConstType.ORM_EXEC_TYPE
+        }), Db.TraceLogTags);
     }
 
     /// <summary>
@@ -238,18 +258,19 @@ public class DbContextPool : IDbContextPool
     /// <param name="withCloseAll">是否自动关闭所有连接</param>
     public void CommitTransaction(bool withCloseAll = false)
     {
+        var transaction = DbContextTransaction;
         try
         {
-            // 将所有数据库上下文修改 SaveChanges();，这里另外判断是否需要手动提交
+            // 将所有数据库上下文修改 SaveChanges();，这里另外判断是否需要手动提交。
             var hasChangesCount = SavePoolNow();
             // 如果事务为空，则执行完毕后关闭连接
-            if (DbContextTransaction == null)
+            if (transaction == null)
             {
                 if (withCloseAll) CloseAll();
                 return;
             }
             // 提交共享事务
-            DbContextTransaction?.Commit();
+            transaction.Commit();
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
@@ -263,7 +284,7 @@ public class DbContextPool : IDbContextPool
         catch
         {
             // 回滚事务
-            if (DbContextTransaction?.GetDbTransaction()?.Connection != null) DbContextTransaction?.Rollback();
+            if (transaction?.GetDbTransaction()?.Connection != null) transaction.Rollback();
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
@@ -277,11 +298,8 @@ public class DbContextPool : IDbContextPool
         }
         finally
         {
-            if (DbContextTransaction?.GetDbTransaction()?.Connection != null)
-            {
-                DbContextTransaction = null;
-                DbContextTransaction?.Dispose();
-            }
+            DbContextTransaction = null;
+            transaction?.Dispose();
         }
         // 关闭所有连接
         if (withCloseAll) CloseAll();
@@ -293,10 +311,17 @@ public class DbContextPool : IDbContextPool
     /// <param name="withCloseAll">是否自动关闭所有连接</param>
     public void RollbackTransaction(bool withCloseAll = false)
     {
-        // 回滚事务
-        if (DbContextTransaction?.GetDbTransaction()?.Connection != null) DbContextTransaction?.Rollback();
-        DbContextTransaction?.Dispose();
-        DbContextTransaction = null;
+        var transaction = DbContextTransaction;
+        try
+        {
+            // 回滚事务
+            if (transaction?.GetDbTransaction()?.Connection != null) transaction.Rollback();
+        }
+        finally
+        {
+            DbContextTransaction = null;
+            transaction?.Dispose();
+        }
         // 打印数据库关闭信息
         AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
         {
@@ -338,17 +363,76 @@ public class DbContextPool : IDbContextPool
     /// 设置数据库上下文共享事务
     /// </summary>
     /// <param name="transaction"></param>
-    /// <returns></returns>
-    private void ShareTransaction(DbTransaction transaction)
+    /// <param name="transactionContexts">参与当前本地事务的数据库上下文</param>
+    private void ShareTransaction(DbTransaction transaction, IReadOnlyCollection<DbContext> transactionContexts)
     {
-        // 跳过第一个数据库上下文并设置共享事务
-        _ = _dbContexts
-               .Where(u =>
-               {
-                   dynamic dbContext = u.Value;
-                   return dbContext.UseUnitOfWork == true && u.Value.Database.CurrentTransaction == null;
-               })
-               .Select(u => u.Value.Database.UseTransaction(transaction))
-               .Count();
+        var conflictingTransaction = transactionContexts.FirstOrDefault(u =>
+            u.Database.CurrentTransaction != null
+            && !ReferenceEquals(u.Database.CurrentTransaction.GetDbTransaction(), transaction));
+        if (conflictingTransaction != null)
+        {
+            throw new InvalidOperationException("同一工作单元内检测到多个不同的本地事务，无法合并提交。");
+        }
+
+        var owner = transactionContexts.FirstOrDefault(u => ReferenceEquals(u.Database.CurrentTransaction?.GetDbTransaction(), transaction));
+        owner ??= transactionContexts.FirstOrDefault(u => ReferenceEquals(u.Database.GetDbConnection(), transaction.Connection));
+        if (owner == null) throw new InvalidOperationException("无法确定本地事务所属的数据库上下文。");
+
+        if (!ReferenceEquals(owner.Database.GetDbConnection(), transaction.Connection))
+        {
+            throw new InvalidOperationException("本地事务与数据库上下文连接实例不一致，无法共享。");
+        }
+
+        EnsureCompatibleConnections(owner, transactionContexts);
+
+        // 跳过已经拥有该事务的上下文，其余上下文绑定到同一个本地事务。
+        foreach (var dbContext in transactionContexts)
+        {
+            if (ReferenceEquals(dbContext.Database.CurrentTransaction?.GetDbTransaction(), transaction)) continue;
+            dbContext.Database.UseTransaction(transaction);
+        }
+    }
+
+    private List<KeyValuePair<Guid, DbContext>> GetPendingDbContexts()
+    {
+        return _dbContexts
+            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges() && !_failedDbContexts.ContainsKey(u.Key))
+            .OrderBy(u => u.Key)
+            .ToList();
+    }
+
+    private List<DbContext> GetUnitOfWorkContexts()
+    {
+        return _dbContexts.Values
+            .Where(IsUnitOfWorkEnabled)
+            .OrderBy(u => u.ContextId.InstanceId)
+            .ToList();
+    }
+
+    private static bool IsUnitOfWorkEnabled(DbContext dbContext)
+    {
+        // AppDbContext 的配置属性位于泛型基类，使用反射兼容自定义 DbContext 实现。
+        var property = dbContext.GetType().GetProperty("UseUnitOfWork", BindingFlags.Instance | BindingFlags.Public);
+        return property?.GetValue(dbContext) is not bool enabled || enabled;
+    }
+
+    private static void EnsureCompatibleConnections(DbContext owner, IEnumerable<DbContext> contexts)
+    {
+        var ownerConnection = owner.Database.GetDbConnection();
+        var ownerProvider = owner.Database.ProviderName;
+
+        foreach (var dbContext in contexts)
+        {
+            var connection = dbContext.Database.GetDbConnection();
+            if (!string.Equals(ownerProvider, dbContext.Database.ProviderName, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("同一工作单元不能共享不同数据库 Provider 的事务。请拆分为独立的本地事务或使用应用层最终一致性方案。");
+            }
+
+            if (!ReferenceEquals(ownerConnection, connection))
+            {
+                throw new InvalidOperationException("同一工作单元只能共享同一个 DbConnection 实例的本地事务；不同物理数据库或不同连接不能伪装为一个事务。");
+            }
+        }
     }
 }

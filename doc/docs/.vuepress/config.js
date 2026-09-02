@@ -62,6 +62,7 @@
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/database/efcore-core.md',
+                                '/guide/air-cloud-core/database/transactions.md',
                                 '/guide/air-cloud-core/database/options.md',
                                 '/guide/air-cloud-core/database/column-metadata-provider.md'
                             ]

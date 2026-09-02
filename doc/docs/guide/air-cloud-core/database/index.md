@@ -46,6 +46,7 @@ services.AddDb<DefaultDbContext>(connectionMetadata: "default");
 ## 相关文档
 
 - [EF Core 核心包](./efcore-core.md)
+- [EF Core 事务边界](./transactions.md)
 - [MySQL Provider](./mysql.md)
 - [Oracle Provider](./oracle.md)
 - [PostgreSQL Provider](./postgresql.md)
