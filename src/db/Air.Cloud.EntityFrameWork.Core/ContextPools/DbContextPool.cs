@@ -226,6 +226,7 @@ public class DbContextPool : IDbContextPool
             return;
         }
 
+        var transactionCreatedByPool = false;
         var transactionDbContext = transactionContexts.FirstOrDefault(u => u.Database.CurrentTransaction != null);
         if (transactionDbContext != null)
         {
@@ -236,11 +237,36 @@ public class DbContextPool : IDbContextPool
         {
             EnsureCompatibleConnections(transactionContexts[0], transactionContexts);
             DbContextTransaction = transactionContexts[0].Database.BeginTransaction();
+            transactionCreatedByPool = true;
         }
 
         if (DbContextTransaction == null) return;
 
-        ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
+        try
+        {
+            ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
+        }
+        catch
+        {
+            if (transactionCreatedByPool)
+            {
+                try
+                {
+                    DbContextTransaction.Rollback();
+                }
+                catch
+                {
+                    // 保留绑定失败异常，清理动作本身不应覆盖根因。
+                }
+                finally
+                {
+                    DbContextTransaction.Dispose();
+                    DbContextTransaction = null;
+                }
+            }
+
+            throw;
+        }
 
         AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
         {
