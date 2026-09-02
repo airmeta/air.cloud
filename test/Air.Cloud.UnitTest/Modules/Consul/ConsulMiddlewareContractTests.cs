@@ -1,4 +1,6 @@
 using Air.Cloud.Core.Standard.KVCenter;
+using Air.Cloud.Modules.Consul.Model;
+using Air.Cloud.Modules.Consul.Util;
 using Microsoft.Extensions.Configuration;
 
 namespace Air.Cloud.UnitTest.Modules.Consul
@@ -112,6 +114,27 @@ namespace Air.Cloud.UnitTest.Modules.Consul
             provider.Reload();
 
             Assert.Equal("value-v2", configuration["Feature:Flag"]);
+        }
+
+        /// <summary>
+        /// <para>zh-cn:验证关闭配置中心后，配置加载器不会访问 Consul，并返回空的服务配置和空公共配置。</para>
+        /// <para>en-us:Verifies the configuration loader does not access Consul when the configuration center is disabled, returning an empty service configuration and no common configuration.</para>
+        /// </summary>
+        [Fact]
+        public void Consul_configuration_should_skip_remote_load_when_configuration_center_disabled()
+        {
+            var options = new ConsulServiceOptions
+            {
+                EnableConfigurationCenter = false,
+                ConsulAddress = "http://127.0.0.1:1/",
+                ConfigurationServiceName = "air.cloud.unit.disabled"
+            };
+
+            var (serviceConfiguration, commonConfiguration) = ConfigurationLoader.LoadRemoteConfiguration(options);
+
+            Assert.NotNull(serviceConfiguration);
+            Assert.Empty(serviceConfiguration.GetChildren());
+            Assert.Null(commonConfiguration);
         }
 
         private sealed class TestKvCenterServiceOptions : IKVCenterServiceOptions

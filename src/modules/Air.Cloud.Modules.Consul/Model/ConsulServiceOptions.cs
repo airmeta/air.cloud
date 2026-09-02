@@ -41,12 +41,45 @@ namespace Air.Cloud.Modules.Consul.Model
 
         #endregion
 
+        #region 功能开关(FeatureSwitches)
+        /// <summary>
+        /// <para>zh-cn:是否从 Consul 配置中心加载当前服务配置；关闭后 WebInjectInConsul 仍会保留本地配置和依赖注入流程。</para>
+        /// <para>en-us:Whether to load the current service configuration from the Consul configuration center; when disabled, WebInjectInConsul still keeps the local configuration and dependency-injection flow.</para>
+        /// </summary>
+        public bool EnableConfigurationCenter { get; set; } = true;
+
+        /// <summary>
+        /// <para>zh-cn:是否把当前宿主注册到 Consul 注册中心；DynamicApp 托管的子进程应关闭该开关。</para>
+        /// <para>en-us:Whether to register the current host into the Consul service registry; child processes managed by DynamicApp should disable this switch.</para>
+        /// </summary>
+        public bool EnableServiceRegistration { get; set; } = true;
+
+        /// <summary>
+        /// <para>zh-cn:是否启用健康检查端点并在服务注册时附加 Consul 健康检查；关闭后只注册服务基础信息。</para>
+        /// <para>en-us:Whether to enable the health-check endpoint and attach a Consul health check during service registration; when disabled, only service identity information is registered.</para>
+        /// </summary>
+        public bool EnableHealthCheck { get; set; } = true;
+
+        /// <summary>
+        /// <para>zh-cn:当前进程是否由 DynamicApp 托管；托管进程可以继续读取配置，但不会向 Consul 自注册，避免注册中心出现 Mod 级实例。</para>
+        /// <para>en-us:Whether the current process is managed by DynamicApp; managed processes may still load configuration but will not self-register into Consul, avoiding Mod-level instances in the registry.</para>
+        /// </summary>
+        public bool DynamicAppManaged { get; set; }
+
+        #endregion
+
         #region 服务配置(ServiceConfig)
         /// <summary>
-        /// <para>zh-cn:服务名称</para>
-        /// <para>en-us:Service name</para>
+        /// <para>zh-cn:配置中心读取使用的服务名称；该名称会转换为 Consul KV 路径，例如 air.gateway -> air/gateway/appsettings.json。</para>
+        /// <para>en-us:Service name used for configuration-center reads; it is converted into a Consul KV path, for example air.gateway -> air/gateway/appsettings.json.</para>
         /// </summary>
-        public string ServiceName { get; set; } = null;
+        public string ConfigurationServiceName { get; set; } = null;
+
+        /// <summary>
+        /// <para>zh-cn:注册中心注册使用的服务名称；它可以与配置中心名称不同，DynamicApp 宿主通常注册为 air.dynamicapp。</para>
+        /// <para>en-us:Service name used for registry registration; it may differ from the configuration-center name, and a DynamicApp host usually registers as air.dynamicapp.</para>
+        /// </summary>
+        public string RegistryServiceName { get; set; } = null;
 
         /// <summary>
         /// <para>zh-cn:服务地址</para>

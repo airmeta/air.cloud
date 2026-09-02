@@ -22,7 +22,13 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
     public async Task DeployAsync_should_start_container_through_container_engine_standard()
     {
         var stateStore = new FakeStateStore();
-        var engine = new FakeContainerEngine();
+        var engine = new FakeContainerEngine
+        {
+            Instances =
+            [
+                new ContainerEngineInstance { Name = "air.system", IsRunning = true, IsAvailable = true }
+            ]
+        };
         var orchestrator = CreateOrchestrator(stateStore, engine);
         var manifest = CreateManifest(endpoint: "http://air.system:8080", containerName: "air.system");
         var mod = manifest.Mods.Single();
@@ -79,7 +85,13 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
     public async Task StopAsync_should_stop_runtime_instance_through_container_engine_standard()
     {
         var stateStore = new FakeStateStore();
-        var engine = new FakeContainerEngine();
+        var engine = new FakeContainerEngine
+        {
+            Instances =
+            [
+                new ContainerEngineInstance { Name = "air.system", IsRunning = true, IsAvailable = true }
+            ]
+        };
         var orchestrator = CreateOrchestrator(stateStore, engine);
         var manifest = CreateManifest(endpoint: "http://air.system:8080", containerName: "air.system");
         var key = new DynamicModVersionKey(manifest.Id, manifest.Mods.Single().Id, manifest.Mods.Single().Version);
@@ -97,6 +109,52 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
         Assert.True(result.Succeeded);
         Assert.Equal("air.system", engine.StoppedName);
         Assert.Equal(DynamicModLifecycleState.Stopped, stateStore.Targets.Single().State);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证停止一个部署实例时不会更新或停止同一包版本的其他副本。</para>
+    /// <para>en-us:Verifies that stopping one deployment does not update or stop another replica of the same package version.</para>
+    /// </summary>
+    [Fact]
+    public async Task StopAsync_should_isolate_same_version_deployments()
+    {
+        var manifest = CreateManifest(endpoint: "http://air.system:8080", containerName: string.Empty);
+        var key = new DynamicModVersionKey(manifest.Id, manifest.Mods.Single().Id, manifest.Mods.Single().Version);
+        var stateStore = new FakeStateStore();
+        stateStore.UpsertTarget(new DynamicAppRouteTarget
+        {
+            Key = key,
+            DeploymentId = "blue",
+            BaseAddress = new Uri("http://air.system:8080"),
+            InstanceId = "air.system-blue",
+            State = DynamicModLifecycleState.Active,
+            HealthStatus = DynamicModHealthStatus.Healthy
+        });
+        stateStore.UpsertTarget(new DynamicAppRouteTarget
+        {
+            Key = key,
+            DeploymentId = "gray",
+            BaseAddress = new Uri("http://air.system:8081"),
+            InstanceId = "air.system-gray",
+            State = DynamicModLifecycleState.Active,
+            HealthStatus = DynamicModHealthStatus.Healthy
+        });
+        var engine = new FakeContainerEngine
+        {
+            Instances =
+            [
+                new ContainerEngineInstance { Name = "air.system-blue", IsRunning = true, IsAvailable = true },
+                new ContainerEngineInstance { Name = "air.system-gray", IsRunning = true, IsAvailable = true }
+            ]
+        };
+        var orchestrator = CreateOrchestrator(stateStore, engine);
+
+        var result = await orchestrator.StopAsync(new DynamicAppRuntimeKey(key, "blue"));
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal("air.system-blue", engine.StoppedName);
+        Assert.Equal(DynamicModLifecycleState.Stopped, stateStore.Targets.Single(item => item.DeploymentId == "blue").State);
+        Assert.Equal(DynamicModLifecycleState.Active, stateStore.Targets.Single(item => item.DeploymentId == "gray").State);
     }
 
     private static DockerExistingContainerDynamicAppOrchestrator CreateOrchestrator(FakeStateStore stateStore, FakeContainerEngine engine)
@@ -129,7 +187,6 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
                     Endpoint = endpoint,
                     ContainerName = containerName
                 },
-                Route = new DynamicModRouteManifest { Prefix = "/mods/system" },
                 Health = new DynamicModHealthManifest { Path = "/Health", StartupTimeoutSeconds = 10 }
             }
         ]
@@ -158,6 +215,9 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
         public Task<ContainerEngineOperationResult> StopAsync(string containerNameOrId, CancellationToken cancellationToken = default)
         {
             StoppedName = containerNameOrId;
+            var instance = Instances.First(item => item.Name == containerNameOrId || item.Id == containerNameOrId);
+            instance.IsRunning = false;
+            instance.IsAvailable = false;
             return Task.FromResult(ContainerEngineOperationResult.Success("stopped"));
         }
     }
@@ -170,7 +230,7 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
 
         public void UpsertTarget(DynamicAppRouteTarget target)
         {
-            targets.RemoveAll(item => item.Key == target.Key);
+            targets.RemoveAll(item => item.Key == target.Key && string.Equals(item.DeploymentId, target.DeploymentId, StringComparison.OrdinalIgnoreCase));
             targets.Add(target);
         }
 
@@ -179,6 +239,15 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorTests
         public DynamicAppOperationResult UpdateState(DynamicModVersionKey key, DynamicModLifecycleState state, DynamicModHealthStatus healthStatus, string? message = null)
         {
             var target = targets.Single(item => item.Key == key);
+            target.State = state;
+            target.HealthStatus = healthStatus;
+            target.LastStatusMessage = message ?? string.Empty;
+            return DynamicAppOperationResult.Success("updated");
+        }
+
+        public DynamicAppOperationResult UpdateState(DynamicAppRuntimeKey key, DynamicModLifecycleState state, DynamicModHealthStatus healthStatus, string? message = null)
+        {
+            var target = targets.Single(item => item.Key == key.PackageKey && string.Equals(item.DeploymentId, key.DeploymentId, StringComparison.OrdinalIgnoreCase));
             target.State = state;
             target.HealthStatus = healthStatus;
             target.LastStatusMessage = message ?? string.Empty;

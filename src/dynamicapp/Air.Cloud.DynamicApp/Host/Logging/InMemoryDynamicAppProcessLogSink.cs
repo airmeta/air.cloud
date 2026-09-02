@@ -11,6 +11,7 @@ namespace Air.Cloud.DynamicApp.Host;
 public sealed class InMemoryDynamicAppProcessLogSink : IDynamicAppProcessLogSink
 {
     private readonly ConcurrentDictionary<string, ConcurrentQueue<DynamicAppProcessLogEntry>> _entries = new();
+    private readonly DynamicAppProcessLogBroadcaster? _broadcaster;
     private readonly int _maxEntriesPerTarget;
 
     /// <summary>
@@ -21,9 +22,14 @@ public sealed class InMemoryDynamicAppProcessLogSink : IDynamicAppProcessLogSink
     /// <para>zh-cn:单个目标最多保留日志条数，默认 1000，最小值 1。</para>
     /// <para>en-us:Maximum retained log entries per target; defaults to 1000 and has a minimum of 1.</para>
     /// </param>
-    public InMemoryDynamicAppProcessLogSink(int maxEntriesPerTarget = 1000)
+    /// <param name="broadcaster">
+    /// <para>zh-cn:可选实时日志广播器；不为空时，写入的日志会同步推送给当前订阅者。</para>
+    /// <para>en-us:Optional live-log broadcaster; when provided, written entries are also sent to current subscribers.</para>
+    /// </param>
+    public InMemoryDynamicAppProcessLogSink(int maxEntriesPerTarget = 1000, DynamicAppProcessLogBroadcaster? broadcaster = null)
     {
         _maxEntriesPerTarget = Math.Max(1, maxEntriesPerTarget);
+        _broadcaster = broadcaster;
     }
 
     /// <summary>
@@ -47,12 +53,13 @@ public sealed class InMemoryDynamicAppProcessLogSink : IDynamicAppProcessLogSink
         ArgumentNullException.ThrowIfNull(entry);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queue = _entries.GetOrAdd(entry.Key.ToString(), _ => new ConcurrentQueue<DynamicAppProcessLogEntry>());
+        var queue = _entries.GetOrAdd(BuildRuntimeKey(entry).ToString(), _ => new ConcurrentQueue<DynamicAppProcessLogEntry>());
         queue.Enqueue(entry);
         while (queue.Count > _maxEntriesPerTarget && queue.TryDequeue(out _))
         {
         }
 
+        _broadcaster?.Publish(entry);
         return Task.CompletedTask;
     }
 
@@ -77,6 +84,29 @@ public sealed class InMemoryDynamicAppProcessLogSink : IDynamicAppProcessLogSink
     /// <para>en-us:Log entries returned in ascending write order.</para>
     /// </returns>
     public Task<IReadOnlyCollection<DynamicAppProcessLogEntry>> QueryAsync(DynamicModVersionKey key, int take = 200, CancellationToken cancellationToken = default)
+        => QueryAsync(DynamicAppRuntimeKey.Default(key), take, cancellationToken);
+
+    /// <summary>
+    /// <para>zh-cn:查询指定部署实例的近期日志，返回值是独立快照，不会暴露内部队列。</para>
+    /// <para>en-us:Queries recent logs for one deployment instance and returns an isolated snapshot without exposing the internal queue.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="take">
+    /// <para>zh-cn:最多返回的日志条数。</para>
+    /// <para>en-us:The maximum number of entries to return.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:Cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:按写入时间升序返回的日志集合。</para>
+    /// <para>en-us:Log entries returned in ascending write order.</para>
+    /// </returns>
+    public Task<IReadOnlyCollection<DynamicAppProcessLogEntry>> QueryAsync(DynamicAppRuntimeKey key, int take = 200, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!_entries.TryGetValue(key.ToString(), out var queue))
@@ -90,5 +120,12 @@ public sealed class InMemoryDynamicAppProcessLogSink : IDynamicAppProcessLogSink
             .Take(count)
             .Reverse()
             .ToList());
+    }
+
+    private static DynamicAppRuntimeKey BuildRuntimeKey(DynamicAppProcessLogEntry entry)
+    {
+        return new DynamicAppRuntimeKey(
+            entry.Key,
+            string.IsNullOrWhiteSpace(entry.DeploymentId) ? "default" : entry.DeploymentId.Trim());
     }
 }

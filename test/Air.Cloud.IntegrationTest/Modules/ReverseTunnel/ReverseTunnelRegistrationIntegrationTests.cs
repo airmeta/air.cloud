@@ -27,6 +27,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.IO.Compression;
 
 namespace Air.Cloud.IntegrationTest.Modules.ReverseTunnel;
 
@@ -438,15 +439,22 @@ public class ReverseTunnelRegistrationIntegrationTests
             Assert.Contains("id=\"configView\"", html, StringComparison.Ordinal);
             Assert.Contains("id=\"agentConfigView\"", html, StringComparison.Ordinal);
             Assert.Contains("id=\"mappingConfigView\"", html, StringComparison.Ordinal);
-            Assert.Contains("id=\"agentConfigAgents\"", html, StringComparison.Ordinal);
             Assert.Contains("id=\"mappingConfigAgents\"", html, StringComparison.Ordinal);
-            Assert.Contains("id=\"agentRuntimeConfig\"", html, StringComparison.Ordinal);
             Assert.Contains("id=\"agentLocalServices\"", html, StringComparison.Ordinal);
-            Assert.Contains("agent-runtime-grid", html, StringComparison.Ordinal);
-            Assert.Contains("agentConnectionGroup", html, StringComparison.Ordinal);
-            Assert.Contains("agentLimitsGroup", html, StringComparison.Ordinal);
-            Assert.Contains("grid-template-columns:300px minmax(0,1fr)", html, StringComparison.Ordinal);
-            Assert.Contains("title=\"'+escapeHtml(id)+'\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentManagementList\"", html, StringComparison.Ordinal);
+            Assert.Contains("data-agent-runtime", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentRuntimeDialog\"", html, StringComparison.Ordinal);
+            Assert.Contains("agentRuntimeDetail\">运行配置", html, StringComparison.Ordinal);
+            Assert.Contains("agentRuntimeLoading", html, StringComparison.Ordinal);
+            Assert.Contains("function openAgentRuntimeDialog", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentRuntimeConfig\"", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"createAgentDialog\"", html, StringComparison.Ordinal);
+            Assert.Contains("function submitCreateAgent", html, StringComparison.Ordinal);
+            Assert.Contains("function downloadAgentPackage", html, StringComparison.Ordinal);
+            Assert.Contains("id=\"agentExportDialog\"", html, StringComparison.Ordinal);
+            Assert.Contains("function openAgentExportDialog", html, StringComparison.Ordinal);
+            Assert.Contains("function submitAgentExport", html, StringComparison.Ordinal);
+            Assert.Contains("runtimeEnvironment", html, StringComparison.Ordinal);
             Assert.Contains("id=\"agentSaveDialog\"", html, StringComparison.Ordinal);
             Assert.Contains("agentSaveItemCount", html, StringComparison.Ordinal);
             Assert.Contains("id=\"agentDetailDialog\"", html, StringComparison.Ordinal);
@@ -542,6 +550,150 @@ public class ReverseTunnelRegistrationIntegrationTests
                 Directory.Delete(root, recursive: true);
             }
         }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证管理端可以创建唯一 Agent，并写入标准 Agent 运行配置。</para>
+    /// <para>en-us:Verifies that management can create a unique Agent and persist the standard Agent runtime configuration.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task MapReverseTunnelManagement_should_create_agent_configuration()
+    {
+        var tokenVariable = $"AIR_TUNNEL_ADMIN_TOKEN_CREATE_{Guid.NewGuid():N}";
+        Environment.SetEnvironmentVariable(tokenVariable, "test-admin-token");
+        var store = new TestDesiredAgentConfigurationStore();
+        try
+        {
+            var options = new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.None,
+                Management = new ReverseTunnelManagementOptions
+                {
+                    Enabled = true,
+                    BindUrl = "test-server",
+                    AccessTokenEnvironmentVariable = tokenVariable,
+                    AllowRemoteClientManagement = true
+                }
+            };
+            options.PostConfigure(options, new ConfigurationBuilder().Build());
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddReverseTunnel();
+            builder.Services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(options));
+            builder.Services.AddSingleton<IReverseTunnelDesiredAgentConfigurationStore>(store);
+            await using var app = builder.Build();
+            app.MapReverseTunnelManagement();
+            await app.StartAsync();
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/_airtunnel/admin/clients");
+            request.Headers.Add("X-AirTunnel-Admin-Token", "test-admin-token");
+            request.Content = JsonContent.Create(new
+            {
+                agentId = "agent-orders",
+                serverAddress = "https://192.168.100.165:8090",
+                agentConnectionCount = 2,
+                heartbeatIntervalSeconds = 20,
+                configurationSyncEnabled = true,
+                configurationSyncIntervalSeconds = 45
+            });
+
+            using var response = await app.GetTestClient().SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            Assert.Contains("agent-orders", body, StringComparison.Ordinal);
+            var snapshot = await store.GetAsync("agent-orders");
+            Assert.NotNull(snapshot);
+            Assert.Equal("https://192.168.100.165:8090", snapshot!.Configuration.ServerAddress);
+            Assert.Equal(2, snapshot.Configuration.AgentConnectionCount);
+            Assert.Equal(20, snapshot.Configuration.HeartbeatIntervalSeconds);
+            Assert.Equal(45, snapshot.Configuration.SessionIdleTimeoutSeconds);
+            Assert.Equal(128, snapshot.Configuration.MaxConcurrentStreams);
+            Assert.Equal(64 * 1024, snapshot.Configuration.MaxFramePayloadBytes);
+            Assert.Equal(1024, snapshot.Configuration.OutboundFrameQueueCapacity);
+            Assert.Equal(5, snapshot.Configuration.AgentReconnectInitialDelaySeconds);
+            Assert.Equal(60, snapshot.Configuration.AgentReconnectMaxDelaySeconds);
+            Assert.NotNull(snapshot.Configuration.ConfigurationSync);
+            Assert.NotNull(snapshot.Configuration.Tcp);
+            Assert.NotNull(snapshot.Configuration.Udp);
+            Assert.True(snapshot.Configuration.AgentCertificate.PrivateKeyPath.EndsWith("agent.key", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Agent 导出包包含运行配置和 CA 公钥，但不会泄露任何私钥材料。</para>
+    /// <para>en-us:Verifies that an Agent export contains runtime configuration and the CA public certificate without leaking private-key material.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task Agent_package_export_should_exclude_private_keys()
+    {
+        var snapshot = ReverseTunnelAgentConfigurationSnapshotSerializer.Create(
+            "agent-export",
+            new ReverseTunnelOptions
+            {
+                Enabled = true,
+                TunnelMode = ReverseTunnelMode.Agent,
+                AgentId = "agent-export",
+                ServerAddress = "https://server:8090",
+                AgentCertificate = new ReverseTunnelAgentCertificateOptions
+                {
+                    CertificatePath = "/app/data/certs/agent.crt",
+                    PrivateKeyPath = "/app/data/certs/agent.key",
+                    TrustedIssuerPath = "/app/data/certs/ca.crt"
+                }
+            },
+            1);
+        var store = new TestDesiredAgentConfigurationStore(snapshot);
+        using var authority = TestExportCertificateAuthority.Create();
+        var exporter = new ReverseTunnelAgentPackageExporter(store, authority);
+
+        var package = await exporter.CreateAsync(
+            "agent-export",
+            new ReverseTunnelAgentPackageExportRequest
+            {
+                ImageName = "airtunnel-agent:1.0.0.0",
+                ContainerName = "airtunnel-agent-export",
+                RuntimeEnvironment = new Dictionary<string, string>
+                {
+                    ["ASPNETCORE_URLS"] = "http://+:18543",
+                    ["TZ"] = "Asia/Shanghai"
+                }
+            });
+        using var archive = new ZipArchive(new MemoryStream(package.Content), ZipArchiveMode.Read);
+        var names = archive.Entries.Select(entry => entry.FullName).ToArray();
+        Assert.Contains("config/00-airtunnel-agent.json", names);
+        Assert.Contains("data/certs/ca.crt", names);
+        Assert.Contains("docker-compose.yml", names);
+        Assert.DoesNotContain("docker-compose.client.yml", names);
+        Assert.Contains("README.md", names);
+        var composeEntry = archive.GetEntry("docker-compose.yml");
+        Assert.NotNull(composeEntry);
+        using var composeReader = new StreamReader(composeEntry!.Open());
+        var compose = await composeReader.ReadToEndAsync();
+        Assert.Contains("image: 'airtunnel-agent:1.0.0.0'", compose, StringComparison.Ordinal);
+        Assert.Contains("  airtunnel-agent:", compose, StringComparison.Ordinal);
+        Assert.Contains("container_name: 'airtunnel-agent-export'", compose, StringComparison.Ordinal);
+        Assert.Contains("ASPNETCORE_URLS: 'http://+:18543'", compose, StringComparison.Ordinal);
+        Assert.Contains("TZ: 'Asia/Shanghai'", compose, StringComparison.Ordinal);
+        Assert.DoesNotContain(names, name => name.Contains("agent.key", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(names, name => name.Contains("agent.crt", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(names, name => name.Contains("ca.pfx", StringComparison.OrdinalIgnoreCase));
+        await Assert.ThrowsAsync<ArgumentException>(() => exporter.CreateAsync(
+            "agent-export",
+            new ReverseTunnelAgentPackageExportRequest
+            {
+                ImageName = "AirTunnel-Agent:1.0.0.0",
+                ContainerName = "airtunnel-agent-export",
+                RuntimeEnvironment = new Dictionary<string, string> { ["TZ"] = "Asia/Shanghai" }
+            }));
     }
 
     /// <summary>
@@ -967,6 +1119,33 @@ public class ReverseTunnelRegistrationIntegrationTests
                 Directory.Delete(directory, recursive: true);
             }
         }
+    }
+
+    private sealed class TestExportCertificateAuthority : IReverseTunnelCertificateAuthority, IDisposable
+    {
+        private readonly X509Certificate2 certificate;
+
+        private TestExportCertificateAuthority(X509Certificate2 certificate)
+        {
+            this.certificate = certificate;
+        }
+
+        public static TestExportCertificateAuthority Create()
+        {
+            using var key = RSA.Create(2048);
+            var request = new CertificateRequest("CN=AirCloudExportTestCa", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            request.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+            var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+            return new TestExportCertificateAuthority(certificate);
+        }
+
+        public X509Certificate2 LoadIssuerCertificate()
+            => new(certificate.Export(X509ContentType.Pkcs12, "test"), "test", X509KeyStorageFlags.EphemeralKeySet);
+
+        public X509Certificate2 SignAgentCertificate(string agentId, byte[] certificateSigningRequest, DateTimeOffset notBeforeUtc)
+            => throw new NotSupportedException();
+
+        public void Dispose() => certificate.Dispose();
     }
 
     private static int InvokeEndpoint(WebApplication app, string displayName, int? localPort = null, string? adminToken = null)

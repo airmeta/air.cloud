@@ -18,11 +18,24 @@ using Air.Cloud.DynamicApp.Manager;
 using Air.Cloud.DynamicApp.Manager.Extensions;
 using Air.Cloud.DynamicApp.Orchestrator;
 using Air.Cloud.DynamicApp.Orchestrator.Extensions;
-using Air.Cloud.DynamicApp.Panel;
-using Air.Cloud.DynamicApp.Panel.Extensions;
+using Air.Cloud.Modules.Consul.Extensions;
+using Air.Cloud.Modules.Consul.Model;
 using Air.Cloud.Modules.Docker.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+var consulIntegration = ResolveConsulIntegration(builder.Configuration);
+ConsulServiceOptions? consulServiceOptions = null;
+if (consulIntegration.UsesConsul)
+{
+    consulServiceOptions = builder.LoadConfigurationFromConsul(options =>
+    {
+        options.EnableConfigurationCenter = consulIntegration.LoadConfiguration;
+        options.EnableServiceRegistration = consulIntegration.RegisterService;
+        options.EnableHealthCheck = consulIntegration.RegisterHealthCheck;
+        options.DynamicAppManaged = false;
+    });
+}
+
 var dynamicAppSection = builder.Configuration.GetSection("DynamicApp");
 
 builder.Services.AddDynamicAppHost(
@@ -33,14 +46,19 @@ builder.Services.AddDynamicAppHost(
     configureSelfHealing: options => ConfigureSelfHealing(options, dynamicAppSection.GetSection("SelfHealing")),
     configureSelfHealingStore: options => ConfigureSelfHealingStore(options, dynamicAppSection.GetSection("SelfHealingStateStore")),
     configureArchiveStore: options => ConfigureArchiveStore(options, dynamicAppSection.GetSection("TargetArchiveStore")),
+    configureTransactionLog: options => ConfigureTransactionLog(options, dynamicAppSection.GetSection("ControlPlaneTransactionLog")),
     configureDrain: options => ConfigureDrain(options, dynamicAppSection.GetSection("Drain")));
 
 builder.Services.AddFileDynamicAppStateStore(options => ConfigureStateStore(options, dynamicAppSection.GetSection("StateStore")));
+builder.Services.AddFileDynamicAppGatewayRouteStore(options => ConfigureGatewayRouteStore(options, dynamicAppSection.GetSection("GatewayRouteStore")));
 builder.Services.AddFileDynamicAppManifestStore(options => ConfigureManifestStore(options, dynamicAppSection.GetSection("ManifestStore")));
 builder.Services.AddDockerEngineContainerService(options => ConfigureDockerEngine(options, dynamicAppSection.GetSection("DockerEngine")));
 builder.Services.AddDockerExistingContainerDynamicAppOrchestrator(options => ConfigureDockerOrchestrator(options, dynamicAppSection.GetSection("DockerExistingContainerOrchestrator")));
 builder.Services.AddDynamicAppGateway(options => ConfigureGateway(options, dynamicAppSection.GetSection("Gateway")));
-builder.Services.AddDynamicAppPanel(options => ConfigurePanel(options, dynamicAppSection.GetSection("Panel")));
+if (consulServiceOptions != null)
+{
+    builder.Services.RegisterConsulHealthCheckServices(consulServiceOptions);
+}
 
 var app = builder.Build();
 
@@ -51,10 +69,40 @@ app.MapGet("/Health", () => Results.Ok(new
     timestampUtc = DateTimeOffset.UtcNow
 }));
 
-app.UseDynamicAppPanel();
 app.UseDynamicAppManagerApi();
 app.UseDynamicAppGateway();
+if (consulServiceOptions != null)
+{
+    app.RegisterConsulServiceInformation(consulServiceOptions);
+    app.RegisterConsulHealthCheck(consulServiceOptions);
+}
+
 app.Run();
+
+static DynamicAppConsulIntegration ResolveConsulIntegration(IConfiguration configuration)
+{
+    var configurationCenter = configuration.GetSection("DynamicApp:ConfigurationCenter");
+    var serviceRegistry = configuration.GetSection("DynamicApp:ServiceRegistry");
+    var configurationProvider = ReadString(configurationCenter, "Provider", "File");
+    var registryProvider = ReadString(serviceRegistry, "Provider", "None");
+    var loadConfiguration = IsProvider(configurationProvider, "Consul")
+        && ReadBool(configurationCenter, "Enabled", true);
+    var registerService = IsProvider(registryProvider, "Consul")
+        && ReadBool(serviceRegistry, "Enabled", true);
+    var registerHealthCheck = registerService
+        && ReadBool(serviceRegistry, "EnableHealthCheck", true);
+
+    return new DynamicAppConsulIntegration(
+        loadConfiguration || registerService || registerHealthCheck,
+        loadConfiguration,
+        registerService,
+        registerHealthCheck);
+}
+
+static bool IsProvider(string value, string provider)
+{
+    return string.Equals(value, provider, StringComparison.OrdinalIgnoreCase);
+}
 
 static void ConfigureManagerApi(DynamicAppManagerApiOptions options, IConfiguration section)
 {
@@ -112,14 +160,6 @@ static void ConfigurePackageStore(DynamicAppPackageStoreOptions options, IConfig
     options.AllowOverwrite = ReadBool(section, "AllowOverwrite", options.AllowOverwrite);
 }
 
-static void ConfigurePanel(DynamicAppPanelOptions options, IConfiguration section)
-{
-    options.Enabled = ReadBool(section, "Enabled", options.Enabled);
-    options.RoutePrefix = ReadString(section, "RoutePrefix", options.RoutePrefix);
-    options.Title = ReadString(section, "Title", options.Title);
-    options.ResourceStatsSampleInterval = TimeSpan.FromSeconds(ReadInt(section, "ResourceStatsSampleIntervalSeconds", (int)options.ResourceStatsSampleInterval.TotalSeconds));
-}
-
 static void ConfigureDrain(DynamicAppDrainOptions options, IConfiguration section)
 {
     options.Enabled = ReadBool(section, "Enabled", options.Enabled);
@@ -129,6 +169,12 @@ static void ConfigureDrain(DynamicAppDrainOptions options, IConfiguration sectio
 }
 
 static void ConfigureStateStore(FileDynamicAppStateStoreOptions options, IConfiguration section)
+{
+    options.FilePath = ReadNullableString(section, "FilePath") ?? options.FilePath;
+    options.SaveOnChange = ReadBool(section, "SaveOnChange", options.SaveOnChange);
+}
+
+static void ConfigureGatewayRouteStore(FileDynamicAppGatewayRouteStoreOptions options, IConfiguration section)
 {
     options.FilePath = ReadNullableString(section, "FilePath") ?? options.FilePath;
     options.SaveOnChange = ReadBool(section, "SaveOnChange", options.SaveOnChange);
@@ -152,6 +198,11 @@ static void ConfigureArchiveStore(FileDynamicAppTargetArchiveStoreOptions option
     options.SaveOnChange = ReadBool(section, "SaveOnChange", options.SaveOnChange);
 }
 
+static void ConfigureTransactionLog(FileDynamicAppControlPlaneTransactionLogOptions options, IConfiguration section)
+{
+    options.FilePath = ReadNullableString(section, "FilePath") ?? options.FilePath;
+}
+
 static void ConfigureDockerOrchestrator(DockerExistingContainerDynamicAppOrchestratorOptions options, IConfiguration section)
 {
     options.Enabled = ReadBool(section, "Enabled", options.Enabled);
@@ -171,8 +222,6 @@ static void ConfigureDockerEngine(Air.Cloud.Modules.Docker.Options.DockerEngineC
 
 static void ConfigureGateway(DynamicAppGatewayOptions options, IConfiguration section)
 {
-    options.DynamicAppId = ReadString(section, "DynamicAppId", options.DynamicAppId);
-    options.RoutePrefix = ReadString(section, "RoutePrefix", options.RoutePrefix);
     options.ForwardHostHeader = ReadBool(section, "ForwardHostHeader", options.ForwardHostHeader);
     options.ForwardTimeout = TimeSpan.FromSeconds(ReadInt(section, "ForwardTimeoutSeconds", (int)options.ForwardTimeout.TotalSeconds));
     options.MaxRequestBodyBytes = ReadLong(section, "MaxRequestBodyBytes", options.MaxRequestBodyBytes);
@@ -203,3 +252,9 @@ static long ReadLong(IConfiguration section, string key, long fallback)
 {
     return long.TryParse(section[key], out var value) ? value : fallback;
 }
+
+internal sealed record DynamicAppConsulIntegration(
+    bool UsesConsul,
+    bool LoadConfiguration,
+    bool RegisterService,
+    bool RegisterHealthCheck);

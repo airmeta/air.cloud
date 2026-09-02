@@ -13,40 +13,34 @@ TCP 接入不经过 Ocelot `DelegatingHandler`。Ocelot 只处理 HTTP 请求，
   -> Agent 本地 TCP 服务
 ```
 
-## Server 配置
+## Agent 配置与 Server 派生
 
-Server 侧负责暴露 TCP 监听端口。每个监听器固定绑定一个 `ServiceKey`。
+TCP 映射统一在 Agent 配置中维护。Server 侧不需要重复新增 listener；保存 Agent 配置后，Server 从 `Tcp.LocalServices` 自动派生对外 listener。`Port` 是 Agent 本地目标端口，`ServerListenPort` 是 Server 对外端口，两者必须分别配置。
 
 ```json
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Server",
+    "TunnelMode": "Agent",
+    "EnableTunnelProxy": false,
+    "AgentId": "branch-agent",
     "Tcp": {
       "Enabled": true,
-      "Listeners": [
+      "LocalServices": [
         {
-          "Name": "mysql-dev",
-          "ServiceKey": "local-mysql",
-          "ListenHost": "0.0.0.0",
-          "ListenPort": 13306,
-          "MaxConnections": 200,
-          "ConnectTimeoutSeconds": 5,
-          "IdleTimeoutSeconds": 300
+          "ServiceName": "Local MySQL",
+          "Host": "127.0.0.1",
+          "Port": 3306,
+          "ServerListenHost": "0.0.0.0",
+          "ServerListenPort": 13306
         }
       ]
-    },
-    "AgentAuthorizations": [
-      {
-        "AgentId": "branch-agent",
-        "AllowedServiceKeys": [ "local-mysql" ]
-      }
-    ]
+    }
   }
 }
 ```
 
-## Agent 配置
+## Agent 运行配置
 
 Agent 侧负责声明真实本地 TCP 目标。外部客户端不能指定目标地址。
 
@@ -54,16 +48,19 @@ Agent 侧负责声明真实本地 TCP 目标。外部客户端不能指定目标
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Agent",
+    "TunnelMode": "Agent",
+    "EnableTunnelProxy": false,
     "AgentId": "branch-agent",
     "ServerAddress": "https://air-tunnel.example.com",
     "Tcp": {
       "Enabled": true,
       "LocalServices": [
         {
-          "ServiceKey": "local-mysql",
+          "ServiceName": "Local MySQL",
           "Host": "127.0.0.1",
-          "Port": 3306
+          "Port": 3306,
+          "ServerListenHost": "0.0.0.0",
+          "ServerListenPort": 13306
         }
       ]
     }
@@ -73,7 +70,7 @@ Agent 侧负责声明真实本地 TCP 目标。外部客户端不能指定目标
 
 ## 运行行为
 
-- Server 监听 `ListenHost:ListenPort`。
+- Server 自动监听 Agent 配置声明的 `ServerListenHost:ServerListenPort`。
 - 外部 TCP 客户端接入后，Server 根据监听器上的 `ServiceKey` 选择 Agent 会话。
 - Server 向 Agent 发送 `TcpOpen` 帧。
 - Agent 根据 `Tcp.LocalServices[].ServiceKey` 找到本地 `Host:Port`。
@@ -83,8 +80,8 @@ Agent 侧负责声明真实本地 TCP 目标。外部客户端不能指定目标
 ## 注意事项
 
 - TCP 监听端口需要在部署环境、防火墙、安全组或反向代理层放行。
-- `ServiceKey` 是逻辑服务键，不应包含 IP、端口、临时机器名或环境私有路径。
-- 真实目标地址只允许写在 Agent 本地配置中。
+- `ServiceKey` 由 `tcp://ServerListenHost:ServerListenPort` 的规范化字符串计算 MD5，不能手工填写。
+- Server 配置页面只读展示派生 listener，真实目标地址和对外映射都由 Agent 配置维护。
 - 不要把 TCP 入口配置成可由外部请求动态指定目标地址。
 - `MaxConnections` 应按单实例承载能力配置；多实例扩容属于部署层面。
 - 长连接协议应设置合理的 `IdleTimeoutSeconds`，避免断开的客户端长期占用流表和 socket。

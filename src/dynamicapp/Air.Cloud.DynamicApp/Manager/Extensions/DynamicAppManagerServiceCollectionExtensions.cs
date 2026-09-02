@@ -1,4 +1,5 @@
 using Air.Cloud.DynamicApp.Contracts.Runtime;
+using Air.Cloud.DynamicApp.Host;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -35,6 +36,10 @@ public static class DynamicAppManagerServiceCollectionExtensions
     /// <para>zh-cn:可选目标归档文件存储配置委托，用于指定坏包和错误 Manifest 治理记录文件。</para>
     /// <para>en-us:Optional target archive file-store configuration delegate used to specify the governance record file for bad packages and invalid manifests.</para>
     /// </param>
+    /// <param name="configureTransactionLog">
+    /// <para>zh-cn:可选控制面事务日志配置。</para>
+    /// <para>en-us:Optional control-plane transaction-log configuration.</para>
+    /// </param>
     /// <returns>
     /// <para>zh-cn:原服务集合。</para>
     /// <para>en-us:The original service collection.</para>
@@ -44,7 +49,8 @@ public static class DynamicAppManagerServiceCollectionExtensions
         Action<DynamicAppManagerApiOptions>? configureApi = null,
         Action<DynamicAppPackageStoreOptions>? configurePackageStore = null,
         Action<FileDynamicAppSelfHealingStateStoreOptions>? configureSelfHealingStore = null,
-        Action<FileDynamicAppTargetArchiveStoreOptions>? configureArchiveStore = null)
+        Action<FileDynamicAppTargetArchiveStoreOptions>? configureArchiveStore = null,
+        Action<FileDynamicAppControlPlaneTransactionLogOptions>? configureTransactionLog = null)
     {
         ArgumentNullException.ThrowIfNull(services);
         var apiOptions = new DynamicAppManagerApiOptions();
@@ -55,10 +61,19 @@ public static class DynamicAppManagerServiceCollectionExtensions
         configureSelfHealingStore?.Invoke(selfHealingStoreOptions);
         var archiveStoreOptions = new FileDynamicAppTargetArchiveStoreOptions();
         configureArchiveStore?.Invoke(archiveStoreOptions);
+        var transactionLogOptions = new FileDynamicAppControlPlaneTransactionLogOptions();
+        configureTransactionLog?.Invoke(transactionLogOptions);
+        if (string.IsNullOrWhiteSpace(transactionLogOptions.FilePath))
+        {
+            transactionLogOptions.FilePath = Path.Combine(packageStoreOptions.RootPath, "control-plane-transactions.jsonl");
+        }
         services.TryAddSingleton(apiOptions);
         services.TryAddSingleton(packageStoreOptions);
         services.TryAddSingleton(selfHealingStoreOptions);
         services.TryAddSingleton(archiveStoreOptions);
+        services.TryAddSingleton(transactionLogOptions);
+        services.TryAddSingleton<IDynamicAppControlPlaneTransactionLog, FileDynamicAppControlPlaneTransactionLog>();
+        services.TryAddSingleton<IDynamicAppRuntimeOperationCoordinator, DynamicAppRuntimeOperationCoordinator>();
         services.TryAddSingleton<IDynamicAppManifestValidator, DefaultDynamicAppManifestValidator>();
         services.TryAddSingleton<IDynamicAppStateStore, InMemoryDynamicAppStateStore>();
         services.TryAddSingleton<IDynamicAppManifestStore, InMemoryDynamicAppManifestStore>();
@@ -93,6 +108,33 @@ public static class DynamicAppManagerServiceCollectionExtensions
         services.RemoveAll<IDynamicAppStateStore>();
         services.TryAddSingleton(options);
         services.AddSingleton<IDynamicAppStateStore, FileDynamicAppStateStore>();
+        return services;
+    }
+
+    /// <summary>
+    /// <para>zh-cn:将动态入口路由存储替换为文件型实现；路由文件独立于实例状态和 Manifest。</para>
+    /// <para>en-us:Replaces the dynamic entry-route store with a file implementation independent from runtime state and manifests.</para>
+    /// </summary>
+    /// <param name="services">
+    /// <para>zh-cn:服务集合。</para>
+    /// <para>en-us:The service collection.</para>
+    /// </param>
+    /// <param name="configure">
+    /// <para>zh-cn:文件路由存储配置。</para>
+    /// <para>en-us:File route-store configuration.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:原服务集合。</para>
+    /// <para>en-us:The original service collection.</para>
+    /// </returns>
+    public static IServiceCollection AddFileDynamicAppGatewayRouteStore(this IServiceCollection services, Action<FileDynamicAppGatewayRouteStoreOptions>? configure = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        var options = new FileDynamicAppGatewayRouteStoreOptions();
+        configure?.Invoke(options);
+        services.RemoveAll<IDynamicAppGatewayRouteStore>();
+        services.TryAddSingleton(options);
+        services.AddSingleton<IDynamicAppGatewayRouteStore, FileDynamicAppGatewayRouteStore>();
         return services;
     }
 

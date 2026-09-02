@@ -7,7 +7,7 @@
 ```text
 client/
   Dockerfile
-  docker-compose.client.yml
+  docker-compose.yml
   config/00-airtunnel-agent.json
   configs/.gitkeep
   data/
@@ -18,13 +18,13 @@ client/
 ## 启动
 
 ```bash
-docker compose -f docker-compose.client.yml up -d
+docker compose -f docker-compose.yml up -d
 ```
 
 如果服务器使用旧版 Compose：
 
 ```bash
-docker-compose -f docker-compose.client.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 ## 必改配置

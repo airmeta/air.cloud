@@ -48,23 +48,6 @@
                         '/guide/air-cloud-core/webapp/exception-handling.md',
                         '/guide/air-cloud-core/webapp/cors.md',
                         '/guide/air-cloud-core/webapp/customization.md',
-                        {
-                            title: '动态应用',
-                            path: '/guide/air-cloud-core/dynamic-app/',
-                            collapsable: true,
-                            children: [
-                                '/guide/air-cloud-core/dynamic-app/',
-                                '/guide/air-cloud-core/dynamic-app/architecture.md',
-                                '/guide/air-cloud-core/dynamic-app/lifecycle.md',
-                                '/guide/air-cloud-core/dynamic-app/manager-api.md',
-                                '/guide/air-cloud-core/dynamic-app/panel.md',
-                                '/guide/air-cloud-core/dynamic-app/local-debug.md',
-                                '/guide/air-cloud-core/dynamic-app/publish.md',
-                                '/guide/air-cloud-core/dynamic-app/deployment.md',
-                                '/guide/air-cloud-core/dynamic-app/manifest.md',
-                                '/guide/air-cloud-core/dynamic-app/verification.md'
-                            ]
-                        }
                     ]
                 },
                 '/guide/air-cloud-core/hostapp.md',
@@ -175,7 +158,14 @@
                     ]
                 },
                 {
-                    title: '衍生产品',
+                    title: '能力组件',
+                    collapsable: true,
+                    children: [
+                        '/guide/air-cloud-core/capabilities/control-plane-auth.md'
+                    ]
+                },
+                {
+                    title: '能力与接入',
                     collapsable: true,
                     children: [
                         {
@@ -185,6 +175,12 @@
                             children: [
                                 '/guide/network-tunnel/',
                                 '/guide/network-tunnel/scenarios.md',
+                                '/guide/network-tunnel/deployment.md',
+                                '/guide/network-tunnel/enrollment-token.md',
+                                '/guide/network-tunnel/configuration-push.md',
+                                '/guide/network-tunnel/configuration-management.md',
+                                '/guide/network-tunnel/management-panel.md',
+                                '/guide/network-tunnel/configuration-synchronization.md',
                                 '/guide/network-tunnel/server-agent.md',
                                 {
                                     title: '隧道接入',
@@ -196,6 +192,7 @@
                                     ]
                                 },
                                 '/guide/network-tunnel/config-security.md',
+                                '/guide/network-tunnel/development-plan.md',
                                 '/guide/network-tunnel/verification.md',
                                 '/guide/network-tunnel/performance.md',
                                 {
@@ -209,12 +206,30 @@
                             ]
                         },
                         {
-                            title: 'AirGateWay',
+                            title: 'AirGateway',
                             path: '/guide/air-cloud-core/gateway/standalone.html',
                             collapsable: true,
                             children: [
                                 '/guide/air-cloud-core/gateway/standalone.md',
                                 '/guide/air-cloud-core/gateway/plugins.md'
+                            ]
+                        },
+                        {
+                            title: 'AirForge',
+                            path: '/guide/air-cloud-core/dynamic-app/',
+                            collapsable: true,
+                            children: [
+                                '/guide/air-cloud-core/dynamic-app/',
+                                '/guide/air-cloud-core/dynamic-app/architecture.md',
+                                '/guide/air-cloud-core/dynamic-app/lifecycle.md',
+                                 '/guide/air-cloud-core/dynamic-app/manager-api.md',
+                                 '/guide/air-cloud-core/dynamic-app/panel.md',
+                                 '/guide/air-cloud-core/dynamic-app/硬路由升级动态路由计划.md',
+                                 '/guide/air-cloud-core/dynamic-app/local-debug.md',
+                                '/guide/air-cloud-core/dynamic-app/publish.md',
+                                '/guide/air-cloud-core/dynamic-app/deployment.md',
+                                '/guide/air-cloud-core/dynamic-app/manifest.md',
+                                '/guide/air-cloud-core/dynamic-app/verification.md'
                             ]
                         }
                     ]

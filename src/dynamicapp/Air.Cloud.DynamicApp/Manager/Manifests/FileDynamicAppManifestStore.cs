@@ -65,6 +65,8 @@ public sealed class FileDynamicAppManifestStore : IDynamicAppManifestStore
         cancellationToken.ThrowIfCancellationRequested();
         lock (_syncRoot)
         {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
             var record = new DynamicAppManifestRecord
             {
                 Manifest = manifest,
@@ -94,6 +96,8 @@ public sealed class FileDynamicAppManifestStore : IDynamicAppManifestStore
         cancellationToken.ThrowIfCancellationRequested();
         lock (_syncRoot)
         {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
             return Task.FromResult<IReadOnlyCollection<DynamicAppManifestRecord>>(_records
                 .OrderByDescending(item => item.SavedAtUtc)
                 .ToList());
@@ -121,6 +125,8 @@ public sealed class FileDynamicAppManifestStore : IDynamicAppManifestStore
         cancellationToken.ThrowIfCancellationRequested();
         lock (_syncRoot)
         {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
             return Task.FromResult<IReadOnlyCollection<DynamicAppManifestRecord>>(_records
                 .Where(item => item.Manifest.Id == dynamicAppId)
                 .OrderByDescending(item => item.SavedAtUtc)
@@ -149,6 +155,8 @@ public sealed class FileDynamicAppManifestStore : IDynamicAppManifestStore
         cancellationToken.ThrowIfCancellationRequested();
         lock (_syncRoot)
         {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
             return Task.FromResult(_records
                 .Where(item => item.Manifest.Id == key.DynamicAppId
                     && item.Manifest.Mods.Any(mod => mod.Id == key.ModId && mod.Version == key.Version))
@@ -157,20 +165,111 @@ public sealed class FileDynamicAppManifestStore : IDynamicAppManifestStore
         }
     }
 
+    /// <summary>
+    /// <para>zh-cn:从文件型 Manifest 历史删除指定服务，并将变更原子写回历史文件。</para>
+    /// <para>en-us:Removes a service from file-based manifest history and atomically persists the updated history file.</para>
+    /// </summary>
+    public Task<int> RemoveModAsync(DynamicAppId dynamicAppId, DynamicModId modId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_syncRoot)
+        {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
+            var changed = 0;
+            for (var index = _records.Count - 1; index >= 0; index--)
+            {
+                var record = _records[index];
+                var removed = record.Manifest.Mods.RemoveAll(item => item.Id == modId && record.Manifest.Id == dynamicAppId);
+                if (removed > 0)
+                {
+                    changed += removed;
+                }
+
+                if (record.Manifest.Id == dynamicAppId && record.Manifest.Mods.Count == 0)
+                {
+                    _records.RemoveAt(index);
+                }
+            }
+
+            if (changed > 0)
+            {
+                SaveUnsafe();
+            }
+
+            return Task.FromResult(changed);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:从文件型 Manifest 历史中删除指定 Mod 版本并持久化变更。</para>
+    /// <para>en-us:Removes one Mod version from file-based manifest history and persists the change.</para>
+    /// </summary>
+    public Task<int> RemoveVersionAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_syncRoot)
+        {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
+            var changed = 0;
+            for (var index = _records.Count - 1; index >= 0; index--)
+            {
+                var record = _records[index];
+                if (record.Manifest.Id != key.DynamicAppId) continue;
+                changed += record.Manifest.Mods.RemoveAll(item => item.Id == key.ModId && item.Version == key.Version);
+                if (record.Manifest.Mods.Count == 0) _records.RemoveAt(index);
+            }
+            if (changed > 0) SaveUnsafe();
+            return Task.FromResult(changed);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:从文件历史中删除指定的单条 Manifest 发布记录并原子持久化。</para>
+    /// <para>en-us:Removes one exact manifest publish record from file history and persists the result atomically.</para>
+    /// </summary>
+    public Task<bool> RemoveRecordAsync(string recordId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(recordId)) return Task.FromResult(false);
+
+        lock (_syncRoot)
+        {
+            using var fileLock = DynamicAppFileSnapshotLock.Acquire(_filePath);
+            Load();
+            var removed = _records.RemoveAll(item => string.Equals(item.RecordId, recordId, StringComparison.OrdinalIgnoreCase)) > 0;
+            if (removed) SaveUnsafe();
+            return Task.FromResult(removed);
+        }
+    }
+
     private void Load()
     {
+        _records.Clear();
         if (!File.Exists(_filePath))
         {
             return;
         }
 
-        var snapshot = JsonSerializer.Deserialize<ManifestHistorySnapshot>(File.ReadAllText(_filePath), JsonOptions);
-        if (snapshot?.Records == null)
+        try
         {
-            return;
-        }
+            var snapshot = JsonSerializer.Deserialize<ManifestHistorySnapshot>(File.ReadAllText(_filePath), JsonOptions);
+            if (snapshot?.Records == null)
+            {
+                return;
+            }
 
-        _records.AddRange(snapshot.Records);
+            _records.AddRange(snapshot.Records);
+        }
+        catch (JsonException)
+        {
+            // Ignore a corrupt historical snapshot so a bad file cannot prevent Host startup.
+        }
+        catch (IOException)
+        {
+            // Ignore an unavailable historical snapshot during startup; a later save can recreate it.
+        }
     }
 
     private void TrimUnsafe(DynamicAppId dynamicAppId)
@@ -195,7 +294,7 @@ public sealed class FileDynamicAppManifestStore : IDynamicAppManifestStore
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(new ManifestHistorySnapshot
+        DynamicAppAtomicJsonFile.Write(_filePath, JsonSerializer.Serialize(new ManifestHistorySnapshot
         {
             Records = _records.OrderByDescending(item => item.SavedAtUtc).ToList()
         }, JsonOptions));

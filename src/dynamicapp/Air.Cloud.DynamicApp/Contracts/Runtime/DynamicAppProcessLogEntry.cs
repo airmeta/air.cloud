@@ -13,6 +13,12 @@ public sealed class DynamicAppProcessLogEntry
     public DynamicModVersionKey Key { get; set; }
 
     /// <summary>
+    /// <para>zh-cn:日志所属的独立部署实例标识；未启用集群时使用 default。</para>
+    /// <para>en-us:Isolated deployment identifier that owns the log entry; default is used when clustering is not enabled.</para>
+    /// </summary>
+    public string DeploymentId { get; set; } = "default";
+
+    /// <summary>
     /// <para>zh-cn:日志流名称，例如 stdout、stderr 或 exit。</para>
     /// <para>en-us:Log stream name such as stdout, stderr, or exit.</para>
     /// </summary>

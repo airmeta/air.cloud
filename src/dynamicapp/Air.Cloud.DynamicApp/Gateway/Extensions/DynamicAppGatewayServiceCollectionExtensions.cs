@@ -1,4 +1,5 @@
 using Air.Cloud.DynamicApp.Contracts.Runtime;
+using Air.Cloud.DynamicApp.Manager;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -33,6 +34,7 @@ public static class DynamicAppGatewayServiceCollectionExtensions
         var options = new DynamicAppGatewayOptions();
         configure?.Invoke(options);
         services.TryAddSingleton(options);
+        services.TryAddSingleton<IDynamicAppGatewayRouteStore, InMemoryDynamicAppGatewayRouteStore>();
         services.TryAddSingleton<IDynamicAppRouteCatalog, DefaultDynamicAppRouteCatalog>();
         services.AddHttpClient(nameof(DynamicAppGatewayMiddleware));
         return services;

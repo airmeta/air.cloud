@@ -1,0 +1,34 @@
+version: "3.3"
+
+services:
+  air-cloud-airtunnel-server:
+    image: air-cloud-airtunnel-server:latest
+    container_name: air-cloud-airtunnel-server
+    privileged: true
+    restart: unless-stopped
+    env_file:
+      - ./secrets/server.env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      TZ: Asia/Shanghai
+    ports:
+      - "18083:8080/tcp"
+      - "18084:8081/tcp"
+      - "18443:18443/tcp"
+      - "15671:15671/tcp"
+      - "15671:15671/udp"
+    volumes:
+      - ./runtime/appsettings.json:/app/appsettings.json:ro
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./data/airtunnel-config:/app/configs
+      - ./data/airtunnel-config-backups:/app/config-backups
+    networks:
+      fcj:
+        aliases:
+          - air-gateway
+
+networks:
+  fcj:
+    external: true

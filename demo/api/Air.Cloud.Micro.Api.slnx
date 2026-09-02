@@ -9,11 +9,6 @@
   <Folder Name="/DynamicApp/">
     <Project Path="DynamicApp/air.cloud.dynamicapp.entry/air.cloud.dynamicapp.entry.csproj" />
   </Folder>
-  <Folder Name="/Gateway/">
-    <Project Path="GateWay/air.cloud.gateway/air.cloud.gateway.csproj" />
-    <Project Path="GateWay/air.gateway.plugins.sample/air.gateway.plugins.sample.csproj" />
-    <Project Path="GateWay/air.gateway.plugins.tests/air.gateway.plugins.tests.csproj" />
-  </Folder>
   <Folder Name="/Open/">
     <Project Path="Open/air.cloud.open.domain/air.cloud.open.domain.csproj" />
     <Project Path="Open/air.cloud.open.entry/air.cloud.open.entry.csproj" />

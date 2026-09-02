@@ -47,7 +47,8 @@
 {
  "ConsulServiceOptions": {
    "ConsulAddress": "http://192.168.100.154:8500/",
-   "ServiceName": "FCJ.GateWay"
+   "ConfigurationServiceName": "FCJ.GateWay",
+   "RegistryServiceName": "FCJ.GateWay"
  }
 }
 ```

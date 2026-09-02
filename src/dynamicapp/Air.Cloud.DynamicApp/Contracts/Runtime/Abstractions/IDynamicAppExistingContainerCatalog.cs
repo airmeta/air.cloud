@@ -37,4 +37,23 @@ public interface IDynamicAppExistingContainerCatalog
     /// <para>en-us:The live status view for the container or hosted instance; implementations throw when the target is missing or the container engine is unavailable.</para>
     /// </returns>
     Task<DynamicAppExistingContainerView> InspectAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <para>zh-cn:按运行实例读取已有容器状态；默认实现兼容尚未支持实例级目录的旧实现。</para>
+    /// <para>en-us:Reads an existing-container status by runtime instance; the default implementation keeps compatibility with catalogs that only support package-level lookup.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:Cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:容器即时状态。</para>
+    /// <para>en-us:The live container status.</para>
+    /// </returns>
+    Task<DynamicAppExistingContainerView> InspectAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+        => InspectAsync(key.PackageKey, cancellationToken);
 }

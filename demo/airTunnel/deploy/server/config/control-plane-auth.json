@@ -1,0 +1,60 @@
+{
+  "ControlPlaneAuth": {
+    "Enabled": true,
+    "EnableMFA": false,
+    "ProductCode": "airtunnel",
+    "ProductName": "AirTunnel",
+    "BasePath": "/_airtunnel/control-plane",
+    "AuthPath": "/_airtunnel/control-auth",
+    "PlanePath": "/_airtunnel/control-plane",
+    "DefaultReturnUrl": "/_airtunnel/control-plane",
+    "StorageDirectory": "data/control-plane-auth",
+    "Shell": {
+      "Enabled": true,
+      "Title": "AirTunnel 控制台",
+      "DefaultMenuKey": "airtunnel-admin",
+      "ShowServiceTickets": true,
+      "Frames": [
+        {
+          "Key": "airtunnel-admin",
+          "Title": "AirTunnel 管理",
+          "Url": "/_airtunnel/admin",
+          "Embedded": true
+        }
+      ]
+    },
+    "Bootstrap": {
+      "Enabled": true,
+      "TicketExpiresMinutes": 30,
+      "PrintTicketToConsole": true,
+      "WriteTicketFile": true,
+      "TicketFileName": "initial-admin-ticket"
+    },
+    "Session": {
+      "HeaderName": "X-Air-ControlPlane-Ticket",
+      "CookieName": "Air.ControlPlane.Ticket",
+      "QueryName": "airControlPlaneTicket",
+      "ExpiresMinutes": 120,
+      "SlidingExpiration": true
+    },
+    "PasswordPolicy": {
+      "MinLength": 8,
+      "RequireDigit": true,
+      "RequireLowercase": true,
+      "RequireUppercase": false,
+      "RequireSpecialCharacter": false
+    },
+    "LoginPolicy": {
+      "MaxFailedAttempts": 5,
+      "LockoutMinutes": 15
+    },
+    "ServiceTickets": {
+      "DefaultExpiresDays": 180,
+      "AllowMultipleActiveTickets": true
+    },
+    "Audit": {
+      "Enabled": true,
+      "FileName": "audit.log"
+    }
+  }
+}

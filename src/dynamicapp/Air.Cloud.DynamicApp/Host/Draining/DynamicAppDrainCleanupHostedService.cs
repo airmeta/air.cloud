@@ -1,4 +1,5 @@
 using Air.Cloud.DynamicApp.Contracts.Lifecycle;
+using Air.Cloud.DynamicApp.Contracts.Manifest;
 using Air.Cloud.DynamicApp.Contracts.Runtime;
 
 using Microsoft.Extensions.Hosting;
@@ -12,9 +13,11 @@ namespace Air.Cloud.DynamicApp.Host;
 public sealed class DynamicAppDrainCleanupHostedService : BackgroundService
 {
     private readonly IDynamicAppOrchestrator _orchestrator;
+    private readonly IDynamicAppManifestStore? _manifestStore;
     private readonly IDynamicAppModRunner _runner;
     private readonly DynamicAppDrainOptions _options;
     private readonly IDynamicAppStateStore _stateStore;
+    private readonly IDynamicAppRuntimeOperationCoordinator _operationCoordinator;
 
     /// <summary>
     /// <para>zh-cn:创建排空清理后台服务。</para>
@@ -36,12 +39,28 @@ public sealed class DynamicAppDrainCleanupHostedService : BackgroundService
     /// <para>zh-cn:排空清理选项。</para>
     /// <para>en-us:Draining cleanup options.</para>
     /// </param>
-    public DynamicAppDrainCleanupHostedService(IDynamicAppStateStore stateStore, IDynamicAppModRunner runner, IDynamicAppOrchestrator orchestrator, DynamicAppDrainOptions options)
+    /// <param name="operationCoordinator">
+    /// <para>zh-cn:运行实例操作协调器，用于避免排空清理与其他生命周期操作交叉执行。</para>
+    /// <para>en-us:Runtime operation coordinator used to prevent draining cleanup from interleaving with other lifecycle operations.</para>
+    /// </param>
+    /// <param name="manifestStore">
+    /// <para>zh-cn:可选 Manifest 存储，用于判断 ExistingContainer 目标并选择正确的停止边界。</para>
+    /// <para>en-us:Optional manifest store used to identify ExistingContainer targets and choose the correct stop boundary.</para>
+    /// </param>
+    public DynamicAppDrainCleanupHostedService(
+        IDynamicAppStateStore stateStore,
+        IDynamicAppModRunner runner,
+        IDynamicAppOrchestrator orchestrator,
+        DynamicAppDrainOptions options,
+        IDynamicAppRuntimeOperationCoordinator operationCoordinator,
+        IDynamicAppManifestStore? manifestStore = null)
     {
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _runner = runner ?? throw new ArgumentNullException(nameof(runner));
         _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
+        _manifestStore = manifestStore;
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _operationCoordinator = operationCoordinator ?? throw new ArgumentNullException(nameof(operationCoordinator));
     }
 
     /// <summary>
@@ -86,15 +105,56 @@ public sealed class DynamicAppDrainCleanupHostedService : BackgroundService
                 continue;
             }
 
-            var stopResult = await _runner.StopAsync(target.Key, stoppingToken).ConfigureAwait(false);
-            if (!stopResult.Succeeded)
+            var runtimeKey = ToRuntimeKey(target);
+            await using var operation = await _operationCoordinator
+                .AcquireAsync(runtimeKey, stoppingToken)
+                .ConfigureAwait(false);
+            // The drain list is only a candidate snapshot. A manual restart or
+            // activation may have changed the target while this operation waited.
+            var currentTarget = _stateStore.ListTargets()
+                .FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+            if (currentTarget == null || currentTarget.State != DynamicModLifecycleState.Draining)
             {
-                stopResult = await _orchestrator.StopAsync(target.Key, stoppingToken).ConfigureAwait(false);
+                continue;
             }
 
-            if (stopResult.Succeeded || _options.RemoveTargetWhenStopFails)
+            var currentDrainingSince = currentTarget.DrainingSinceUtc ?? currentTarget.UpdatedAtUtc;
+            if (DateTimeOffset.UtcNow - currentDrainingSince < NormalizeTimeout(_options.DrainTimeout))
             {
-                _stateStore.RemoveTarget(target.Key);
+                continue;
+            }
+
+            var mod = _manifestStore == null
+                ? null
+                : (await _manifestStore.FindAsync(currentTarget.Key, stoppingToken).ConfigureAwait(false))?.Manifest.Mods
+                    .FirstOrDefault(item => item.Id == currentTarget.Key.ModId && item.Version == currentTarget.Key.Version);
+            var stopResult = mod?.ExecutionMode == DynamicModExecutionMode.ExistingContainer
+                ? await _orchestrator.StopAsync(runtimeKey, stoppingToken).ConfigureAwait(false)
+                : await _runner.StopAsync(runtimeKey, stoppingToken).ConfigureAwait(false);
+            if (!stopResult.Succeeded && mod?.ExecutionMode != DynamicModExecutionMode.ExistingContainer)
+            {
+                stopResult = await _orchestrator.StopAsync(runtimeKey, stoppingToken).ConfigureAwait(false);
+            }
+
+            if (stopResult.Succeeded)
+            {
+                var removed = _stateStore.RemoveTarget(runtimeKey);
+                if (!removed.Succeeded)
+                {
+                    _stateStore.UpdateState(
+                        runtimeKey,
+                        DynamicModLifecycleState.Draining,
+                        DynamicModHealthStatus.Unhealthy,
+                        $"Draining target `{runtimeKey}` stopped but state cleanup failed: {removed.Message}");
+                }
+            }
+            else
+            {
+                _stateStore.UpdateState(
+                    runtimeKey,
+                    DynamicModLifecycleState.Draining,
+                    DynamicModHealthStatus.Unhealthy,
+                    $"Draining target `{runtimeKey}` could not be removed because stop failed: {stopResult.Message}");
             }
         }
     }
@@ -102,4 +162,7 @@ public sealed class DynamicAppDrainCleanupHostedService : BackgroundService
     private static TimeSpan NormalizeInterval(TimeSpan interval) => interval <= TimeSpan.Zero ? TimeSpan.FromSeconds(15) : interval;
 
     private static TimeSpan NormalizeTimeout(TimeSpan timeout) => timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(60) : timeout;
+
+    private static DynamicAppRuntimeKey ToRuntimeKey(DynamicAppRouteTarget target)
+        => new(target.Key, string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim());
 }

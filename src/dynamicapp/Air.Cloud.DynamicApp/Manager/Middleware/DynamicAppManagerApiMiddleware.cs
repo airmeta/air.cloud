@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -10,6 +11,7 @@ using Air.Cloud.DynamicApp.Contracts.Identifiers;
 using Air.Cloud.DynamicApp.Contracts.Lifecycle;
 using Air.Cloud.DynamicApp.Contracts.Manifest;
 using Air.Cloud.DynamicApp.Contracts.Runtime;
+using Air.Cloud.DynamicApp.Gateway;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +31,7 @@ public sealed class DynamicAppManagerApiMiddleware
             new JsonStringEnumConverter()
         }
     };
+    private static readonly SemaphoreSlim DeploymentCreationGate = new(1, 1);
 
     private readonly RequestDelegate _next;
     private readonly DynamicAppManagerApiOptions _options;
@@ -129,6 +132,34 @@ public sealed class DynamicAppManagerApiMiddleware
             return;
         }
 
+        if (route.Equals("routes", StringComparison.OrdinalIgnoreCase))
+        {
+            if (HttpMethods.IsGet(context.Request.Method))
+            {
+                await ListGatewayRoutesAsync(context).ConfigureAwait(false);
+                return;
+            }
+
+            if (HttpMethods.IsPost(context.Request.Method))
+            {
+                await CreateGatewayRouteAsync(context).ConfigureAwait(false);
+                return;
+            }
+        }
+
+        if (route.Equals("routes/validate", StringComparison.OrdinalIgnoreCase)
+            && HttpMethods.IsPost(context.Request.Method))
+        {
+            await ValidateGatewayRoutesAsync(context).ConfigureAwait(false);
+            return;
+        }
+
+        if (route.StartsWith("routes/", StringComparison.OrdinalIgnoreCase))
+        {
+            await DispatchGatewayRouteAsync(context, route["routes/".Length..]).ConfigureAwait(false);
+            return;
+        }
+
         switch (route)
         {
             case "applications" when HttpMethods.IsGet(context.Request.Method):
@@ -161,12 +192,56 @@ public sealed class DynamicAppManagerApiMiddleware
                 await ListPackagesAsync(context).ConfigureAwait(false);
                 return;
 
+            case "deployments" when HttpMethods.IsGet(context.Request.Method):
+                await ListDeploymentsAsync(context).ConfigureAwait(false);
+                return;
+
+            case "deployments/files" when HttpMethods.IsGet(context.Request.Method):
+                await ListDeploymentFilesAsync(context).ConfigureAwait(false);
+                return;
+
+            case "deployments/orphans" when HttpMethods.IsGet(context.Request.Method):
+                await ListOrphanDeploymentsAsync(context).ConfigureAwait(false);
+                return;
+
+            case "deployments/create" when HttpMethods.IsPost(context.Request.Method):
+                await CreateDeploymentAsync(context).ConfigureAwait(false);
+                return;
+
+            case "deployments/update" when HttpMethods.IsPost(context.Request.Method):
+                await UpdateDeploymentAsync(context).ConfigureAwait(false);
+                return;
+
+            case "deployments/remove" when HttpMethods.IsPost(context.Request.Method):
+                await RemoveDeploymentAsync(context).ConfigureAwait(false);
+                return;
+
+            case "deployments/destroy" when HttpMethods.IsPost(context.Request.Method):
+                await DestroyDeploymentAsync(context).ConfigureAwait(false);
+                return;
+
             case "packages/applications" when HttpMethods.IsGet(context.Request.Method):
                 await ListPackageApplicationsAsync(context).ConfigureAwait(false);
                 return;
 
             case "packages/applications" when HttpMethods.IsPost(context.Request.Method):
                 await CreatePackageApplicationAsync(context).ConfigureAwait(false);
+                return;
+
+            case "packages/mods" when HttpMethods.IsPost(context.Request.Method):
+                await CreatePackageModAsync(context).ConfigureAwait(false);
+                return;
+
+            case "packages/mods/remove" when HttpMethods.IsPost(context.Request.Method):
+                await RemovePackageModAsync(context).ConfigureAwait(false);
+                return;
+
+            case "packages/versions/remove" when HttpMethods.IsPost(context.Request.Method):
+                await RemovePackageVersionAsync(context).ConfigureAwait(false);
+                return;
+
+            case "archived/remove" when HttpMethods.IsPost(context.Request.Method):
+                await RemoveArchivedAsync(context).ConfigureAwait(false);
                 return;
 
             case "manifests" when HttpMethods.IsGet(context.Request.Method):
@@ -234,6 +309,179 @@ public sealed class DynamicAppManagerApiMiddleware
                 await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure($"DynamicApp Manager route `{route}` was not found.", "dynamicapp.route_not_found")).ConfigureAwait(false);
                 return;
         }
+    }
+
+    private static Task ListGatewayRoutesAsync(HttpContext context)
+    {
+        var store = context.RequestServices.GetRequiredService<IDynamicAppGatewayRouteStore>();
+        return WriteJsonAsync(context, DynamicAppApiResponse<IReadOnlyCollection<DynamicAppGatewayRoute>>.Success(
+            store.List(), "DynamicApp Gateway routes loaded."));
+    }
+
+    private async Task CreateGatewayRouteAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppGatewayRouteSaveRequest>(context).ConfigureAwait(false);
+        var route = request.Route ?? throw new ArgumentException("Route is required.", nameof(request.Route));
+        await WriteGatewayRouteAvailabilityAsync(context, route, request.ConfirmUnavailable).ConfigureAwait(false);
+        if (context.Response.StatusCode == StatusCodes.Status409Conflict)
+        {
+            return;
+        }
+
+        var result = await context.RequestServices.GetRequiredService<IDynamicAppGatewayRouteStore>()
+            .CreateAsync(route, context.RequestAborted).ConfigureAwait(false);
+        await WriteOperationResultAsync(context, result, context.RequestServices.GetRequiredService<IDynamicAppGatewayRouteStore>().Get(route.RouteId)).ConfigureAwait(false);
+    }
+
+    private async Task ValidateGatewayRoutesAsync(HttpContext context)
+    {
+        var routes = await ReadRequiredJsonAsync<DynamicAppGatewayRoute[]>(context).ConfigureAwait(false);
+        var errors = DynamicAppGatewayRouteValidator.Validate(routes);
+        if (errors.Count > 0)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        }
+
+        if (errors.Count == 0)
+        {
+            await WriteJsonAsync(context, DynamicAppApiResponse<IReadOnlyCollection<string>>.Success(Array.Empty<string>(), "DynamicApp Gateway route configuration is valid.")).ConfigureAwait(false);
+            return;
+        }
+
+        await WriteJsonAsync(context, new DynamicAppApiResponse<IReadOnlyCollection<string>>
+        {
+            Succeeded = false,
+            ErrorCode = "dynamicapp.route_invalid",
+            Message = string.Join(Environment.NewLine, errors),
+            Data = errors
+        }).ConfigureAwait(false);
+    }
+
+    private async Task DispatchGatewayRouteAsync(HttpContext context, string routeSegment)
+    {
+        var segments = routeSegment.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (segments.Length == 0)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure("Route id is required.", "dynamicapp.route_not_found")).ConfigureAwait(false);
+            return;
+        }
+
+        var routeId = Uri.UnescapeDataString(segments[0]);
+        var store = context.RequestServices.GetRequiredService<IDynamicAppGatewayRouteStore>();
+        if (segments.Length == 1 && HttpMethods.IsGet(context.Request.Method))
+        {
+            var route = store.Get(routeId);
+            if (route == null)
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure($"Route `{routeId}` was not found.", "dynamicapp.route_not_found")).ConfigureAwait(false);
+                return;
+            }
+
+            await WriteJsonAsync(context, DynamicAppApiResponse<DynamicAppGatewayRoute>.Success(route, "DynamicApp Gateway route loaded.")).ConfigureAwait(false);
+            return;
+        }
+
+        if (segments.Length == 1 && HttpMethods.IsDelete(context.Request.Method))
+        {
+            await WriteOperationResultAsync<object>(context, await store.RemoveAsync(routeId, context.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+            return;
+        }
+
+        if (segments.Length == 2 && string.Equals(segments[1], "enabled", StringComparison.OrdinalIgnoreCase)
+            && (HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPost(context.Request.Method)))
+        {
+            var request = await ReadRequiredJsonAsync<DynamicAppGatewayRouteEnabledRequest>(context).ConfigureAwait(false);
+            await WriteOperationResultAsync<object>(context, await store.SetEnabledAsync(routeId, request.Enabled, request.ExpectedUpdatedAtUtc, context.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+            return;
+        }
+
+        if (segments.Length == 2 && string.Equals(segments[1], "enable", StringComparison.OrdinalIgnoreCase) && HttpMethods.IsPost(context.Request.Method))
+        {
+            await WriteOperationResultAsync<object>(context, await store.SetEnabledAsync(routeId, true, cancellationToken: context.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+            return;
+        }
+
+        if (segments.Length == 2 && string.Equals(segments[1], "disable", StringComparison.OrdinalIgnoreCase) && HttpMethods.IsPost(context.Request.Method))
+        {
+            await WriteOperationResultAsync<object>(context, await store.SetEnabledAsync(routeId, false, cancellationToken: context.RequestAborted).ConfigureAwait(false)).ConfigureAwait(false);
+            return;
+        }
+
+        if (segments.Length == 1 && HttpMethods.IsPut(context.Request.Method))
+        {
+            var request = await ReadRequiredJsonAsync<DynamicAppGatewayRouteSaveRequest>(context).ConfigureAwait(false);
+            var route = request.Route ?? throw new ArgumentException("Route is required.", nameof(request.Route));
+            if (string.IsNullOrWhiteSpace(route.RouteId)) route.RouteId = routeId;
+            if (!string.Equals(route.RouteId, routeId, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("RouteId in the path and body must match.", nameof(route.RouteId));
+            }
+
+            await WriteGatewayRouteAvailabilityAsync(context, route, request.ConfirmUnavailable).ConfigureAwait(false);
+            if (context.Response.StatusCode == StatusCodes.Status409Conflict)
+            {
+                return;
+            }
+
+            await WriteOperationResultAsync(context, await store.UpdateAsync(route, request.ExpectedUpdatedAtUtc, context.RequestAborted).ConfigureAwait(false), store.Get(routeId)).ConfigureAwait(false);
+            return;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure($"DynamicApp route operation `{routeSegment}` was not found.", "dynamicapp.route_not_found")).ConfigureAwait(false);
+    }
+
+    private static async Task WriteGatewayRouteAvailabilityAsync(HttpContext context, DynamicAppGatewayRoute route, bool confirmed)
+    {
+        var validationErrors = DynamicAppGatewayRouteValidator.Validate(new[] { route });
+        if (validationErrors.Count > 0)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await WriteJsonAsync(context, new DynamicAppApiResponse<IReadOnlyCollection<string>>
+            {
+                Succeeded = false,
+                ErrorCode = "dynamicapp.route_invalid",
+                Message = string.Join(Environment.NewLine, validationErrors),
+                Data = validationErrors
+            }).ConfigureAwait(false);
+            return;
+        }
+
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var candidates = stateStore.ListTargets()
+            .Where(target => string.Equals(target.Key.DynamicAppId.Value, route.TargetDynamicAppId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(target.Key.ModId.Value, route.TargetModId, StringComparison.OrdinalIgnoreCase)
+                && (string.IsNullOrWhiteSpace(route.TargetVersion)
+                    || string.Equals(target.Key.Version.Value, route.TargetVersion, StringComparison.OrdinalIgnoreCase))
+                && (string.IsNullOrWhiteSpace(route.TargetDeploymentId)
+                    || string.Equals(target.DeploymentId, route.TargetDeploymentId, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        var available = candidates.Any(target => target.State == DynamicModLifecycleState.Active && target.HealthStatus == DynamicModHealthStatus.Healthy);
+        if (available || confirmed)
+        {
+            return;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        var targetLabel = $"{route.TargetDynamicAppId}/{route.TargetModId}/{route.TargetVersion ?? "active"}";
+        var notice = new DynamicAppGatewayRouteTargetNotice
+        {
+            Available = false,
+            RequiresConfirmation = true,
+            MatchingTargetCount = candidates.Length,
+            Message = candidates.Length == 0
+                ? $"Target `{targetLabel}` does not exist. Confirm to save this route anyway."
+                : $"Target `{targetLabel}` is not Active and Healthy. Confirm to save this route anyway."
+        };
+        await WriteJsonAsync(context, new DynamicAppApiResponse<DynamicAppGatewayRouteTargetNotice>
+        {
+            Succeeded = false,
+            ErrorCode = "dynamicapp.route_target_unavailable_confirmation_required",
+            Message = notice.Message,
+            Data = notice
+        }).ConfigureAwait(false);
     }
 
     private async Task PublishAsync(HttpContext context)
@@ -309,16 +557,11 @@ public sealed class DynamicAppManagerApiMiddleware
             return;
         }
 
-        var request = await BuildConfigureModRequestAsync(context, form).ConfigureAwait(false);
-        if (request.Mod.ExecutionMode != DynamicModExecutionMode.Process)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure("Zip package upload currently supports Process-mode Mods only.", "dynamicapp.unsupported_upload_mode")).ConfigureAwait(false);
-            return;
-        }
-
-        var key = new DynamicModVersionKey(new DynamicAppId(request.DynamicAppId), request.Mod.Id, request.Mod.Version);
-        var entryFile = ReadFormString(form, "entryFile", request.Mod.Artifact.File ?? string.Empty);
+        var dynamicAppId = ReadRequiredFormString(form, "dynamicAppId");
+        var modId = new DynamicModId(ReadRequiredFormString(form, "modId"));
+        var version = new DynamicAppVersion(ReadRequiredFormString(form, "version"));
+        var key = new DynamicModVersionKey(new DynamicAppId(dynamicAppId), modId, version);
+        var entryFile = ReadFormString(form, "entryFile", string.Empty);
         await using var stream = file.OpenReadStream();
         var package = await context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>()
             .SaveAsync(new DynamicAppModPackageSaveRequest
@@ -330,9 +573,9 @@ public sealed class DynamicAppManagerApiMiddleware
             }, stream, context.RequestAborted)
             .ConfigureAwait(false);
 
-        request.Mod.Artifact.File = package.EntryFilePath;
-        var response = await ConfigureModAsync(context, request, package).ConfigureAwait(false);
-        await WriteConfigureResultAsync(context, response).ConfigureAwait(false);
+        await WriteJsonAsync(context, DynamicAppApiResponse<DynamicAppModPackageRecord>.Success(
+            package,
+            $"DynamicApp package `{key}` was uploaded and extracted. Configure it from Application Runtime to create an instance.")).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -589,10 +832,6 @@ public sealed class DynamicAppManagerApiMiddleware
                 Path = FirstNotEmpty(mods.Select(mod => mod.Health.Path)) ?? "/Health",
                 StartupTimeoutSeconds = startupTimeoutSeconds > 0 ? startupTimeoutSeconds : 60
             },
-            Route = new DynamicModRouteManifest
-            {
-                Prefix = FirstNotEmpty(mods.Select(mod => mod.Route.Prefix)) ?? "/mods/" + modId
-            }
         };
     }
 
@@ -691,10 +930,6 @@ public sealed class DynamicAppManagerApiMiddleware
                     Path = ReadFormString(form, "healthPath", inherited?.Health.Path ?? "/Health"),
                     StartupTimeoutSeconds = ReadFormInt(form, "startupTimeoutSeconds", inherited?.Health.StartupTimeoutSeconds ?? 60)
                 },
-                Route = new DynamicModRouteManifest
-                {
-                    Prefix = ReadFormString(form, "routePrefix", inherited?.Route.Prefix ?? "/mods/" + modId.Value)
-                }
             }
         };
     }
@@ -754,7 +989,12 @@ public sealed class DynamicAppManagerApiMiddleware
     private async Task StartAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
-        var result = await StartTargetAsync(context, request.ToKey()).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        await using var runtimeOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var result = await StartTargetAsync(context, runtimeKey).ConfigureAwait(false);
         await WriteOperationResultAsync<object>(context, result).ConfigureAwait(false);
     }
 
@@ -773,21 +1013,29 @@ public sealed class DynamicAppManagerApiMiddleware
     private async Task RestartAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
-        var key = request.ToKey();
-        var stop = await StopTargetAsync(context, key).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        await using var runtimeOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var stop = await StopTargetAsync(context, runtimeKey).ConfigureAwait(false);
         if (!stop.Succeeded)
         {
             await WriteOperationResultAsync<object>(context, stop).ConfigureAwait(false);
             return;
         }
 
-        var start = await StartTargetAsync(context, key).ConfigureAwait(false);
+        var start = await StartTargetAsync(context, runtimeKey).ConfigureAwait(false);
         await WriteOperationResultAsync<object>(context, start).ConfigureAwait(false);
     }
 
     private async Task ActivateAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquirePackageAsync(request.ToKey(), context.RequestAborted)
+            .ConfigureAwait(false);
         var result = await context.RequestServices.GetRequiredService<IDynamicAppManager>()
             .ActivateAsync(request.ToKey(), context.RequestAborted)
             .ConfigureAwait(false);
@@ -817,11 +1065,15 @@ public sealed class DynamicAppManagerApiMiddleware
     private async Task StopAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
-        var key = request.ToKey();
-        var result = await StopTargetAsync(context, key).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var result = await StopTargetAsync(context, runtimeKey).ConfigureAwait(false);
         if (result.Succeeded)
         {
-            context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(key);
+            context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(runtimeKey);
         }
 
         await WriteOperationResultAsync<object>(context, result).ConfigureAwait(false);
@@ -875,9 +1127,15 @@ public sealed class DynamicAppManagerApiMiddleware
     private async Task ProbeHealthAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
-        var key = request.ToKey();
+        var runtimeKey = request.ToRuntimeKey();
+        await using var healthOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var key = runtimeKey.PackageKey;
         var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
-        var target = (await ListTargetsWithRuntimeSyncAsync(context).ConfigureAwait(false)).FirstOrDefault(item => item.Key == key);
+        var target = (await ListTargetsWithRuntimeSyncAsync(context).ConfigureAwait(false))
+            .FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
         if (target == null)
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -892,9 +1150,11 @@ public sealed class DynamicAppManagerApiMiddleware
         if (mod?.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
         {
             var (operation, view) = await InspectExistingContainerStatusAsync(context, key).ConfigureAwait(false);
-            var nextState = view?.IsAvailable == true ? target.State : DynamicModLifecycleState.Failed;
+            var nextState = view?.IsAvailable == true
+                ? target.State == DynamicModLifecycleState.Failed ? DynamicModLifecycleState.Active : target.State
+                : DynamicModLifecycleState.Failed;
             var nextHealth = view?.IsAvailable == true ? DynamicModHealthStatus.Healthy : DynamicModHealthStatus.Unhealthy;
-            var dockerStatusUpdate = stateStore.UpdateState(key, nextState, nextHealth, operation.Message);
+            var dockerStatusUpdate = stateStore.UpdateState(runtimeKey, nextState, nextHealth, operation.Message);
             await WriteOperationResultAsync(context, dockerStatusUpdate.Succeeded && operation.Succeeded ? operation : DynamicAppOperationResult.Failure(operation.Message), view).ConfigureAwait(false);
             return;
         }
@@ -919,17 +1179,34 @@ public sealed class DynamicAppManagerApiMiddleware
             StartupTimeoutSeconds = target.HealthProbeTimeoutSeconds
         };
         var result = await healthProbe.ProbeAsync(target, health, context.RequestAborted).ConfigureAwait(false);
-        var update = result.IsHealthy
-            ? stateStore.UpdateState(key, target.State, DynamicModHealthStatus.Healthy, result.Message)
-            : stateStore.UpdateState(key, target.State, DynamicModHealthStatus.Unhealthy, result.Message);
+        var healthNextState = result.IsHealthy
+            ? target.State is DynamicModLifecycleState.Failed or DynamicModLifecycleState.Pending
+                ? DynamicModLifecycleState.Active
+                : target.State
+            : target.State == DynamicModLifecycleState.Starting
+                ? DynamicModLifecycleState.Failed
+                : target.State;
+        var healthNextStatus = result.IsHealthy
+            ? healthNextState == DynamicModLifecycleState.Draining
+                ? DynamicModHealthStatus.Draining
+                : DynamicModHealthStatus.Healthy
+            : healthNextState == DynamicModLifecycleState.Stopped
+                ? DynamicModHealthStatus.Stopped
+                : DynamicModHealthStatus.Unhealthy;
+        var update = stateStore.UpdateState(runtimeKey, healthNextState, healthNextStatus, result.Message);
         await WriteOperationResultAsync(context, update, result).ConfigureAwait(false);
     }
 
     private async Task UpdateStateAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppUpdateStateRequest>(context).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
         var result = context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
-            .UpdateState(request.ToKey(), request.State, request.HealthStatus, request.Message);
+            .UpdateState(runtimeKey, request.State, request.HealthStatus, request.Message);
         await WriteOperationResultAsync<object>(context, result).ConfigureAwait(false);
     }
 
@@ -944,7 +1221,7 @@ public sealed class DynamicAppManagerApiMiddleware
         }
 
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
-        var logs = await logSink.QueryAsync(request.ToKey(), cancellationToken: context.RequestAborted).ConfigureAwait(false);
+        var logs = await logSink.QueryAsync(request.ToRuntimeKey(), cancellationToken: context.RequestAborted).ConfigureAwait(false);
         await WriteJsonAsync(context, DynamicAppApiResponse<IReadOnlyCollection<DynamicAppProcessLogEntry>>.Success(logs, "DynamicApp process logs loaded.")).ConfigureAwait(false);
     }
 
@@ -1136,6 +1413,914 @@ public sealed class DynamicAppManagerApiMiddleware
         var request = await ReadRequiredJsonAsync<DynamicAppPackageApplicationRequest>(context).ConfigureAwait(false);
         var application = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>().CreateApplication(request.DynamicAppId);
         await WriteJsonAsync(context, DynamicAppApiResponse<DynamicAppPackageApplicationView>.Success(application, "DynamicApp package application created.")).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:创建包管理器中的 Mod 配置；该操作只创建包空间目录，上传包和运行实例仍由后续页面流程分别处理。</para>
+    /// <para>en-us:Creates a Mod configuration in the package manager; this operation only creates package-space directories, while package upload and runtime-instance creation remain separate workflows.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，Body 必须包含 DynamicAppPackageModRequest。</para>
+    /// <para>en-us:The current HTTP context; the body must contain DynamicAppPackageModRequest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:异步创建结果。</para>
+    /// <para>en-us:The asynchronous creation result.</para>
+    /// </returns>
+    private static async Task CreatePackageModAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppPackageModRequest>(context).ConfigureAwait(false);
+        var appId = new DynamicAppId(request.DynamicAppId);
+        var modId = new DynamicModId(request.ModId);
+        var manifestStore = context.RequestServices.GetRequiredService<IDynamicAppManifestStore>();
+        if ((await manifestStore.ListAsync(appId, context.RequestAborted).ConfigureAwait(false))
+            .Any(record => record.Manifest.Mods.Any(mod => mod.Id == modId)))
+        {
+            throw new InvalidOperationException($"DynamicApp Mod `{appId}/{modId}` already exists.");
+        }
+
+        var application = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>()
+            .CreateMod(request.DynamicAppId, request.ModId);
+        await WriteJsonAsync(
+            context,
+            DynamicAppApiResponse<DynamicAppPackageApplicationView>.Success(
+                application,
+                $"DynamicApp Mod `{request.DynamicAppId}/{request.ModId}` created. Upload a package from this Mod group."))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除没有包版本、运行实例或归档文件的 Mod 服务，并清理其 Manifest、路由状态和自愈状态。</para>
+    /// <para>en-us:Deletes a Mod service with no package versions, runtime instances, or archived files and cleans its manifests, route state, and self-healing state.</para>
+    /// </summary>
+    private static async Task RemovePackageModAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppPackageModRequest>(context).ConfigureAwait(false);
+        var appId = new DynamicAppId(request.DynamicAppId);
+        var modId = new DynamicModId(request.ModId);
+        var operationCoordinator = context.RequestServices.GetService<IDynamicAppRuntimeOperationCoordinator>();
+        await using var familyOperation = operationCoordinator == null
+            ? null
+            : await operationCoordinator.AcquirePackageAsync(
+                    new DynamicModVersionKey(appId, modId, new DynamicAppVersion("__mod__")),
+                    context.RequestAborted)
+                .ConfigureAwait(false);
+        var store = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var archiveStore = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>();
+
+        if (store.ListPackages().Any(item =>
+                item.DynamicAppId.Equals(appId.Value, StringComparison.OrdinalIgnoreCase)
+                && item.ModId.Equals(modId.Value, StringComparison.OrdinalIgnoreCase)
+                && item.Versions.Count > 0))
+        {
+            throw new InvalidOperationException($"DynamicApp Mod `{appId}/{modId}` cannot be removed while package versions exist.");
+        }
+
+        if (stateStore.ListTargets().Any(item => item.Key.DynamicAppId == appId && item.Key.ModId == modId))
+        {
+            throw new InvalidOperationException($"DynamicApp Mod `{appId}/{modId}` cannot be removed while runtime targets exist.");
+        }
+
+        if (store.ListDeploymentDirectories().Any(item => item.Key.DynamicAppId == appId && item.Key.ModId == modId)
+            || archiveStore.HasArchives(appId, modId))
+        {
+            throw new InvalidOperationException($"DynamicApp Mod `{appId}/{modId}` cannot be removed while deployment or archive files exist.");
+        }
+
+        foreach (var selfHealing in context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().List()
+                     .Where(item => item.Key.DynamicAppId == appId && item.Key.ModId == modId)
+                     .ToArray())
+        {
+            context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(
+                new DynamicAppRuntimeKey(selfHealing.Key, string.IsNullOrWhiteSpace(selfHealing.DeploymentId) ? "default" : selfHealing.DeploymentId));
+        }
+
+        var removed = store.RemoveMod(appId.Value, modId.Value);
+        var manifestChanges = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .RemoveModAsync(appId, modId, context.RequestAborted)
+            .ConfigureAwait(false);
+        if (!removed && manifestChanges == 0)
+        {
+            throw new FileNotFoundException($"DynamicApp Mod `{appId}/{modId}` was not found.");
+        }
+
+        await WriteOperationResultAsync<object>(
+                context,
+                DynamicAppOperationResult.Success($"DynamicApp Mod `{appId}/{modId}` was removed."))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除未被运行实例、部署目录或归档引用的包版本，并清理对应 Manifest 历史。</para>
+    /// <para>en-us:Deletes a package version that has no runtime, deployment-directory, or archive references and removes its manifest history.</para>
+    /// </summary>
+    private static async Task RemovePackageVersionAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
+        var key = request.ToKey();
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquirePackageAsync(key, context.RequestAborted)
+            .ConfigureAwait(false);
+        var store = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var archiveStore = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>();
+        if (stateStore.ListTargets().Any(item => item.Key == key)
+            || store.ListDeploymentDirectories().Any(item => item.Key == key)
+            || archiveStore.List().Any(item => item.Key == key))
+        {
+            throw new InvalidOperationException($"DynamicApp package `{key}` cannot be removed while it is used by a runtime instance or archive.");
+        }
+
+        var removed = store.RemovePackageVersion(key);
+        var manifestChanges = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .RemoveVersionAsync(key, context.RequestAborted).ConfigureAwait(false);
+        if (!removed && manifestChanges == 0)
+        {
+            throw new FileNotFoundException($"DynamicApp package `{key}` was not found.");
+        }
+
+        await WriteOperationResultAsync<object>(context, DynamicAppOperationResult.Success($"DynamicApp package `{key}` was removed.")).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:列出已经创建的独立部署实例；部署实例与包库存分离，用于集群和灰度目录隔离。</para>
+    /// <para>en-us:Lists isolated deployment instances; deployments are separated from package inventory for cluster and gray-release directory isolation.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文。</para>
+    /// <para>en-us:The current HTTP context.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:异步处理任务。</para>
+    /// <para>en-us:The asynchronous handling task.</para>
+    /// </returns>
+    private static async Task ListDeploymentsAsync(HttpContext context)
+    {
+        var deployments = context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
+            .ListTargets()
+            .Where(item => !string.Equals(item.DeploymentId, "default", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(item => item.Key.DynamicAppId.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Key.ModId.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Key.Version.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.DeploymentId, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        await WriteJsonAsync(context, DynamicAppApiResponse<IReadOnlyCollection<DynamicAppRouteTarget>>.Success(deployments, "DynamicApp deployments loaded.")).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:列出指定运行实例独立副本中的文件；该接口不会读取或回退到包库存目录。</para>
+    /// <para>en-us:Lists files from one isolated runtime deployment; this endpoint never reads or falls back to the package inventory.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，查询参数必须包含 DynamicAppId、ModId、Version，可选 DeploymentId。</para>
+    /// <para>en-us:The current HTTP context; query parameters must include DynamicAppId, ModId, and Version, with optional DeploymentId.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:异步文件清单处理任务。</para>
+    /// <para>en-us:The asynchronous deployment-file inventory task.</para>
+    /// </returns>
+    private static async Task ListDeploymentFilesAsync(HttpContext context)
+    {
+        var request = new DynamicAppTargetKeyRequest
+        {
+            DynamicAppId = context.Request.Query["dynamicAppId"].FirstOrDefault() ?? string.Empty,
+            ModId = context.Request.Query["modId"].FirstOrDefault() ?? string.Empty,
+            Version = context.Request.Query["version"].FirstOrDefault() ?? string.Empty,
+            DeploymentId = context.Request.Query["deploymentId"].FirstOrDefault()
+        };
+        var runtimeKey = request.ToRuntimeKey();
+        var stateTarget = context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
+            .ListTargets()
+            .FirstOrDefault(target => new DynamicAppRuntimeKey(target.Key, string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim()) == runtimeKey);
+        var packageStore = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+        var files = stateTarget != null && !string.IsNullOrWhiteSpace(stateTarget.DeploymentDirectory)
+            ? packageStore.ListDeploymentFiles(runtimeKey, stateTarget.DeploymentDirectory)
+            : packageStore.ListDeploymentFiles(runtimeKey);
+        await WriteJsonAsync(
+            context,
+            DynamicAppApiResponse<IReadOnlyCollection<DynamicAppModPackageFileView>>.Success(
+                files,
+                $"DynamicApp deployment files loaded for `{runtimeKey}`."))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:列出磁盘上存在但运行状态未登记的部署目录，用于人工确认和后续清理。</para>
+    /// <para>en-us:Lists deployment directories present on disk but absent from runtime state for manual confirmation and later cleanup.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文。</para>
+    /// <para>en-us:The current HTTP context.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:孤儿部署目录查询任务。</para>
+    /// <para>en-us:The orphan deployment-directory query task.</para>
+    /// </returns>
+    private static Task ListOrphanDeploymentsAsync(HttpContext context)
+    {
+        var stateKeys = context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
+            .ListTargets()
+            .Select(ToRuntimeKey)
+            .ToHashSet();
+        var orphans = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>()
+            .ListDeploymentDirectories()
+            .Where(item => !stateKeys.Contains(new DynamicAppRuntimeKey(item.Key, item.DeploymentId)))
+            .Select(item => new DynamicAppOrphanDeploymentView
+            {
+                Key = item.Key,
+                DeploymentId = item.DeploymentId,
+                DeploymentDirectory = item.DeploymentDirectory,
+                LastModifiedUtc = item.LastModifiedUtc
+            })
+            .ToArray();
+        return WriteJsonAsync(
+            context,
+            DynamicAppApiResponse<IReadOnlyCollection<DynamicAppOrphanDeploymentView>>.Success(
+                orphans,
+                "DynamicApp orphan deployment directories loaded."));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除指定 Process 部署副本；先停止运行实例，再删除隔离目录，只有全部成功后才清理状态和自愈计数。</para>
+    /// <para>en-us:Removes one Process deployment replica by stopping it first, deleting its isolated directory, and clearing state and self-healing data only after all steps succeed.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，Body 必须包含 DynamicAppTargetKeyRequest。</para>
+    /// <para>en-us:The current HTTP context; the body must contain DynamicAppTargetKeyRequest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:副本删除操作结果。</para>
+    /// <para>en-us:The deployment-removal operation result.</para>
+    /// </returns>
+    private async Task RemoveDeploymentAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        if (string.Equals(runtimeKey.DeploymentId, "default", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The default deployment cannot be removed through the clustered deployment API.");
+        }
+
+        await using var familyOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquirePackageAsync(runtimeKey.PackageKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var target = stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+        var manifestRecord = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .FindAsync(runtimeKey.PackageKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var mod = manifestRecord?.Manifest.Mods.FirstOrDefault(item =>
+            item.Id == runtimeKey.PackageKey.ModId && item.Version == runtimeKey.PackageKey.Version);
+
+        if (mod?.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+        {
+            throw new InvalidOperationException($"ExistingContainer deployment `{runtimeKey}` cannot be removed through the Process deployment API.");
+        }
+
+        if (target != null
+            && target.State is (DynamicModLifecycleState.Active or DynamicModLifecycleState.Starting)
+            && mod == null)
+        {
+            throw new InvalidOperationException($"DynamicApp deployment `{runtimeKey}` cannot be removed because its manifest is unavailable and the running process cannot be safely identified.");
+        }
+
+        if (target != null
+            && mod?.ExecutionMode == DynamicModExecutionMode.Process
+            && target.State is not DynamicModLifecycleState.Pending
+            and not DynamicModLifecycleState.Stopped)
+        {
+            var stop = await StopTargetAsync(context, runtimeKey).ConfigureAwait(false);
+            if (!stop.Succeeded)
+            {
+                await WriteOperationResultAsync<object>(context, stop).ConfigureAwait(false);
+                return;
+            }
+        }
+
+        var packageStore = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+        var removed = await packageStore.RemoveDeploymentAsync(runtimeKey, context.RequestAborted).ConfigureAwait(false);
+        if (!removed && target == null)
+        {
+            throw new FileNotFoundException($"DynamicApp deployment `{runtimeKey}` was not found.");
+        }
+
+        stateStore.RemoveTarget(runtimeKey);
+        context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(runtimeKey);
+        await WriteOperationResultAsync<object>(
+            context,
+            DynamicAppOperationResult.Success($"DynamicApp deployment `{runtimeKey}` was removed."))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:销毁已停止的运行实例，将实例配置、自愈状态和运行文件迁移到归档空间。</para>
+    /// <para>en-us:Destroys a stopped runtime instance and moves its configuration, self-healing state, and runtime files into archive space.</para>
+    /// </summary>
+    private async Task DestroyDeploymentAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var target = stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+        if (target == null)
+        {
+            throw new FileNotFoundException($"DynamicApp deployment `{runtimeKey}` was not found.");
+        }
+
+        if (target.State != DynamicModLifecycleState.Stopped)
+        {
+            throw new InvalidOperationException($"DynamicApp deployment `{runtimeKey}` can only be destroyed after it is stopped.");
+        }
+
+        // A persisted Stopped state is not proof that a process/container has exited.
+        // Reconcile it immediately before moving the runtime directory into archive space.
+        var stop = await StopTargetAsync(context, runtimeKey).ConfigureAwait(false);
+        if (!stop.Succeeded)
+        {
+            await WriteOperationResultAsync<object>(context, DynamicAppOperationResult.Failure(
+                    $"DynamicApp deployment `{runtimeKey}` cannot be destroyed until its runtime is confirmed stopped. {stop.Message}"))
+                .ConfigureAwait(false);
+            return;
+        }
+
+        var packageStore = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+        var moved = await packageStore.ArchiveDeploymentAsync(runtimeKey, context.RequestAborted).ConfigureAwait(false);
+        var selfHealingStore = context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>();
+        var archive = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>()
+            .ArchiveDeployment(
+                runtimeKey.PackageKey,
+                runtimeKey.DeploymentId,
+                target,
+                selfHealingStore.Get(runtimeKey),
+                moved.Moved ? moved.ArchiveDirectory : null,
+                "Destroyed by DynamicApp Manager.");
+
+        stateStore.RemoveTarget(runtimeKey);
+        selfHealingStore.Remove(runtimeKey);
+        await WriteOperationResultAsync(
+                context,
+                DynamicAppOperationResult.Success($"DynamicApp deployment `{runtimeKey}` was destroyed and archived."),
+                archive)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:从现有包创建独立部署目录，并可选择立即启动；启动过程会使用部署副本中的入口文件和端口。</para>
+    /// <para>en-us:Creates an isolated deployment directory from an existing package and optionally starts it using the copied entry file and configured port.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文，Body 必须是 DynamicAppCreateDeploymentRequest。</para>
+    /// <para>en-us:The current HTTP context; the body must contain DynamicAppCreateDeploymentRequest.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:部署创建和可选启动结果。</para>
+    /// <para>en-us:The deployment creation and optional startup result.</para>
+    /// </returns>
+    private async Task CreateDeploymentAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppCreateDeploymentRequest>(context).ConfigureAwait(false);
+        var prepared = await PrepareDeploymentAsync(context, request).ConfigureAwait(false);
+        var operation = request.Start
+            ? await StartPreparedDeploymentAsync(context, prepared).ConfigureAwait(false)
+            : DynamicAppOperationResult.Success($"Deployment `{prepared.RuntimeKey}` was created and is pending start.");
+        await WriteOperationResultAsync(context, operation, prepared.Deployment).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:先停止当前实例并释放其监听端口，再使用固定的原端口和端点创建、启动并健康检查新包。</para>
+    /// <para>en-us:Stops the current instance and releases its listener first, then creates, starts, and health-checks the new package using the immutable original port and endpoint.</para>
+    /// </summary>
+    private async Task UpdateDeploymentAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppUpdateDeploymentRequest>(context).ConfigureAwait(false);
+        var currentKey = new DynamicModVersionKey(
+            new DynamicAppId(request.CurrentDynamicAppId),
+            new DynamicModId(request.CurrentModId),
+            new DynamicAppVersion(request.CurrentVersion));
+        var currentRuntimeKey = new DynamicAppRuntimeKey(
+            currentKey,
+            NormalizeDeploymentId(request.CurrentDeploymentId));
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var currentTarget = stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == currentRuntimeKey);
+        if (currentTarget == null)
+        {
+            throw new FileNotFoundException($"Current deployment `{currentRuntimeKey}` was not found.");
+        }
+
+        var currentRecord = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+            .FindAsync(currentKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var currentMod = currentRecord?.Manifest.Mods.FirstOrDefault(item => item.Id == currentKey.ModId && item.Version == currentKey.Version);
+        var currentEndpoint = currentTarget.BaseAddress;
+        if (currentEndpoint.Port <= 0)
+        {
+            throw new InvalidOperationException($"Current deployment `{currentRuntimeKey}` does not have a valid listener port.");
+        }
+
+        await using var familyOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquirePackageAsync(currentKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        await using var oldOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(currentRuntimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+
+        var requestedNextKey = new DynamicModVersionKey(
+            new DynamicAppId(request.DynamicAppId),
+            new DynamicModId(request.ModId),
+            new DynamicAppVersion(request.Version));
+        if (requestedNextKey == currentKey)
+        {
+            throw new InvalidOperationException("Deployment update must select a different package version.");
+        }
+
+        var packageExists = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>()
+            .ListPackages()
+            .Any(item => item.DynamicAppId.Equals(requestedNextKey.DynamicAppId.Value, StringComparison.OrdinalIgnoreCase)
+                && item.ModId.Equals(requestedNextKey.ModId.Value, StringComparison.OrdinalIgnoreCase)
+                && item.Versions.Any(version => version.Version.Equals(requestedNextKey.Version.Value, StringComparison.OrdinalIgnoreCase)));
+        if (!packageExists)
+        {
+            throw new FileNotFoundException($"DynamicApp package `{requestedNextKey}` was not found.");
+        }
+
+        var stop = await StopTargetAsync(context, currentRuntimeKey).ConfigureAwait(false);
+        if (!stop.Succeeded)
+        {
+            await WriteOperationResultAsync<object>(context, stop).ConfigureAwait(false);
+            return;
+        }
+
+        var nextRequest = new DynamicAppCreateDeploymentRequest
+        {
+            DynamicAppId = request.DynamicAppId,
+            ModId = request.ModId,
+            Version = request.Version,
+            DeploymentId = request.DeploymentId,
+            Port = currentEndpoint.Port,
+            Endpoint = currentEndpoint.ToString(),
+            Arguments = request.Arguments ?? currentMod?.Artifact.Arguments,
+            HealthPath = request.HealthPath ?? currentTarget.HealthPath,
+            StartupTimeoutSeconds = request.StartupTimeoutSeconds > 0
+                ? request.StartupTimeoutSeconds
+                : currentTarget.HealthProbeTimeoutSeconds,
+            EntryFile = request.EntryFile,
+            Start = true
+        };
+        var nextKey = new DynamicModVersionKey(
+            new DynamicAppId(nextRequest.DynamicAppId),
+            new DynamicModId(nextRequest.ModId),
+            new DynamicAppVersion(nextRequest.Version));
+        if (nextKey == currentKey)
+        {
+            throw new InvalidOperationException("Deployment update must select a different package version.");
+        }
+
+        DynamicAppModPackageDeploymentRecord? preparedDeployment = null;
+        DynamicAppOperationResult operation;
+        try
+        {
+            var prepared = await PrepareDeploymentAsync(context, nextRequest, familyLockHeld: true).ConfigureAwait(false);
+            preparedDeployment = prepared.Deployment;
+            operation = await StartPreparedDeploymentAsync(context, prepared).ConfigureAwait(false);
+            operation = operation.Succeeded
+                ? DynamicAppOperationResult.Success($"Deployment `{currentRuntimeKey}` was updated to `{prepared.RuntimeKey}` using listener `{currentEndpoint}`.")
+                : await RestorePreviousDeploymentAfterUpdateFailureAsync(context, currentRuntimeKey, operation.Message).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            var failure = $"Deployment update from `{currentRuntimeKey}` failed before the new instance became active. {exception.Message}";
+            operation = await RestorePreviousDeploymentAfterUpdateFailureAsync(context, currentRuntimeKey, failure).ConfigureAwait(false);
+        }
+
+        await WriteOperationResultAsync(context, operation, preparedDeployment).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:更新切换失败时恢复旧实例；旧实例只有重新启动、运行态检查、健康检查和激活全部成功才算回滚成功。</para>
+    /// <para>en-us:Restores the previous instance when an update switch fails; rollback succeeds only after restart, runtime inspection, health probing, and activation all pass.</para>
+    /// </summary>
+    /// <param name="context">
+    /// <para>zh-cn:当前 HTTP 上下文。</para>
+    /// <para>en-us:The current HTTP context.</para>
+    /// </param>
+    /// <param name="runtimeKey">
+    /// <para>zh-cn:已在更新前停止的旧实例键。</para>
+    /// <para>en-us:The previous instance key that was stopped before the update.</para>
+    /// </param>
+    /// <param name="failureMessage">
+    /// <para>zh-cn:新版本更新失败原因。</para>
+    /// <para>en-us:The reason the new-version update failed.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:包含原失败原因和回滚结果的操作结果。</para>
+    /// <para>en-us:An operation result containing the original failure and rollback outcome.</para>
+    /// </returns>
+    private async Task<DynamicAppOperationResult> RestorePreviousDeploymentAfterUpdateFailureAsync(
+        HttpContext context,
+        DynamicAppRuntimeKey runtimeKey,
+        string failureMessage)
+    {
+        try
+        {
+            // A disconnected update request must not cancel restoration of the listener that was just released.
+            var rollbackContext = context;
+            if (context.RequestAborted.IsCancellationRequested)
+            {
+                rollbackContext = new DefaultHttpContext
+                {
+                    RequestServices = context.RequestServices
+                };
+                rollbackContext.RequestAborted = CancellationToken.None;
+            }
+
+            var rollback = await StartTargetAsync(rollbackContext, runtimeKey).ConfigureAwait(false);
+            return rollback.Succeeded
+                ? DynamicAppOperationResult.Failure($"{failureMessage} Previous deployment `{runtimeKey}` was restored successfully.")
+                : DynamicAppOperationResult.Failure($"{failureMessage} Previous deployment `{runtimeKey}` rollback failed: {rollback.Message}");
+        }
+        catch (Exception exception)
+        {
+            return DynamicAppOperationResult.Failure($"{failureMessage} Previous deployment `{runtimeKey}` rollback failed unexpectedly: {exception.Message}");
+        }
+    }
+
+    private async Task<(DynamicAppManifest Manifest, DynamicModManifest Mod, DynamicAppModPackageDeploymentRecord Deployment, DynamicAppRuntimeKey RuntimeKey)> PrepareDeploymentAsync(
+        HttpContext context,
+        DynamicAppCreateDeploymentRequest request,
+        bool familyLockHeld = false)
+    {
+        if (request.Port is <= 0 or > 65535)
+        {
+            throw new ArgumentException("Deployment port must be between 1 and 65535.", nameof(request.Port));
+        }
+
+        var key = new DynamicModVersionKey(
+            new DynamicAppId(request.DynamicAppId),
+            new DynamicModId(request.ModId),
+            new DynamicAppVersion(request.Version));
+        var deploymentId = NormalizeDeploymentId(request.DeploymentId);
+        var endpoint = ResolveDeploymentEndpoint(request.Endpoint, request.Port);
+        if (!string.IsNullOrWhiteSpace(request.EntryFile)
+            && !request.EntryFile.Trim().EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Deployment entry file must be a DLL.", nameof(request.EntryFile));
+        }
+        var healthPath = NormalizeInternalRoutePrefix(
+            string.IsNullOrWhiteSpace(request.HealthPath) ? "/Health" : request.HealthPath);
+        var timeout = request.StartupTimeoutSeconds > 0 ? request.StartupTimeoutSeconds : 60;
+        var sourceMod = new DynamicModManifest
+        {
+            Id = key.ModId,
+            Version = key.Version,
+            ExecutionMode = DynamicModExecutionMode.Process,
+            Artifact = new DynamicModArtifactManifest
+            {
+                File = request.EntryFile,
+                Arguments = request.Arguments,
+                Endpoint = endpoint.ToString()
+            },
+            Health = new DynamicModHealthManifest
+            {
+                Path = healthPath,
+                StartupTimeoutSeconds = timeout
+            },
+        };
+        var manifest = new DynamicAppManifest
+        {
+            Id = key.DynamicAppId,
+            Version = key.Version,
+            Runtime = new DynamicAppRuntimeManifest { Profile = DynamicAppRuntimeProfile.Compact },
+            Endpoints = new DynamicAppEndpointManifest
+            {
+                GatewayPort = 8080,
+                ManagerPort = 8081,
+                ManagerInternalOnly = true
+            },
+            Mods = [sourceMod]
+        };
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var packageStore = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+        DynamicAppModPackageDeploymentRecord deployment;
+        await DeploymentCreationGate.WaitAsync(context.RequestAborted).ConfigureAwait(false);
+        try
+        {
+            var packageOptions = context.RequestServices.GetService<DynamicAppPackageStoreOptions>()
+                ?? new DynamicAppPackageStoreOptions();
+            await using var familyOperation = familyLockHeld || context.RequestServices.GetService<IDynamicAppRuntimeOperationCoordinator>() == null
+                ? null
+                : await context.RequestServices.GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+                    .AcquirePackageAsync(key, context.RequestAborted)
+                    .ConfigureAwait(false);
+            await using var fileLock = await DynamicAppDeploymentFileLock
+                .AcquireAsync(packageOptions.RootPath, context.RequestAborted)
+                .ConfigureAwait(false);
+            ValidateDeploymentConflicts(stateStore, key, deploymentId, endpoint);
+            EnsureDeploymentEndpointAvailable(endpoint);
+            deployment = await packageStore
+                .CreateDeploymentAsync(key, deploymentId, context.RequestAborted, request.EntryFile)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            DeploymentCreationGate.Release();
+        }
+
+        sourceMod.Artifact.DeploymentId = deploymentId;
+        sourceMod.Artifact.DeploymentDirectory = deployment.DeploymentDirectory;
+        sourceMod.Artifact.File = deployment.EntryFilePath;
+        sourceMod.Artifact.Endpoint = endpoint.ToString();
+        sourceMod.Artifact.Arguments = AppendUrlsArgument(sourceMod.Artifact.Arguments, endpoint);
+        var runtimeKey = new DynamicAppRuntimeKey(key, deploymentId);
+        try
+        {
+            await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
+                .SaveAsync(manifest, context.RequestAborted)
+                .ConfigureAwait(false);
+            stateStore.UpsertTarget(new DynamicAppRouteTarget
+            {
+                Key = key,
+                DeploymentId = deploymentId,
+                DeploymentDirectory = deployment.DeploymentDirectory,
+                DeploymentEntryFilePath = deployment.EntryFilePath,
+                BaseAddress = endpoint,
+                HealthPath = sourceMod.Health.Path,
+                HealthProbeTimeoutSeconds = sourceMod.Health.StartupTimeoutSeconds,
+                State = DynamicModLifecycleState.Pending,
+                HealthStatus = DynamicModHealthStatus.Unknown,
+                LastStatusMessage = $"Deployment `{runtimeKey}` was created from package `{key}`."
+            });
+            return (manifest, sourceMod, deployment, runtimeKey);
+        }
+        catch
+        {
+            // The request may already be cancelled here. Cleanup must still remove the
+            // newly-created directory so a failed or disconnected request cannot leave a
+            // deployment artifact that later collides with a retry.
+            await packageStore.RemoveDeploymentAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private async Task<DynamicAppOperationResult> StartPreparedDeploymentAsync(
+        HttpContext context,
+        (DynamicAppManifest Manifest, DynamicModManifest Mod, DynamicAppModPackageDeploymentRecord Deployment, DynamicAppRuntimeKey RuntimeKey) prepared)
+    {
+        await using var runtimeOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(prepared.RuntimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var start = await StartModAsync(context, prepared.Manifest, prepared.Mod).ConfigureAwait(false);
+        if (!start.Succeeded)
+        {
+            var message = await AppendProcessDiagnosticsAsync(context, prepared.RuntimeKey, start.Message).ConfigureAwait(false);
+            return await FailTargetAndCleanupAsync(context, prepared.RuntimeKey, message).ConfigureAwait(false);
+        }
+
+        var target = stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == prepared.RuntimeKey);
+        if (target == null)
+        {
+            return await FailTargetAndCleanupAsync(
+                    context,
+                    prepared.RuntimeKey,
+                    $"Deployment `{prepared.RuntimeKey}` was not registered after startup.")
+                .ConfigureAwait(false);
+        }
+
+        var runtime = await InspectProcessRuntimeIfNeededAsync(context, target, prepared.Mod).ConfigureAwait(false);
+        if (!runtime.Succeeded)
+        {
+            return await FailTargetAndCleanupAsync(context, prepared.RuntimeKey, runtime.Message).ConfigureAwait(false);
+        }
+
+        var healthProbe = context.RequestServices.GetService<IDynamicAppHealthProbe>();
+        if (healthProbe == null)
+        {
+            return await FailTargetAndCleanupAsync(
+                    context,
+                    prepared.RuntimeKey,
+                    "IDynamicAppHealthProbe is not registered.")
+                .ConfigureAwait(false);
+        }
+
+        var health = await healthProbe.ProbeAsync(target, prepared.Mod.Health, context.RequestAborted).ConfigureAwait(false);
+        if (!health.IsHealthy)
+        {
+            var message = $"Deployment `{prepared.RuntimeKey}` health probe failed. {health.Message}";
+            return await FailTargetAndCleanupAsync(context, prepared.RuntimeKey, message).ConfigureAwait(false);
+        }
+
+        var activation = await context.RequestServices.GetRequiredService<IDynamicAppManager>()
+            .ActivateInstanceAsync(prepared.RuntimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        if (!activation.Succeeded)
+        {
+            return await FailTargetAndCleanupAsync(context, prepared.RuntimeKey, activation.Message).ConfigureAwait(false);
+        }
+
+        return DynamicAppOperationResult.Success($"Deployment `{prepared.RuntimeKey}` started, healthy, and active.");
+    }
+
+    private async Task<DynamicAppOperationResult> FailTargetAndCleanupAsync(
+        HttpContext context,
+        DynamicAppRuntimeKey runtimeKey,
+        string message)
+    {
+        // Once a process has been started, client disconnect must not cancel the cleanup that releases its port.
+        var cleanupContext = context;
+        if (context.RequestAborted.IsCancellationRequested)
+        {
+            cleanupContext = new DefaultHttpContext
+            {
+                RequestServices = context.RequestServices
+            };
+            cleanupContext.RequestAborted = CancellationToken.None;
+        }
+
+        var stop = await StopTargetAsync(cleanupContext, runtimeKey).ConfigureAwait(false);
+        var finalMessage = stop.Succeeded
+            ? $"{message} Runtime `{runtimeKey}` was stopped after the failure."
+            : $"{message} Cleanup failed for `{runtimeKey}`: {stop.Message}";
+        context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
+            .UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, finalMessage);
+        return DynamicAppOperationResult.Failure(finalMessage);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:在串行创建闸门内校验副本标识和监听端点，避免同一包版本重复登记或多个实例占用同一个协议、主机、端口。</para>
+    /// <para>en-us:Validates the deployment identifier and listener endpoint inside a serialized creation gate, preventing duplicate registration for one package version and preventing multiple instances from sharing one protocol, host, and port.</para>
+    /// </summary>
+    /// <param name="stateStore">
+    /// <para>zh-cn:当前 DynamicApp 运行状态存储。</para>
+    /// <para>en-us:The current DynamicApp runtime state store.</para>
+    /// </param>
+    /// <param name="key">
+    /// <para>zh-cn:待创建部署对应的 DynamicApp、Mod、版本键。</para>
+    /// <para>en-us:The DynamicApp, Mod, and version key for the deployment being created.</para>
+    /// </param>
+    /// <param name="deploymentId">
+    /// <para>zh-cn:待创建的部署实例标识。</para>
+    /// <para>en-us:The deployment-instance identifier being created.</para>
+    /// </param>
+    /// <param name="endpoint">
+    /// <para>zh-cn:待创建实例的基础监听地址；比较时仅使用协议、主机和端口。</para>
+    /// <para>en-us:The new instance base listener address; only scheme, host, and port participate in conflict comparison.</para>
+    /// </param>
+    /// <exception cref="InvalidOperationException">
+    /// <para>zh-cn:当部署标识或监听端点已经被占用时抛出。</para>
+    /// <para>en-us:Thrown when the deployment identifier or listener endpoint is already in use.</para>
+    /// </exception>
+    private static void ValidateDeploymentConflicts(
+        IDynamicAppStateStore stateStore,
+        DynamicModVersionKey key,
+        string deploymentId,
+        Uri endpoint)
+    {
+        var targets = stateStore.ListTargets();
+        var duplicateDeployment = targets.FirstOrDefault(item =>
+            item.Key == key
+            && string.Equals(NormalizeDeploymentIdValue(item.DeploymentId), deploymentId, StringComparison.OrdinalIgnoreCase));
+        if (duplicateDeployment != null)
+        {
+            throw new InvalidOperationException($"DynamicApp deployment `{key}/{deploymentId}` already exists.");
+        }
+
+        var endpointConflict = targets.FirstOrDefault(item => item.State != DynamicModLifecycleState.Stopped
+            && IsSameListenerEndpoint(item.BaseAddress, endpoint));
+        if (endpointConflict != null)
+        {
+            var existingRuntimeKey = ToRuntimeKey(endpointConflict);
+            throw new InvalidOperationException($"Deployment endpoint `{endpoint}` is already used by `{existingRuntimeKey}`.");
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:将空部署标识统一视为默认实例，保证旧状态记录与新集群状态使用相同比较规则。</para>
+    /// <para>en-us:Normalizes an empty deployment identifier to the default instance so legacy state records and clustered state use the same comparison rule.</para>
+    /// </summary>
+    /// <param name="deploymentId">
+    /// <para>zh-cn:待比较的部署实例标识。</para>
+    /// <para>en-us:The deployment identifier to compare.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:规范化后的部署实例标识。</para>
+    /// <para>en-us:The normalized deployment identifier.</para>
+    /// </returns>
+    private static string NormalizeDeploymentIdValue(string? deploymentId)
+        => string.IsNullOrWhiteSpace(deploymentId) ? "default" : deploymentId.Trim();
+
+    /// <summary>
+    /// <para>zh-cn:比较两个基础监听地址是否指向同一个协议、主机和端口；路径不同不会绕过监听冲突。</para>
+    /// <para>en-us:Checks whether two base listener addresses use the same scheme, host, and port; different paths do not bypass a listener conflict.</para>
+    /// </summary>
+    /// <param name="left">
+    /// <para>zh-cn:已登记的监听地址。</para>
+    /// <para>en-us:The registered listener address.</para>
+    /// </param>
+    /// <param name="right">
+    /// <para>zh-cn:待创建的监听地址。</para>
+    /// <para>en-us:The listener address being created.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:两个地址是否占用相同的监听端点。</para>
+    /// <para>en-us:Whether both addresses occupy the same listener endpoint.</para>
+    /// </returns>
+    private static bool IsSameListenerEndpoint(Uri left, Uri right)
+        => string.Equals(left.Scheme, right.Scheme, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(left.Host, right.Host, StringComparison.OrdinalIgnoreCase)
+            && left.Port == right.Port;
+
+    /// <summary>
+    /// <para>zh-cn:尝试绑定本机部署监听端点，提前发现被其他进程占用的端口；远程主机地址不在本机预检范围内。</para>
+    /// <para>en-us:Attempts to bind the local deployment listener endpoint to detect ports already occupied by other processes; remote host addresses are outside the local preflight scope.</para>
+    /// </summary>
+    /// <param name="endpoint">
+    /// <para>zh-cn:待创建部署的基础监听地址。</para>
+    /// <para>en-us:The base listener address of the deployment being created.</para>
+    /// </param>
+    /// <exception cref="InvalidOperationException">
+    /// <para>zh-cn:本机端口无法绑定时抛出。</para>
+    /// <para>en-us:Thrown when the local port cannot be bound.</para>
+    /// </exception>
+    private static void EnsureDeploymentEndpointAvailable(Uri endpoint)
+    {
+        if (!TryResolveLocalListenerAddress(endpoint.Host, out var address))
+        {
+            return;
+        }
+
+        try
+        {
+            using var listener = new TcpListener(address, endpoint.Port);
+            listener.Start();
+            listener.Stop();
+        }
+        catch (SocketException exception)
+        {
+            throw new InvalidOperationException(
+                $"Deployment endpoint `{endpoint}` is not available for local binding. {exception.SocketErrorCode}.",
+                exception);
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:将回环、通配监听地址和明确的 IP 地址解析为本机端口预检地址；无法确认属于本机的主机名返回 false。</para>
+    /// <para>en-us:Resolves loopback, wildcard, and explicit IP listener hosts for local port preflight; host names that cannot be confirmed as local return false.</para>
+    /// </summary>
+    /// <param name="host">
+    /// <para>zh-cn:URI 主机名。</para>
+    /// <para>en-us:The URI host name.</para>
+    /// </param>
+    /// <param name="address">
+    /// <para>zh-cn:解析得到的本机监听地址。</para>
+    /// <para>en-us:The resolved local listener address.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:是否应执行本机端口预检。</para>
+    /// <para>en-us:Whether local port preflight should be performed.</para>
+    /// </returns>
+    private static bool TryResolveLocalListenerAddress(string host, out IPAddress address)
+    {
+        if (host is "localhost" or "127.0.0.1")
+        {
+            address = IPAddress.Loopback;
+            return true;
+        }
+
+        if (host is "0.0.0.0" or "*" or "+")
+        {
+            address = IPAddress.Any;
+            return true;
+        }
+
+        if (host == "::")
+        {
+            address = IPAddress.IPv6Any;
+            return true;
+        }
+
+        if (IPAddress.TryParse(host, out address!))
+        {
+            return IPAddress.IsLoopback(address);
+        }
+
+        address = IPAddress.None;
+        return false;
     }
 
     private static async Task<IReadOnlyCollection<DynamicAppPackageApplicationView>> ListManifestPackageApplicationsAsync(HttpContext context, IReadOnlyCollection<DynamicAppModPackageModView> packageViews)
@@ -1331,14 +2516,52 @@ public sealed class DynamicAppManagerApiMiddleware
         var request = await ReadRequiredJsonAsync<DynamicAppArchiveTargetRequest>(context).ConfigureAwait(false);
         var key = request.ToKey();
         var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        await using var familyOperation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquirePackageAsync(key, context.RequestAborted)
+            .ConfigureAwait(false);
         var stopMessage = string.Empty;
-        if (stateStore.ListTargets().Any(item => item.Key == key))
+        var runtimeKeys = stateStore.ListTargets()
+            .Where(item => item.Key == key)
+            .Select(ToRuntimeKey)
+            .ToArray();
+        var stoppedKeys = new List<DynamicAppRuntimeKey>();
+        foreach (var runtimeKey in runtimeKeys)
         {
-            var stop = await StopTargetAsync(context, key).ConfigureAwait(false);
-            stopMessage = stop.Message;
-            stateStore.RemoveTarget(key);
+            await using var operation = await context.RequestServices
+                .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+                .AcquireAsync(runtimeKey, context.RequestAborted)
+                .ConfigureAwait(false);
+            var stop = await StopTargetAsync(context, runtimeKey).ConfigureAwait(false);
+            if (!stop.Succeeded)
+            {
+                await WriteOperationResultAsync<object>(
+                        context,
+                        DynamicAppOperationResult.Failure($"Target `{runtimeKey}` was not archived because it could not be stopped. {stop.Message}"))
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            stopMessage = string.IsNullOrWhiteSpace(stopMessage)
+                ? stop.Message
+                : $"{stopMessage} | {stop.Message}";
+            stoppedKeys.Add(runtimeKey);
         }
 
+        foreach (var runtimeKey in stoppedKeys)
+        {
+            var removed = stateStore.RemoveTarget(runtimeKey);
+            if (!removed.Succeeded)
+            {
+                await WriteOperationResultAsync<object>(
+                        context,
+                        DynamicAppOperationResult.Failure($"Target `{key}` was stopped but could not be removed from runtime state: {removed.Message}"))
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(runtimeKey);
+        }
         context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(key);
         var archive = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>().Archive(key, request.Reason);
         var message = string.IsNullOrWhiteSpace(stopMessage)
@@ -1362,12 +2585,109 @@ public sealed class DynamicAppManagerApiMiddleware
     private async Task UnarchiveAsync(HttpContext context)
     {
         var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
+        var runtimeKey = request.ToRuntimeKey();
+        await using var operation = await context.RequestServices
+            .GetRequiredService<IDynamicAppRuntimeOperationCoordinator>()
+            .AcquireAsync(runtimeKey, context.RequestAborted)
+            .ConfigureAwait(false);
+        var archiveStore = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>();
+        var deploymentArchive = string.IsNullOrWhiteSpace(request.DeploymentId)
+            ? null
+            : archiveStore.FindDeployment(runtimeKey);
+        if (deploymentArchive != null)
+        {
+            var packageStore = context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>();
+            DynamicAppModPackageDeploymentArchiveRecord? restore = null;
+            if (!string.IsNullOrWhiteSpace(deploymentArchive.ArchiveDirectory))
+            {
+                restore = await packageStore.RestoreArchivedDeploymentAsync(runtimeKey, context.RequestAborted).ConfigureAwait(false);
+            }
+
+            var target = deploymentArchive.RuntimeTarget
+                ?? throw new InvalidOperationException($"Archived runtime target `{runtimeKey}` has no configuration snapshot.");
+            if (restore?.Moved == true)
+            {
+                target.DeploymentDirectory = restore.DeploymentDirectory;
+                if (!string.IsNullOrWhiteSpace(deploymentArchive.ArchiveDirectory))
+                {
+                    target.DeploymentEntryFilePath = target.DeploymentEntryFilePath
+                        .Replace(deploymentArchive.ArchiveDirectory, restore.DeploymentDirectory, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            target.State = DynamicModLifecycleState.Stopped;
+            target.HealthStatus = DynamicModHealthStatus.Stopped;
+            target.DeploymentId = runtimeKey.DeploymentId;
+            target.LastStatusMessage = "Restored from archive; the instance remains stopped.";
+            context.RequestServices.GetRequiredService<IDynamicAppStateStore>().UpsertTarget(target);
+            if (deploymentArchive.SelfHealing != null)
+            {
+                context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Upsert(deploymentArchive.SelfHealing);
+            }
+
+            archiveStore.RemoveDeployment(runtimeKey);
+            await WriteOperationResultAsync<object>(
+                    context,
+                    DynamicAppOperationResult.Success($"DynamicApp deployment `{runtimeKey}` was restored from archive."))
+                .ConfigureAwait(false);
+            return;
+        }
+
         var key = request.ToKey();
-        var removed = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>().Unarchive(key);
+        var removed = archiveStore.Unarchive(key);
         var result = DynamicAppOperationResult.Success(removed
             ? $"Target `{key}` unarchived."
             : $"Target `{key}` was not archived.");
         await WriteOperationResultAsync<object>(context, result).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除归档记录及其对应的实例归档文件；旧版本级归档只删除记录。</para>
+    /// <para>en-us:Deletes an archive record and its corresponding runtime archive files; legacy version-level archives only remove the record.</para>
+    /// </summary>
+    private static async Task RemoveArchivedAsync(HttpContext context)
+    {
+        var request = await ReadRequiredJsonAsync<DynamicAppTargetKeyRequest>(context).ConfigureAwait(false);
+        var archiveStore = context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>();
+        var deploymentArchive = string.IsNullOrWhiteSpace(request.DeploymentId)
+            ? null
+            : archiveStore.FindDeployment(request.ToRuntimeKey());
+        if (deploymentArchive != null)
+        {
+            var runtimeKey = request.ToRuntimeKey();
+            await context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>()
+                .RemoveArchivedDeploymentAsync(runtimeKey, context.RequestAborted)
+                .ConfigureAwait(false);
+            archiveStore.RemoveDeployment(runtimeKey);
+            await WriteOperationResultAsync<object>(
+                    context,
+                    DynamicAppOperationResult.Success($"DynamicApp deployment archive `{runtimeKey}` was deleted."))
+                .ConfigureAwait(false);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.DeploymentId))
+        {
+            var runtimeKey = request.ToRuntimeKey();
+            var removedOrphanedFiles = await context.RequestServices.GetRequiredService<IDynamicAppModPackageStore>()
+                .RemoveArchivedDeploymentAsync(runtimeKey, context.RequestAborted)
+                .ConfigureAwait(false);
+            if (removedOrphanedFiles)
+            {
+                await WriteOperationResultAsync<object>(
+                        context,
+                        DynamicAppOperationResult.Success($"DynamicApp deployment archive `{runtimeKey}` files were deleted."))
+                    .ConfigureAwait(false);
+                return;
+            }
+        }
+
+        var removed = archiveStore.Unarchive(request.ToKey());
+        await WriteOperationResultAsync<object>(
+                context,
+                DynamicAppOperationResult.Success(removed
+                    ? $"Target archive `{request.ToKey()}` was deleted."
+                    : $"Target archive `{request.ToKey()}` was not found."))
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1403,17 +2723,17 @@ public sealed class DynamicAppManagerApiMiddleware
                 continue;
             }
 
-            var runtime = await runner.InspectAsync(target.Key, context.RequestAborted).ConfigureAwait(false);
+            var runtime = await runner.InspectAsync(ToRuntimeKey(target), context.RequestAborted).ConfigureAwait(false);
             if (runtime.Succeeded)
             {
                 continue;
             }
 
             stateStore.UpdateState(
-                target.Key,
+                ToRuntimeKey(target),
                 DynamicModLifecycleState.Failed,
                 DynamicModHealthStatus.Unhealthy,
-                $"Process target `{target.Key}` runtime inspection failed. {runtime.Message}");
+                $"Process target `{ToRuntimeKey(target)}` runtime inspection failed. {runtime.Message}");
             changed = true;
         }
 
@@ -1508,13 +2828,13 @@ public sealed class DynamicAppManagerApiMiddleware
     /// </returns>
     private async Task GetTargetAsync(HttpContext context, string targetRoute)
     {
-        var key = ParseTargetKeyRoute(targetRoute);
+        var runtimeKey = ParseRuntimeKeyRoute(targetRoute);
         var target = (await ListTargetsWithRuntimeSyncAsync(context).ConfigureAwait(false))
-            .FirstOrDefault(item => item.Key == key);
+            .FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
         if (target == null)
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
-            await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure($"Target `{key}` is not registered.", "dynamicapp.target_not_found")).ConfigureAwait(false);
+            await WriteJsonAsync(context, DynamicAppApiResponse<object>.Failure($"Target `{runtimeKey}` is not registered.", "dynamicapp.target_not_found")).ConfigureAwait(false);
             return;
         }
 
@@ -1529,7 +2849,7 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:当前 HTTP 上下文。</para>
     /// <para>en-us:The current HTTP context.</para>
     /// </param>
-    /// <param name="key">
+    /// <param name="runtimeKey">
     /// <para>zh-cn:目标 Mod 版本键。</para>
     /// <para>en-us:The target Mod version key.</para>
     /// </param>
@@ -1537,9 +2857,10 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:启动和激活结果。</para>
     /// <para>en-us:The start and activation result.</para>
     /// </returns>
-    private async Task<DynamicAppOperationResult> StartTargetAsync(HttpContext context, DynamicModVersionKey key)
+    private async Task<DynamicAppOperationResult> StartTargetAsync(HttpContext context, DynamicAppRuntimeKey runtimeKey)
     {
-        if (context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>().IsArchived(key))
+        var key = runtimeKey.PackageKey;
+        if (context.RequestServices.GetRequiredService<IDynamicAppTargetArchiveStore>().IsArchived(runtimeKey))
         {
             return DynamicAppOperationResult.Failure($"Target `{key}` is archived and cannot be started until it is unarchived.");
         }
@@ -1552,26 +2873,37 @@ public sealed class DynamicAppManagerApiMiddleware
             return DynamicAppOperationResult.Failure($"Manifest history for target `{key}` was not found.");
         }
 
-        var mod = manifestRecord.Manifest.Mods.FirstOrDefault(item => item.Id == key.ModId && item.Version == key.Version);
-        if (mod == null)
+        var sourceMod = manifestRecord.Manifest.Mods.FirstOrDefault(item => item.Id == key.ModId && item.Version == key.Version);
+        if (sourceMod == null)
         {
             return DynamicAppOperationResult.Failure($"Manifest history record `{manifestRecord.RecordId}` does not contain target `{key}`.");
         }
 
+        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
+        var existingTarget = stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+        if (!string.Equals(runtimeKey.DeploymentId, "default", StringComparison.OrdinalIgnoreCase) && existingTarget == null)
+        {
+            return DynamicAppOperationResult.Failure($"Deployment target `{runtimeKey}` is not registered.");
+        }
+
+        var mod = CloneMod(sourceMod);
+        ApplyRuntimeTarget(mod, existingTarget);
         var start = await StartModAsync(context, manifestRecord.Manifest, mod).ConfigureAwait(false);
         if (!start.Succeeded)
         {
-            var message = await AppendProcessDiagnosticsAsync(context, key, start.Message).ConfigureAwait(false);
-            PublishFailedStartState(context, manifestRecord.Manifest, mod, message);
+            var message = await AppendProcessDiagnosticsAsync(context, runtimeKey, start.Message).ConfigureAwait(false);
+            PublishFailedStartState(context, manifestRecord.Manifest, mod, runtimeKey, message);
             return DynamicAppOperationResult.Failure(message);
         }
 
-        var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
-        var target = stateStore.ListTargets().FirstOrDefault(item => item.Key == key);
+        var target = stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
         if (target == null)
         {
-            stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Target `{key}` was not registered after startup.");
-            return DynamicAppOperationResult.Failure($"Target `{key}` was not registered after startup.");
+            return await FailTargetAndCleanupAsync(
+                    context,
+                    runtimeKey,
+                    $"Target `{runtimeKey}` was not registered after startup.")
+                .ConfigureAwait(false);
         }
 
         if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
@@ -1582,9 +2914,8 @@ public sealed class DynamicAppManagerApiMiddleware
         var runtime = await InspectProcessRuntimeIfNeededAsync(context, target, mod).ConfigureAwait(false);
         if (!runtime.Succeeded)
         {
-            var message = await AppendProcessDiagnosticsAsync(context, key, $"Runtime target `{key}` startup inspection failed. {runtime.Message}").ConfigureAwait(false);
-            stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
-            return DynamicAppOperationResult.Failure(message);
+            var message = await AppendProcessDiagnosticsAsync(context, runtimeKey, $"Runtime target `{runtimeKey}` startup inspection failed. {runtime.Message}").ConfigureAwait(false);
+            return await FailTargetAndCleanupAsync(context, runtimeKey, message).ConfigureAwait(false);
         }
 
         var healthProbe = context.RequestServices.GetService<IDynamicAppHealthProbe>();
@@ -1596,21 +2927,20 @@ public sealed class DynamicAppManagerApiMiddleware
         var health = await healthProbe.ProbeAsync(target, mod.Health, context.RequestAborted).ConfigureAwait(false);
         if (!health.IsHealthy)
         {
-            var message = await AppendProcessDiagnosticsAsync(context, key, $"Runtime target `{key}` health probe failed. {health.Message}").ConfigureAwait(false);
-            stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
-            return DynamicAppOperationResult.Failure(message);
+            var message = await AppendProcessDiagnosticsAsync(context, runtimeKey, $"Runtime target `{runtimeKey}` health probe failed. {health.Message}").ConfigureAwait(false);
+            return await FailTargetAndCleanupAsync(context, runtimeKey, message).ConfigureAwait(false);
         }
 
         var activation = await context.RequestServices.GetRequiredService<IDynamicAppManager>()
-            .ActivateAsync(key, context.RequestAborted)
+            .ActivateInstanceAsync(runtimeKey, context.RequestAborted)
             .ConfigureAwait(false);
         if (!activation.Succeeded)
         {
-            return activation;
+            return await FailTargetAndCleanupAsync(context, runtimeKey, activation.Message).ConfigureAwait(false);
         }
 
-        context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(key);
-        return DynamicAppOperationResult.Success($"Target `{key}` started, healthy, and active.");
+        context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(runtimeKey);
+        return DynamicAppOperationResult.Success($"Target `{runtimeKey}` started, healthy, and active.");
     }
 
     /// <summary>
@@ -1621,7 +2951,7 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:当前 HTTP 上下文，用于解析 Docker 容器目录、状态存储和 Manager。</para>
     /// <para>en-us:The current HTTP context used to resolve the Docker container catalog, state store, and manager.</para>
     /// </param>
-    /// <param name="key">
+    /// <param name="runtimeKey">
     /// <para>zh-cn:目标 Mod 版本键。</para>
     /// <para>en-us:The target Mod version key.</para>
     /// </param>
@@ -1633,27 +2963,27 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:容器引擎状态检查和激活结果。</para>
     /// <para>en-us:The container engine status inspection and activation result.</para>
     /// </returns>
-    private static async Task<DynamicAppOperationResult> ActivateExistingContainerTargetAsync(HttpContext context, DynamicModVersionKey key, DynamicAppRouteTarget target)
+    private static async Task<DynamicAppOperationResult> ActivateExistingContainerTargetAsync(HttpContext context, DynamicModVersionKey runtimeKey, DynamicAppRouteTarget target)
     {
-        var (operation, view) = await InspectExistingContainerStatusAsync(context, key).ConfigureAwait(false);
+        var (operation, view) = await InspectExistingContainerStatusAsync(context, runtimeKey).ConfigureAwait(false);
         var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
         if (!operation.Succeeded || view?.IsAvailable != true)
         {
             var message = operation.Message;
-            stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
+            stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
             return DynamicAppOperationResult.Failure(message);
         }
 
         var activation = await context.RequestServices.GetRequiredService<IDynamicAppManager>()
-            .ActivateAsync(key, context.RequestAborted)
+            .ActivateInstanceAsync(new DynamicAppRuntimeKey(runtimeKey, target.DeploymentId), context.RequestAborted)
             .ConfigureAwait(false);
         if (!activation.Succeeded)
         {
             return activation;
         }
 
-        context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(key);
-        return DynamicAppOperationResult.Success($"ExistingContainer target `{key}` is active from Docker container `{view.Name}`. {view.Status}");
+        context.RequestServices.GetRequiredService<IDynamicAppSelfHealingStateStore>().Remove(runtimeKey);
+        return DynamicAppOperationResult.Success($"ExistingContainer target `{runtimeKey}` is active from Docker container `{view.Name}`. {view.Status}");
     }
 
     /// <summary>
@@ -1664,7 +2994,7 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:当前 HTTP 上下文，用于解析 Docker 容器目录。</para>
     /// <para>en-us:The current HTTP context used to resolve the Docker container catalog.</para>
     /// </param>
-    /// <param name="key">
+    /// <param name="runtimeKey">
     /// <para>zh-cn:目标 Mod 版本键。</para>
     /// <para>en-us:The target Mod version key.</para>
     /// </param>
@@ -1672,7 +3002,7 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:容器引擎状态检查结果和容器视图；失败时容器视图为空。</para>
     /// <para>en-us:The container engine status operation and container view; the view is null when inspection fails.</para>
     /// </returns>
-    private static async Task<(DynamicAppOperationResult Operation, DynamicAppExistingContainerView? View)> InspectExistingContainerStatusAsync(HttpContext context, DynamicModVersionKey key)
+    private static async Task<(DynamicAppOperationResult Operation, DynamicAppExistingContainerView? View)> InspectExistingContainerStatusAsync(HttpContext context, DynamicModVersionKey runtimeKey)
     {
         var catalog = context.RequestServices.GetService<IDynamicAppExistingContainerCatalog>();
         if (catalog == null)
@@ -1682,15 +3012,15 @@ public sealed class DynamicAppManagerApiMiddleware
 
         try
         {
-            var view = await catalog.InspectAsync(key, context.RequestAborted).ConfigureAwait(false);
+            var view = await catalog.InspectAsync(runtimeKey, context.RequestAborted).ConfigureAwait(false);
             var message = view.IsAvailable
-                ? $"Docker container `{view.Name}` is running for `{key}`. {view.Status}"
-                : $"Docker container `{view.Name}` is not available for `{key}`. {view.Status}";
+                ? $"Docker container `{view.Name}` is running for `{runtimeKey}`. {view.Status}"
+                : $"Docker container `{view.Name}` is not available for `{runtimeKey}`. {view.Status}";
             return (view.IsAvailable ? DynamicAppOperationResult.Success(message) : DynamicAppOperationResult.Failure(message), view);
         }
         catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or SocketException or IOException)
         {
-            return (DynamicAppOperationResult.Failure($"Docker container status inspection failed for `{key}`. {exception.Message}"), null);
+            return (DynamicAppOperationResult.Failure($"Docker container status inspection failed for `{runtimeKey}`. {exception.Message}"), null);
         }
     }
 
@@ -1724,7 +3054,7 @@ public sealed class DynamicAppManagerApiMiddleware
         var runner = context.RequestServices.GetService<IDynamicAppModRunner>();
         return runner == null
             ? DynamicAppOperationResult.Failure("IDynamicAppModRunner is not registered.")
-            : await runner.InspectAsync(target.Key, context.RequestAborted).ConfigureAwait(false);
+            : await runner.InspectAsync(ToRuntimeKey(target), context.RequestAborted).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1747,14 +3077,22 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:底层启动失败消息。</para>
     /// <para>en-us:The underlying startup failure message.</para>
     /// </param>
-    private static void PublishFailedStartState(HttpContext context, DynamicAppManifest manifest, DynamicModManifest mod, string message)
+    /// <param name="runtimeKey">
+    /// <para>zh-cn:启动失败的运行实例键。</para>
+    /// <para>en-us:The runtime-instance key that failed to start.</para>
+    /// </param>
+    private static void PublishFailedStartState(
+        HttpContext context,
+        DynamicAppManifest manifest,
+        DynamicModManifest mod,
+        DynamicAppRuntimeKey runtimeKey,
+        string message)
     {
-        var key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version);
         var stateStore = context.RequestServices.GetRequiredService<IDynamicAppStateStore>();
         var statusMessage = string.IsNullOrWhiteSpace(message)
-            ? $"Target `{key}` failed to start."
+            ? $"Target `{runtimeKey}` failed to start."
             : message;
-        var update = stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, statusMessage);
+        var update = stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, statusMessage);
         if (update.Succeeded)
         {
             return;
@@ -1762,9 +3100,11 @@ public sealed class DynamicAppManagerApiMiddleware
 
         stateStore.UpsertTarget(new DynamicAppRouteTarget
         {
-            Key = key,
+            Key = runtimeKey.PackageKey,
+            DeploymentId = runtimeKey.DeploymentId,
+            DeploymentDirectory = mod.Artifact.DeploymentDirectory ?? string.Empty,
+            DeploymentEntryFilePath = mod.Artifact.File ?? string.Empty,
             BaseAddress = ResolveStartupBaseAddress(mod),
-            RoutePrefix = mod.Route.Prefix,
             HealthPath = mod.Health.Path,
             HealthProbeTimeoutSeconds = mod.Health.StartupTimeoutSeconds,
             State = DynamicModLifecycleState.Failed,
@@ -1866,7 +3206,7 @@ public sealed class DynamicAppManagerApiMiddleware
             : await runner.StartAsync(manifest, mod, context.RequestAborted).ConfigureAwait(false);
     }
 
-    private static async Task<string> AppendProcessDiagnosticsAsync(HttpContext context, DynamicModVersionKey key, string message)
+    private static async Task<string> AppendProcessDiagnosticsAsync(HttpContext context, DynamicAppRuntimeKey runtimeKey, string message)
     {
         var logSink = context.RequestServices.GetService<IDynamicAppProcessLogSink>();
         if (logSink == null)
@@ -1875,7 +3215,7 @@ public sealed class DynamicAppManagerApiMiddleware
         }
 
         await Task.Delay(TimeSpan.FromMilliseconds(150), context.RequestAborted).ConfigureAwait(false);
-        var logs = await logSink.QueryAsync(key, take: 80, context.RequestAborted).ConfigureAwait(false);
+        var logs = await logSink.QueryAsync(runtimeKey, take: 80, context.RequestAborted).ConfigureAwait(false);
         var candidates = logs
             .Where(item => item.Stream.Equals("stderr", StringComparison.OrdinalIgnoreCase) || item.Stream.Equals("exit", StringComparison.OrdinalIgnoreCase))
             .Select(item => $"[{item.Stream}] {item.Message}")
@@ -1942,7 +3282,7 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:当前 HTTP 上下文。</para>
     /// <para>en-us:The current HTTP context.</para>
     /// </param>
-    /// <param name="key">
+    /// <param name="runtimeKey">
     /// <para>zh-cn:目标 Mod 版本键。</para>
     /// <para>en-us:The target Mod version key.</para>
     /// </param>
@@ -1950,8 +3290,9 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:停止结果。</para>
     /// <para>en-us:The stop result.</para>
     /// </returns>
-    private async Task<DynamicAppOperationResult> StopTargetAsync(HttpContext context, DynamicModVersionKey key)
+    private async Task<DynamicAppOperationResult> StopTargetAsync(HttpContext context, DynamicAppRuntimeKey runtimeKey)
     {
+        var key = runtimeKey.PackageKey;
         var manifestRecord = await context.RequestServices.GetRequiredService<IDynamicAppManifestStore>()
             .FindAsync(key, context.RequestAborted)
             .ConfigureAwait(false);
@@ -1959,7 +3300,7 @@ public sealed class DynamicAppManagerApiMiddleware
         DynamicAppOperationResult result;
         if (mod?.ExecutionMode == DynamicModExecutionMode.LocalDevelopment)
         {
-            return PublishStoppedStateIfNeeded(context, key, DynamicAppOperationResult.Success($"Local development target `{key}` detached from DynamicApp routing."));
+            return PublishStoppedStateIfNeeded(context, runtimeKey, DynamicAppOperationResult.Success($"Local development target `{runtimeKey}` detached from DynamicApp routing."));
         }
 
         if (mod?.ExecutionMode == DynamicModExecutionMode.Process)
@@ -1967,8 +3308,8 @@ public sealed class DynamicAppManagerApiMiddleware
             var runner = context.RequestServices.GetService<IDynamicAppModRunner>();
             result = runner == null
                 ? DynamicAppOperationResult.Failure("IDynamicAppModRunner is not registered.")
-                : await runner.StopAsync(key, context.RequestAborted).ConfigureAwait(false);
-            return PublishStoppedStateIfNeeded(context, key, result);
+                : await runner.StopAsync(runtimeKey, context.RequestAborted).ConfigureAwait(false);
+            return PublishStoppedStateIfNeeded(context, runtimeKey, result);
         }
 
         if (mod != null)
@@ -1976,12 +3317,12 @@ public sealed class DynamicAppManagerApiMiddleware
             var orchestrator = context.RequestServices.GetService<IDynamicAppOrchestrator>();
             result = orchestrator == null
                 ? DynamicAppOperationResult.Failure("IDynamicAppOrchestrator is not registered.")
-                : await orchestrator.StopAsync(key, context.RequestAborted).ConfigureAwait(false);
-            return PublishStoppedStateIfNeeded(context, key, result);
+                : await orchestrator.StopAsync(runtimeKey, context.RequestAborted).ConfigureAwait(false);
+            return PublishStoppedStateIfNeeded(context, runtimeKey, result);
         }
 
-        result = await StopTargetWithLegacyFallbackAsync(context, key).ConfigureAwait(false);
-        return PublishStoppedStateIfNeeded(context, key, result);
+        result = await StopTargetWithLegacyFallbackAsync(context, runtimeKey).ConfigureAwait(false);
+        return PublishStoppedStateIfNeeded(context, runtimeKey, result);
     }
 
     /// <summary>
@@ -2004,12 +3345,17 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:原始停止结果。</para>
     /// <para>en-us:The original stop result.</para>
     /// </returns>
-    private static DynamicAppOperationResult PublishStoppedStateIfNeeded(HttpContext context, DynamicModVersionKey key, DynamicAppOperationResult result)
+    private static DynamicAppOperationResult PublishStoppedStateIfNeeded(HttpContext context, DynamicAppRuntimeKey key, DynamicAppOperationResult result)
     {
         if (result.Succeeded)
         {
-            context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
+            var stateUpdate = context.RequestServices.GetRequiredService<IDynamicAppStateStore>()
                 .UpdateState(key, DynamicModLifecycleState.Stopped, DynamicModHealthStatus.Stopped, result.Message);
+            if (!stateUpdate.Succeeded)
+            {
+                return DynamicAppOperationResult.Failure(
+                    $"Stop operation for `{key}` completed, but publishing Stopped state failed: {stateUpdate.Message}");
+            }
         }
 
         return result;
@@ -2031,8 +3377,9 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:停止结果。</para>
     /// <para>en-us:The stop result.</para>
     /// </returns>
-    private async Task<DynamicAppOperationResult> StopTargetWithLegacyFallbackAsync(HttpContext context, DynamicModVersionKey key)
+    private async Task<DynamicAppOperationResult> StopTargetWithLegacyFallbackAsync(HttpContext context, DynamicAppRuntimeKey key)
     {
+        var packageKey = key.PackageKey;
         var runner = context.RequestServices.GetService<IDynamicAppModRunner>();
         var orchestrator = context.RequestServices.GetService<IDynamicAppOrchestrator>();
         var result = runner == null
@@ -2041,7 +3388,7 @@ public sealed class DynamicAppManagerApiMiddleware
 
         if (!result.Succeeded && orchestrator != null)
         {
-            result = await orchestrator.StopAsync(key, context.RequestAborted).ConfigureAwait(false);
+            result = await orchestrator.StopAsync(packageKey, context.RequestAborted).ConfigureAwait(false);
         }
 
         return result;
@@ -2078,7 +3425,10 @@ public sealed class DynamicAppManagerApiMiddleware
         IReadOnlyCollection<DynamicAppArchivedTarget> archivedTargets)
     {
         var orderedRecords = manifestRecords.OrderByDescending(item => item.SavedAtUtc).ToArray();
-        var archivedKeys = archivedTargets.Select(item => item.Key.ToString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var archivedKeys = archivedTargets
+            .Where(item => string.IsNullOrWhiteSpace(item.DeploymentId))
+            .Select(item => item.Key.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var manifestAppIds = orderedRecords
             .Where(record => record.Manifest.Mods.Any(mod => !archivedKeys.Contains(new DynamicModVersionKey(record.Manifest.Id, mod.Id, mod.Version).ToString())))
             .Select(item => item.Manifest.Id.Value);
@@ -2178,19 +3528,29 @@ public sealed class DynamicAppManagerApiMiddleware
         IReadOnlyCollection<DynamicAppRouteTarget> appTargets,
         IReadOnlyCollection<DynamicAppSelfHealingState> selfHealingStates)
     {
-        var target = appTargets.FirstOrDefault(item => item.Key == key);
+        var deploymentTargets = appTargets
+            .Where(item => item.Key == key)
+            .OrderByDescending(RuntimeTargetPriority)
+            .ThenByDescending(item => item.UpdatedAtUtc)
+            .ThenBy(item => item.DeploymentId, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var target = deploymentTargets.FirstOrDefault();
         var record = appRecords.FirstOrDefault(item => item.Manifest.Mods.Any(mod => mod.Id == key.ModId && mod.Version == key.Version));
         var mod = record?.Manifest.Mods.FirstOrDefault(item => item.Id == key.ModId && item.Version == key.Version);
-        var selfHealing = selfHealingStates.FirstOrDefault(item => item.Key == key);
+        var deploymentId = target == null || string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim();
+        var selfHealing = FindSelfHealingState(selfHealingStates, key, deploymentId);
         return new DynamicAppControlPanelModView
         {
             DynamicAppId = key.DynamicAppId,
             ModId = key.ModId,
             Version = key.Version,
+            DeploymentId = deploymentId,
             ExecutionMode = mod?.ExecutionMode.ToString() ?? string.Empty,
-            RoutePrefix = target?.RoutePrefix ?? mod?.Route.Prefix ?? string.Empty,
             HealthPath = target?.HealthPath ?? mod?.Health.Path ?? string.Empty,
             BaseAddress = target?.BaseAddress.ToString() ?? mod?.Artifact.Endpoint ?? string.Empty,
+            Arguments = mod?.Artifact.Arguments ?? string.Empty,
+            EntryFile = target?.DeploymentEntryFilePath ?? mod?.Artifact.File ?? string.Empty,
+            StartupTimeoutSeconds = target?.HealthProbeTimeoutSeconds ?? mod?.Health.StartupTimeoutSeconds ?? 60,
             State = target?.State,
             HealthStatus = target?.HealthStatus,
             InstanceId = target?.InstanceId ?? string.Empty,
@@ -2199,19 +3559,80 @@ public sealed class DynamicAppManagerApiMiddleware
             HasManifest = record != null,
             ManifestRecordId = record?.RecordId ?? string.Empty,
             ManifestSavedAtUtc = record?.SavedAtUtc,
-            SelfHealing = selfHealing == null ? null : new DynamicAppSelfHealingView
-            {
-                AttemptCount = selfHealing.AttemptCount,
-                MaxAttempts = selfHealing.MaxAttempts,
-                FirstAttemptUtc = selfHealing.FirstAttemptUtc,
-                LastAttemptUtc = selfHealing.LastAttemptUtc,
-                NextRetryAtUtc = selfHealing.NextRetryAtUtc,
-                WindowResetAtUtc = selfHealing.WindowResetAtUtc,
-                IsPaused = selfHealing.IsPaused,
-                LastFailureStage = selfHealing.LastFailureStage,
-                LastFailureMessage = selfHealing.LastFailureMessage
-            }
+            SelfHealing = BuildSelfHealingView(selfHealing),
+            Deployments = deploymentTargets
+                .Select(item =>
+                {
+                    var itemDeploymentId = string.IsNullOrWhiteSpace(item.DeploymentId) ? "default" : item.DeploymentId.Trim();
+                    return new DynamicAppControlPanelDeploymentView
+                    {
+                        DeploymentId = itemDeploymentId,
+                        BaseAddress = item.BaseAddress.ToString(),
+                        HealthPath = item.HealthPath,
+                        Arguments = mod?.Artifact.Arguments ?? string.Empty,
+                        EntryFile = item.DeploymentEntryFilePath,
+                        StartupTimeoutSeconds = item.HealthProbeTimeoutSeconds,
+                        State = item.State,
+                        HealthStatus = item.HealthStatus,
+                        InstanceId = item.InstanceId,
+                        LastStatusMessage = item.LastStatusMessage,
+                        UpdatedAtUtc = item.UpdatedAtUtc,
+                        SelfHealing = BuildSelfHealingView(FindSelfHealingState(selfHealingStates, key, itemDeploymentId))
+                    };
+                })
+                .ToArray()
         };
+    }
+
+    private static int RuntimeTargetPriority(DynamicAppRouteTarget target)
+    {
+        if (target.State == DynamicModLifecycleState.Active && target.HealthStatus == DynamicModHealthStatus.Healthy)
+        {
+            return 4;
+        }
+
+        if (target.State == DynamicModLifecycleState.Active)
+        {
+            return 3;
+        }
+
+        if (target.State is DynamicModLifecycleState.Starting or DynamicModLifecycleState.Draining)
+        {
+            return 2;
+        }
+
+        return target.State == DynamicModLifecycleState.Pending ? 1 : 0;
+    }
+
+    private static DynamicAppSelfHealingState? FindSelfHealingState(
+        IReadOnlyCollection<DynamicAppSelfHealingState> selfHealingStates,
+        DynamicModVersionKey key,
+        string deploymentId)
+    {
+        return selfHealingStates.FirstOrDefault(item =>
+            item.Key == key
+            && string.Equals(
+                string.IsNullOrWhiteSpace(item.DeploymentId) ? "default" : item.DeploymentId.Trim(),
+                deploymentId,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static DynamicAppSelfHealingView? BuildSelfHealingView(DynamicAppSelfHealingState? state)
+    {
+        return state == null
+            ? null
+            : new DynamicAppSelfHealingView
+            {
+                AttemptCount = state.AttemptCount,
+                MaxAttempts = state.MaxAttempts,
+                FirstAttemptUtc = state.FirstAttemptUtc,
+                LastAttemptUtc = state.LastAttemptUtc,
+                NextRetryAtUtc = state.NextRetryAtUtc,
+                WindowResetAtUtc = state.WindowResetAtUtc,
+                IsPaused = state.IsPaused,
+                LastFailureStage = state.LastFailureStage,
+                LastFailureMessage = state.LastFailureMessage
+            };
     }
 
     /// <summary>
@@ -2226,18 +3647,23 @@ public sealed class DynamicAppManagerApiMiddleware
     /// <para>zh-cn:目标 Mod 版本键。</para>
     /// <para>en-us:The target Mod version key.</para>
     /// </returns>
-    private static DynamicModVersionKey ParseTargetKeyRoute(string targetRoute)
+    private static DynamicAppRuntimeKey ParseRuntimeKeyRoute(string targetRoute)
     {
         var segments = targetRoute.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (segments.Length != 3)
+        if (segments.Length is not (3 or 4))
         {
-            throw new ArgumentException("Target route must use `target/{dynamicAppId}/{modId}/{version}` format.", nameof(targetRoute));
+            throw new ArgumentException("Target route must use `target/{dynamicAppId}/{modId}/{version}` or `target/{dynamicAppId}/{modId}/{version}/{deploymentId}` format.", nameof(targetRoute));
         }
 
-        return new DynamicModVersionKey(
+        var key = new DynamicModVersionKey(
             new DynamicAppId(Uri.UnescapeDataString(segments[0])),
             new DynamicModId(Uri.UnescapeDataString(segments[1])),
             new DynamicAppVersion(Uri.UnescapeDataString(segments[2])));
+        return new DynamicAppRuntimeKey(
+            key,
+            segments.Length == 4 && !string.IsNullOrWhiteSpace(segments[3])
+                ? Uri.UnescapeDataString(segments[3])
+                : "default");
     }
 
     private bool TryMatch(PathString path, out string route)
@@ -2251,7 +3677,10 @@ public sealed class DynamicAppManagerApiMiddleware
             return false;
         }
 
-        route = value.Length == prefix.Length ? string.Empty : value[prefix.Length..].Trim('/').ToLowerInvariant();
+        var rawRoute = value.Length == prefix.Length ? string.Empty : value[prefix.Length..].Trim('/');
+        route = rawRoute.StartsWith("target/", StringComparison.OrdinalIgnoreCase)
+            ? rawRoute
+            : rawRoute.ToLowerInvariant();
         return true;
     }
 
@@ -2336,6 +3765,143 @@ public sealed class DynamicAppManagerApiMiddleware
         return JsonSerializer.SerializeAsync(context.Response.Body, value, JsonOptions, context.RequestAborted);
     }
 
+    private static DynamicAppRuntimeKey ToRuntimeKey(DynamicAppRouteTarget target)
+        => new(
+            target.Key,
+            string.IsNullOrWhiteSpace(target.DeploymentId)
+                ? "default"
+                : target.DeploymentId.Trim());
+
+    private static void ApplyRuntimeTarget(DynamicModManifest mod, DynamicAppRouteTarget? target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        mod.Artifact.DeploymentId = ToRuntimeKey(target).DeploymentId;
+        mod.Artifact.DeploymentDirectory = target.DeploymentDirectory;
+        if (!string.IsNullOrWhiteSpace(target.DeploymentEntryFilePath))
+        {
+            mod.Artifact.File = target.DeploymentEntryFilePath;
+        }
+
+        mod.Artifact.Endpoint = target.BaseAddress.ToString();
+        mod.Artifact.Arguments = AppendUrlsArgument(mod.Artifact.Arguments, target.BaseAddress);
+    }
+
+    private static DynamicAppManifest CloneManifest(DynamicAppManifest source, DynamicModManifest mod)
+    {
+        return new DynamicAppManifest
+        {
+            Id = source.Id,
+            Version = source.Version,
+            Runtime = new DynamicAppRuntimeManifest
+            {
+                Profile = source.Runtime.Profile
+            },
+            Endpoints = new DynamicAppEndpointManifest
+            {
+                GatewayPort = source.Endpoints.GatewayPort,
+                ManagerPort = source.Endpoints.ManagerPort,
+                ManagerInternalOnly = source.Endpoints.ManagerInternalOnly
+            },
+            Mods = new List<DynamicModManifest> { mod }
+        };
+    }
+
+    private static DynamicModManifest CloneMod(DynamicModManifest source)
+    {
+        return new DynamicModManifest
+        {
+            Id = source.Id,
+            Version = source.Version,
+            ExecutionMode = source.ExecutionMode,
+            Artifact = new DynamicModArtifactManifest
+            {
+                File = source.Artifact.File,
+                Image = source.Artifact.Image,
+                ContainerName = source.Artifact.ContainerName,
+                Arguments = source.Artifact.Arguments,
+                Endpoint = source.Artifact.Endpoint,
+                DeploymentId = source.Artifact.DeploymentId,
+                DeploymentDirectory = source.Artifact.DeploymentDirectory
+            },
+            Health = new DynamicModHealthManifest
+            {
+                Path = source.Health.Path,
+                StartupTimeoutSeconds = source.Health.StartupTimeoutSeconds
+            },
+        };
+    }
+
+    private static Uri ResolveDeploymentEndpoint(string? configuredEndpoint, int port)
+    {
+        var value = string.IsNullOrWhiteSpace(configuredEndpoint)
+            ? $"http://127.0.0.1:{port}"
+            : configuredEndpoint.Trim();
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var endpoint)
+            || endpoint.Scheme is not ("http" or "https")
+            || endpoint.Port <= 0)
+        {
+            throw new ArgumentException("Deployment endpoint must be an absolute http or https URL with a valid port.", nameof(configuredEndpoint));
+        }
+
+        return endpoint;
+    }
+
+    private static string AppendUrlsArgument(string? arguments, Uri endpoint)
+    {
+        var suffix = $"--urls {endpoint}";
+        if (string.IsNullOrWhiteSpace(arguments))
+        {
+            return suffix;
+        }
+
+        var tokens = arguments
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+        for (var index = tokens.Count - 1; index >= 0; index--)
+        {
+            if (tokens[index].StartsWith("--urls=", StringComparison.OrdinalIgnoreCase))
+            {
+                tokens.RemoveAt(index);
+                continue;
+            }
+
+            if (tokens[index].Equals("--urls", StringComparison.OrdinalIgnoreCase))
+            {
+                tokens.RemoveAt(index);
+                if (index < tokens.Count)
+                {
+                    tokens.RemoveAt(index);
+                }
+            }
+        }
+
+        tokens.Add("--urls");
+        tokens.Add(endpoint.ToString());
+        return string.Join(' ', tokens);
+    }
+
+    private static string NormalizeDeploymentId(string? deploymentId)
+    {
+        if (string.IsNullOrWhiteSpace(deploymentId))
+        {
+            throw new ArgumentException("DeploymentId is required.", nameof(deploymentId));
+        }
+
+        var value = deploymentId.Trim();
+        if (value is "." or ".."
+            || value.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+            || value.Contains('/') || value.Contains('\\'))
+        {
+            throw new ArgumentException("DeploymentId must be one safe path segment.", nameof(deploymentId));
+        }
+
+        return value;
+    }
+
     private static Uri ResolveStartupBaseAddress(DynamicModManifest mod)
     {
         if (Uri.TryCreate(mod.Artifact.Endpoint, UriKind.Absolute, out var configured))
@@ -2406,6 +3972,26 @@ public sealed class DynamicAppManagerApiMiddleware
     private static string NormalizePrefix(string prefix)
     {
         return string.IsNullOrWhiteSpace(prefix) ? "/dynamicapp-manager" : "/" + prefix.Trim('/');
+    }
+
+    private static string NormalizeInternalRoutePrefix(string routePrefix)
+    {
+        if (string.IsNullOrWhiteSpace(routePrefix))
+        {
+            throw new ArgumentException("Route prefix cannot be empty.", nameof(routePrefix));
+        }
+
+        var normalized = routePrefix.Trim();
+        if (!normalized.StartsWith("/", StringComparison.Ordinal)
+            || normalized.Contains('?', StringComparison.Ordinal)
+            || normalized.Contains('#', StringComparison.Ordinal)
+            || normalized.Contains('\\', StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Route prefix must be an absolute path without query, fragment, or backslash.", nameof(routePrefix));
+        }
+
+        normalized = "/" + normalized.Trim('/');
+        return normalized == "/" ? normalized : normalized.TrimEnd('/');
     }
 
     private static bool FixedTimeEquals(string value, string expected)

@@ -31,8 +31,16 @@ public sealed class ReverseTunnelConfigurationStoreIntegrationTests
         Assert.Contains("id=\"configForm\"", page, StringComparison.Ordinal);
         Assert.Contains("id=\"saveDialog\"", page, StringComparison.Ordinal);
         Assert.Contains("id=\"configMessage\" class=\"message\" role=\"status\"", page, StringComparison.Ordinal);
+        Assert.Contains("id=\"agentManagementList\"", page, StringComparison.Ordinal);
+        Assert.Contains("id=\"agentRuntimeDialog\"", page, StringComparison.Ordinal);
         Assert.Contains("id=\"agentRuntimeConfig\"", page, StringComparison.Ordinal);
-        Assert.Contains("agentRuntimeFields", page, StringComparison.Ordinal);
+        Assert.Contains("data-agent-runtime", page, StringComparison.Ordinal);
+        Assert.Contains("agentRuntimeDetail\">运行配置", page, StringComparison.Ordinal);
+        Assert.Contains("agentRuntimeLoading", page, StringComparison.Ordinal);
+        Assert.Contains("function openAgentRuntimeDialog", page, StringComparison.Ordinal);
+        Assert.Contains("await loadSelectedAgentConfiguration();openAgentExportDialog(createdAgentId)", page, StringComparison.Ordinal);
+        Assert.Contains("id=\"createAgentDialog\"", page, StringComparison.Ordinal);
+        Assert.Contains("function submitCreateAgent", page, StringComparison.Ordinal);
         Assert.Contains("serverDerivedConfigHint", page, StringComparison.Ordinal);
         Assert.Contains("onclick=\"confirmSaveDialog()\"", page, StringComparison.Ordinal);
         Assert.Contains("options:configModel,changeReason:normalizedReason", page, StringComparison.Ordinal);

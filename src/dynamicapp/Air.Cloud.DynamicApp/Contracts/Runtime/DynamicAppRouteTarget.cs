@@ -15,16 +15,28 @@ public sealed class DynamicAppRouteTarget
     public DynamicModVersionKey Key { get; set; }
 
     /// <summary>
+    /// <para>zh-cn:独立部署实例标识，用于让同一包版本的多个实例分别保存状态。</para>
+    /// <para>en-us:Isolated deployment identifier used to persist separate state for multiple instances of one package version.</para>
+    /// </summary>
+    public string DeploymentId { get; set; } = "default";
+
+    /// <summary>
+    /// <para>zh-cn:独立部署目录绝对路径；为空时表示使用 Manifest 原始入口文件。</para>
+    /// <para>en-us:Absolute isolated deployment-directory path; empty means the Manifest entry file is used.</para>
+    /// </summary>
+    public string DeploymentDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:独立部署目录中的入口文件绝对路径。</para>
+    /// <para>en-us:Absolute entry-file path inside the isolated deployment directory.</para>
+    /// </summary>
+    public string DeploymentEntryFilePath { get; set; } = string.Empty;
+
+    /// <summary>
     /// <para>zh-cn:上游实例基础地址，网关会基于该地址拼接转发路径。</para>
     /// <para>en-us:Base address of the upstream instance; the gateway appends the forwarded path to it.</para>
     /// </summary>
     public Uri BaseAddress { get; set; } = new("http://127.0.0.1");
-
-    /// <summary>
-    /// <para>zh-cn:Mod 在网关中的路由前缀，必须使用绝对路径格式。</para>
-    /// <para>en-us:Mod route prefix in the gateway; it must use an absolute path format.</para>
-    /// </summary>
-    public string RoutePrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// <para>zh-cn:健康检查路径，后台健康监控会使用该路径探测目标。</para>

@@ -53,9 +53,26 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
     /// <para>en-us:A copy of the self-healing state, or null.</para>
     /// </returns>
     public DynamicAppSelfHealingState? Get(DynamicModVersionKey key)
+        => Get(DynamicAppRuntimeKey.Default(key));
+
+    /// <summary>
+    /// <para>zh-cn:按独立部署实例读取自愈状态，保证每个副本使用自己的重试窗口。</para>
+    /// <para>en-us:Reads self-healing state for one deployment instance so each replica uses its own retry window.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:自愈状态副本或 null。</para>
+    /// <para>en-us:A copy of the self-healing state or null.</para>
+    /// </returns>
+    public DynamicAppSelfHealingState? Get(DynamicAppRuntimeKey key)
     {
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             return _states.TryGetValue(key.ToString(), out var state) ? Clone(state) : null;
         }
     }
@@ -73,9 +90,11 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
         ArgumentNullException.ThrowIfNull(state);
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             var copy = Clone(state);
             copy.UpdatedAtUtc = copy.UpdatedAtUtc == default ? DateTimeOffset.UtcNow : copy.UpdatedAtUtc;
-            _states[copy.Key.ToString()] = copy;
+            _states[BuildRuntimeKey(copy).ToString()] = copy;
             SaveIfNeeded();
         }
     }
@@ -93,9 +112,26 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
     /// <para>en-us:Whether a state entry was actually removed.</para>
     /// </returns>
     public bool Remove(DynamicModVersionKey key)
+        => Remove(DynamicAppRuntimeKey.Default(key));
+
+    /// <summary>
+    /// <para>zh-cn:删除指定部署实例的自愈状态，并按配置持久化结果。</para>
+    /// <para>en-us:Removes self-healing state for one deployment instance and persists the result according to options.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:是否实际删除了状态。</para>
+    /// <para>en-us:Whether a state entry was actually removed.</para>
+    /// </returns>
+    public bool Remove(DynamicAppRuntimeKey key)
     {
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             var removed = _states.Remove(key.ToString());
             if (removed)
             {
@@ -118,18 +154,34 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
     {
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             return _states.Values.Select(Clone).ToList();
         }
     }
 
     private void Load()
     {
+        _states.Clear();
         if (!File.Exists(_filePath))
         {
             return;
         }
 
-        var snapshot = JsonSerializer.Deserialize<StateSnapshot>(File.ReadAllText(_filePath), JsonOptions);
+        StateSnapshot? snapshot;
+        try
+        {
+            snapshot = JsonSerializer.Deserialize<StateSnapshot>(File.ReadAllText(_filePath), JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+        catch (IOException)
+        {
+            return;
+        }
+
         if (snapshot?.States == null)
         {
             return;
@@ -137,7 +189,7 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
 
         foreach (var state in snapshot.States)
         {
-            _states[state.Key.ToString()] = Clone(state);
+            _states[BuildRuntimeKey(state).ToString()] = Clone(state);
         }
     }
 
@@ -158,12 +210,13 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
         {
             States = _states.Values.Select(Clone).ToList()
         };
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(snapshot, JsonOptions));
+        DynamicAppAtomicJsonFile.Write(_filePath, JsonSerializer.Serialize(snapshot, JsonOptions));
     }
 
     private static DynamicAppSelfHealingState Clone(DynamicAppSelfHealingState state) => new()
     {
         Key = state.Key,
+        DeploymentId = string.IsNullOrWhiteSpace(state.DeploymentId) ? "default" : state.DeploymentId.Trim(),
         AttemptCount = state.AttemptCount,
         MaxAttempts = state.MaxAttempts,
         FirstAttemptUtc = state.FirstAttemptUtc,
@@ -180,6 +233,9 @@ public sealed class FileDynamicAppSelfHealingStateStore : IDynamicAppSelfHealing
     {
         public List<DynamicAppSelfHealingState> States { get; set; } = new();
     }
+
+    private static DynamicAppRuntimeKey BuildRuntimeKey(DynamicAppSelfHealingState state)
+        => new(state.Key, string.IsNullOrWhiteSpace(state.DeploymentId) ? "default" : state.DeploymentId.Trim());
 
     private static string ResolveFilePath(string? filePath, string defaultFileName)
     {

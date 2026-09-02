@@ -22,6 +22,8 @@ using Air.Cloud.Modules.Consul.Service;
 using Air.Cloud.Modules.Consul.Standard;
 using Air.Cloud.Modules.Consul.Util;
 
+using Consul;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,21 +43,52 @@ namespace Air.Cloud.Modules.Consul.Extensions
     public static class ConsulModuleExtensions
     {
         /// <summary>
-        /// 从远程加载配置文件并注册当前服务到Consul
+        /// <para>zh-cn:从 Consul 配置中心加载配置，并按配置完成当前 Web 服务的 Consul 注册流程。</para>
+        /// <para>en-us:Loads configuration from the Consul configuration center and completes the current Web service Consul registration flow according to options.</para>
         /// </summary>
         /// <remarks>
-        /// 是否注册到Consul 依赖于appsettings.json 里面的EnableConsul
+        /// <para>zh-cn:该入口保留为兼容的统一启动入口；内部会依次调用配置加载、服务信息注册和健康检查注册三个独立方法。</para>
+        /// <para>en-us:This entry point remains the unified startup entry; internally it calls the separate configuration loading, service information registration, and health-check registration methods in order.</para>
         /// </remarks>
-        /// <param name="builder">WebApplication构建器</param>
+        /// <param name="builder">
+        /// <para>zh-cn:WebApplication 构建器。</para>
+        /// <para>en-us:The WebApplication builder.</para>
+        /// </param>
         /// <param name="action">
         /// <para>zh-cn:自定义构建行为</para>
         /// <para>en-us:Configure action</para>
         /// </param>
-        /// <returns></returns>
+        /// <returns>
+        /// <para>zh-cn:构建完成的 WebApplication。</para>
+        /// <para>en-us:The built WebApplication.</para>
+        /// </returns>
         public static WebApplication WebInjectInConsul(this WebApplicationBuilder builder, Action<ConsulServiceOptions> action = null)
         {
             return WebInjectInConsul<DefaultConsulServiceOptionsConfigureDependency>(builder,action);
         }
+
+        /// <summary>
+        /// <para>zh-cn:使用默认 Consul 配置规整器从 Consul 配置中心加载服务配置，并完成 Air.Cloud 注入初始化。</para>
+        /// <para>en-us:Loads service configuration from the Consul configuration center with the default Consul options normalizer and initializes Air.Cloud injection.</para>
+        /// </summary>
+        /// <param name="builder">
+        /// <para>zh-cn:WebApplication 构建器。</para>
+        /// <para>en-us:The WebApplication builder.</para>
+        /// </param>
+        /// <param name="action">
+        /// <para>zh-cn:读取配置后执行的自定义配置委托。</para>
+        /// <para>en-us:Custom configuration delegate executed after base options are read.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:规整后的 Consul 服务配置。</para>
+        /// <para>en-us:The normalized Consul service options.</para>
+        /// </returns>
+        public static ConsulServiceOptions LoadConfigurationFromConsul(this WebApplicationBuilder builder,
+            Action<ConsulServiceOptions> action = null)
+        {
+            return builder.LoadConfigurationFromConsul<DefaultConsulServiceOptionsConfigureDependency>(action);
+        }
+
         /// <summary>
         /// <para>zh-cn:从远程加载配置文件并注册当前服务到Consul</para>
         /// <para>en-us:Load configuration from remote and register the current service to Consul</para>
@@ -69,32 +102,61 @@ namespace Air.Cloud.Modules.Consul.Extensions
         ///  <para>zh-cn:Consul配置构建器</para>
         ///   <para>en-us: Consul options configure</para>
         /// </typeparam>
-        /// <returns></returns>
+        /// <returns>
+        /// <para>zh-cn:构建完成的 WebApplication。</para>
+        /// <para>en-us:The built WebApplication.</para>
+        /// </returns>
         public static WebApplication WebInjectInConsul<TConsulServiceOptionsConfigureDependency>(this WebApplicationBuilder builder,
             Action<ConsulServiceOptions> action = null)
             where TConsulServiceOptionsConfigureDependency:class,IConsulServiceOptionsConfigureStandard,new()
         {
-            InitAppInject();
-            ConsulServiceOptions consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
-            //加载远程配置文件
-            var Config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
-            PrintConfigurationLoadSummary(consulServiceOptions, Config);
-            if (Config.Item2 != null)
-            {
-                AppConfigurationLoader.SetPublicConfiguration(Config.Item2);
-                builder.Configuration.AddConfiguration(Config.Item2);
-            }
-            AppConfigurationLoader.SetExternalConfiguration(Config.Item1);
-            builder.Configuration.AddConfiguration(Config.Item1);
-
-            builder = AppRealization.Injection.Inject(builder);
+            var consulServiceOptions = builder.LoadConfigurationFromConsul<TConsulServiceOptionsConfigureDependency>(action);
             builder.Services.Configure<AppLogFilterOptions>(options => options.IgnorePaths.Add(consulServiceOptions.HealthCheckRoute));
-            //注册Consul服务
-            builder.Services.AddConulService();
+            builder.Services.RegisterConsulHealthCheckServices(consulServiceOptions);
             var app = builder.Build();
-            //添加Consul支持
-            app.UseConsul(consulServiceOptions);
+            app.RegisterConsulServiceInformation(consulServiceOptions);
+            app.RegisterConsulHealthCheck(consulServiceOptions);
             return app;
+        }
+
+        /// <summary>
+        /// <para>zh-cn:从 Consul 配置中心加载服务配置，并完成 Air.Cloud 注入初始化；当 EnableConfigurationCenter 为 false 时只保留本地配置。</para>
+        /// <para>en-us:Loads service configuration from the Consul configuration center and initializes Air.Cloud injection; when EnableConfigurationCenter is false, only local configuration is kept.</para>
+        /// </summary>
+        /// <param name="builder">
+        /// <para>zh-cn:WebApplication 构建器。</para>
+        /// <para>en-us:The WebApplication builder.</para>
+        /// </param>
+        /// <param name="action">
+        /// <para>zh-cn:读取配置后执行的自定义配置委托。</para>
+        /// <para>en-us:Custom configuration delegate executed after base options are read.</para>
+        /// </param>
+        /// <typeparam name="TConsulServiceOptionsConfigureDependency">
+        /// <para>zh-cn:Consul 配置规整器类型。</para>
+        /// <para>en-us:The Consul options normalizer type.</para>
+        /// </typeparam>
+        /// <returns>
+        /// <para>zh-cn:规整后的 Consul 服务配置。</para>
+        /// <para>en-us:The normalized Consul service options.</para>
+        /// </returns>
+        public static ConsulServiceOptions LoadConfigurationFromConsul<TConsulServiceOptionsConfigureDependency>(this WebApplicationBuilder builder,
+            Action<ConsulServiceOptions> action = null)
+            where TConsulServiceOptionsConfigureDependency : class, IConsulServiceOptionsConfigureStandard, new()
+        {
+            InitAppInject();
+            var consulServiceOptions = GetConsulService<TConsulServiceOptionsConfigureDependency>(action);
+            var config = ConfigurationLoader.LoadRemoteConfiguration(consulServiceOptions);
+            PrintConfigurationLoadSummary(consulServiceOptions, config);
+            if (config.Item2 != null)
+            {
+                AppConfigurationLoader.SetPublicConfiguration(config.Item2);
+                builder.Configuration.AddConfiguration(config.Item2);
+            }
+
+            AppConfigurationLoader.SetExternalConfiguration(config.Item1);
+            builder.Configuration.AddConfiguration(config.Item1);
+            AppRealization.Injection.Inject(builder);
+            return consulServiceOptions;
         }
 
         /// <summary>
@@ -140,27 +202,45 @@ namespace Air.Cloud.Modules.Consul.Extensions
             AppConst.ApplicationInstanceName = $"{AppConst.ApplicationName}_{AppRealization.PID.Get()}";
         }
         /// <summary>
-        /// 从远程加载配置文件
+        /// <para>zh-cn:从 Consul 配置中心加载 HostBuilder 配置，并执行 Air.Cloud 主机注入流程。</para>
+        /// <para>en-us:Loads HostBuilder configuration from the Consul configuration center and runs the Air.Cloud host injection flow.</para>
         /// </summary>
-        /// <param name="builder">WebApplication构建器</param>
+        /// <param name="builder">
+        /// <para>zh-cn:Host 构建器。</para>
+        /// <para>en-us:The host builder.</para>
+        /// </param>
         /// <param name="action">
         /// <para>zh-cn:自定义构建行为</para>
         /// <para>en-us:Configure action</para>
         /// </param>
-        /// <returns></returns>
+        /// <returns>
+        /// <para>zh-cn:注入后的 Host 构建器。</para>
+        /// <para>en-us:The injected host builder.</para>
+        /// </returns>
         public static IHostBuilder HostInjectInConsul(this IHostBuilder builder, Action<ConsulServiceOptions> action = null)
         {
             return HostInjectInConsul<DefaultConsulServiceOptionsConfigureDependency>(builder, action);
         }
         /// <summary>
-        /// 从远程加载配置文件
+        /// <para>zh-cn:使用指定配置规整器从 Consul 配置中心加载 HostBuilder 配置，并执行 Air.Cloud 主机注入流程。</para>
+        /// <para>en-us:Loads HostBuilder configuration from the Consul configuration center with the specified options normalizer and runs the Air.Cloud host injection flow.</para>
         /// </summary>
-        /// <param name="builder">WebApplication构建器</param>
+        /// <param name="builder">
+        /// <para>zh-cn:Host 构建器。</para>
+        /// <para>en-us:The host builder.</para>
+        /// </param>
         /// <param name="action">
         /// <para>zh-cn:自定义构建行为</para>
         /// <para>en-us:Configure action</para>
         /// </param>
-        /// <returns></returns>
+        /// <typeparam name="TConsulServiceOptionsConfigureDependency">
+        /// <para>zh-cn:Consul 配置规整器类型。</para>
+        /// <para>en-us:The Consul options normalizer type.</para>
+        /// </typeparam>
+        /// <returns>
+        /// <para>zh-cn:注入后的 Host 构建器。</para>
+        /// <para>en-us:The injected host builder.</para>
+        /// </returns>
         public static IHostBuilder HostInjectInConsul<TConsulServiceOptionsConfigureDependency>(this IHostBuilder builder, Action<ConsulServiceOptions> action = null)
              where TConsulServiceOptionsConfigureDependency : class, IConsulServiceOptionsConfigureStandard, new()
         {
@@ -188,7 +268,8 @@ namespace Air.Cloud.Modules.Consul.Extensions
 
         private static void PrintConfigurationLoadSummary(ConsulServiceOptions serviceOptions, (IConfiguration, IConfiguration) configurations)
         {
-            var serviceConfigurationLocation = $"{serviceOptions.ServiceName.Replace(".", "/")}/{AppConst.SystemEnvironmentConfigFileFullName}";
+            if (!serviceOptions.EnableConfigurationCenter) return;
+            var serviceConfigurationLocation = $"{serviceOptions.ConfigurationServiceName.Replace(".", "/")}/{AppConst.SystemEnvironmentConfigFileFullName}";
             ConfigurationLoadSummary.Print("Consul", serviceOptions.ConsulAddress, serviceConfigurationLocation, configurations.Item1);
 
             if (configurations.Item2 != null)
@@ -212,24 +293,25 @@ namespace Air.Cloud.Modules.Consul.Extensions
         /// IIS模式目前只需要一个注册中心地址即可,当前服务地址信息为即时发现
         /// Docker模式目前需要配置注册中心地址以及当前服务的地址信息
         /// </remarks>
-        /// <returns></returns>
-        private static IApplicationBuilder UseConsul(
+        /// <returns>
+        /// <para>zh-cn:原应用管道构建器。</para>
+        /// <para>en-us:The original application pipeline builder.</para>
+        /// </returns>
+        public static IApplicationBuilder RegisterConsulServiceInformation(
                     this IApplicationBuilder app,
                     ConsulServiceOptions serviceOptions)
         {
-            //开发环境剔除此参数
-            if (AppEnvironment.IsDevelopment) return app;
-            app.ApplicationServices.GetService<IAppLogFilterPlugin>()?.AddIgnorePath(serviceOptions.HealthCheckRoute);
+            if (!ShouldRegisterServiceToConsul(serviceOptions)) return app;
             var ConsulHelpers = new ConsulOperatorHelper(serviceOptions.ConsulAddress);
             var result = ConsulHelpers.InitConsulRegistration(serviceOptions);
             if (!result.Item1) return app;
-            #region 注册服务
             ConsulServerCenterDependency dependency = new ConsulServerCenterDependency();
             var r = dependency.RegisterAsync(new ConsulServerCenterServiceRegisterOptions()
             {
                 ServiceAddress = serviceOptions.ServiceAddress,
-                ServiceName = serviceOptions.ServiceName,
+                ServiceName = serviceOptions.RegistryServiceName,
                 ServiceKey = ConsulServiceOptions.ServiceId,
+                EnableHealthCheck = false,
                 HealthCheckTimeStep = new TimeSpan(0, 0, serviceOptions.HealthCheckTimeStep),
                 HealthCheckRoute = serviceOptions.HealthCheckRoute,
                 Timeout = new TimeSpan(0, 0, serviceOptions.ConnectTimeout),
@@ -243,30 +325,96 @@ namespace Air.Cloud.Modules.Consul.Extensions
                 ConsulHelpers.GetConsulClient().Agent.ServiceDeregister(ConsulServiceOptions.ServiceId).Wait();
             });
 
-            lifetime.ApplicationStarted.Register(() =>
-            {
-                //开始进行初次健康检查
-                using (HttpClient client = new HttpClient())
-                {
-                    Uri uris = new Uri(new Uri(serviceOptions.ServiceAddress), serviceOptions.HealthCheckRoute);
-                    _ = client.GetAsync(uris).Result;
-                }
-            });
-            #endregion
-            app.UseHealthChecks(serviceOptions.HealthCheckRoute);
             return app;
         }
 
         /// <summary>
-        /// <para>zh-cn:注册Consul服务</para>
-        /// <para>en-us:Add conul service</para>
+        /// <para>zh-cn:注册本地健康检查端点，并在允许注册中心注册时把该健康检查关联到 Consul 服务实例。</para>
+        /// <para>en-us:Registers the local health-check endpoint and, when registry registration is allowed, associates the health check with the Consul service instance.</para>
         /// </summary>
-        /// <param name="services"></param>
-        private static void AddConulService(this IServiceCollection services)
+        /// <param name="app">
+        /// <para>zh-cn:应用管道构建器。</para>
+        /// <para>en-us:The application pipeline builder.</para>
+        /// </param>
+        /// <param name="serviceOptions">
+        /// <para>zh-cn:Consul 服务配置。</para>
+        /// <para>en-us:The Consul service options.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:原应用管道构建器。</para>
+        /// <para>en-us:The original application pipeline builder.</para>
+        /// </returns>
+        public static IApplicationBuilder RegisterConsulHealthCheck(
+                    this IApplicationBuilder app,
+                    ConsulServiceOptions serviceOptions)
+        {
+            if (AppEnvironment.IsDevelopment || !serviceOptions.EnableHealthCheck) return app;
+            app.ApplicationServices.GetService<IAppLogFilterPlugin>()?.AddIgnorePath(serviceOptions.HealthCheckRoute);
+            app.UseHealthChecks(serviceOptions.HealthCheckRoute);
+            if (!ShouldRegisterServiceToConsul(serviceOptions)) return app;
+
+            var uri = new Uri(serviceOptions.ServiceAddress);
+            if (!serviceOptions.HealthCheckRoute.StartsWith("/"))
+            {
+                serviceOptions.HealthCheckRoute = $"/{serviceOptions.HealthCheckRoute}";
+            }
+
+            var helper = new ConsulOperatorHelper(serviceOptions.ConsulAddress);
+            helper.GetConsulClient().Agent.CheckRegister(new AgentCheckRegistration
+            {
+                ID = $"{ConsulServiceOptions.ServiceId}:health",
+                Name = $"Service '{serviceOptions.RegistryServiceName}' health check",
+                ServiceID = ConsulServiceOptions.ServiceId,
+                HTTP = $"{uri.Scheme}://{uri.Host}:{uri.Port}{serviceOptions.HealthCheckRoute}",
+                Interval = new TimeSpan(0, 0, serviceOptions.HealthCheckTimeStep),
+                Timeout = new TimeSpan(0, 0, serviceOptions.ConnectTimeout),
+                DeregisterCriticalServiceAfter = new TimeSpan(0, 0, serviceOptions.DeregisterCriticalServiceAfter)
+            }).Wait();
+
+            return app;
+        }
+
+        /// <summary>
+        /// <para>zh-cn:按健康检查配置注册 ASP.NET Core 健康检查服务；开发环境或关闭健康检查时不会添加额外服务。</para>
+        /// <para>en-us:Registers ASP.NET Core health-check services according to options; development mode or disabled health checks add no extra services.</para>
+        /// </summary>
+        /// <param name="services">
+        /// <para>zh-cn:服务集合。</para>
+        /// <para>en-us:The service collection.</para>
+        /// </param>
+        /// <param name="serviceOptions">
+        /// <para>zh-cn:Consul 服务配置。</para>
+        /// <para>en-us:The Consul service options.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:原服务集合。</para>
+        /// <para>en-us:The original service collection.</para>
+        /// </returns>
+        public static IServiceCollection RegisterConsulHealthCheckServices(this IServiceCollection services, ConsulServiceOptions serviceOptions)
         {
             //开发环境剔除此参数
-            if (AppEnvironment.IsDevelopment) return;
+            if (AppEnvironment.IsDevelopment || !serviceOptions.EnableHealthCheck) return services;
             services.AddHealthChecks();
+            return services;
+        }
+
+        /// <summary>
+        /// <para>zh-cn:判断当前进程是否应该向 Consul 注册服务信息；开发环境、关闭服务注册或 DynamicApp 托管进程都会返回 false。</para>
+        /// <para>en-us:Determines whether the current process should register service information into Consul; development mode, disabled registration, and DynamicApp-managed processes return false.</para>
+        /// </summary>
+        /// <param name="serviceOptions">
+        /// <para>zh-cn:Consul 服务配置。</para>
+        /// <para>en-us:The Consul service options.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:true 表示允许注册到 Consul；false 表示跳过注册。</para>
+        /// <para>en-us:true means registration into Consul is allowed; false means registration is skipped.</para>
+        /// </returns>
+        public static bool ShouldRegisterServiceToConsul(ConsulServiceOptions serviceOptions)
+        {
+            return !AppEnvironment.IsDevelopment
+                && serviceOptions.EnableServiceRegistration
+                && !serviceOptions.DynamicAppManaged;
         }
     }
 }

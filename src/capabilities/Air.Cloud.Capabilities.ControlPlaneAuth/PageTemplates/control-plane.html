@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>__SHELL_TITLE_HTML__</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#fff;--line:#d9e2ef;--text:#172033;--muted:#6b778c;--primary:#0f766e;--danger:#b42318;--code:#101828}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;font-size:14px}[hidden]{display:none!important}
+    button,select,input{font:inherit}button{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:6px;padding:8px 12px;cursor:pointer}button.primary{border-color:var(--primary);background:var(--primary);color:#fff}button.danger{border-color:#f4c7c3;color:var(--danger)}input,select{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--text)}
+    .muted{color:var(--muted)}pre{white-space:pre-wrap;word-break:break-word;background:var(--code);color:#e5e7eb;border-radius:6px;padding:12px;overflow:auto}.shell{min-height:100vh;display:grid;grid-template-rows:56px minmax(0,1fr)}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}.brand{display:flex;gap:10px;align-items:center;min-width:0}.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;flex:0 0 auto}.brand-title{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}.user-chip{display:inline-flex;align-items:center;gap:6px;max-width:240px;padding:6px 10px;border:1px solid #e5edf6;background:#f8fafc;border-radius:999px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-chip svg{width:16px;height:16px;flex:0 0 auto;color:var(--primary)}.language-switch{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 8px;border:1px solid var(--line);background:#fff;border-radius:999px;color:var(--muted)}.language-switch select{height:30px;border:0;padding:0 24px 0 0;background:transparent;color:var(--text);outline:0;cursor:pointer}.language-icon{min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#e6f4f1;color:var(--primary);display:grid;place-items:center;font-size:12px;font-weight:700}.icon-button{width:34px;height:34px;display:inline-grid;place-items:center;border-radius:999px;padding:0}.icon-button svg{width:17px;height:17px;display:block}.icon-button.danger:hover{background:#fff1f0;border-color:#f0a8a0}
+    .layout{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:0}.sidebar{background:#fff;border-right:1px solid var(--line);padding:14px}.nav-title{color:var(--muted);font-size:12px;margin:12px 8px 6px}.nav-button{width:100%;display:flex;align-items:center;border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:6px}.nav-button.active{background:#e6f4f1;color:var(--primary);font-weight:650}.content{min-width:0;padding:16px;overflow:auto}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px}.panel h2{margin:0 0 12px;font-size:17px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{min-width:0}.field input{width:100%}
+    table{width:100%;border-collapse:collapse;background:#fff}th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:600}.row-actions{display:flex;gap:8px;flex-wrap:wrap}.frame-host{height:calc(100vh - 88px);padding:0;overflow:hidden}.frame-host iframe{width:100%;height:100%;border:0;background:#fff}.message{min-height:22px;margin-top:10px}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid var(--line)}.grid{grid-template-columns:1fr}.frame-host{height:calc(100vh - 220px)}}
+  </style>
+</head>
+<body>
+  <section class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <div class="brand-title">__SHELL_TITLE_HTML__</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="language-switch" aria-label="Language">
+          <span id="languageIcon" class="language-icon" aria-hidden="true">文</span>
+          <select id="language"><option value="zh-CN">中文</option><option value="en-US">English</option></select>
+        </label>
+        <span id="currentUser" class="user-chip"></span>
+        <button id="logoutButton" class="icon-button danger" onclick="logout()" title="退出" aria-label="退出">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M10 3a1 1 0 0 1 0 2H6v14h4a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5Zm7.7 5.3 3 3a1 1 0 0 1 0 1.4l-3 3a1 1 0 0 1-1.4-1.4l1.29-1.3H10a1 1 0 1 1 0-2h7.59l-1.3-1.3a1 1 0 0 1 1.42-1.4Z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="nav-title" data-i18n="controlPlane">控制面</div>
+        <button id="overviewMenu" class="nav-button active" data-menu-key="overview" data-i18n="overview" onclick="openMenu('overview')">总览</button>
+        <button id="ticketsMenu" class="nav-button" data-menu-key="tickets" data-i18n="serviceTickets" onclick="openMenu('tickets')">服务票据</button>
+        <div id="frameMenuTitle" class="nav-title" data-i18n="applications">应用</div>
+        <div id="frameMenus"></div>
+      </aside>
+      <main class="content">
+        <section id="overviewPanel" class="panel">
+          <h2 data-i18n="overviewTitle">控制面总览</h2>
+          <div id="overview"></div>
+        </section>
+        <section id="ticketsPanel" class="panel" hidden>
+          <h2 data-i18n="ticketsTitle">服务票据管理</h2>
+          <div class="toolbar"><button class="primary" data-i18n="createTicket" onclick="createTicket()">新增票据</button><button data-i18n="refreshList" onclick="loadTickets()">刷新清单</button></div>
+          <div class="grid">
+            <div class="field"><label data-i18n="type">类型</label><input id="ticketType" value="host-manager"></div>
+            <div class="field"><label data-i18n="name">名称</label><input id="ticketName" value="default"></div>
+            <div class="field"><label data-i18n="expiresAt">过期时间 UTC，可空</label><input id="ticketExpiresAt" placeholder="2026-12-31T00:00:00Z"></div>
+          </div>
+          <div id="ticketPlainText" class="message muted"></div>
+          <div id="tickets"></div>
+        </section>
+        <section id="framePanel" class="panel frame-host" hidden>
+          <iframe id="hostFrame" title="Host management panel" referrerpolicy="same-origin"></iframe>
+        </section>
+      </main>
+    </div>
+  </section>
+  <script>
+    const apiBasePath = __API_BASE_PATH_JS__;
+    const authPath = __AUTH_PATH_JS__;
+    const planePath = __PLANE_PATH_JS__;
+    const frames = __FRAMES_JS__;
+    const defaultMenuKey = __DEFAULT_MENU_KEY_JS__;
+    const showServiceTickets = __SHOW_SERVICE_TICKETS_JS__;
+    const sessionQueryName = __SESSION_QUERY_NAME_JS__;
+    const productName = __PRODUCT_NAME_JS__;
+    const languageInput = document.getElementById('language');
+    const i18n = {
+      'zh-CN': {
+        languageIcon:'文', currentUser:'你好，{0}', logout:'退出', controlPlane:'控制面', overview:'总览', serviceTickets:'服务票据', applications:'应用',
+        overviewTitle:'控制面总览', ticketsTitle:'服务票据管理', createTicket:'新增票据', refreshList:'刷新清单', type:'类型', name:'名称', expiresAt:'过期时间 UTC，可空',
+        loginUser:'登录用户', sessionExpires:'会话过期', hostedApp:'承载应用', enabled:'启用', expiresAtShort:'过期时间', actions:'操作',
+        rotate:'轮换', disable:'禁用', enable:'启用', createFailed:'创建失败。', plainTicketOnce:'明文票据仅显示一次：', newPlainTicketOnce:'新明文票据仅显示一次：'
+      },
+      'en-US': {
+        languageIcon:'EN', currentUser:'Hi, {0}', logout:'Logout', controlPlane:'Control Plane', overview:'Overview', serviceTickets:'Service Tickets', applications:'Applications',
+        overviewTitle:'Control Plane Overview', ticketsTitle:'Service Ticket Management', createTicket:'Create Ticket', refreshList:'Refresh List', type:'Type', name:'Name', expiresAt:'Expires At UTC, optional',
+        loginUser:'Login User', sessionExpires:'Session Expires', hostedApp:'Hosted Application', enabled:'Enabled', expiresAtShort:'Expires At', actions:'Actions',
+        rotate:'Rotate', disable:'Disable', enable:'Enable', createFailed:'Create failed.', plainTicketOnce:'Plain text ticket is shown once: ', newPlainTicketOnce:'New plain text ticket is shown once: '
+      }
+    };
+    let sessionTicket = localStorage.getItem('air.controlPlane.ticket') || '';
+    let meCache = null;
+    let activeMenuKey = '';
+    languageInput.value = localStorage.getItem('air.controlPlane.language') || 'zh-CN';
+    languageInput.addEventListener('change', () => {
+      localStorage.setItem('air.controlPlane.language', languageInput.value);
+      applyLanguage();
+      renderOverview();
+      renderCurrentUser();
+      if(activeMenuKey === 'tickets') loadTickets();
+      postToFrame({ type: 'air-control-plane:set-language', language: languageInput.value });
+    });
+    function currentLanguage(){return i18n[languageInput.value] ? languageInput.value : 'zh-CN';}
+    function text(key){return i18n[currentLanguage()][key] || i18n['zh-CN'][key] || key;}
+    function format(template, value){return String(template).replace('{0}', value ?? '');}
+    function applyLanguage(){
+      document.documentElement.lang = currentLanguage();
+      document.querySelectorAll('[data-i18n]').forEach(node => node.textContent = text(node.dataset.i18n));
+      document.getElementById('languageIcon').textContent = text('languageIcon');
+      const logoutButton = document.getElementById('logoutButton');
+      logoutButton.title = text('logout');
+      logoutButton.setAttribute('aria-label', text('logout'));
+    }
+    function renderCurrentUser(){
+      document.getElementById('currentUser').innerHTML = meCache ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg><span>' + escapeHtml(format(text('currentUser'), meCache.userName)) + '</span>' : '';
+    }
+    function show(id, visible){document.getElementById(id).hidden = !visible;}
+    function headers(contentType){const result={}; if(sessionTicket) result['X-Air-ControlPlane-Ticket']=sessionTicket; if(contentType) result['Content-Type']=contentType; return result;}
+    function normalizeReturnUrl(value){if(!value||typeof value!=='string') return ''; if(!value.startsWith('/')||value.startsWith('//')||value.includes('\\')) return ''; return value;}
+    function frameUrl(value, embedded){
+      const url = normalizeReturnUrl(value);
+      if(!url) return '';
+      const params = [];
+      if(embedded) params.push('embedded=1', 'hideHeader=1');
+      if(sessionTicket && sessionQueryName) params.push(encodeURIComponent(sessionQueryName) + '=' + encodeURIComponent(sessionTicket));
+      if(params.length === 0) return url;
+      return url + (url.includes('?') ? '&' : '?') + params.join('&');
+    }
+    async function refresh(){
+      const me = await fetch(apiBasePath + '/api/me');
+      if(!me.ok){window.location.href = authPath + '?returnUrl=' + encodeURIComponent(planePath);return;}
+      meCache = await me.json();
+      sessionTicket = meCache.sessionTicket || sessionTicket;
+      if(sessionTicket) localStorage.setItem('air.controlPlane.ticket', sessionTicket);
+      renderShell();
+    }
+    function renderShell(){
+      applyLanguage();
+      renderCurrentUser();
+      document.getElementById('ticketsMenu').hidden = !showServiceTickets;
+      renderFrameMenus();
+      renderOverview();
+      if(defaultMenuKey === 'overview'){openMenu('overview');return;}
+      if(defaultMenuKey === 'tickets' && showServiceTickets){openMenu('tickets');return;}
+      const configuredFrame = findFrame(defaultMenuKey);
+      if(configuredFrame){openMenu(configuredFrame.key || configuredFrame.Key);return;}
+      const firstFrame = frames.find(item => normalizeReturnUrl(item.url || item.Url));
+      openMenu(firstFrame ? (firstFrame.key || firstFrame.Key) : 'overview');
+    }
+    function renderOverview(){
+      document.getElementById('overview').innerHTML = '<div class="grid">' +
+        '<div class="panel"><h2>' + escapeHtml(text('loginUser')) + '</h2><div>' + escapeHtml(meCache && meCache.userName || '-') + '</div></div>' +
+        '<div class="panel"><h2>' + escapeHtml(text('sessionExpires')) + '</h2><div>' + escapeHtml(meCache && meCache.expiresAtUtc || '-') + '</div></div>' +
+        '<div class="panel"><h2>' + escapeHtml(text('hostedApp')) + '</h2><div>' + escapeHtml(productName) + '</div></div>' +
+        '</div>';
+    }
+    function renderFrameMenus(){
+      const node = document.getElementById('frameMenus');
+      node.innerHTML = '';
+      frames.filter(item => normalizeReturnUrl(item.url || item.Url)).forEach(item => {
+        const key = item.key || item.Key;
+        const title = item.title || item.Title || key;
+        const button = document.createElement('button');
+        button.className = 'nav-button';
+        button.dataset.menuKey = key;
+        button.textContent = title;
+        button.onclick = () => openMenu(key);
+        node.appendChild(button);
+      });
+      document.getElementById('frameMenuTitle').hidden = node.children.length === 0;
+    }
+    function findFrame(key){return frames.find(item => (item.key || item.Key) === key) || null;}
+    function openMenu(key){
+      activeMenuKey = key;
+      document.querySelectorAll('.nav-button').forEach(item => item.classList.toggle('active', item.dataset.menuKey === key));
+      show('overviewPanel', key === 'overview');
+      show('ticketsPanel', key === 'tickets');
+      const frame = findFrame(key);
+      show('framePanel', !!frame);
+      if(frame){
+        const hostFrame = document.getElementById('hostFrame');
+        hostFrame.onload = () => postToFrame({ type: 'air-control-plane:set-language', language: languageInput.value });
+        hostFrame.src = frameUrl(frame.url || frame.Url, frame.embedded ?? frame.Embedded ?? true);
+      }
+      if(key === 'tickets') loadTickets();
+    }
+    async function loadTickets(){
+      if(!showServiceTickets) return;
+      const response = await fetch(apiBasePath + '/api/service-tickets',{headers:headers()});
+      if(response.status === 401){window.location.href = authPath + '?returnUrl=' + encodeURIComponent(planePath);return;}
+      const data = await response.json();
+      const rows = data.map((item, index) => '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(item.type) + '</td><td>' + escapeHtml(item.name) + '</td><td>' + escapeHtml(String(item.enabled)) + '</td><td>' + escapeHtml(item.expiresAtUtc || '-') + '</td><td class="row-actions"><button type="button" data-ticket-action="rotate" data-ticket-id="' + escapeHtml(item.id) + '">' + escapeHtml(text('rotate')) + '</button><button type="button" data-ticket-action="enabled" data-ticket-enabled="' + (!item.enabled) + '" data-ticket-id="' + escapeHtml(item.id) + '">' + escapeHtml(item.enabled ? text('disable') : text('enable')) + '</button></td></tr>').join('');
+      document.getElementById('tickets').innerHTML = '<table><thead><tr><th>#</th><th>' + escapeHtml(text('type')) + '</th><th>' + escapeHtml(text('name')) + '</th><th>' + escapeHtml(text('enabled')) + '</th><th>' + escapeHtml(text('expiresAtShort')) + '</th><th>' + escapeHtml(text('actions')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+    async function createTicket(){
+      const expiresAt = document.getElementById('ticketExpiresAt').value.trim();
+      const response = await fetch(apiBasePath + '/api/service-tickets',{method:'POST',headers:headers('application/json'),body:JSON.stringify({
+        type:document.getElementById('ticketType').value,
+        name:document.getElementById('ticketName').value,
+        expiresAtUtc: expiresAt || null
+      })});
+      if(!response.ok){document.getElementById('ticketPlainText').textContent=text('createFailed');return;}
+      const data = await response.json();
+      document.getElementById('ticketPlainText').textContent=text('plainTicketOnce') + data.plainTextTicket;
+      await loadTickets();
+    }
+    async function rotateTicket(id){
+      const response = await fetch(apiBasePath + '/api/service-tickets/' + encodeURIComponent(id) + '/rotate',{method:'POST',headers:headers()});
+      if(response.ok){const data = await response.json();document.getElementById('ticketPlainText').textContent=text('newPlainTicketOnce') + data.plainTextTicket;await loadTickets();}
+    }
+    async function setTicketEnabled(id, enabled){
+      await fetch(apiBasePath + '/api/service-tickets/' + encodeURIComponent(id) + '/' + (enabled ? 'enable' : 'disable'),{method:'POST',headers:headers()});
+      await loadTickets();
+    }
+    async function handleTicketAction(event){
+      const button = event.target.closest('button[data-ticket-action]');
+      if(!button) return;
+      const id = button.dataset.ticketId || '';
+      if(!id) return;
+      if(button.dataset.ticketAction === 'rotate'){await rotateTicket(id);return;}
+      if(button.dataset.ticketAction === 'enabled'){await setTicketEnabled(id, button.dataset.ticketEnabled === 'true');}
+    }
+    async function logout(){
+      postToFrame({ type: 'air-control-plane:logout' });
+      await fetch(apiBasePath + '/api/logout',{method:'POST',headers:headers()});
+      sessionTicket='';
+      localStorage.removeItem('air.controlPlane.ticket');
+      window.location.href = authPath;
+    }
+    function postToFrame(payload){const frame=document.getElementById('hostFrame'); if(frame&&frame.contentWindow){frame.contentWindow.postMessage(payload, window.location.origin);}}
+    function escapeHtml(value){return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+    document.getElementById('tickets').addEventListener('click', handleTicketAction);
+    applyLanguage();
+    refresh();
+  </script>
+</body>
+</html>

@@ -187,7 +187,7 @@ public class ConsulRealKvIntegrationTests
             var options = new ConsulServiceOptions
             {
                 ConsulAddress = GetRequiredConfiguration("ConsulIntegration:Address"),
-                ServiceName = serviceName,
+                ConfigurationServiceName = serviceName,
                 EnableCommonConfig = false
             };
             var configuration = ConfigurationLoader.LoadRemoteConfiguration(options).Item1;
@@ -238,7 +238,7 @@ public class ConsulRealKvIntegrationTests
             var options = new ConsulServiceOptions
             {
                 ConsulAddress = GetRequiredConfiguration("ConsulIntegration:Address"),
-                ServiceName = serviceName,
+                ConfigurationServiceName = serviceName,
                 EnableCommonConfig = true,
                 CommonConfigFileRoute = commonRoute
             };
@@ -253,6 +253,30 @@ public class ConsulRealKvIntegrationTests
             await DeleteRawKvAsync(servicePath);
             await DeleteRawKvAsync(commonPath);
         }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证关闭 Consul 配置中心后，集成加载路径不会访问真实 Consul；该用例无需外部 Consul 环境即可覆盖关闭分支。</para>
+    /// <para>en-us:Verifies the integration loading path does not access real Consul when the Consul configuration center is disabled; this covers the disabled branch without an external Consul environment.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "Consul")]
+    public void Consul_configuration_should_not_require_real_consul_when_configuration_center_disabled()
+    {
+        var options = new ConsulServiceOptions
+        {
+            EnableConfigurationCenter = false,
+            ConsulAddress = "http://127.0.0.1:1/",
+            ConfigurationServiceName = $"air.cloud.integration.disabled.{Guid.NewGuid():N}",
+            EnableCommonConfig = true
+        };
+
+        var (serviceConfiguration, commonConfiguration) = ConfigurationLoader.LoadRemoteConfiguration(options);
+
+        Assert.NotNull(serviceConfiguration);
+        Assert.Empty(serviceConfiguration.GetChildren());
+        Assert.Null(commonConfiguration);
     }
 
     private static void ConfigureConsulClient()

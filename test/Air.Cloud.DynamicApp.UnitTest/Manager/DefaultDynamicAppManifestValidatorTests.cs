@@ -66,7 +66,6 @@ public sealed class DefaultDynamicAppManifestValidatorTests
                     Endpoint = endpoint,
                     ContainerName = containerName
                 },
-                Route = new DynamicModRouteManifest { Prefix = "/mods/agentsprint-api" },
                 Health = new DynamicModHealthManifest { Path = "/Health", StartupTimeoutSeconds = 10 }
             }
         ]

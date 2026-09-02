@@ -20,6 +20,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     private readonly IDynamicAppModRunner _modRunner;
     private readonly IDynamicAppOrchestrator _orchestrator;
     private readonly IDynamicAppProcessLogSink _processLogSink;
+    private readonly IDynamicAppRuntimeOperationCoordinator _operationCoordinator;
     private readonly IServiceProvider _serviceProvider;
     private readonly IDynamicAppStateStore _stateStore;
 
@@ -55,6 +56,10 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     /// <para>zh-cn:服务提供器，用于按执行模式延迟解析可选的已有容器状态目录。</para>
     /// <para>en-us:The service provider used to lazily resolve the optional existing-container status catalog by execution mode.</para>
     /// </param>
+    /// <param name="operationCoordinator">
+    /// <para>zh-cn:运行实例操作协调器，用于避免批量部署与后台恢复、自愈或人工操作交叉执行。</para>
+    /// <para>en-us:Runtime operation coordinator used to prevent batch deployment from interleaving with restore, self-healing, or manual operations.</para>
+    /// </param>
     public DynamicAppHostCoordinator(
         IDynamicAppManager manager,
         IDynamicAppModRunner modRunner,
@@ -62,7 +67,8 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
         IDynamicAppHealthProbe healthProbe,
         IDynamicAppProcessLogSink processLogSink,
         IDynamicAppStateStore stateStore,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IDynamicAppRuntimeOperationCoordinator operationCoordinator)
     {
         _manager = manager ?? throw new ArgumentNullException(nameof(manager));
         _modRunner = modRunner ?? throw new ArgumentNullException(nameof(modRunner));
@@ -71,6 +77,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
         _processLogSink = processLogSink ?? throw new ArgumentNullException(nameof(processLogSink));
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _operationCoordinator = operationCoordinator ?? throw new ArgumentNullException(nameof(operationCoordinator));
     }
 
     /// <summary>
@@ -98,66 +105,93 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
             return publish;
         }
 
-        foreach (var mod in manifest.Mods)
+        var started = new List<(DynamicAppRuntimeKey RuntimeKey, DynamicModManifest Mod)>();
+        try
         {
-            var key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version);
-            var start = mod.ExecutionMode switch
+            foreach (var mod in manifest.Mods)
             {
-                DynamicModExecutionMode.Process => await _modRunner.StartAsync(manifest, mod, cancellationToken).ConfigureAwait(false),
-                DynamicModExecutionMode.LocalDevelopment => ActivateLocalDevelopmentTarget(key),
-                _ => await _orchestrator.DeployAsync(manifest, mod, cancellationToken).ConfigureAwait(false)
-            };
-
-            if (!start.Succeeded)
-            {
-                var message = await AppendProcessDiagnosticsAsync(key, start.Message, cancellationToken).ConfigureAwait(false);
-                _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
-                return DynamicAppOperationResult.Failure(message);
-            }
-
-            var target = _stateStore.ListTargets().FirstOrDefault(item => item.Key == key);
-            if (target == null)
-            {
-                _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Runtime target `{key}` was not published after startup.");
-                return DynamicAppOperationResult.Failure($"Runtime target `{key}` was not published after startup.");
-            }
-
-            var runtime = await InspectProcessRuntimeIfNeededAsync(target, mod, cancellationToken).ConfigureAwait(false);
-            if (!runtime.Succeeded)
-            {
-                var message = await AppendProcessDiagnosticsAsync(key, $"Runtime target `{key}` startup inspection failed. {runtime.Message}", cancellationToken).ConfigureAwait(false);
-                _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
-                return DynamicAppOperationResult.Failure(message);
-            }
-
-            if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
-            {
-                var existingContainerActivation = await ActivateExistingContainerTargetAsync(key, cancellationToken).ConfigureAwait(false);
-                if (!existingContainerActivation.Succeeded)
+                var key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version);
+                var runtimeKey = DynamicAppRuntimeKey.Default(key);
+                await using var operation = await _operationCoordinator
+                    .AcquireAsync(runtimeKey, cancellationToken)
+                    .ConfigureAwait(false);
+                var start = mod.ExecutionMode switch
                 {
-                    return existingContainerActivation;
+                    DynamicModExecutionMode.Process => await _modRunner.StartAsync(manifest, mod, cancellationToken).ConfigureAwait(false),
+                    DynamicModExecutionMode.LocalDevelopment => ActivateLocalDevelopmentTarget(key),
+                    _ => await _orchestrator.DeployAsync(manifest, mod, cancellationToken).ConfigureAwait(false)
+                };
+
+                if (!start.Succeeded)
+                {
+                    var message = await AppendProcessDiagnosticsAsync(key, start.Message, cancellationToken).ConfigureAwait(false);
+                    return await FailAndCleanupAsync(runtimeKey, mod, message, started, cancellationToken).ConfigureAwait(false);
                 }
 
-                continue;
+                var target = _stateStore.ListTargets().FirstOrDefault(item => item.Key == key);
+                if (target == null)
+                {
+                    return await FailAndCleanupAsync(runtimeKey, mod, $"Runtime target `{key}` was not published after startup.", started, cancellationToken).ConfigureAwait(false);
+                }
+                runtimeKey = ToRuntimeKey(target);
+                started.Add((runtimeKey, mod));
+
+                var runtime = await InspectProcessRuntimeIfNeededAsync(target, mod, cancellationToken).ConfigureAwait(false);
+                if (!runtime.Succeeded)
+                {
+                    var message = await AppendProcessDiagnosticsAsync(key, $"Runtime target `{key}` startup inspection failed. {runtime.Message}", cancellationToken).ConfigureAwait(false);
+                    return await FailAndCleanupAsync(runtimeKey, mod, message, started, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (mod.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
+                {
+                    var existingContainerActivation = await ActivateExistingContainerTargetAsync(runtimeKey, cancellationToken).ConfigureAwait(false);
+                    if (!existingContainerActivation.Succeeded)
+                    {
+                        return await FailAndCleanupAsync(runtimeKey, mod, existingContainerActivation.Message, started, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    continue;
+                }
+
+                var health = await _healthProbe.ProbeAsync(target, mod.Health, cancellationToken).ConfigureAwait(false);
+                if (!health.IsHealthy)
+                {
+                    var message = await AppendProcessDiagnosticsAsync(key, $"Runtime target `{key}` health probe failed. {health.Message}", cancellationToken).ConfigureAwait(false);
+                    return await FailAndCleanupAsync(runtimeKey, mod, message, started, cancellationToken).ConfigureAwait(false);
+                }
+
+                var activation = await _manager.ActivateInstanceAsync(runtimeKey, cancellationToken).ConfigureAwait(false);
+                if (!activation.Succeeded)
+                {
+                    return await FailAndCleanupAsync(runtimeKey, mod, activation.Message, started, cancellationToken).ConfigureAwait(false);
+                }
             }
 
-            var health = await _healthProbe.ProbeAsync(target, mod.Health, cancellationToken).ConfigureAwait(false);
-            if (!health.IsHealthy)
-            {
-                var message = await AppendProcessDiagnosticsAsync(key, $"Runtime target `{key}` health probe failed. {health.Message}", cancellationToken).ConfigureAwait(false);
-                _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
-                return DynamicAppOperationResult.Failure(message);
-            }
-
-            var activation = await _manager.ActivateAsync(key, cancellationToken).ConfigureAwait(false);
-            if (!activation.Succeeded)
-            {
-                _stateStore.UpdateState(key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, activation.Message);
-                return activation;
-            }
+            return DynamicAppOperationResult.Success($"DynamicApp `{manifest.Id}` deployed and activated with {manifest.Mods.Count} Mods.");
         }
+        catch (Exception exception)
+        {
+            var message = exception is OperationCanceledException
+                ? $"DynamicApp `{manifest.Id}` deployment was cancelled."
+                : $"DynamicApp `{manifest.Id}` deployment failed. {exception.Message}";
+            var cleanupFailures = new List<string>();
+            foreach (var item in started.AsEnumerable().Reverse())
+            {
+                var cleanup = await StopRuntimeAsync(item.RuntimeKey, item.Mod).ConfigureAwait(false);
+                if (!cleanup.Succeeded)
+                {
+                    cleanupFailures.Add($"`{item.RuntimeKey}`: {cleanup.Message}");
+                }
+            }
 
-        return DynamicAppOperationResult.Success($"DynamicApp `{manifest.Id}` deployed and activated with {manifest.Mods.Count} Mods.");
+            if (cleanupFailures.Count > 0)
+            {
+                message += " Cleanup failures: " + string.Join(" | ", cleanupFailures);
+            }
+
+            return DynamicAppOperationResult.Failure(message);
+        }
     }
 
     private DynamicAppOperationResult ActivateLocalDevelopmentTarget(DynamicModVersionKey key)
@@ -170,6 +204,46 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
         return result.Succeeded
             ? DynamicAppOperationResult.Success($"Local development target `{key}` registered for external debugging.")
             : result;
+    }
+
+    private async Task<DynamicAppOperationResult> FailAndCleanupAsync(
+        DynamicAppRuntimeKey runtimeKey,
+        DynamicModManifest mod,
+        string message,
+        IReadOnlyCollection<(DynamicAppRuntimeKey RuntimeKey, DynamicModManifest Mod)> started,
+        CancellationToken cancellationToken)
+    {
+        var cleanup = new List<DynamicAppOperationResult>();
+        cleanup.Add(await StopRuntimeAsync(runtimeKey, mod).ConfigureAwait(false));
+        foreach (var item in started.AsEnumerable().Reverse())
+        {
+            if (item.RuntimeKey == runtimeKey) continue;
+            cleanup.Add(await StopRuntimeAsync(item.RuntimeKey, item.Mod).ConfigureAwait(false));
+        }
+
+        var failedCleanup = cleanup.FirstOrDefault(item => !item.Succeeded);
+        var finalMessage = failedCleanup == null
+            ? $"{message} Runtime `{runtimeKey}` and previously started runtimes were stopped after the failure."
+            : $"{message} Cleanup failed for `{runtimeKey}`: {failedCleanup.Message}";
+        _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, finalMessage);
+        return DynamicAppOperationResult.Failure(finalMessage);
+    }
+
+    private async Task<DynamicAppOperationResult> StopRuntimeAsync(DynamicAppRuntimeKey runtimeKey, DynamicModManifest mod)
+    {
+        try
+        {
+            return mod.ExecutionMode switch
+            {
+                DynamicModExecutionMode.Process => await _modRunner.StopAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false),
+                DynamicModExecutionMode.LocalDevelopment => DynamicAppOperationResult.Success("Local development target does not own a process."),
+                _ => await _orchestrator.StopAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false)
+            };
+        }
+        catch (Exception exception)
+        {
+            return DynamicAppOperationResult.Failure($"Runtime `{runtimeKey}` cleanup threw {exception.GetType().Name}: {exception.Message}");
+        }
     }
 
     /// <summary>
@@ -195,7 +269,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     private async Task<DynamicAppOperationResult> InspectProcessRuntimeIfNeededAsync(DynamicAppRouteTarget target, DynamicModManifest mod, CancellationToken cancellationToken)
     {
         return mod.ExecutionMode == DynamicModExecutionMode.Process
-            ? await _modRunner.InspectAsync(target.Key, cancellationToken).ConfigureAwait(false)
+            ? await _modRunner.InspectAsync(ToRuntimeKey(target), cancellationToken).ConfigureAwait(false)
             : DynamicAppOperationResult.Success($"Target `{target.Key}` does not require Process runtime inspection.");
     }
 
@@ -203,9 +277,9 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     /// <para>zh-cn:按容器引擎状态激活 ExistingContainer 目标；该模式不调用业务 HTTP 健康检查端点。</para>
     /// <para>en-us:Activates an ExistingContainer target from container engine status; this mode does not call the business HTTP health endpoint.</para>
     /// </summary>
-    /// <param name="key">
-    /// <para>zh-cn:目标 Mod 版本键。</para>
-    /// <para>en-us:The target Mod version key.</para>
+    /// <param name="runtimeKey">
+    /// <para>zh-cn:目标运行实例键。</para>
+    /// <para>en-us:The target runtime-instance key.</para>
     /// </param>
     /// <param name="cancellationToken">
     /// <para>zh-cn:取消令牌。</para>
@@ -215,8 +289,9 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     /// <para>zh-cn:容器引擎状态检查和激活结果。</para>
     /// <para>en-us:The container engine status inspection and activation result.</para>
     /// </returns>
-    private async Task<DynamicAppOperationResult> ActivateExistingContainerTargetAsync(DynamicModVersionKey key, CancellationToken cancellationToken)
+    private async Task<DynamicAppOperationResult> ActivateExistingContainerTargetAsync(DynamicAppRuntimeKey runtimeKey, CancellationToken cancellationToken)
     {
+        var key = runtimeKey.PackageKey;
         var catalog = _serviceProvider.GetService<IDynamicAppExistingContainerCatalog>();
         if (catalog == null)
         {
@@ -244,7 +319,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
             return DynamicAppOperationResult.Failure(message);
         }
 
-        var activation = await _manager.ActivateAsync(key, cancellationToken).ConfigureAwait(false);
+        var activation = await _manager.ActivateInstanceAsync(runtimeKey, cancellationToken).ConfigureAwait(false);
         return activation.Succeeded
             ? DynamicAppOperationResult.Success($"ExistingContainer target `{key}` is active from Docker container `{view.Name}`. {view.Status}")
             : activation;
@@ -253,7 +328,11 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
     private async Task<string> AppendProcessDiagnosticsAsync(DynamicModVersionKey key, string message, CancellationToken cancellationToken)
     {
         await Task.Delay(TimeSpan.FromMilliseconds(150), cancellationToken).ConfigureAwait(false);
-        var logs = await _processLogSink.QueryAsync(key, take: 80, cancellationToken).ConfigureAwait(false);
+        var target = _stateStore.ListTargets().FirstOrDefault(item => item.Key == key);
+        var logs = await _processLogSink.QueryAsync(
+            target == null ? DynamicAppRuntimeKey.Default(key) : ToRuntimeKey(target),
+            take: 80,
+            cancellationToken).ConfigureAwait(false);
         var candidates = logs
             .Where(item => item.Stream.Equals("stderr", StringComparison.OrdinalIgnoreCase) || item.Stream.Equals("exit", StringComparison.OrdinalIgnoreCase))
             .Select(item => $"[{item.Stream}] {item.Message}")
@@ -283,4 +362,7 @@ public sealed class DynamicAppHostCoordinator : IDynamicAppHostCoordinator
             || message.Contains("unhandled", StringComparison.OrdinalIgnoreCase)
             || message.Contains("exit code", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static DynamicAppRuntimeKey ToRuntimeKey(DynamicAppRouteTarget target)
+        => new(target.Key, string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim());
 }

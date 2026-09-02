@@ -54,16 +54,15 @@ namespace Air.Cloud.Core.App
         /// </summary>
         static AppConfigurationLoader()
         {
-            Action action = new Action(() =>
-            {
-                string path = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
-                InnerConfiguration = new ConfigurationBuilder().SetBasePath(path)
-                                                          .AddJsonFile(AppConst.DEFAULT_CONFIG_FILE, optional: true, reloadOnChange: true)
-                                                          .Build();
-            });
-            action();
-            //监视文件变更
-            ChangeToken.OnChange(() => InnerConfiguration.GetReloadToken(), action);
+            string path = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+            InnerConfiguration = new ConfigurationBuilder().SetBasePath(path)
+                                                      .AddJsonFile(AppConst.DEFAULT_CONFIG_FILE, optional: true, reloadOnChange: true)
+                                                      .Build();
+            // JSON provider 自身负责文件变更。不要再监听可被宿主替换的
+            // InnerConfiguration，否则切换到 ConfigurationManager 后会对已变更令牌递归注册。
+            // The JSON provider already handles file changes. Do not additionally observe the
+            // host-replaceable InnerConfiguration, or replacing it with ConfigurationManager
+            // can recursively register callbacks on an already changed token.
             Configurations = new ConfigurationManager();
         }
         /// <summary>

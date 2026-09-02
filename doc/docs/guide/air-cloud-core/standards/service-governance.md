@@ -65,7 +65,8 @@ public sealed class OrderConsulOptionsConfigure : IConsulServiceOptionsConfigure
         Action<ConsulServiceOptions> action = null)
     {
         options ??= new ConsulServiceOptions();
-        options.ServiceName ??= "order-service";
+        options.ConfigurationServiceName ??= "order-service";
+        options.RegistryServiceName ??= "order-service";
         action?.Invoke(options);
         return options;
     }
@@ -86,7 +87,8 @@ app.Run();
   "ConsulServiceOptions": {
     "ConsulAddress": "http://127.0.0.1:8500/",
     "ServiceAddress": "http://127.0.0.1:5295",
-    "ServiceName": "order-service",
+    "ConfigurationServiceName": "order-service",
+    "RegistryServiceName": "order-service",
     "HealthCheckRoute": "/Health",
     "HealthCheckTimeStep": 5,
     "ConnectTimeout": 5,
@@ -101,7 +103,12 @@ app.Run();
 | --- | --- | --- |
 | `ConsulAddress` | Consul 地址 | 无，必须配置 |
 | `ServiceAddress` | 当前服务可被 Consul 健康检查访问的地址 | 无，必须配置 |
-| `ServiceName` | 当前服务名称 | 空时按应用名补齐 |
+| `EnableConfigurationCenter` | 是否从 Consul 配置中心加载配置 | `true` |
+| `EnableServiceRegistration` | 是否向 Consul 注册当前服务 | `true` |
+| `EnableHealthCheck` | 是否启用本地健康检查并注册 Consul 健康检查 | `true` |
+| `DynamicAppManaged` | 当前进程是否由 DynamicApp 托管；托管进程不会自注册到 Consul | `false` |
+| `ConfigurationServiceName` | 配置中心读取使用的服务名 | 空时按应用名补齐 |
+| `RegistryServiceName` | 注册中心注册使用的服务名 | 空时按应用名补齐 |
 | `HealthCheckRoute` | 健康检查路由 | `/Health` |
 | `HealthCheckTimeStep` | 健康检查间隔，单位秒 | `5` |
 | `ConnectTimeout` | 健康检查超时时间，单位秒 | `5` |
@@ -253,7 +260,7 @@ Consul 模块会按约定从 KV 中加载服务私有配置和公共配置。
 服务私有配置路径：
 
 ```text
-{ServiceName.Replace(".", "/")}/appsettings.{Environment}.json
+{ConfigurationServiceName.Replace(".", "/")}/appsettings.{Environment}.json
 ```
 
 示例：
@@ -304,8 +311,8 @@ var enabled = AppConfigurationLoader.InnerConfiguration["Feature:NewCheckout"];
 | `ConsulAddress` 未配置 | 本地 `appsettings.json` 缺少节点 | 启动时报“你需要配置Consul服务运行IP地址” | 补齐 `ConsulServiceOptions.ConsulAddress`，并确认地址可访问 |
 | `ServiceAddress` 未配置 | 需要注册服务但未声明当前服务地址 | 启动时报“你需要配置当前服务运行IP地址” | 配置 Consul Agent 能访问到的服务地址 |
 | 服务注册后健康检查失败 | 健康检查路由错误、端口不可达、容器网络不通 | Consul 中服务进入 critical 状态 | 检查 `ServiceAddress`、`HealthCheckRoute`、防火墙、容器端口映射 |
-| 服务名不符合预期 | 未配置 `ServiceName`，使用默认应用名推断 | Catalog 中服务名与业务预期不一致 | 显式配置 `ServiceName` |
-| 远程配置未加载 | KV 路径不符合约定或环境名不一致 | 配置项读取为空或仍是本地值 | 检查 `{ServiceName}/appsettings.{Environment}.json` 路径和 JSON 格式 |
+| 服务名不符合预期 | 未配置 `RegistryServiceName`，使用默认应用名推断 | Catalog 中服务名与业务预期不一致 | 显式配置 `RegistryServiceName` |
+| 远程配置未加载 | KV 路径不符合约定或环境名不一致 | 配置项读取为空或仍是本地值 | 检查 `{ConfigurationServiceName}/appsettings.{Environment}.json` 路径和 JSON 格式 |
 | 公共配置未加载 | `EnableCommonConfig = false` 或路径写错 | 公共配置项读取不到 | 检查 `EnableCommonConfig` 和 `CommonConfigFileRoute` |
 | KV 前缀查询结果为空 | Prefix 不匹配、Key 层级写错 | `QueryAsync` 返回空集合 | 使用 Consul UI 或 CLI 确认实际 Key 路径 |
 | 删除 Key 返回 `false` | Key 不存在或已被删除 | 调用方误认为 Consul 异常 | 将返回值作为“是否实际删除”的结果处理 |

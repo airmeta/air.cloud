@@ -7,8 +7,8 @@ namespace Air.Cloud.DynamicApp.Contracts.Runtime;
 public interface IDynamicAppRouteCatalog
 {
     /// <summary>
-    /// <para>zh-cn:解析请求对应的活动目标。</para>
-    /// <para>en-us:Resolves the active target for a request.</para>
+    /// <para>zh-cn:按独立动态路由规则解析请求、目标和明确失败原因。</para>
+    /// <para>en-us:Resolves the request, target, and explicit failure reason through independent dynamic route rules.</para>
     /// </summary>
     /// <param name="request">
     /// <para>zh-cn:路由请求。</para>
@@ -19,8 +19,8 @@ public interface IDynamicAppRouteCatalog
     /// <para>en-us:Cancellation token.</para>
     /// </param>
     /// <returns>
-    /// <para>zh-cn:活动目标；不存在时返回 null。</para>
-    /// <para>en-us:The active target, or null when none exists.</para>
+    /// <para>zh-cn:动态路由解析结果。</para>
+    /// <para>en-us:Dynamic route resolution result.</para>
     /// </returns>
-    ValueTask<DynamicAppRouteTarget?> ResolveAsync(DynamicAppRouteRequest request, CancellationToken cancellationToken = default);
+    ValueTask<DynamicAppGatewayRouteResolution> ResolveAsync(DynamicAppRouteRequest request, CancellationToken cancellationToken = default);
 }

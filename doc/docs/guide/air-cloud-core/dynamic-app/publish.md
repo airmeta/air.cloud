@@ -1,13 +1,35 @@
-# 动态配置与上传发布
+# 包空间与运行实例
 
-外部系统可以通过 Manager API 动态接入 Mod，不需要手工修改 DynamicApp 容器目录。
+DynamicApp 将包空间和运行空间分开管理。包管理器只负责上传 zip、解压和编辑包文件；应用运行时从包空间复制运行副本，配置实例参数并负责启动、健康检查、激活和更新切换。
 
 ## 接入路径
 
 | 路径 | 用途 |
 | --- | --- |
-| `mods/configure` | 提交 JSON，适合接管 `ExistingContainer`、本地联调 `LocalDevelopment` 或已存在入口文件的 `Process` Mod |
-| `mods/upload` | 提交 multipart zip 包，适合上传新的 `Process` Mod 版本 |
+| `mods/upload` | 提交 multipart zip 包，只保存并解压到包空间，不创建实例、不启动服务、不激活版本 |
+| `deployments/create` | 选择包版本和运行参数，从包空间复制新的运行副本并创建实例 |
+| `deployments/update` | 选择新包和新的运行参数，复制新运行副本，启动并健康检查通过后切换版本 |
+| `deployments/files` | 读取指定实例的运行空间文件；详情页的文件编辑只作用于运行副本 |
+
+## 推荐操作流程
+
+1. 在 `Package Manager` 创建或选择应用，上传 zip 并确认包文件已经解压。
+2. 在 `Application Runtime` 点击创建实例，第一步选择包，第二步配置实例 ID、端口、端点、内部路由、入口文件、参数、健康路径和启动超时。
+3. 更新实例时点击卡片中的 `Update`，先选择新包，再修改现有参数，完成后系统复制新的运行副本并执行启动、健康检查和版本切换。
+
+运行目录结构如下：
+
+```text
+<root>/
+  mods/<dynamicAppId>/<modId>/<version>/
+    package.zip
+    content/
+  deployments/<dynamicAppId>/<modId>/<version>/<deploymentId>/
+    package.zip
+    content/
+```
+
+实例启动后只使用 `deployments` 下的副本；包空间中的文件编辑不会修改已经创建的运行副本，运行实例详情中的文件编辑也不会回写包空间。
 
 ## 包存储配置
 
@@ -90,13 +112,6 @@ Content-Type: application/json
 | `dynamicAppId` | 是 | DynamicApp 标识 |
 | `modId` | 是 | Mod 标识 |
 | `version` | 是 | Mod 版本 |
-| `routePrefix` | 是 | 网关路由前缀，例如 `/mods/auth` |
-| `entryFile` | 是 | zip 内入口文件相对路径，例如 `air.cloud.auth.entry.dll` |
-| `arguments` | 否 | Process 启动参数，例如 `--urls http://+:5106` |
-| `endpoint` | 否 | Mod 对 Host/Gateway 暴露的地址，例如 `http://127.0.0.1:5106` |
-| `healthPath` | 否 | 健康检查路径，默认 `/Health` |
-| `startupTimeoutSeconds` | 否 | 启动健康检查超时，默认 `60` |
-| `deploy` | 否 | `true` 时上传后立即部署并激活，默认 `false` |
 | `overwrite` | 否 | 是否覆盖同版本包；还需要服务端 `AllowOverwrite=true` |
 
 curl 示例：
@@ -108,12 +123,7 @@ curl -X POST http://127.0.0.1:5110/dynamicapp-manager/mods/upload \
   -F 'dynamicAppId=security-platform' \
   -F 'modId=auth' \
   -F 'version=2026.07.25.1' \
-  -F 'routePrefix=/mods/auth' \
-  -F 'entryFile=air.cloud.auth.entry.dll' \
-  -F 'arguments=--urls http://+:5106' \
-  -F 'endpoint=http://127.0.0.1:5106' \
-  -F 'healthPath=/Health' \
-  -F 'deploy=true'
+  -F 'overwrite=false'
 ```
 
 ## 上传安全边界
@@ -121,5 +131,5 @@ curl -X POST http://127.0.0.1:5110/dynamicapp-manager/mods/upload \
 - 只接受 `.zip` 文件。
 - 默认单包最大 `200 MB`。
 - 解压前后都会校验目标路径必须位于 `PackageStore.RootPath` 下，阻止 `../` 逃逸。
-- `entryFile` 必须是 zip 内相对路径，且解压后必须存在。
+- 包上传接口不接收运行参数；入口文件、端点、路由和健康检查参数在 `deployments/create` 或 `deployments/update` 中配置。
 - 默认不允许覆盖同一 `dynamicAppId/modId/version`，需要服务端和请求同时允许覆盖才会删除旧目录。

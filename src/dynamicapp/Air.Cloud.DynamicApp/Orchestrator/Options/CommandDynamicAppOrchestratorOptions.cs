@@ -43,14 +43,14 @@ public sealed class CommandDynamicAppOrchestratorOptions
     public bool BlockShellCommands { get; set; } = true;
 
     /// <summary>
-    /// <para>zh-cn:命令参数模板，支持 {dynamicAppId}、{modId}、{version}、{image}、{routePrefix} 和 {healthPath} 占位符。</para>
-    /// <para>en-us:Command argument template supporting {dynamicAppId}, {modId}, {version}, {image}, {routePrefix}, and {healthPath} placeholders.</para>
+    /// <para>zh-cn:命令参数模板，支持 {dynamicAppId}、{modId}、{version}、{deploymentId}、{image} 和 {healthPath} 占位符。</para>
+    /// <para>en-us:Command argument template supporting {dynamicAppId}, {modId}, {version}, {deploymentId}, {image}, and {healthPath} placeholders.</para>
     /// </summary>
     public string ArgumentsTemplate { get; set; } = string.Empty;
 
     /// <summary>
-    /// <para>zh-cn:停止命令参数模板，支持 {dynamicAppId}、{modId} 和 {version} 占位符；为空时 StopAsync 会拒绝执行。</para>
-    /// <para>en-us:Stop command argument template supporting {dynamicAppId}, {modId}, and {version}; StopAsync rejects execution when it is empty.</para>
+    /// <para>zh-cn:停止命令参数模板，支持 {dynamicAppId}、{modId}、{version} 和 {deploymentId} 占位符；为空时 StopAsync 会拒绝执行。</para>
+    /// <para>en-us:Stop command argument template supporting {dynamicAppId}, {modId}, {version}, and {deploymentId}; StopAsync rejects execution when it is empty.</para>
     /// </summary>
     public string StopArgumentsTemplate { get; set; } = string.Empty;
 

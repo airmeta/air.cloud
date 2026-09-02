@@ -53,7 +53,7 @@ Manifest 描述一个 DynamicApp 下的 Mod、版本、运行方式、健康检�
 - `ExistingContainer` 必须声明 `Artifact.Endpoint`，用于 Gateway 转发到已经存在的目标。
 - `LocalDevelopment` 必须声明 `Artifact.Endpoint`，用于 Gateway 转发到本地调试服务。
 - `Artifact.Endpoint` 如声明，必须是绝对 URI。
-- 健康检查路径和路由前缀必须是绝对路径。
+- 健康检查路径必须是绝对路径；入口路由由独立 DynamicApp Gateway 路由表管理。
 - `StartupTimeoutSeconds` 必须大于 0。
 
 ## 字段说明
@@ -73,4 +73,3 @@ Manifest 描述一个 DynamicApp 下的 Mod、版本、运行方式、健康检�
 | `Artifact.Image` | Container 模式镜像 |
 | `Artifact.Endpoint` | Gateway 转发目标 |
 | `Health.Path` | 健康检查路径 |
-| `Route.Prefix` | Gateway 路由前缀 |

@@ -28,16 +28,16 @@ public sealed class DynamicAppControlPanelModView
     public DynamicAppVersion Version { get; set; }
 
     /// <summary>
+    /// <para>zh-cn:当前主显示实例的部署标识；未启用集群时为 default。</para>
+    /// <para>en-us:Deployment identifier of the primary displayed instance; default is used when clustering is not enabled.</para>
+    /// </summary>
+    public string DeploymentId { get; set; } = "default";
+
+    /// <summary>
     /// <para>zh-cn:Mod 执行模式，例如 Process、Container、ExistingContainer 或 LocalDevelopment。</para>
     /// <para>en-us:Mod execution mode, such as Process, Container, ExistingContainer, or LocalDevelopment.</para>
     /// </summary>
     public string ExecutionMode { get; set; } = string.Empty;
-
-    /// <summary>
-    /// <para>zh-cn:网关匹配该 Mod 的路由前缀。</para>
-    /// <para>en-us:Gateway route prefix matching this Mod.</para>
-    /// </summary>
-    public string RoutePrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// <para>zh-cn:健康检查路径，用于控制面板发起一次经过 DynamicApp Gateway 的链路测试。</para>
@@ -50,6 +50,24 @@ public sealed class DynamicAppControlPanelModView
     /// <para>en-us:Current runtime target base address; empty when no runtime target exists.</para>
     /// </summary>
     public string BaseAddress { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:当前运行实例的启动参数。</para>
+    /// <para>en-us:Startup arguments of the primary runtime instance.</para>
+    /// </summary>
+    public string Arguments { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:当前运行实例的入口文件绝对路径。</para>
+    /// <para>en-us:Absolute entry-file path of the primary runtime instance.</para>
+    /// </summary>
+    public string EntryFile { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <para>zh-cn:当前运行实例启动健康检查超时时间，单位为秒。</para>
+    /// <para>en-us:Startup health-check timeout in seconds of the primary runtime instance.</para>
+    /// </summary>
+    public int StartupTimeoutSeconds { get; set; } = 60;
 
     /// <summary>
     /// <para>zh-cn:当前生命周期状态；没有运行目标时为 null。</para>
@@ -104,4 +122,10 @@ public sealed class DynamicAppControlPanelModView
     /// <para>en-us:The self-healing state for the current Mod version; null when there is no failed retry record.</para>
     /// </summary>
     public DynamicAppSelfHealingView? SelfHealing { get; set; }
+
+    /// <summary>
+    /// <para>zh-cn:同一个包版本下的全部独立部署实例。</para>
+    /// <para>en-us:All isolated deployment instances for the package version.</para>
+    /// </summary>
+    public IReadOnlyCollection<DynamicAppControlPanelDeploymentView> Deployments { get; set; } = Array.Empty<DynamicAppControlPanelDeploymentView>();
 }

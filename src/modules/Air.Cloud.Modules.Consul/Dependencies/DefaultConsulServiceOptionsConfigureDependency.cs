@@ -20,25 +20,43 @@ using Microsoft.VisualBasic;
 namespace Air.Cloud.Modules.Consul.Dependencies
 {
     /// <summary>
-    /// <para>zh-cn:Consul服务选项配置实现</para>
-    /// <para>en-us:Consul service options configure dependency</para>
-    /// </summary>
+        /// <para>zh-cn:Consul服务选项配置实现</para>
+        /// <para>en-us:Consul service options configure dependency</para>
+        /// </summary>
     internal class DefaultConsulServiceOptionsConfigureDependency : IConsulServiceOptionsConfigureStandard
     {
+        /// <summary>
+        /// <para>zh-cn:规整 Consul 服务配置，补齐配置中心名称和注册中心名称，并按功能开关校验 Consul 地址与服务地址。</para>
+        /// <para>en-us:Normalizes Consul service options by filling configuration-center and registry service names, then validates Consul and service addresses according to feature switches.</para>
+        /// </summary>
+        /// <param name="options">
+        /// <para>zh-cn:从本地配置读取到的 Consul 服务配置。</para>
+        /// <para>en-us:The Consul service options read from local configuration.</para>
+        /// </param>
+        /// <param name="action">
+        /// <para>zh-cn:调用方提供的补充配置委托，会在默认校验前执行。</para>
+        /// <para>en-us:Caller-provided supplemental configuration delegate executed before default validation.</para>
+        /// </param>
+        /// <returns>
+        /// <para>zh-cn:规整后的 Consul 服务配置。</para>
+        /// <para>en-us:The normalized Consul service options.</para>
+        /// </returns>
         public ConsulServiceOptions Configure(ConsulServiceOptions options,Action<ConsulServiceOptions> action = null)
         {
             action?.Invoke(options);
-            if (options.ConsulAddress.IsNullOrEmpty())
+            if ((options.EnableConfigurationCenter || options.EnableServiceRegistration || options.EnableHealthCheck)
+                && options.ConsulAddress.IsNullOrEmpty())
             {
                 Console.WriteLine("你需要配置Consul服务运行IP地址");
                 throw new Exception("你需要配置Consul服务运行IP地址");
             }
-            if (options.ServiceAddress.IsNullOrEmpty())
+            if (options.ConfigurationServiceName.IsNullOrEmpty()) options.ConfigurationServiceName = GetDefaultServiceName(options.IsIgnoreServiceNameKey, options.IgnoreKey);
+            if (options.RegistryServiceName.IsNullOrEmpty()) options.RegistryServiceName = GetDefaultServiceName(options.IsIgnoreServiceNameKey, options.IgnoreKey);
+            if (options.EnableServiceRegistration && !options.DynamicAppManaged && options.ServiceAddress.IsNullOrEmpty())
             {
                 Console.WriteLine("你需要配置当前服务运行IP地址");
                 throw new Exception("你需要配置当前服务运行IP地址");
             }
-            if (options.ServiceName.IsNullOrEmpty()) options.ServiceName = GetDefaultServiceName(options.IsIgnoreServiceNameKey, options.IgnoreKey);
             return options;
         }
 

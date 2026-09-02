@@ -67,6 +67,9 @@ var app = builder.Build();
 var reverseTunnelOptions = app.Services.GetRequiredService<IOptions<ReverseTunnelOptions>>().Value;
 
 app.UseRouting();
+// The standalone Server also owns the public HTTP ingress. Route matching is
+// backed by persisted Agent configurations and must run before endpoint dispatch.
+app.UseReverseTunnelGateway();
 app.UseControlPlaneAuth();
 app.MapControlPlaneAuth();
 

@@ -1,6 +1,8 @@
-# 动态应用
+# AirForge
 
-动态应用用于把业务 Mod 从 Web 主进程的 DLL 热加载、MVC 动态刷新和 DI 生命周期中拆出，改为独立进程、受控容器或已有服务入口。控制面由 Manager、Gateway、Host 和 Orchestrator 协同完成发布、健康检查、切流、排空、回滚和清理。
+AirForge 是基于 `Air.Cloud.DynamicApp` 的独立动态应用产品宿主。它把业务 Mod 从 Web 主进程的 DLL 热加载、MVC 动态刷新和 DI 生命周期中拆出，改为独立进程、受控容器或已有服务入口；控制面由 Manager、Gateway、Host、Orchestrator 和 AirForge 管理面板协同完成发布、健康检查、切流、排空、回滚和清理。
+
+`Air.Cloud.DynamicApp` 类库仍保留在框架源码 `src/dynamicapp/Air.Cloud.DynamicApp` 中，提供 Manifest、运行时状态、Manager API、Gateway 转发、Host 和 Orchestrator 等基础能力；AirForge 产品宿主位于 `demo/airForge`，负责运行入口、默认配置、发布脚本和内置管理面板。
 
 ## 适用场景
 
@@ -17,7 +19,7 @@
 | Gateway | 按路由表把 `/mods/*` 请求转发到当前活动目标 |
 | Host | 管理 Process 模式子进程、日志、健康检查和排空清理 |
 | Orchestrator | 对接受控编排边界，例如命令包装器或已有容器引擎实例 |
-| Panel | 内置控制面板，用于可视化查看和操作 DynamicApp |
+| AirForge Panel | AirForge 内置管理面板，用于可视化查看和操作 DynamicApp 运行时 |
 
 ## 执行模式
 
@@ -42,7 +44,7 @@
 1. [架构边界](./architecture.md)
 2. [生命周期与排空](./lifecycle.md)
 3. [Manager API](./manager-api.md)
-4. [内置控制面板](./panel.md)
+4. [AirForge 管理面板](./panel.md)
 5. [本地服务联调](./local-debug.md)
 6. [动态配置与上传发布](./publish.md)
 7. [部署模式](./deployment.md)

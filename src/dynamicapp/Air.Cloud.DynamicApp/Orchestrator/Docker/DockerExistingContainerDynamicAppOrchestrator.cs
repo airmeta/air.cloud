@@ -67,7 +67,10 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
         }
 
         var key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version);
-        var containerName = ResolveContainerName(manifest, mod);
+        var runtimeKey = new DynamicAppRuntimeKey(
+            key,
+            string.IsNullOrWhiteSpace(mod.Artifact.DeploymentId) ? "default" : mod.Artifact.DeploymentId.Trim());
+        var containerName = ResolveContainerName(manifest, mod, runtimeKey.DeploymentId);
         var start = await containerEngine.StartAsync(containerName, cancellationToken).ConfigureAwait(false);
         if (!start.Succeeded)
         {
@@ -77,8 +80,8 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
         stateStore.UpsertTarget(new DynamicAppRouteTarget
         {
             Key = key,
+            DeploymentId = runtimeKey.DeploymentId,
             BaseAddress = ResolveTargetBaseAddress(manifest, mod, containerName),
-            RoutePrefix = mod.Route.Prefix,
             HealthPath = mod.Health.Path,
             HealthProbeTimeoutSeconds = mod.Health.StartupTimeoutSeconds,
             State = DynamicModLifecycleState.Starting,
@@ -117,6 +120,27 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
         return ToDynamicAppView(container);
     }
 
+    /// <summary>
+    /// <para>zh-cn:读取指定部署实例绑定的已有容器，避免同一包版本的多个副本共享容器解析。</para>
+    /// <para>en-us:Reads the existing container bound to one deployment instance so replicas of the same package version do not share container resolution.</para>
+    /// </summary>
+    public async Task<DynamicAppExistingContainerView> InspectAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateOptions();
+        if (!validation.Succeeded)
+        {
+            throw new InvalidOperationException(validation.Message);
+        }
+
+        var target = stateStore.ListTargets().FirstOrDefault(item =>
+            new DynamicAppRuntimeKey(item.Key, string.IsNullOrWhiteSpace(item.DeploymentId) ? "default" : item.DeploymentId.Trim()) == key);
+        var containerName = !string.IsNullOrWhiteSpace(target?.InstanceId)
+            ? target.InstanceId
+            : await ResolveContainerNameAsync(key.PackageKey, cancellationToken).ConfigureAwait(false);
+        var container = await containerEngine.InspectAsync(containerName, cancellationToken).ConfigureAwait(false);
+        return ToDynamicAppView(container);
+    }
+
     /// <inheritdoc />
     public async Task<DynamicAppOperationResult> StopAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default)
     {
@@ -126,15 +150,88 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
             return validation;
         }
 
-        var containerName = await ResolveContainerNameAsync(key, cancellationToken).ConfigureAwait(false);
+        var targets = stateStore.ListTargets()
+            .Where(item => item.Key == key)
+            .Select(item => new DynamicAppRuntimeKey(item.Key, string.IsNullOrWhiteSpace(item.DeploymentId) ? "default" : item.DeploymentId.Trim()))
+            .ToArray();
+        if (targets.Length == 0)
+        {
+            var containerName = await ResolveContainerNameAsync(key, cancellationToken).ConfigureAwait(false);
+            return await StopContainerAsync(DynamicAppRuntimeKey.Default(key), containerName, cancellationToken).ConfigureAwait(false);
+        }
+
+        DynamicAppOperationResult? failure = null;
+        foreach (var target in targets)
+        {
+            var result = await StopAsync(target, cancellationToken).ConfigureAwait(false);
+            if (!result.Succeeded)
+            {
+                failure = result;
+            }
+        }
+
+        return failure ?? DynamicAppOperationResult.Success($"Existing containers for `{key}` stopped.");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:停止指定部署实例绑定的已有容器，并只更新该实例的状态。</para>
+    /// <para>en-us:Stops the existing container bound to one deployment and updates only that deployment's state.</para>
+    /// </summary>
+    public async Task<DynamicAppOperationResult> StopAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateOptions();
+        if (!validation.Succeeded)
+        {
+            return validation;
+        }
+
+        var target = stateStore.ListTargets().FirstOrDefault(item =>
+            new DynamicAppRuntimeKey(item.Key, string.IsNullOrWhiteSpace(item.DeploymentId) ? "default" : item.DeploymentId.Trim()) == key);
+        if (target == null)
+        {
+            return DynamicAppOperationResult.Failure($"Existing container target `{key}` is not registered.");
+        }
+
+        var containerName = !string.IsNullOrWhiteSpace(target.InstanceId)
+            ? target.InstanceId
+            : await ResolveContainerNameAsync(key.PackageKey, cancellationToken).ConfigureAwait(false);
+        return await StopContainerAsync(key, containerName, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<DynamicAppOperationResult> StopContainerAsync(
+        DynamicAppRuntimeKey runtimeKey,
+        string containerName,
+        CancellationToken cancellationToken)
+    {
+        var key = runtimeKey.PackageKey;
         var stop = await containerEngine.StopAsync(containerName, cancellationToken).ConfigureAwait(false);
         if (!stop.Succeeded)
         {
             return DynamicAppOperationResult.Failure($"Container `{containerName}` could not be stopped for `{key}`. {stop.Message}");
         }
 
-        stateStore.UpdateState(key, DynamicModLifecycleState.Stopped, DynamicModHealthStatus.Stopped, $"Existing container `{containerName}` stopped for `{key}`.");
-        return DynamicAppOperationResult.Success($"Existing container `{containerName}` stopped for `{key}`.");
+        ContainerEngineInstance? inspected = null;
+        try
+        {
+            inspected = await containerEngine.InspectAsync(containerName, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException exception) when (exception.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)
+            || exception.Message.Contains("no matching", StringComparison.OrdinalIgnoreCase))
+        {
+            // A stopped container may be removed by the engine as part of StopAsync.
+        }
+
+        if (inspected?.IsRunning == true || inspected?.IsAvailable == true)
+        {
+            return DynamicAppOperationResult.Failure($"Container `{containerName}` still reports running after stop for `{key}`.");
+        }
+
+        var stateUpdate = runtimeKey.DeploymentId.Equals("default", StringComparison.OrdinalIgnoreCase)
+            ? stateStore.UpdateState(key, DynamicModLifecycleState.Stopped, DynamicModHealthStatus.Stopped, $"Existing container `{containerName}` stopped for `{key}`.")
+            : stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Stopped, DynamicModHealthStatus.Stopped, $"Existing container `{containerName}` stopped for `{runtimeKey}`.");
+        return stateUpdate.Succeeded
+            ? DynamicAppOperationResult.Success($"Existing container `{containerName}` stopped for `{runtimeKey}`.")
+            : DynamicAppOperationResult.Failure($"Container `{containerName}` stopped, but state update failed for `{runtimeKey}`: {stateUpdate.Message}");
     }
 
     private DynamicAppOperationResult ValidateOptions()
@@ -165,10 +262,10 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
             : new Uri("http://localhost");
     }
 
-    private string ResolveContainerName(DynamicAppManifest manifest, DynamicModManifest mod)
+    private string ResolveContainerName(DynamicAppManifest manifest, DynamicModManifest mod, string deploymentId = "default")
     {
         return string.IsNullOrWhiteSpace(mod.Artifact.ContainerName)
-            ? ApplyTemplate(options.ContainerNameTemplate, manifest.Id.Value, mod.Id.Value, mod.Version.Value, string.Empty)
+            ? ApplyTemplate(options.ContainerNameTemplate, manifest.Id.Value, mod.Id.Value, mod.Version.Value, string.Empty, deploymentId)
             : mod.Artifact.ContainerName.Trim();
     }
 
@@ -206,11 +303,15 @@ public sealed class DockerExistingContainerDynamicAppOrchestrator : IDynamicAppO
     }
 
     private static string ApplyTemplate(string template, string dynamicAppId, string modId, string version, string containerName)
+        => ApplyTemplate(template, dynamicAppId, modId, version, containerName, "default");
+
+    private static string ApplyTemplate(string template, string dynamicAppId, string modId, string version, string containerName, string deploymentId)
     {
         return template
             .Replace("{dynamicAppId}", dynamicAppId, StringComparison.OrdinalIgnoreCase)
             .Replace("{modId}", modId, StringComparison.OrdinalIgnoreCase)
             .Replace("{version}", version, StringComparison.OrdinalIgnoreCase)
-            .Replace("{containerName}", containerName, StringComparison.OrdinalIgnoreCase);
+            .Replace("{containerName}", containerName, StringComparison.OrdinalIgnoreCase)
+            .Replace("{deploymentId}", deploymentId, StringComparison.OrdinalIgnoreCase);
     }
 }

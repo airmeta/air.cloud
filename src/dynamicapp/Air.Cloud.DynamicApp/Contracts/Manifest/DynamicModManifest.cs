@@ -4,8 +4,8 @@ using Air.Cloud.DynamicApp.Contracts.Lifecycle;
 namespace Air.Cloud.DynamicApp.Contracts.Manifest;
 
 /// <summary>
-/// <para>zh-cn:单个 Mod 的发布清单，描述标识、版本、执行模式、工件、健康检查和路由前缀。</para>
-/// <para>en-us:Release manifest for one Mod, describing identity, version, execution mode, artifact, health check, and route prefix.</para>
+/// <para>zh-cn:单个 Mod 的发布清单，描述标识、版本、执行模式、工件和健康检查。</para>
+/// <para>en-us:Release manifest for one Mod, describing identity, version, execution mode, artifact, and health check.</para>
 /// </summary>
 public sealed class DynamicModManifest
 {
@@ -39,9 +39,4 @@ public sealed class DynamicModManifest
     /// </summary>
     public DynamicModHealthManifest Health { get; set; } = new();
 
-    /// <summary>
-    /// <para>zh-cn:Mod 路由声明。</para>
-    /// <para>en-us:Mod route declaration.</para>
-    /// </summary>
-    public DynamicModRouteManifest Route { get; set; } = new();
 }

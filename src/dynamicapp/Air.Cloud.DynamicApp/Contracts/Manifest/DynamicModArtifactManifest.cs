@@ -35,4 +35,16 @@ public sealed class DynamicModArtifactManifest
     /// <para>en-us:Base address exposed by the Mod instance to Host or Gateway; Process mode can resolve it from --urls when omitted, while ExistingContainer and LocalDevelopment modes must declare it explicitly.</para>
     /// </summary>
     public string? Endpoint { get; set; }
+
+    /// <summary>
+    /// <para>zh-cn:独立部署实例标识；为空时使用 default，仅用于运行时实例，不改变包身份。</para>
+    /// <para>en-us:Isolated deployment identifier; default is used when empty and the value affects only runtime identity, not package identity.</para>
+    /// </summary>
+    public string? DeploymentId { get; set; }
+
+    /// <summary>
+    /// <para>zh-cn:独立部署目录绝对路径；仅由运行时部署副本使用，不改变包库存身份。</para>
+    /// <para>en-us:Absolute isolated deployment-directory path used by a runtime deployment copy without changing package identity.</para>
+    /// </summary>
+    public string? DeploymentDirectory { get; set; }
 }

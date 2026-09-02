@@ -140,4 +140,88 @@ public sealed class InMemoryDynamicAppManifestStore : IDynamicAppManifestStore
                 .FirstOrDefault());
         }
     }
+
+    /// <summary>
+    /// <para>zh-cn:从内存中的 Manifest 历史删除指定服务，并移除删除后不再包含任何 Mod 的空记录。</para>
+    /// <para>en-us:Removes a service from in-memory manifest history and drops records that no longer contain any Mod.</para>
+    /// </summary>
+    public Task<int> RemoveModAsync(DynamicAppId dynamicAppId, DynamicModId modId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!_records.TryGetValue(dynamicAppId.Value, out var list))
+        {
+            return Task.FromResult(0);
+        }
+
+        var changed = 0;
+        lock (list)
+        {
+            for (var index = list.Count - 1; index >= 0; index--)
+            {
+                var record = list[index];
+                var removed = record.Manifest.Mods.RemoveAll(item => item.Id == modId);
+                if (removed > 0)
+                {
+                    changed += removed;
+                }
+
+                if (record.Manifest.Mods.Count == 0)
+                {
+                    list.RemoveAt(index);
+                }
+            }
+        }
+
+        if (list.Count == 0)
+        {
+            _records.TryRemove(dynamicAppId.Value, out _);
+        }
+
+        return Task.FromResult(changed);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:从内存 Manifest 历史中删除指定 Mod 版本。</para>
+    /// <para>en-us:Removes one Mod version from in-memory manifest history.</para>
+    /// </summary>
+    public Task<int> RemoveVersionAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!_records.TryGetValue(key.DynamicAppId.Value, out var list)) return Task.FromResult(0);
+        var changed = 0;
+        lock (list)
+        {
+            for (var index = list.Count - 1; index >= 0; index--)
+            {
+                var record = list[index];
+                changed += record.Manifest.Mods.RemoveAll(item => item.Id == key.ModId && item.Version == key.Version);
+                if (record.Manifest.Mods.Count == 0) list.RemoveAt(index);
+            }
+        }
+        if (list.Count == 0) _records.TryRemove(key.DynamicAppId.Value, out _);
+        return Task.FromResult(changed);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:从内存历史中删除指定的单条 Manifest 发布记录。</para>
+    /// <para>en-us:Removes one exact manifest publish record from the in-memory history.</para>
+    /// </summary>
+    public Task<bool> RemoveRecordAsync(string recordId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(recordId)) return Task.FromResult(false);
+
+        foreach (var pair in _records.ToArray())
+        {
+            lock (pair.Value)
+            {
+                var removed = pair.Value.RemoveAll(item => string.Equals(item.RecordId, recordId, StringComparison.OrdinalIgnoreCase)) > 0;
+                if (!removed) continue;
+                if (pair.Value.Count == 0) _records.TryRemove(pair.Key, out _);
+                return Task.FromResult(true);
+            }
+        }
+
+        return Task.FromResult(false);
+    }
 }

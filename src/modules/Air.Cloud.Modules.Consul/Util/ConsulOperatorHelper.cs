@@ -75,7 +75,7 @@ namespace Air.Cloud.Modules.Consul.Service
         public Tuple<bool, ConsulServiceOptions> InitConsulRegistration(ConsulServiceOptions serviceOptions)
         {
             #region  检查Consul服务集群
-            var services = ConsulClient.Health.Service(serviceOptions.ServiceName, null, false, null).Result.Response;//健康的服务
+            var services = ConsulClient.Health.Service(serviceOptions.RegistryServiceName, null, false, null).Result.Response;//健康的服务
 
             #region 1.检查注册的IP地址是否冲突
             var serviceUrls = services.Select(p => new

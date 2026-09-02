@@ -45,6 +45,26 @@ public sealed class ReverseTunnelGatewayMiddlewareIntegrationTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证独立 Server 角色启用 Gateway-native 中间件后，可以直接使用进程内 Agent 会话转发公开 HTTP 路由。</para>
+    /// <para>en-us:Verifies that a standalone Server-role host can forward a public HTTP route through an in-process Agent session after enabling the Gateway-native middleware.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public async Task UseReverseTunnelGateway_should_forward_when_host_uses_server_mode()
+    {
+        var invoker = new CapturingInvoker();
+        await using var app = await CreateAppAsync(invoker, ReverseTunnelMode.Server);
+        using var client = app.GetTestClient();
+
+        using var response = await client.GetAsync("/orders/api/list");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Equal("/api/list", invoker.PathAndQuery);
+        Assert.Equal("orders-key", invoker.ServiceKey);
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证 Gateway 中间件解析末尾通配符并将捕获路径应用到重写目标。</para>
     /// <para>en-us:Verifies that the Gateway middleware parses a terminal wildcard and applies the captured path to the rewrite target.</para>
     /// </summary>
@@ -103,9 +123,9 @@ public sealed class ReverseTunnelGatewayMiddlewareIntegrationTests
         Assert.Null(invoker.PathAndQuery);
     }
 
-    private static async Task<WebApplication> CreateAppAsync(CapturingInvoker invoker)
+    private static async Task<WebApplication> CreateAppAsync(CapturingInvoker invoker, ReverseTunnelMode tunnelMode = ReverseTunnelMode.None)
     {
-        var options = new ReverseTunnelOptions { Enabled = true, TunnelMode = ReverseTunnelMode.None, EnableTunnelProxy = true };
+        var options = new ReverseTunnelOptions { Enabled = true, TunnelMode = tunnelMode, EnableTunnelProxy = true };
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Services.AddReverseTunnel();

@@ -1,13 +1,13 @@
 # 本地服务联调
 
-`LocalDevelopment` 执行模式用于两窗口开发：DynamicApp Host 负责控制面、状态持久化和 `/mods/*` 转发；业务 Mod 由开发者在另一个终端或 IDE 中启动。
+`LocalDevelopment` 执行模式用于两窗口开发：AirForge Host 负责控制面、状态持久化和 `/mods/*` 转发；业务 Mod 由开发者在另一个终端或 IDE 中启动。
 
 ## 运行方式
 
-窗口一运行 DynamicApp Host：
+窗口一运行 AirForge Host：
 
 ```powershell
-dotnet run --project .\demo\api\DynamicApp\air.cloud.dynamicapp.entry\air.cloud.dynamicapp.entry.csproj --urls http://127.0.0.1:5110
+dotnet run --project .\demo\airForge\air.cloud.airforge\air.cloud.airforge.csproj --urls http://127.0.0.1:5110
 ```
 
 窗口二运行业务 Mod，例如 auth：

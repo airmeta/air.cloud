@@ -17,6 +17,7 @@ public sealed class DynamicAppProcessRestoreHostedService : BackgroundService
     private readonly IDynamicAppManager _manager;
     private readonly IDynamicAppModRunner _modRunner;
     private readonly IDynamicAppStateStore _stateStore;
+    private readonly IDynamicAppRuntimeOperationCoordinator _operationCoordinator;
 
     /// <summary>
     /// <para>zh-cn:创建 Process 模式启动恢复服务。</para>
@@ -42,18 +43,24 @@ public sealed class DynamicAppProcessRestoreHostedService : BackgroundService
     /// <para>zh-cn:Manager 控制面，用于恢复成功后重新激活目标版本。</para>
     /// <para>en-us:Manager control plane used to reactivate a target version after successful recovery.</para>
     /// </param>
+    /// <param name="operationCoordinator">
+    /// <para>zh-cn:运行实例操作协调器，用于避免启动恢复与人工生命周期操作交叉执行。</para>
+    /// <para>en-us:Runtime operation coordinator used to prevent startup restore from interleaving with manual lifecycle operations.</para>
+    /// </param>
     public DynamicAppProcessRestoreHostedService(
         IDynamicAppStateStore stateStore,
         IDynamicAppManifestStore manifestStore,
         IDynamicAppModRunner modRunner,
         IDynamicAppHealthProbe healthProbe,
-        IDynamicAppManager manager)
+        IDynamicAppManager manager,
+        IDynamicAppRuntimeOperationCoordinator operationCoordinator)
     {
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _manifestStore = manifestStore ?? throw new ArgumentNullException(nameof(manifestStore));
         _modRunner = modRunner ?? throw new ArgumentNullException(nameof(modRunner));
         _healthProbe = healthProbe ?? throw new ArgumentNullException(nameof(healthProbe));
         _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+        _operationCoordinator = operationCoordinator ?? throw new ArgumentNullException(nameof(operationCoordinator));
     }
 
     /// <summary>
@@ -81,36 +88,70 @@ public sealed class DynamicAppProcessRestoreHostedService : BackgroundService
                 return;
             }
 
-            await RestoreTargetAsync(target, stoppingToken).ConfigureAwait(false);
+            var runtimeKey = ToRuntimeKey(target);
+            await using var operation = await _operationCoordinator
+                .AcquireAsync(runtimeKey, stoppingToken)
+                .ConfigureAwait(false);
+            // The startup list is only a candidate snapshot. A manual stop may
+            // have completed while this operation waited for the instance lock.
+            var currentTarget = _stateStore.ListTargets()
+                .FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+            if (currentTarget == null
+                || currentTarget.State != DynamicModLifecycleState.Active
+                || !IsLocalProcessAddress(currentTarget.BaseAddress))
+            {
+                continue;
+            }
+
+            await RestoreTargetAsync(currentTarget, stoppingToken).ConfigureAwait(false);
         }
     }
 
     private async Task RestoreTargetAsync(DynamicAppRouteTarget target, CancellationToken cancellationToken)
     {
+        var runtimeKey = ToRuntimeKey(target);
         var manifest = await ResolveManifestAsync(target, cancellationToken).ConfigureAwait(false);
         var mod = manifest?.Mods.FirstOrDefault(item => item.Id == target.Key.ModId && item.Version == target.Key.Version);
         if (manifest == null || mod == null || mod.ExecutionMode != DynamicModExecutionMode.Process)
         {
-            _stateStore.UpdateState(target.Key, target.State, DynamicModHealthStatus.Unhealthy, $"Process target `{target.Key}` cannot be restored because its Process manifest was not found.");
+            _stateStore.UpdateState(runtimeKey, target.State, DynamicModHealthStatus.Unhealthy, $"Process target `{runtimeKey}` cannot be restored because its Process manifest was not found.");
             return;
         }
 
+        mod.Artifact.DeploymentId = runtimeKey.DeploymentId;
+        mod.Artifact.DeploymentDirectory = target.DeploymentDirectory;
+        if (!string.IsNullOrWhiteSpace(target.DeploymentEntryFilePath))
+        {
+            mod.Artifact.File = target.DeploymentEntryFilePath;
+        }
         var start = await _modRunner.StartAsync(manifest, mod, cancellationToken).ConfigureAwait(false);
         if (!start.Succeeded)
         {
-            _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, start.Message);
+            _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, start.Message);
             return;
         }
 
-        var restoredTarget = _stateStore.ListTargets().FirstOrDefault(item => item.Key == target.Key) ?? target;
+        var restoredTarget = _stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey) ?? target;
         var health = await _healthProbe.ProbeAsync(restoredTarget, mod.Health, cancellationToken).ConfigureAwait(false);
         if (!health.IsHealthy)
         {
-            _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Process target `{target.Key}` startup recovery health probe failed. {health.Message}");
+            var stop = await _modRunner.StopAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false);
+            var message = stop.Succeeded
+                ? $"Process target `{runtimeKey}` startup recovery health probe failed and the process was stopped. {health.Message}"
+                : $"Process target `{runtimeKey}` startup recovery health probe failed. {health.Message} Process cleanup also failed: {stop.Message}";
+            _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
             return;
         }
 
-        await _manager.ActivateAsync(target.Key, cancellationToken).ConfigureAwait(false);
+        var activation = await _manager.ActivateInstanceAsync(ToRuntimeKey(target), cancellationToken).ConfigureAwait(false);
+        if (!activation.Succeeded)
+        {
+            var stop = await _modRunner.StopAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false);
+            var message = stop.Succeeded
+                ? $"Process target `{runtimeKey}` recovery activation failed and the process was stopped. {activation.Message}"
+                : $"Process target `{runtimeKey}` recovery activation failed. {activation.Message} Process cleanup also failed: {stop.Message}";
+            _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, message);
+        }
     }
 
     private async Task<DynamicAppManifest?> ResolveManifestAsync(DynamicAppRouteTarget target, CancellationToken cancellationToken)
@@ -125,4 +166,7 @@ public sealed class DynamicAppProcessRestoreHostedService : BackgroundService
     {
         return baseAddress.IsLoopback || baseAddress.Host is "0.0.0.0" or "+" or "*";
     }
+
+    private static DynamicAppRuntimeKey ToRuntimeKey(DynamicAppRouteTarget target)
+        => new(target.Key, string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim());
 }

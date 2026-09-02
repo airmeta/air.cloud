@@ -13,8 +13,8 @@ public sealed class DockerExistingContainerDynamicAppOrchestratorOptions
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// <para>zh-cn:容器名称模板，支持 {dynamicAppId}、{modId} 和 {version}。如果 Manifest 的 Artifact.ContainerName 已设置，会优先使用 Manifest 中的容器名称。</para>
-    /// <para>en-us:Container name template supporting {dynamicAppId}, {modId}, and {version}. If Manifest Artifact.ContainerName is set, the manifest container name takes precedence.</para>
+    /// <para>zh-cn:容器名称模板，支持 {dynamicAppId}、{modId}、{version} 和 {deploymentId}。如果 Manifest 的 Artifact.ContainerName 已设置，会优先使用 Manifest 中的容器名称。</para>
+    /// <para>en-us:Container name template supporting {dynamicAppId}, {modId}, {version}, and {deploymentId}. If Manifest Artifact.ContainerName is set, the manifest container name takes precedence.</para>
     /// </summary>
     public string ContainerNameTemplate { get; set; } = "{dynamicAppId}-{modId}-{version}";
 

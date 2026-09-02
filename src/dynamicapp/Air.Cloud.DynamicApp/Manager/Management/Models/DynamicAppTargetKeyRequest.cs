@@ -28,6 +28,12 @@ public class DynamicAppTargetKeyRequest
     public string Version { get; set; } = string.Empty;
 
     /// <summary>
+    /// <para>zh-cn:可选的独立部署实例标识；为空时使用 default 实例兼容旧调用。</para>
+    /// <para>en-us:Optional isolated deployment identifier; empty uses the default instance for legacy callers.</para>
+    /// </summary>
+    public string? DeploymentId { get; set; }
+
+    /// <summary>
     /// <para>zh-cn:转换为运行时目标版本键；字段为空或格式非法时抛出参数异常。</para>
     /// <para>en-us:Converts to a runtime target version key; throws an argument exception when fields are empty or invalid.</para>
     /// </summary>
@@ -36,4 +42,15 @@ public class DynamicAppTargetKeyRequest
     /// <para>en-us:The runtime target version key.</para>
     /// </returns>
     public DynamicModVersionKey ToKey() => new(new DynamicAppId(DynamicAppId), new DynamicModId(ModId), new DynamicAppVersion(Version));
+
+    /// <summary>
+    /// <para>zh-cn:将请求转换为包含部署实例的运行时键。</para>
+    /// <para>en-us:Converts the request into a runtime key including its deployment instance.</para>
+    /// </summary>
+    /// <returns>
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </returns>
+    public DynamicAppRuntimeKey ToRuntimeKey()
+        => new(ToKey(), string.IsNullOrWhiteSpace(DeploymentId) ? "default" : DeploymentId.Trim());
 }

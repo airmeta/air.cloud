@@ -1,26 +1,23 @@
-using Air.Cloud.DynamicApp.Contracts.Identifiers;
+using Air.Cloud.Core;
+using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.DynamicApp.Contracts.Runtime;
 
 using Microsoft.AspNetCore.Http;
 
+using System.Diagnostics;
+using System.Net;
+
 namespace Air.Cloud.DynamicApp.Gateway;
 
 /// <summary>
-/// <para>zh-cn:DynamicApp Gateway 转发中间件，将 /mods/{modId}/{path} 请求转发到当前 Active/Healthy Mod。</para>
-/// <para>en-us:DynamicApp Gateway forwarding middleware that proxies /mods/{modId}/{path} requests to the current Active/Healthy Mod.</para>
+/// <para>zh-cn:DynamicApp 动态 Gateway 转发中间件，按独立路由规则选择目标并重写下游路径。</para>
+/// <para>en-us:DynamicApp dynamic Gateway forwarding middleware that selects targets and rewrites downstream paths through independent route rules.</para>
 /// </summary>
 public sealed class DynamicAppGatewayMiddleware
 {
     private static readonly HashSet<string> HopByHopHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
-        "connection",
-        "keep-alive",
-        "proxy-authenticate",
-        "proxy-authorization",
-        "te",
-        "trailer",
-        "transfer-encoding",
-        "upgrade"
+        "connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"
     };
 
     private readonly IDynamicAppRouteCatalog _catalog;
@@ -29,25 +26,9 @@ public sealed class DynamicAppGatewayMiddleware
     private readonly DynamicAppGatewayOptions _options;
 
     /// <summary>
-    /// <para>zh-cn:创建 DynamicApp Gateway 中间件。</para>
-    /// <para>en-us:Creates the DynamicApp Gateway middleware.</para>
+    /// <para>zh-cn:创建动态 Gateway 中间件。</para>
+    /// <para>en-us:Creates the dynamic Gateway middleware.</para>
     /// </summary>
-    /// <param name="next">
-    /// <para>zh-cn:下一个中间件。</para>
-    /// <para>en-us:The next middleware.</para>
-    /// </param>
-    /// <param name="catalog">
-    /// <para>zh-cn:活动路由目录。</para>
-    /// <para>en-us:The active route catalog.</para>
-    /// </param>
-    /// <param name="httpClientFactory">
-    /// <para>zh-cn:用于创建转发请求客户端的工厂。</para>
-    /// <para>en-us:The factory used to create the forwarding HTTP client.</para>
-    /// </param>
-    /// <param name="options">
-    /// <para>zh-cn:Gateway 转发选项。</para>
-    /// <para>en-us:The gateway forwarding options.</para>
-    /// </param>
     public DynamicAppGatewayMiddleware(RequestDelegate next, IDynamicAppRouteCatalog catalog, IHttpClientFactory httpClientFactory, DynamicAppGatewayOptions options)
     {
         _next = next ?? throw new ArgumentNullException(nameof(next));
@@ -57,45 +38,47 @@ public sealed class DynamicAppGatewayMiddleware
     }
 
     /// <summary>
-    /// <para>zh-cn:处理当前 HTTP 请求；非 DynamicApp 路由会继续交给后续中间件。</para>
-    /// <para>en-us:Handles the current HTTP request; non-DynamicApp routes continue to the next middleware.</para>
+    /// <para>zh-cn:处理请求；已由 ASP.NET Endpoint 或前置控制面中间件处理的请求继续传递，其余请求必须命中动态路由。</para>
+    /// <para>en-us:Handles requests; endpoint and control-plane requests already handled earlier continue, while all remaining requests must match a dynamic route.</para>
     /// </summary>
-    /// <param name="context">
-    /// <para>zh-cn:当前 HTTP 上下文。</para>
-    /// <para>en-us:The current HTTP context.</para>
-    /// </param>
-    /// <returns>
-    /// <para>zh-cn:异步处理任务。</para>
-    /// <para>en-us:The asynchronous handling task.</para>
-    /// </returns>
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        if (!TryCreateRouteRequest(context, out var request))
+        if (context.GetEndpoint() != null)
         {
             await _next(context).ConfigureAwait(false);
             return;
         }
 
+        var request = new DynamicAppRouteRequest
+        {
+            HttpMethod = context.Request.Method,
+            Path = context.Request.Path.Value ?? "/"
+        };
+        var startedAt = Stopwatch.GetTimestamp();
+
         if (_options.RejectUpgradeRequests && context.WebSockets.IsWebSocketRequest)
         {
-            context.Response.StatusCode = StatusCodes.Status426UpgradeRequired;
-            await WriteGatewayFailureAsync(context, "DynamicApp Gateway does not proxy WebSocket requests.", "dynamicapp.gateway.websocket_not_supported").ConfigureAwait(false);
+            await RejectAsync(context, "DynamicApp Gateway does not proxy WebSocket requests.", "dynamicapp.gateway.websocket_not_supported", StatusCodes.Status426UpgradeRequired, request, null, startedAt).ConfigureAwait(false);
             return;
         }
 
         if (_options.MaxRequestBodyBytes > 0 && context.Request.ContentLength > _options.MaxRequestBodyBytes)
         {
-            context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
-            await WriteGatewayFailureAsync(context, "DynamicApp Gateway request body is too large.", "dynamicapp.gateway.request_too_large").ConfigureAwait(false);
+            await RejectAsync(context, "DynamicApp Gateway request body is too large.", "dynamicapp.gateway.request_too_large", StatusCodes.Status413PayloadTooLarge, request, null, startedAt).ConfigureAwait(false);
             return;
         }
 
-        var target = await _catalog.ResolveAsync(request, context.RequestAborted).ConfigureAwait(false);
-        if (target == null)
+        var resolution = await _catalog.ResolveAsync(request, context.RequestAborted).ConfigureAwait(false);
+        if (!resolution.Succeeded || resolution.Match == null || resolution.Target == null)
         {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-            await WriteGatewayFailureAsync(context, "No active DynamicApp Mod target was found.", "dynamicapp.gateway.target_not_found").ConfigureAwait(false);
+            var statusCode = resolution.ErrorCode == "dynamicapp.target_unavailable"
+                || resolution.ErrorCode == "dynamicapp.specified_target_unavailable"
+                ? StatusCodes.Status503ServiceUnavailable
+                : resolution.ErrorCode == "dynamicapp.route_not_found"
+                    ? StatusCodes.Status404NotFound
+                    : StatusCodes.Status404NotFound;
+            await RejectAsync(context, resolution.Message, resolution.ErrorCode, statusCode, request, resolution.Match, startedAt).ConfigureAwait(false);
             return;
         }
 
@@ -103,66 +86,83 @@ public sealed class DynamicAppGatewayMiddleware
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, timeout.Token);
         try
         {
-            var upstreamUri = BuildRequestUri(target, context.Request.Path, context.Request.QueryString);
+            var upstreamUri = BuildRequestUri(resolution.Match, resolution.Target, context.Request.QueryString);
             using var upstreamRequest = CreateUpstreamRequest(context, upstreamUri);
             using var upstreamResponse = await _httpClient.SendAsync(upstreamRequest, HttpCompletionOption.ResponseHeadersRead, linked.Token).ConfigureAwait(false);
             await CopyResponseAsync(context, upstreamResponse).ConfigureAwait(false);
+            LogForwarded(request, resolution, context, upstreamResponse.StatusCode, startedAt);
         }
         catch (TaskCanceledException) when (!context.RequestAborted.IsCancellationRequested)
         {
             context.Response.StatusCode = StatusCodes.Status504GatewayTimeout;
             await WriteGatewayFailureAsync(context, "DynamicApp upstream request timed out.", "dynamicapp.gateway.timeout").ConfigureAwait(false);
+            LogFailure(request, resolution, context, StatusCodes.Status504GatewayTimeout, "timeout", startedAt);
         }
         catch (HttpRequestException exception)
         {
             context.Response.StatusCode = StatusCodes.Status502BadGateway;
             await WriteGatewayFailureAsync(context, exception.Message, "dynamicapp.gateway.upstream_error").ConfigureAwait(false);
+            LogFailure(request, resolution, context, StatusCodes.Status502BadGateway, "upstream_error", startedAt, exception);
         }
     }
 
-    private bool TryCreateRouteRequest(HttpContext context, out DynamicAppRouteRequest request)
+    private async Task RejectAsync(HttpContext context, string message, string errorCode, int statusCode, DynamicAppRouteRequest request, DynamicAppGatewayRouteMatch? match, long startedAt)
     {
-        request = null!;
-        if (string.IsNullOrWhiteSpace(_options.DynamicAppId))
-        {
-            return false;
-        }
-
-        var routePrefix = NormalizePrefix(_options.RoutePrefix);
-        var path = context.Request.Path.Value ?? string.Empty;
-        if (!path.StartsWith(routePrefix + "/", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        var remaining = path[routePrefix.Length..].Trim('/');
-        var modSegment = remaining.Split('/', 2, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(modSegment))
-        {
-            return false;
-        }
-
-        request = new DynamicAppRouteRequest
-        {
-            DynamicAppId = new DynamicAppId(_options.DynamicAppId),
-            ModId = new DynamicModId(modSegment),
-            Path = path
-        };
-        return true;
+        context.Response.StatusCode = statusCode;
+        await WriteGatewayFailureAsync(context, message, errorCode).ConfigureAwait(false);
+        LogRejected(request, match, context, errorCode, startedAt);
     }
 
-    private Uri BuildRequestUri(DynamicAppRouteTarget target, PathString path, QueryString query)
+    private void LogForwarded(DynamicAppRouteRequest request, DynamicAppGatewayRouteResolution resolution, HttpContext context, HttpStatusCode statusCode, long startedAt)
     {
-        var upstream = DynamicAppRouteTargetBuilder.BuildUpstreamUri(target, path.Value ?? "/");
-        if (!query.HasValue)
+        if (!_options.EnableAccessLogging || resolution.Match == null || resolution.Target == null) return;
+        PrintAccess("forwarded", AppPrintLevel.Information, $"DynamicApp Gateway forwarded {request.HttpMethod} {request.Path} through route `{resolution.Match.Route.RouteId}`.", new Dictionary<string, object>
         {
-            return upstream;
-        }
+            ["Method"] = request.HttpMethod, ["Path"] = request.Path, ["RouteId"] = resolution.Match.Route.RouteId,
+            ["TargetKey"] = resolution.Target.Key.ToString(), ["DeploymentId"] = resolution.Target.DeploymentId,
+            ["StatusCode"] = (int)statusCode, ["ElapsedMilliseconds"] = GetElapsedMilliseconds(startedAt)
+        });
+    }
 
-        var builder = new UriBuilder(upstream)
+    private void LogRejected(DynamicAppRouteRequest request, DynamicAppGatewayRouteMatch? match, HttpContext context, string reason, long startedAt)
+    {
+        if (!_options.EnableAccessLogging) return;
+        var parameters = new Dictionary<string, object>
         {
-            Query = query.Value!.TrimStart('?')
+            ["Method"] = request.HttpMethod, ["Path"] = request.Path, ["StatusCode"] = context.Response.StatusCode,
+            ["Reason"] = reason, ["ElapsedMilliseconds"] = GetElapsedMilliseconds(startedAt)
         };
+        if (match != null) parameters["RouteId"] = match.Route.RouteId;
+        PrintAccess("rejected", AppPrintLevel.Warn, $"DynamicApp Gateway rejected {request.HttpMethod} {request.Path}.", parameters);
+    }
+
+    private void LogFailure(DynamicAppRouteRequest request, DynamicAppGatewayRouteResolution resolution, HttpContext context, int statusCode, string reason, long startedAt, Exception? exception = null)
+    {
+        if (!_options.EnableAccessLogging || resolution.Match == null || resolution.Target == null) return;
+        var parameters = new Dictionary<string, object>
+        {
+            ["Method"] = request.HttpMethod, ["Path"] = request.Path, ["RouteId"] = resolution.Match.Route.RouteId,
+            ["TargetKey"] = resolution.Target.Key.ToString(), ["DeploymentId"] = resolution.Target.DeploymentId,
+            ["StatusCode"] = statusCode, ["Reason"] = reason, ["ElapsedMilliseconds"] = GetElapsedMilliseconds(startedAt)
+        };
+        if (exception != null) { parameters["ExceptionType"] = exception.GetType().FullName ?? exception.GetType().Name; parameters["ExceptionMessage"] = exception.Message; }
+        PrintAccess("failed", AppPrintLevel.Error, $"DynamicApp Gateway failed {request.HttpMethod} {request.Path} through route `{resolution.Match.Route.RouteId}`.", parameters);
+    }
+
+    private static double GetElapsedMilliseconds(long startedAt) => Math.Round(Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds, 2);
+
+    private static void PrintAccess(string operation, AppPrintLevel level, string message, Dictionary<string, object> parameters)
+    {
+        parameters["Operation"] = operation;
+        AppRealization.Output.Print("DynamicApp Gateway Access", message, level, AdditionalParams: parameters);
+    }
+
+    private static Uri BuildRequestUri(DynamicAppGatewayRouteMatch match, DynamicAppRouteTarget target, QueryString query)
+    {
+        var path = match.BuildDownstreamPath();
+        var uri = new Uri(target.BaseAddress, path);
+        if (!query.HasValue) return uri;
+        var builder = new UriBuilder(uri) { Query = query.Value!.TrimStart('?') };
         return builder.Uri;
     }
 
@@ -171,11 +171,7 @@ public sealed class DynamicAppGatewayMiddleware
         var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), upstreamUri);
         foreach (var header in context.Request.Headers)
         {
-            if (ShouldSkipRequestHeader(header.Key))
-            {
-                continue;
-            }
-
+            if (HopByHopHeaders.Contains(header.Key) || (!_options.ForwardHostHeader && string.Equals(header.Key, "Host", StringComparison.OrdinalIgnoreCase))) continue;
             if (!request.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()))
             {
                 request.Content ??= new StreamContent(context.Request.Body);
@@ -183,53 +179,25 @@ public sealed class DynamicAppGatewayMiddleware
             }
         }
 
-        if (HasBody(context.Request.Method))
-        {
-            request.Content ??= new StreamContent(context.Request.Body);
-        }
-
+        if (HasBody(context.Request.Method)) request.Content ??= new StreamContent(context.Request.Body);
         request.Headers.TryAddWithoutValidation("X-Forwarded-Host", context.Request.Host.Value);
         request.Headers.TryAddWithoutValidation("X-Forwarded-Proto", context.Request.Scheme);
         request.Headers.TryAddWithoutValidation("X-Forwarded-Path", context.Request.Path.Value);
         return request;
     }
 
-    private bool ShouldSkipRequestHeader(string header)
-    {
-        return HopByHopHeaders.Contains(header)
-            || (!_options.ForwardHostHeader && string.Equals(header, "Host", StringComparison.OrdinalIgnoreCase));
-    }
-
     private static async Task CopyResponseAsync(HttpContext context, HttpResponseMessage upstreamResponse)
     {
         context.Response.StatusCode = (int)upstreamResponse.StatusCode;
-        foreach (var header in upstreamResponse.Headers)
+        foreach (var header in upstreamResponse.Headers.Concat(upstreamResponse.Content.Headers))
         {
-            if (!HopByHopHeaders.Contains(header.Key))
-            {
-                context.Response.Headers[header.Key] = header.Value.ToArray();
-            }
+            if (!HopByHopHeaders.Contains(header.Key)) context.Response.Headers[header.Key] = header.Value.ToArray();
         }
-
-        foreach (var header in upstreamResponse.Content.Headers)
-        {
-            if (!HopByHopHeaders.Contains(header.Key))
-            {
-                context.Response.Headers[header.Key] = header.Value.ToArray();
-            }
-        }
-
         context.Response.Headers.Remove("transfer-encoding");
         await upstreamResponse.Content.CopyToAsync(context.Response.Body, context.RequestAborted).ConfigureAwait(false);
     }
 
-    private static bool HasBody(string method)
-    {
-        return HttpMethods.IsPost(method)
-            || HttpMethods.IsPut(method)
-            || HttpMethods.IsPatch(method)
-            || HttpMethods.IsDelete(method);
-    }
+    private static bool HasBody(string method) => HttpMethods.IsPost(method) || HttpMethods.IsPut(method) || HttpMethods.IsPatch(method) || HttpMethods.IsDelete(method);
 
     private static Task WriteGatewayFailureAsync(HttpContext context, string message, string errorCode)
     {
@@ -238,14 +206,4 @@ public sealed class DynamicAppGatewayMiddleware
     }
 
     private static TimeSpan NormalizeTimeout(TimeSpan timeout) => timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(100) : timeout;
-
-    private static string NormalizePrefix(string prefix)
-    {
-        if (string.IsNullOrWhiteSpace(prefix))
-        {
-            return "/mods";
-        }
-
-        return "/" + prefix.Trim('/');
-    }
 }

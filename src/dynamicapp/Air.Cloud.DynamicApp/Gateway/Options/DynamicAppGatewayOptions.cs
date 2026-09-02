@@ -7,18 +7,6 @@ namespace Air.Cloud.DynamicApp.Gateway;
 public sealed class DynamicAppGatewayOptions
 {
     /// <summary>
-    /// <para>zh-cn:当前 Gateway 所属 DynamicApp 标识，宿主必须显式设置。</para>
-    /// <para>en-us:Identifier of the DynamicApp owned by the current Gateway; the host must set it explicitly.</para>
-    /// </summary>
-    public string DynamicAppId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// <para>zh-cn:Mod 路由入口前缀，默认 /mods。</para>
-    /// <para>en-us:Route entry prefix for Mods, /mods by default.</para>
-    /// </summary>
-    public string RoutePrefix { get; set; } = "/mods";
-
-    /// <summary>
     /// <para>zh-cn:是否把原始 Host 请求头转发给上游，默认 false。</para>
     /// <para>en-us:Whether to forward the original Host header upstream, false by default.</para>
     /// </summary>
@@ -41,4 +29,10 @@ public sealed class DynamicAppGatewayOptions
     /// <para>en-us:Whether WebSocket/Upgrade requests are rejected, true by default because the current forwarder only covers HTTP request/response traffic.</para>
     /// </summary>
     public bool RejectUpgradeRequests { get; set; } = true;
+
+    /// <summary>
+    /// <para>zh-cn:是否输出 DynamicApp Gateway 代理访问日志，默认启用；日志不包含 Ticket、Authorization、请求体或敏感请求头。</para>
+    /// <para>en-us:Whether DynamicApp Gateway proxy access logging is enabled, true by default; logs never include Tickets, Authorization, request bodies, or sensitive headers.</para>
+    /// </summary>
+    public bool EnableAccessLogging { get; set; } = true;
 }

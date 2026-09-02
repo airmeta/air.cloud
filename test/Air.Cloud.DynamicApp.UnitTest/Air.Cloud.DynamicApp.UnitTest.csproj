@@ -22,7 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\capabilities\Air.Cloud.Capabilities.ControlPlaneAuth\Air.Cloud.Capabilities.ControlPlaneAuth.csproj" />
     <ProjectReference Include="..\..\src\dynamicapp\Air.Cloud.DynamicApp\Air.Cloud.DynamicApp.csproj" />
+    <ProjectReference Include="..\..\demo\airForge\air.cloud.airforge\air.cloud.airforge.csproj" />
   </ItemGroup>
 
 </Project>

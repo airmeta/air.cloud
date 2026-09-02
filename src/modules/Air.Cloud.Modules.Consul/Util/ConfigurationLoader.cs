@@ -27,15 +27,23 @@ namespace Air.Cloud.Modules.Consul.Util
         /// <para>zh-cn:加载配置文件</para>
         /// <para>en-us:load remote configuration</para>
         /// </summary>
-        /// <param name="ServiceOptions"></param>
+        /// <param name="ServiceOptions">
+        /// <para>zh-cn:Consul 服务配置；当 `EnableConfigurationCenter` 为 false 时不会访问 Consul，只返回空配置。</para>
+        /// <para>en-us:The Consul service options; when `EnableConfigurationCenter` is false, Consul is not accessed and an empty configuration is returned.</para>
+        /// </param>
         /// <returns>
-        /// item1: this service configuration
-        /// item2: common configuration
+        /// <para>zh-cn:item1 为当前服务配置，item2 为公共配置；未启用公共配置或配置中心时 item2 为 null。</para>
+        /// <para>en-us:item1 is the current service configuration, and item2 is the common configuration; item2 is null when common configuration or the configuration center is disabled.</para>
         /// </returns>
         public static (IConfiguration, IConfiguration) LoadRemoteConfiguration(ConsulServiceOptions ServiceOptions)
         {
+            if (!ServiceOptions.EnableConfigurationCenter)
+            {
+                return (new ConfigurationBuilder().Build(), null);
+            }
+
             //加载配置文件 
-            var config = new ConfigurationBuilder().AddConsul($"{ServiceOptions.ServiceName.Replace(".", "/")}/{AppConst.SystemEnvironmentConfigFileFullName}",
+            var config = new ConfigurationBuilder().AddConsul($"{ServiceOptions.ConfigurationServiceName.Replace(".", "/")}/{AppConst.SystemEnvironmentConfigFileFullName}",
                         options =>
                         {
                             options.Optional = true;

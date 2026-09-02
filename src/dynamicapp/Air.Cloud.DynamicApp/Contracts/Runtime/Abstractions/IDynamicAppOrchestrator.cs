@@ -47,4 +47,23 @@ public interface IDynamicAppOrchestrator
     /// <para>en-us:The stop result.</para>
     /// </returns>
     Task<DynamicAppOperationResult> StopAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <para>zh-cn:停止指定部署实例；未提供实例级实现的编排器回退到包版本操作，具体实现应尽量覆盖以保持实例隔离。</para>
+    /// <para>en-us:Stops one deployment instance; orchestrators without instance-level support fall back to package-version behavior, while concrete implementations should override this to preserve instance isolation.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:The cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:停止结果。</para>
+    /// <para>en-us:The stop result.</para>
+    /// </returns>
+    Task<DynamicAppOperationResult> StopAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+        => StopAsync(key.PackageKey, cancellationToken);
 }

@@ -1,5 +1,8 @@
 using System.IO.Compression;
 
+using Air.Cloud.DynamicApp.Contracts.Identifiers;
+using Air.Cloud.DynamicApp.Contracts.Runtime;
+
 namespace Air.Cloud.DynamicApp.Manager;
 
 /// <summary>
@@ -60,33 +63,168 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
         }
 
         EnsureInsideRoot(packageDirectory);
-        if (existed)
+        var parentDirectory = Path.GetDirectoryName(packageDirectory)
+            ?? throw new InvalidOperationException($"Package directory `{packageDirectory}` has no parent directory.");
+        Directory.CreateDirectory(parentDirectory);
+
+        var stagingDirectory = packageDirectory + ".staging-" + Guid.NewGuid().ToString("N");
+        var backupDirectory = packageDirectory + ".backup-" + Guid.NewGuid().ToString("N");
+        EnsureInsideRoot(stagingDirectory);
+        EnsureInsideRoot(backupDirectory);
+
+        try
         {
-            Directory.Delete(packageDirectory, recursive: true);
+            Directory.CreateDirectory(stagingDirectory);
+            var stagingArchivePath = Path.Combine(stagingDirectory, PackageFileName);
+            var bytes = await CopyPackageAsync(packageStream, stagingArchivePath, cancellationToken).ConfigureAwait(false);
+            var stagingExtractedDirectory = Path.Combine(stagingDirectory, "content");
+            Directory.CreateDirectory(stagingExtractedDirectory);
+            ExtractZipSafely(stagingArchivePath, stagingExtractedDirectory);
+
+            var entryFile = string.IsNullOrWhiteSpace(request.EntryFile)
+                ? InferEntryFile(stagingExtractedDirectory)
+                : request.EntryFile;
+            var stagingEntryFilePath = ResolveEntryFilePath(stagingExtractedDirectory, entryFile);
+
+            if (existed)
+            {
+                Directory.Move(packageDirectory, backupDirectory);
+            }
+
+            try
+            {
+                Directory.Move(stagingDirectory, packageDirectory);
+            }
+            catch
+            {
+                if (existed && Directory.Exists(backupDirectory) && !Directory.Exists(packageDirectory))
+                {
+                    Directory.Move(backupDirectory, packageDirectory);
+                }
+
+                throw;
+            }
+
+            if (Directory.Exists(backupDirectory))
+            {
+                Directory.Delete(backupDirectory, recursive: true);
+            }
+
+            var archivePath = Path.Combine(packageDirectory, PackageFileName);
+            var extractedDirectory = Path.Combine(packageDirectory, "content");
+            var entryFilePath = Path.Combine(extractedDirectory, Path.GetRelativePath(stagingExtractedDirectory, stagingEntryFilePath));
+            return new DynamicAppModPackageRecord
+            {
+                Key = request.Key,
+                OriginalFileName = Path.GetFileName(request.OriginalFileName),
+                PackageFilePath = archivePath,
+                ExtractedDirectory = extractedDirectory,
+                EntryFilePath = entryFilePath,
+                PackageBytes = bytes,
+                SavedAtUtc = DateTimeOffset.UtcNow,
+                Overwritten = existed
+            };
+        }
+        finally
+        {
+            if (Directory.Exists(stagingDirectory))
+            {
+                Directory.Delete(stagingDirectory, recursive: true);
+            }
+
+            if (Directory.Exists(backupDirectory))
+            {
+                Directory.Delete(backupDirectory, recursive: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:从包库存创建独立部署目录，并复制完整内容与压缩包快照；后续运行时不会读取包库存中的可变文件。</para>
+    /// <para>en-us:Creates an isolated deployment directory and copies the complete content and archive snapshot; the runtime will not read mutable files from the package inventory afterward.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:源包版本键。</para>
+    /// <para>en-us:The source package version key.</para>
+    /// </param>
+    /// <param name="deploymentId">
+    /// <para>zh-cn:独立部署标识。</para>
+    /// <para>en-us:The isolated deployment identifier.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:Cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:独立部署目录记录。</para>
+    /// <para>en-us:The isolated deployment-directory record.</para>
+    /// </returns>
+    /// <param name="entryFile">
+    /// <para>zh-cn:可选的源包入口文件；为空时从部署副本中推导 DLL。</para>
+    /// <para>en-us:Optional source-package entry file; when empty, a DLL is inferred from the deployment copy.</para>
+    /// </param>
+    public Task<DynamicAppModPackageDeploymentRecord> CreateDeploymentAsync(
+        DynamicModVersionKey key,
+        string deploymentId,
+        CancellationToken cancellationToken = default,
+        string? entryFile = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ValidatePathSegment(deploymentId, nameof(deploymentId));
+
+        var sourceDirectory = BuildPackageDirectory(new DynamicAppModPackageSaveRequest
+        {
+            Key = key,
+            OriginalFileName = "package.zip"
+        });
+        var sourceArchive = Path.Combine(sourceDirectory, PackageFileName);
+        var sourceContent = Path.Combine(sourceDirectory, "content");
+        if (!File.Exists(sourceArchive) || !Directory.Exists(sourceContent))
+        {
+            throw new FileNotFoundException($"DynamicApp package `{key}` was not found.", sourceDirectory);
         }
 
-        Directory.CreateDirectory(packageDirectory);
-        var archivePath = Path.Combine(packageDirectory, PackageFileName);
-        var bytes = await CopyPackageAsync(packageStream, archivePath, cancellationToken).ConfigureAwait(false);
-        var extractedDirectory = Path.Combine(packageDirectory, "content");
-        Directory.CreateDirectory(extractedDirectory);
-        ExtractZipSafely(archivePath, extractedDirectory);
-
-        var entryFile = string.IsNullOrWhiteSpace(request.EntryFile)
-            ? InferEntryFile(extractedDirectory)
-            : request.EntryFile;
-        var entryFilePath = ResolveEntryFilePath(extractedDirectory, entryFile);
-        return new DynamicAppModPackageRecord
+        var deploymentDirectory = Path.GetFullPath(Path.Combine(
+            _rootPath,
+            "deployments",
+            key.DynamicAppId.Value,
+            key.ModId.Value,
+            key.Version.Value,
+            deploymentId));
+        EnsureInsideRoot(deploymentDirectory);
+        if (Directory.Exists(deploymentDirectory))
         {
-            Key = request.Key,
-            OriginalFileName = Path.GetFileName(request.OriginalFileName),
-            PackageFilePath = archivePath,
-            ExtractedDirectory = extractedDirectory,
-            EntryFilePath = entryFilePath,
-            PackageBytes = bytes,
-            SavedAtUtc = DateTimeOffset.UtcNow,
-            Overwritten = existed
-        };
+            throw new InvalidOperationException($"DynamicApp deployment `{key}/{deploymentId}` already exists.");
+        }
+
+        try
+        {
+            Directory.CreateDirectory(deploymentDirectory);
+            File.Copy(sourceArchive, Path.Combine(deploymentDirectory, PackageFileName));
+            CopyDirectory(sourceContent, Path.Combine(deploymentDirectory, "content"), cancellationToken);
+            var deploymentContent = Path.Combine(deploymentDirectory, "content");
+            var relativeEntryFile = ResolveRelativeEntryFile(sourceContent, entryFile);
+            var resolvedEntryFile = string.IsNullOrWhiteSpace(relativeEntryFile)
+                ? InferEntryFile(deploymentContent)
+                : relativeEntryFile;
+            return Task.FromResult(new DynamicAppModPackageDeploymentRecord
+            {
+                Key = key,
+                DeploymentId = deploymentId,
+                DeploymentDirectory = deploymentDirectory,
+                EntryFilePath = ResolveEntryFilePath(deploymentContent, resolvedEntryFile),
+                CreatedAtUtc = DateTimeOffset.UtcNow
+            });
+        }
+        catch
+        {
+            if (Directory.Exists(deploymentDirectory))
+            {
+                Directory.Delete(deploymentDirectory, recursive: true);
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -117,11 +255,6 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
                     .OrderBy(version => version.Version, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                if (versions.Count == 0)
-                {
-                    continue;
-                }
-
                 result.Add(new DynamicAppModPackageModView
                 {
                     DynamicAppId = appDirectory.Name,
@@ -135,6 +268,35 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
             .OrderBy(item => item.DynamicAppId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(item => item.ModId, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除指定 Mod 包版本目录，并在目录为空时清理上层 Mod 和应用目录。</para>
+    /// <para>en-us:Deletes the specified Mod package-version directory and removes empty parent Mod and application directories.</para>
+    /// </summary>
+    public bool RemovePackageVersion(DynamicModVersionKey key)
+    {
+        var versionDirectory = Path.GetFullPath(Path.Combine(_rootPath, "mods", key.DynamicAppId.Value, key.ModId.Value, key.Version.Value));
+        EnsureInsideRoot(versionDirectory);
+        if (!Directory.Exists(versionDirectory))
+        {
+            return false;
+        }
+
+        Directory.Delete(versionDirectory, recursive: true);
+        var modDirectory = Path.GetDirectoryName(versionDirectory);
+        if (!string.IsNullOrWhiteSpace(modDirectory) && Directory.Exists(modDirectory) && !Directory.EnumerateFileSystemEntries(modDirectory).Any())
+        {
+            Directory.Delete(modDirectory);
+        }
+
+        var appDirectory = !string.IsNullOrWhiteSpace(modDirectory) ? Path.GetDirectoryName(modDirectory) : null;
+        if (!string.IsNullOrWhiteSpace(appDirectory) && Directory.Exists(appDirectory) && !Directory.EnumerateFileSystemEntries(appDirectory).Any())
+        {
+            Directory.Delete(appDirectory);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -159,6 +321,75 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
     }
 
     /// <summary>
+    /// <para>zh-cn:创建应用下的 Mod 配置目录；目录存在时保持幂等，不写入版本包、Manifest 或运行时状态。</para>
+    /// <para>en-us:Creates an application Mod configuration directory idempotently without writing a package version, manifest, or runtime state.</para>
+    /// </summary>
+    /// <param name="dynamicAppId">
+    /// <para>zh-cn:DynamicApp 应用标识。</para>
+    /// <para>en-us:DynamicApp application identifier.</para>
+    /// </param>
+    /// <param name="modId">
+    /// <para>zh-cn:Mod 标识。</para>
+    /// <para>en-us:Mod identifier.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:包含已创建 Mod 数量的包管理应用视图。</para>
+    /// <para>en-us:The package-management application view containing the created Mod count.</para>
+    /// </returns>
+    public DynamicAppPackageApplicationView CreateMod(string dynamicAppId, string modId)
+    {
+        ValidatePathSegment(dynamicAppId, nameof(dynamicAppId));
+        ValidatePathSegment(modId, nameof(modId));
+        var directory = Path.GetFullPath(Path.Combine(_rootPath, "mods", dynamicAppId, modId));
+        EnsureInsideRoot(directory);
+        if (Directory.Exists(directory))
+        {
+            throw new InvalidOperationException($"DynamicApp Mod `{dynamicAppId}/{modId}` already exists.");
+        }
+
+        Directory.CreateDirectory(directory);
+        return BuildApplicationView(new DirectoryInfo(Path.GetDirectoryName(directory)!));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除没有包版本、运行目录或归档目录的 Mod 服务。</para>
+    /// <para>en-us:Deletes a Mod service only when no package versions, runtime directories, or archived directories remain.</para>
+    /// </summary>
+    public bool RemoveMod(string dynamicAppId, string modId)
+    {
+        ValidatePathSegment(dynamicAppId, nameof(dynamicAppId));
+        ValidatePathSegment(modId, nameof(modId));
+        var modDirectory = Path.GetFullPath(Path.Combine(_rootPath, "mods", dynamicAppId, modId));
+        var deploymentsDirectory = Path.GetFullPath(Path.Combine(_rootPath, "deployments", dynamicAppId, modId));
+        var archivesDirectory = Path.GetFullPath(Path.Combine(_rootPath, "archives", "deployments", dynamicAppId, modId));
+        EnsureInsideRoot(modDirectory);
+        EnsureInsideRoot(deploymentsDirectory);
+        EnsureInsideRoot(archivesDirectory);
+        if (!Directory.Exists(modDirectory))
+        {
+            return false;
+        }
+
+        if (Directory.EnumerateFiles(modDirectory, "*", SearchOption.AllDirectories).Any()
+            || Directory.Exists(deploymentsDirectory) && Directory.EnumerateFiles(deploymentsDirectory, "*", SearchOption.AllDirectories).Any()
+            || Directory.Exists(archivesDirectory) && Directory.EnumerateFiles(archivesDirectory, "*", SearchOption.AllDirectories).Any())
+        {
+            throw new InvalidOperationException($"DynamicApp Mod `{dynamicAppId}/{modId}` cannot be removed while packages, deployments, or archived files exist.");
+        }
+
+        Directory.Delete(modDirectory, recursive: true);
+        var appDirectory = Path.GetDirectoryName(modDirectory);
+        if (!string.IsNullOrWhiteSpace(appDirectory)
+            && Directory.Exists(appDirectory)
+            && !Directory.EnumerateFileSystemEntries(appDirectory).Any())
+        {
+            Directory.Delete(appDirectory);
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// <para>zh-cn:列出 DynamicApp 应用目录；即使应用下还没有 Mod 版本，也会返回该应用。</para>
     /// <para>en-us:Lists DynamicApp application directories; applications are returned even when no Mod version exists under them.</para>
     /// </summary>
@@ -179,6 +410,258 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
             .Select(BuildApplicationView)
             .OrderBy(item => item.DynamicAppId, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// <para>zh-cn:扫描 deployments/{dynamicAppId}/{modId}/{version}/{deploymentId} 目录结构，返回磁盘上存在的全部隔离副本目录。</para>
+    /// <para>en-us:Scans the deployments/{dynamicAppId}/{modId}/{version}/{deploymentId} structure and returns every isolated replica directory present on disk.</para>
+    /// </summary>
+    /// <returns>
+    /// <para>zh-cn:按应用、Mod、版本和部署实例排序的目录记录。</para>
+    /// <para>en-us:Directory records sorted by application, Mod, version, and deployment instance.</para>
+    /// </returns>
+    public IReadOnlyCollection<DynamicAppModPackageDeploymentDirectoryRecord> ListDeploymentDirectories()
+    {
+        var deploymentsRoot = Path.GetFullPath(Path.Combine(_rootPath, "deployments"));
+        EnsureInsideRoot(deploymentsRoot);
+        if (!Directory.Exists(deploymentsRoot))
+        {
+            return Array.Empty<DynamicAppModPackageDeploymentDirectoryRecord>();
+        }
+
+        var records = new List<DynamicAppModPackageDeploymentDirectoryRecord>();
+        foreach (var appDirectory in OrderedDirectories(deploymentsRoot))
+        {
+            foreach (var modDirectory in OrderedDirectories(appDirectory.FullName))
+            {
+                foreach (var versionDirectory in OrderedDirectories(modDirectory.FullName))
+                {
+                    foreach (var deploymentDirectory in OrderedDirectories(versionDirectory.FullName))
+                    {
+                        try
+                        {
+                            var key = new DynamicModVersionKey(
+                                new DynamicAppId(appDirectory.Name),
+                                new DynamicModId(modDirectory.Name),
+                                new DynamicAppVersion(versionDirectory.Name));
+                            EnsureInsideRoot(deploymentDirectory.FullName);
+                            records.Add(new DynamicAppModPackageDeploymentDirectoryRecord
+                            {
+                                Key = key,
+                                DeploymentId = deploymentDirectory.Name,
+                                DeploymentDirectory = deploymentDirectory.FullName,
+                                LastModifiedUtc = deploymentDirectory.LastWriteTimeUtc
+                            });
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Ignore manually created directories that do not match the DynamicApp identifier contract.
+                        }
+                    }
+                }
+            }
+        }
+
+        return records
+            .OrderBy(item => item.Key.DynamicAppId.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Key.ModId.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Key.Version.Value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.DeploymentId, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// <para>zh-cn:扫描指定运行副本目录中的文件，并将路径限制在 deployments 运行空间内。</para>
+    /// <para>en-us:Scans one isolated deployment directory while constraining every returned path to the deployments runtime space.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:运行副本文件清单；目录不存在或没有文件时返回空集合。</para>
+    /// <para>en-us:The deployment file inventory; an empty collection is returned when the directory does not exist or has no files.</para>
+    /// </returns>
+    public IReadOnlyCollection<DynamicAppModPackageFileView> ListDeploymentFiles(DynamicAppRuntimeKey key)
+    {
+        ValidatePathSegment(key.PackageKey.DynamicAppId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.ModId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.Version.Value, nameof(key));
+        ValidatePathSegment(key.DeploymentId, nameof(key));
+
+        var deploymentDirectory = Path.GetFullPath(Path.Combine(
+            _rootPath,
+            "deployments",
+            key.PackageKey.DynamicAppId.Value,
+            key.PackageKey.ModId.Value,
+            key.PackageKey.Version.Value,
+            key.DeploymentId));
+        EnsureInsideRoot(deploymentDirectory);
+        return ListDeploymentFiles(key, deploymentDirectory);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:列出指定运行目录中的文件；目录由运行状态存储提供，结果使用该目录作为相对路径根。</para>
+    /// <para>en-us:Lists files under a specified runtime directory; the directory comes from runtime state and is used as the relative-path root.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="runtimeDirectory">
+    /// <para>zh-cn:运行目录绝对路径。</para>
+    /// <para>en-us:The absolute runtime directory.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:运行目录文件清单。</para>
+    /// <para>en-us:The runtime-directory file inventory.</para>
+    /// </returns>
+    public IReadOnlyCollection<DynamicAppModPackageFileView> ListDeploymentFiles(DynamicAppRuntimeKey key, string runtimeDirectory)
+    {
+        ValidatePathSegment(key.PackageKey.DynamicAppId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.ModId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.Version.Value, nameof(key));
+        ValidatePathSegment(key.DeploymentId, nameof(key));
+        if (string.IsNullOrWhiteSpace(runtimeDirectory) || !Path.IsPathFullyQualified(runtimeDirectory))
+        {
+            throw new ArgumentException("Runtime directory must be an absolute path.", nameof(runtimeDirectory));
+        }
+
+        var deploymentDirectory = Path.GetFullPath(runtimeDirectory);
+        if (!Directory.Exists(deploymentDirectory))
+        {
+            return Array.Empty<DynamicAppModPackageFileView>();
+        }
+
+        var packagePath = Path.Combine(deploymentDirectory, PackageFileName);
+        var contentDirectory = Path.Combine(deploymentDirectory, "content");
+        return Directory.EnumerateFiles(deploymentDirectory, "*", SearchOption.AllDirectories)
+            .Select(path => BuildDeploymentFileView(path, deploymentDirectory, packagePath, contentDirectory))
+            .OrderBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除指定运行实例对应的隔离目录；删除前检查路径仍位于包存储根目录内。</para>
+    /// <para>en-us:Deletes the isolated directory for one runtime instance after verifying that the path remains inside the package-store root.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:要删除的运行实例键。</para>
+    /// <para>en-us:The runtime-instance key to delete.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:删除过程中的取消令牌。</para>
+    /// <para>en-us:The cancellation token used during deletion.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:目录存在并成功删除时返回 true；目录不存在时返回 false。</para>
+    /// <para>en-us:True when the directory existed and was deleted; false when it did not exist.</para>
+    /// </returns>
+    public Task<bool> RemoveDeploymentAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var deploymentDirectory = BuildDeploymentDirectory(key);
+        if (!Directory.Exists(deploymentDirectory))
+        {
+            return Task.FromResult(false);
+        }
+
+        Directory.Delete(deploymentDirectory, recursive: true);
+        return Task.FromResult(true);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:将指定运行实例目录从 deployments 迁移到独立 archives 空间；目标归档目录存在时拒绝覆盖。</para>
+    /// <para>en-us:Moves one runtime-instance directory from deployments into isolated archive space and refuses to overwrite an existing archive directory.</para>
+    /// </summary>
+    public Task<DynamicAppModPackageDeploymentArchiveRecord> ArchiveDeploymentAsync(
+        DynamicAppRuntimeKey key,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var deploymentDirectory = BuildDeploymentDirectory(key);
+        var archiveDirectory = BuildArchiveDirectory(key);
+        if (!Directory.Exists(deploymentDirectory))
+        {
+            return Task.FromResult(new DynamicAppModPackageDeploymentArchiveRecord
+            {
+                Key = key.PackageKey,
+                DeploymentId = key.DeploymentId,
+                DeploymentDirectory = deploymentDirectory,
+                ArchiveDirectory = archiveDirectory,
+                Moved = false
+            });
+        }
+
+        EnsureInsideRoot(archiveDirectory);
+        if (Directory.Exists(archiveDirectory))
+        {
+            throw new InvalidOperationException($"DynamicApp archived deployment `{key}` already exists.");
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(archiveDirectory)!);
+        Directory.Move(deploymentDirectory, archiveDirectory);
+        return Task.FromResult(new DynamicAppModPackageDeploymentArchiveRecord
+        {
+            Key = key.PackageKey,
+            DeploymentId = key.DeploymentId,
+            DeploymentDirectory = deploymentDirectory,
+            ArchiveDirectory = archiveDirectory,
+            Moved = true
+        });
+    }
+
+    /// <summary>
+    /// <para>zh-cn:将归档实例目录恢复到 deployments 运行空间；运行目录已存在时拒绝覆盖。</para>
+    /// <para>en-us:Restores an archived instance directory into deployments runtime space and refuses to overwrite an existing runtime directory.</para>
+    /// </summary>
+    public Task<DynamicAppModPackageDeploymentArchiveRecord> RestoreArchivedDeploymentAsync(
+        DynamicAppRuntimeKey key,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var deploymentDirectory = BuildDeploymentDirectory(key);
+        var archiveDirectory = BuildArchiveDirectory(key);
+        if (!Directory.Exists(archiveDirectory))
+        {
+            throw new FileNotFoundException($"DynamicApp archived deployment `{key}` was not found.", archiveDirectory);
+        }
+
+        EnsureInsideRoot(deploymentDirectory);
+        if (Directory.Exists(deploymentDirectory))
+        {
+            throw new InvalidOperationException($"DynamicApp deployment `{key}` already exists.");
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(deploymentDirectory)!);
+        Directory.Move(archiveDirectory, deploymentDirectory);
+        return Task.FromResult(new DynamicAppModPackageDeploymentArchiveRecord
+        {
+            Key = key.PackageKey,
+            DeploymentId = key.DeploymentId,
+            DeploymentDirectory = deploymentDirectory,
+            ArchiveDirectory = archiveDirectory,
+            Moved = true
+        });
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除指定实例的归档目录，并保持包空间和其他运行实例不变。</para>
+    /// <para>en-us:Deletes one archived instance directory without affecting package space or other runtime instances.</para>
+    /// </summary>
+    public Task<bool> RemoveArchivedDeploymentAsync(
+        DynamicAppRuntimeKey key,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var archiveDirectory = BuildArchiveDirectory(key);
+        if (!Directory.Exists(archiveDirectory))
+        {
+            return Task.FromResult(false);
+        }
+
+        Directory.Delete(archiveDirectory, recursive: true);
+        return Task.FromResult(true);
     }
 
     private static void ValidateRequest(DynamicAppModPackageSaveRequest request)
@@ -246,6 +729,61 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
             request.Key.DynamicAppId.Value,
             request.Key.ModId.Value,
             request.Key.Version.Value));
+    }
+
+    private string BuildDeploymentDirectory(DynamicAppRuntimeKey key)
+    {
+        ValidatePathSegment(key.PackageKey.DynamicAppId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.ModId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.Version.Value, nameof(key));
+        ValidatePathSegment(key.DeploymentId, nameof(key));
+        var directory = Path.GetFullPath(Path.Combine(
+            _rootPath,
+            "deployments",
+            key.PackageKey.DynamicAppId.Value,
+            key.PackageKey.ModId.Value,
+            key.PackageKey.Version.Value,
+            key.DeploymentId));
+        EnsureInsideRoot(directory);
+        return directory;
+    }
+
+    private string BuildArchiveDirectory(DynamicAppRuntimeKey key)
+    {
+        ValidatePathSegment(key.PackageKey.DynamicAppId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.ModId.Value, nameof(key));
+        ValidatePathSegment(key.PackageKey.Version.Value, nameof(key));
+        ValidatePathSegment(key.DeploymentId, nameof(key));
+        var directory = Path.GetFullPath(Path.Combine(
+            _rootPath,
+            "archives",
+            "deployments",
+            key.PackageKey.DynamicAppId.Value,
+            key.PackageKey.ModId.Value,
+            key.PackageKey.Version.Value,
+            key.DeploymentId));
+        EnsureInsideRoot(directory);
+        return directory;
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory, CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+        foreach (var directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var relative = Path.GetRelativePath(sourceDirectory, directory);
+            Directory.CreateDirectory(Path.Combine(destinationDirectory, relative));
+        }
+
+        foreach (var file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var relative = Path.GetRelativePath(sourceDirectory, file);
+            var destination = Path.Combine(destinationDirectory, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(file, destination, overwrite: false);
+        }
     }
 
     private async Task<long> CopyPackageAsync(Stream packageStream, string archivePath, CancellationToken cancellationToken)
@@ -349,6 +887,29 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
         };
     }
 
+    private static DynamicAppModPackageFileView BuildDeploymentFileView(
+        string path,
+        string deploymentDirectory,
+        string packagePath,
+        string contentDirectory)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var file = new FileInfo(fullPath);
+        var normalizedContentRoot = EnsureTrailingSeparator(Path.GetFullPath(contentDirectory));
+        var kind = string.Equals(fullPath, Path.GetFullPath(packagePath), StringComparison.OrdinalIgnoreCase)
+            ? "Package"
+            : (fullPath.StartsWith(normalizedContentRoot, StringComparison.OrdinalIgnoreCase) ? "Content" : "Other");
+        return new DynamicAppModPackageFileView
+        {
+            Name = file.Name,
+            RelativePath = Path.GetRelativePath(deploymentDirectory, fullPath),
+            FullPath = fullPath,
+            Length = file.Length,
+            LastModifiedUtc = file.LastWriteTimeUtc,
+            Kind = kind
+        };
+    }
+
     private static IEnumerable<DirectoryInfo> OrderedDirectories(string path)
     {
         return Directory.EnumerateDirectories(path)
@@ -381,6 +942,30 @@ public sealed class FileDynamicAppModPackageStore : IDynamicAppModPackageStore
         }
 
         return Path.GetRelativePath(extractedDirectory, candidates[0]);
+    }
+
+    private static string? ResolveRelativeEntryFile(string sourceContentDirectory, string? entryFile)
+    {
+        if (string.IsNullOrWhiteSpace(entryFile))
+        {
+            return null;
+        }
+
+        if (!entryFile.Trim().EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("DynamicApp deployment entry file must be a DLL.", nameof(entryFile));
+        }
+
+        var sourceRoot = EnsureTrailingSeparator(Path.GetFullPath(sourceContentDirectory));
+        var candidate = Path.IsPathFullyQualified(entryFile)
+            ? Path.GetFullPath(entryFile)
+            : Path.GetFullPath(Path.Combine(sourceRoot, entryFile));
+        if (!candidate.StartsWith(sourceRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("DynamicApp deployment entry file must remain inside the package content directory.");
+        }
+
+        return Path.GetRelativePath(sourceRoot, candidate);
     }
 
     private void EnsureInsideRoot(string path) => EnsureInsidePath(_rootPath, path);

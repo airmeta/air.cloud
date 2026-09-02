@@ -63,6 +63,7 @@ public static class ReverseTunnelServiceCollectionExtensions
         services.TryAddSingleton<IReverseTunnelSessionRegistry>(serviceProvider =>
             new InMemoryReverseTunnelSessionRegistry(serviceProvider.GetRequiredService<IReverseTunnelRuntimeOptionsAccessor>()));
         services.TryAddSingleton<IReverseTunnelDesiredAgentConfigurationStore, MountedReverseTunnelDesiredAgentConfigurationStore>();
+        services.TryAddSingleton<IReverseTunnelAgentPackageExporter, ReverseTunnelAgentPackageExporter>();
         services.TryAddSingleton<IReverseTunnelCertificateAuthority, MountedReverseTunnelCertificateAuthority>();
         services.TryAddSingleton<IReverseTunnelCertificateStatusRegistry, InMemoryReverseTunnelCertificateStatusRegistry>();
         services.TryAddSingleton<IReverseTunnelAgentCertificateValidator, ReverseTunnelAgentCertificateValidator>();

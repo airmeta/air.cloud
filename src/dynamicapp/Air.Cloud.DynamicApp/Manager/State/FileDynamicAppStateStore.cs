@@ -56,8 +56,11 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
         ArgumentNullException.ThrowIfNull(target);
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             var now = DateTimeOffset.UtcNow;
-            if (_targets.TryGetValue(target.Key.ToString(), out var existing))
+            var targetKey = BuildTargetKey(target);
+            if (_targets.TryGetValue(targetKey, out var existing))
             {
                 var updated = Clone(target);
                 updated.CreatedAtUtc = existing.CreatedAtUtc == default ? now : existing.CreatedAtUtc;
@@ -65,14 +68,14 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
                 updated.DrainingSinceUtc = updated.State == DynamicModLifecycleState.Draining
                     ? updated.DrainingSinceUtc ?? existing.DrainingSinceUtc ?? now
                     : null;
-                _targets[target.Key.ToString()] = updated;
+                _targets[targetKey] = updated;
             }
             else
             {
                 var created = Clone(target);
                 created.CreatedAtUtc = created.CreatedAtUtc == default ? now : created.CreatedAtUtc;
                 created.UpdatedAtUtc = now;
-                _targets[target.Key.ToString()] = created;
+                _targets[targetKey] = created;
             }
 
             RebuildActiveVersions();
@@ -81,8 +84,8 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     }
 
     /// <summary>
-    /// <para>zh-cn:激活指定版本，将同一 DynamicApp/Mod 的其他版本标记为 Draining，并持久化状态。</para>
-    /// <para>en-us:Activates the specified version, marks other versions for the same DynamicApp/Mod as Draining, and persists state.</para>
+    /// <para>zh-cn:激活指定版本，将同一 DynamicApp/Mod 下仍可运行的其他版本标记为 Draining；已停止或失败目标保持原状态。</para>
+    /// <para>en-us:Activates the specified version and drains other runnable versions for the same DynamicApp/Mod; already stopped or failed targets retain their state.</para>
     /// </summary>
     /// <param name="key">
     /// <para>zh-cn:目标版本键。</para>
@@ -93,40 +96,144 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     /// <para>en-us:The activation result.</para>
     /// </returns>
     public DynamicAppOperationResult Activate(DynamicModVersionKey key)
+        => Activate(DynamicAppRuntimeKey.Default(key));
+
+    /// <summary>
+    /// <para>zh-cn:激活指定包版本的全部部署实例，并排空其他版本；同一版本的实例保持并行运行。</para>
+    /// <para>en-us:Activates all deployments of the specified package version and drains other versions while keeping same-version deployments running in parallel.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键；激活按其中的包版本部分执行。</para>
+    /// <para>en-us:The runtime key; activation uses its package-version portion.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:激活结果。</para>
+    /// <para>en-us:The activation result.</para>
+    /// </returns>
+    public DynamicAppOperationResult Activate(DynamicAppRuntimeKey key)
+        => ActivatePackageVersion(key.PackageKey);
+
+    /// <summary>
+    /// <para>zh-cn:只激活指定部署实例，并排空其他包版本；同版本其他实例保持各自状态。</para>
+    /// <para>en-us:Activates only the specified deployment and drains other package versions; other deployments of the same version retain their own state.</para>
+    /// </summary>
+    public DynamicAppOperationResult ActivateInstance(DynamicAppRuntimeKey key)
     {
         lock (_syncRoot)
         {
-            if (!_targets.ContainsKey(key.ToString()))
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
+            var packageKey = key.PackageKey;
+            var runtimeKey = key.ToString();
+            if (!_targets.ContainsKey(runtimeKey))
             {
                 return DynamicAppOperationResult.Failure($"Target `{key}` is not registered.");
             }
 
+            foreach (var item in _targets.Values.Where(item => item.Key.DynamicAppId == packageKey.DynamicAppId && item.Key.ModId == packageKey.ModId))
+            {
+                var isSelected = BuildTargetKey(item) == runtimeKey;
+                var nextState = isSelected ? DynamicModLifecycleState.Active : item.State is DynamicModLifecycleState.Pending or DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Failed
+                    ? item.State
+                    : DynamicModLifecycleState.Draining;
+                var nextHealth = isSelected ? DynamicModHealthStatus.Healthy : nextState == DynamicModLifecycleState.Draining
+                    ? DynamicModHealthStatus.Draining
+                    : item.HealthStatus;
+                if (!DynamicAppLifecycleStateMachine.TryValidate(item.State, nextState, nextHealth, out var validationError))
+                {
+                    return DynamicAppOperationResult.Failure($"Target `{new DynamicAppRuntimeKey(item.Key, item.DeploymentId)}` activation was rejected. {validationError}");
+                }
+            }
+
             var now = DateTimeOffset.UtcNow;
-            foreach (var item in _targets.Values.Where(item => item.Key.DynamicAppId == key.DynamicAppId && item.Key.ModId == key.ModId).ToArray())
+            foreach (var item in _targets.Values.Where(item => item.Key.DynamicAppId == packageKey.DynamicAppId && item.Key.ModId == packageKey.ModId).ToArray())
             {
                 var next = Clone(item);
-                if (next.Key == key)
+                if (BuildTargetKey(next) == runtimeKey)
                 {
                     next.State = DynamicModLifecycleState.Active;
                     next.HealthStatus = DynamicModHealthStatus.Healthy;
                     next.DrainingSinceUtc = null;
-                    next.LastStatusMessage = $"Target `{key}` is active.";
+                    next.LastStatusMessage = $"Target `{packageKey}` deployment `{next.DeploymentId}` is active.";
+                }
+                else if (next.Key == packageKey || next.State is DynamicModLifecycleState.Pending or DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Failed)
+                {
+                    continue;
                 }
                 else
                 {
                     next.State = DynamicModLifecycleState.Draining;
                     next.HealthStatus = DynamicModHealthStatus.Draining;
                     next.DrainingSinceUtc ??= now;
-                    next.LastStatusMessage = $"Target `{next.Key}` is draining because `{key}` is active.";
+                    next.LastStatusMessage = $"Target `{next.Key}` deployment `{next.DeploymentId}` is draining because `{key.DeploymentId}` is active.";
                 }
 
                 next.UpdatedAtUtc = now;
-                _targets[next.Key.ToString()] = next;
+                _targets[BuildTargetKey(next)] = next;
             }
 
             RebuildActiveVersions();
             SaveIfNeeded();
             return DynamicAppOperationResult.Success($"Target `{key}` is active.");
+        }
+    }
+
+    private DynamicAppOperationResult ActivatePackageVersion(DynamicModVersionKey packageKey)
+    {
+        lock (_syncRoot)
+        {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
+            var matching = _targets.Values.Where(item => item.Key == packageKey).ToArray();
+            if (matching.Length == 0)
+            {
+                return DynamicAppOperationResult.Failure($"Target `{packageKey}` is not registered.");
+            }
+
+            foreach (var item in _targets.Values.Where(item => item.Key.DynamicAppId == packageKey.DynamicAppId && item.Key.ModId == packageKey.ModId))
+            {
+                var nextState = item.Key == packageKey ? DynamicModLifecycleState.Active : item.State is DynamicModLifecycleState.Pending or DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Failed
+                    ? item.State
+                    : DynamicModLifecycleState.Draining;
+                var nextHealth = item.Key == packageKey ? DynamicModHealthStatus.Healthy : nextState == DynamicModLifecycleState.Draining
+                    ? DynamicModHealthStatus.Draining
+                    : item.HealthStatus;
+                if (!DynamicAppLifecycleStateMachine.TryValidate(item.State, nextState, nextHealth, out var validationError))
+                {
+                    return DynamicAppOperationResult.Failure($"Target `{new DynamicAppRuntimeKey(item.Key, item.DeploymentId)}` activation was rejected. {validationError}");
+                }
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            foreach (var item in _targets.Values.Where(item => item.Key.DynamicAppId == packageKey.DynamicAppId && item.Key.ModId == packageKey.ModId).ToArray())
+            {
+                var next = Clone(item);
+                if (next.Key == packageKey)
+                {
+                    next.State = DynamicModLifecycleState.Active;
+                    next.HealthStatus = DynamicModHealthStatus.Healthy;
+                    next.DrainingSinceUtc = null;
+                    next.LastStatusMessage = $"Target `{packageKey}` deployment `{next.DeploymentId}` is active.";
+                }
+                else if (next.State is DynamicModLifecycleState.Pending or DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Failed)
+                {
+                    continue;
+                }
+                else
+                {
+                    next.State = DynamicModLifecycleState.Draining;
+                    next.HealthStatus = DynamicModHealthStatus.Draining;
+                    next.DrainingSinceUtc ??= now;
+                    next.LastStatusMessage = $"Target `{next.Key}` deployment `{next.DeploymentId}` is draining because `{packageKey}` is active.";
+                }
+
+                next.UpdatedAtUtc = now;
+                _targets[BuildTargetKey(next)] = next;
+            }
+
+            RebuildActiveVersions();
+            SaveIfNeeded();
+            return DynamicAppOperationResult.Success($"Target `{packageKey}` is active with {matching.Length} deployment(s).");
         }
     }
 
@@ -158,9 +265,78 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     {
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
+            var matching = _targets.Values.Where(item => item.Key == key).ToArray();
+            if (matching.Length == 0)
+            {
+                return DynamicAppOperationResult.Failure($"Target `{key}` is not registered.");
+            }
+
+            foreach (var target in matching)
+            {
+                if (!DynamicAppLifecycleStateMachine.TryValidate(target.State, state, healthStatus, out var validationError))
+                {
+                    return DynamicAppOperationResult.Failure($"Target `{key}` state update was rejected. {validationError}");
+                }
+            }
+
+            foreach (var target in matching)
+            {
+                var runtimeKey = new DynamicAppRuntimeKey(key, target.DeploymentId);
+                var next = Clone(target);
+                next.State = state;
+                next.HealthStatus = healthStatus;
+                next.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                next.DrainingSinceUtc = state == DynamicModLifecycleState.Draining ? next.DrainingSinceUtc ?? next.UpdatedAtUtc : null;
+                next.LastStatusMessage = string.IsNullOrWhiteSpace(message) ? $"Target `{runtimeKey}` state updated to `{state}`." : message;
+                _targets[BuildTargetKey(next)] = next;
+            }
+
+            RebuildActiveVersions();
+            SaveIfNeeded();
+            return DynamicAppOperationResult.Success($"Target `{key}` state updated.");
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:只更新指定部署实例的生命周期和健康状态，避免集群中一个实例异常时污染同包其他实例。</para>
+    /// <para>en-us:Updates lifecycle and health state for only the specified deployment so one failed cluster instance does not contaminate other instances of the same package.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="state">
+    /// <para>zh-cn:生命周期状态。</para>
+    /// <para>en-us:The lifecycle state.</para>
+    /// </param>
+    /// <param name="healthStatus">
+    /// <para>zh-cn:健康状态。</para>
+    /// <para>en-us:The health status.</para>
+    /// </param>
+    /// <param name="message">
+    /// <para>zh-cn:可选状态消息。</para>
+    /// <para>en-us:Optional status message.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:更新结果。</para>
+    /// <para>en-us:The update result.</para>
+    /// </returns>
+    public DynamicAppOperationResult UpdateState(DynamicAppRuntimeKey key, DynamicModLifecycleState state, DynamicModHealthStatus healthStatus, string? message = null)
+    {
+        lock (_syncRoot)
+        {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             if (!_targets.TryGetValue(key.ToString(), out var target))
             {
                 return DynamicAppOperationResult.Failure($"Target `{key}` is not registered.");
+            }
+
+            if (!DynamicAppLifecycleStateMachine.TryValidate(target.State, state, healthStatus, out var validationError))
+            {
+                return DynamicAppOperationResult.Failure($"Target `{key}` state update was rejected. {validationError}");
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -193,6 +369,43 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     {
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
+            var matching = _targets.Values.Where(item => item.Key == key).ToArray();
+            if (matching.Length == 0)
+            {
+                return DynamicAppOperationResult.Failure($"Target `{key}` is not registered.");
+            }
+
+            foreach (var target in matching)
+            {
+                _targets.Remove(BuildTargetKey(target));
+            }
+
+            RebuildActiveVersions();
+            SaveIfNeeded();
+            return DynamicAppOperationResult.Success($"Target `{key}` removed.");
+        }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:删除指定部署实例而不影响其他部署。</para>
+    /// <para>en-us:Removes the specified deployment without affecting other deployments.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:删除结果。</para>
+    /// <para>en-us:The removal result.</para>
+    /// </returns>
+    public DynamicAppOperationResult RemoveTarget(DynamicAppRuntimeKey key)
+    {
+        lock (_syncRoot)
+        {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             if (!_targets.Remove(key.ToString()))
             {
                 return DynamicAppOperationResult.Failure($"Target `{key}` is not registered.");
@@ -228,22 +441,50 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     {
         lock (_syncRoot)
         {
-            target = null;
-            if (!_activeVersions.TryGetValue(BuildActiveKey(dynamicAppId, modId), out var key))
-            {
-                return false;
-            }
-
-            if (!_targets.TryGetValue(key.ToString(), out var stored)
-                || stored.State != DynamicModLifecycleState.Active
-                || stored.HealthStatus != DynamicModHealthStatus.Healthy)
-            {
-                return false;
-            }
-
-            target = Clone(stored);
-            return true;
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
+            target = FindActiveTargets(dynamicAppId, modId).FirstOrDefault();
+            return target != null;
         }
+    }
+
+    /// <summary>
+    /// <para>zh-cn:列出当前版本全部可转发部署实例。</para>
+    /// <para>en-us:Lists all forwardable deployments of the current active package version.</para>
+    /// </summary>
+    /// <param name="dynamicAppId">
+    /// <para>zh-cn:DynamicApp 标识。</para>
+    /// <para>en-us:DynamicApp identifier.</para>
+    /// </param>
+    /// <param name="modId">
+    /// <para>zh-cn:Mod 标识。</para>
+    /// <para>en-us:Mod identifier.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:Active 且 Healthy 的部署实例。</para>
+    /// <para>en-us:Active and Healthy deployment instances.</para>
+    /// </returns>
+    public IReadOnlyCollection<DynamicAppRouteTarget> ListActiveTargets(DynamicAppId dynamicAppId, DynamicModId modId)
+    {
+        lock (_syncRoot)
+        {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
+            return FindActiveTargets(dynamicAppId, modId);
+        }
+    }
+
+    private IReadOnlyCollection<DynamicAppRouteTarget> FindActiveTargets(DynamicAppId dynamicAppId, DynamicModId modId)
+    {
+        if (!_activeVersions.TryGetValue(BuildActiveKey(dynamicAppId, modId), out var key))
+        {
+            return Array.Empty<DynamicAppRouteTarget>();
+        }
+
+        return _targets.Values
+            .Where(item => item.Key == key && item.State == DynamicModLifecycleState.Active && item.HealthStatus == DynamicModHealthStatus.Healthy)
+            .Select(Clone)
+            .ToArray();
     }
 
     /// <summary>
@@ -258,18 +499,37 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     {
         lock (_syncRoot)
         {
+            using var fileLock = _options.SaveOnChange ? DynamicAppFileSnapshotLock.Acquire(_filePath) : null;
+            if (_options.SaveOnChange) Load();
             return _targets.Values.Select(Clone).ToList();
         }
     }
 
     private void Load()
     {
+        _targets.Clear();
+        _activeVersions.Clear();
         if (!File.Exists(_filePath))
         {
             return;
         }
 
-        var snapshot = JsonSerializer.Deserialize<StateSnapshot>(File.ReadAllText(_filePath), JsonOptions);
+        StateSnapshot? snapshot;
+        try
+        {
+            snapshot = JsonSerializer.Deserialize<StateSnapshot>(File.ReadAllText(_filePath), JsonOptions);
+        }
+        catch (JsonException)
+        {
+            // 损坏的状态文件不应阻止 Host 启动；后续状态写入会生成新的完整快照。
+            // A corrupt state file must not prevent Host startup; the next state write creates a new complete snapshot.
+            return;
+        }
+        catch (IOException)
+        {
+            return;
+        }
+
         if (snapshot?.Targets == null)
         {
             return;
@@ -277,7 +537,7 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
 
         foreach (var target in snapshot.Targets)
         {
-            _targets[target.Key.ToString()] = Clone(target);
+            _targets[BuildTargetKey(target)] = Clone(target);
         }
 
         RebuildActiveVersions();
@@ -300,7 +560,7 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
         {
             Targets = _targets.Values.Select(Clone).ToList()
         };
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(snapshot, JsonOptions));
+        DynamicAppAtomicJsonFile.Write(_filePath, JsonSerializer.Serialize(snapshot, JsonOptions));
     }
 
     private void RebuildActiveVersions()
@@ -313,6 +573,12 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     }
 
     private static string BuildActiveKey(DynamicAppId dynamicAppId, DynamicModId modId) => $"{dynamicAppId.Value}/{modId.Value}";
+
+    private static string BuildTargetKey(DynamicAppRouteTarget target)
+        => new DynamicAppRuntimeKey(target.Key, NormalizeDeploymentId(target.DeploymentId)).ToString();
+
+    private static string NormalizeDeploymentId(string? deploymentId)
+        => string.IsNullOrWhiteSpace(deploymentId) ? "default" : deploymentId.Trim();
 
     private static string ResolveFilePath(string? filePath, string defaultFileName)
     {
@@ -329,8 +595,10 @@ public sealed class FileDynamicAppStateStore : IDynamicAppStateStore
     private static DynamicAppRouteTarget Clone(DynamicAppRouteTarget target) => new()
     {
         Key = target.Key,
+        DeploymentId = NormalizeDeploymentId(target.DeploymentId),
+        DeploymentDirectory = target.DeploymentDirectory,
+        DeploymentEntryFilePath = target.DeploymentEntryFilePath,
         BaseAddress = target.BaseAddress,
-        RoutePrefix = target.RoutePrefix,
         HealthPath = target.HealthPath,
         HealthProbeTimeoutSeconds = target.HealthProbeTimeoutSeconds,
         State = target.State,

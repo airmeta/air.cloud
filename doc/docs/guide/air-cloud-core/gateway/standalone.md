@@ -1,6 +1,6 @@
 # AirGateWay部署
 
-`air.gateway` 可以作为独立服务部署。它负责接收入口 HTTP 请求，通过 Ocelot 路由转发到后端服务，也可以在启用 AirTunnel 时承担入口或后端 Gateway 角色。
+`air.gateway` 可以作为独立服务部署。它只负责接收入口 HTTP 请求，通过 Ocelot 路由转发到后端服务；发布物不包含 `Air.Cloud.Modules.ReverseTunnel`，也不会承载 AirTunnel Server、Agent 接入、隧道监听或隧道管理 API。
 
 ## Ocelot 配置来源
 
@@ -46,7 +46,7 @@ Gateway 通过 `GatewaySettings:OcelotConfigurationSource` 决定 Ocelot 路由�
 仓库提供了本地文件模式示例：
 
 ```text
-src/servers/air.gateway/appsettings.FileMode.example.json
+demo/airGateway/air.gateway/appsettings.FileMode.example.json
 ```
 
 ## 注意事项
@@ -54,4 +54,28 @@ src/servers/air.gateway/appsettings.FileMode.example.json
 - `File` 模式只表示 Ocelot 路由不从 Consul 读取；是否注册服务到 Consul 由宿主启动和服务注册配置决定。
 - 独立部署时应为当前环境重新配置 `AllowCors`、`SkyMirrorShieldSettings`、`TraceLogSettings` 和下游地址。
 - 不要把生产密钥、数据库密码或 ES 凭据直接写入示例配置。生产部署应通过环境变量、挂载配置文件或运维配置系统覆盖。
-- 使用 AirTunnel 时，入口 Gateway 的 Ocelot 路由仍需要显式声明 `ReverseTunnelDelegatingHandler`；普通 Ocelot 路由不需要声明。
+- AirTunnel Server 与 Agent 位于 `demo/airTunnel`，独立运行并管理自己的 HTTP、gRPC、TCP、UDP 和管理端口。
+- AirGateway 不再声明 `ReverseTunnelDelegatingHandler` 或 `ReverseTunnelSettings`。如果外部入口需要同时暴露 Gateway 和 AirTunnel，应由负载均衡器或反向代理按已规划的入口域名、端口或路径把流量送到相应独立服务。
+- `Air.Cloud.Modules.ReverseTunnel` 仍是可供其他自定义宿主引用的模块，但不属于 AirGateway 产品依赖。
+
+## 控制面管理监听
+
+AirGateway 的控制面页面由 `ControlPlaneAuth` 提供。业务插件可能会对普通请求执行 JWT 或自定义 Authorization 校验，因此控制面路径会在插件宿主之前被识别和放行。
+
+可以在 `config/control-plane-auth.json` 中启用独立管理监听：
+
+```json
+{
+  "ControlPlaneAuth": {
+    "Enabled": true,
+    "Management": {
+      "Enabled": true,
+      "Port": 8081,
+      "BindAddress": "0.0.0.0",
+      "RestrictToPort": true
+    }
+  }
+}
+```
+
+`Port` 是容器内监听端口，宿主端口由 Docker 或主机防火墙映射；`Port=0` 时不增加监听器。`RestrictToPort=true` 时，控制面路径只能从该管理端口访问，业务端口返回 404，不会被插件误报成 401。登录页为 `/_airgateway/control-auth`，登录后的 H5 页面为 `/_airgateway/control-plane`。

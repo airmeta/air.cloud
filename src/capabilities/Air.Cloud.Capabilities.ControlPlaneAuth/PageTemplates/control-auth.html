@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>__SHELL_TITLE_HTML__ 登录</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#fff;--line:#d9e2ef;--text:#172033;--muted:#6b778c;--primary:#0f766e;--primary-dark:#115e59;--danger:#b42318;--ok:#067647}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;font-size:14px;padding:24px}[hidden]{display:none!important}
+    .card{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;box-shadow:0 18px 48px rgba(15,23,42,.08)}h1{margin:0 0 8px;font-size:24px}h2{margin:18px 0 12px;font-size:17px}.muted{color:var(--muted);line-height:1.6}.qr-code{display:grid;place-items:center;min-height:220px;margin:14px 0;padding:12px;background:#fff;border:1px solid var(--line);border-radius:6px}.qr-code svg{display:block;max-width:100%;height:auto}
+    label{display:block;margin:10px 0 4px;color:var(--muted);font-size:12px}input{width:100%;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:#fff;color:var(--text);font:inherit}
+    button{border:1px solid var(--primary);background:var(--primary);color:#fff;border-radius:6px;padding:9px 14px;cursor:pointer;font:inherit}button:hover{background:var(--primary-dark)}button:disabled{cursor:not-allowed;opacity:.6}.actions{display:flex;gap:10px;align-items:center;margin-top:14px}.message{min-height:22px;margin-top:10px}.error{color:var(--danger)}.ok{color:var(--ok)}
+  </style>
+</head>
+<body>
+  <section class="card">
+    <h1>__PRODUCT_NAME_HTML__ 控制面</h1>
+    <div class="muted">首次启动时使用 Bootstrap Ticket 创建管理员；初始化后使用用户名和密码登录。</div>
+    <div id="init" hidden>
+      <h2>初始化管理员</h2>
+      <label>Bootstrap Ticket</label><input id="bootstrapTicket" type="password" autocomplete="off">
+      <label>用户名</label><input id="initUser" autocomplete="username">
+      <label>密码</label><input id="initPassword" type="password" autocomplete="new-password">
+      <div id="initPasswordPolicy" class="muted"></div>
+      <div class="actions"><button id="initializeButton" onclick="initialize()">创建管理员</button></div>
+    </div>
+    <div id="login" hidden>
+      <h2>登录</h2>
+      <label>用户名</label><input id="loginUser" autocomplete="username">
+      <label>密码</label><input id="loginPassword" type="password" autocomplete="current-password">
+      <div id="mfaCodeRow" hidden><label>Authenticator 验证码</label><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+      <div class="actions"><button id="loginButton" onclick="login()">进入控制台</button></div>
+    </div>
+    <div id="mfaSetup" hidden>
+      <h2>Authenticator 绑定</h2>
+      <div class="muted">请在 Microsoft Authenticator 或 Google Authenticator 中添加账户，然后输入当前 6 位验证码完成绑定。</div>
+      <label>Authenticator 扫码</label><div id="mfaQrCode" class="qr-code" role="img" aria-label="Authenticator binding QR code"></div>
+      <label>验证码</label><input id="mfaSetupCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+      <div class="actions"><button id="mfaSetupButton" onclick="completeMfaSetup()">完成绑定</button></div>
+    </div>
+    <div id="message" class="message error"></div>
+  </section>
+  <script>__QR_CODE_JS__</script>
+  <script>
+    const apiBasePath = __API_BASE_PATH_JS__;
+    const authPath = __AUTH_PATH_JS__;
+    const planePath = __PLANE_PATH_JS__;
+    const enableMfa = __ENABLE_MFA_JS__;
+    const defaultReturnUrl = normalizeReturnUrl(__DEFAULT_RETURN_URL_JS__) || planePath;
+    const query = new URLSearchParams(window.location.search);
+    const requestedReturnUrl = normalizeReturnUrl(query.get('returnUrl'));
+    let mfaSetupToken = '';
+    const passwordPolicy = {
+      minLength: __PASSWORD_MIN_LENGTH_JS__,
+      requireDigit: __REQUIRE_DIGIT_JS__,
+      requireLowercase: __REQUIRE_LOWERCASE_JS__,
+      requireUppercase: __REQUIRE_UPPERCASE_JS__,
+      requireSpecialCharacter: __REQUIRE_SPECIAL_CHARACTER_JS__
+    };
+    function show(id, visible){document.getElementById(id).hidden = !visible;}
+    function msg(value, ok){const node=document.getElementById('message');node.textContent=value||'';node.className='message ' + (ok?'ok':'error');}
+    function normalizeReturnUrl(value){if(!value||typeof value!=='string') return ''; if(!value.startsWith('/')||value.startsWith('//')||value.includes('\\')) return ''; return value;}
+    function redirectTarget(){return requestedReturnUrl || defaultReturnUrl || planePath;}
+    function describePasswordPolicy(){
+      const items = ['至少 ' + passwordPolicy.minLength + ' 位'];
+      if(passwordPolicy.requireDigit) items.push('包含数字');
+      if(passwordPolicy.requireLowercase) items.push('包含小写字母');
+      if(passwordPolicy.requireUppercase) items.push('包含大写字母');
+      if(passwordPolicy.requireSpecialCharacter) items.push('包含特殊字符');
+      return '密码策略：' + items.join('，') + '。';
+    }
+    function renderMfaQrCode(provisioningUri){
+      const container = document.getElementById('mfaQrCode');
+      container.textContent = '';
+      if(!provisioningUri){msg('Authenticator 二维码生成失败，请刷新后重试。');return;}
+      try{
+        const qr = qrcode(0, 'M');
+        qr.addData(provisioningUri);
+        qr.make();
+        container.innerHTML = qr.createSvgTag({
+          cellSize: 5,
+          margin: 12,
+          scalable: true,
+          alt: {text: 'Authenticator binding QR code'},
+          title: {text: 'Authenticator binding QR code'}
+        });
+      }catch(error){
+        msg('Authenticator 二维码生成失败，请刷新后重试。');
+      }
+    }
+    function validateInitialPassword(password){
+      const errors = [];
+      if(!password || password.length < passwordPolicy.minLength) errors.push('至少 ' + passwordPolicy.minLength + ' 位');
+      if(passwordPolicy.requireDigit && !/\d/.test(password)) errors.push('需要包含数字');
+      if(passwordPolicy.requireLowercase && !/[a-z]/.test(password)) errors.push('需要包含小写字母');
+      if(passwordPolicy.requireUppercase && !/[A-Z]/.test(password)) errors.push('需要包含大写字母');
+      if(passwordPolicy.requireSpecialCharacter && !/[^A-Za-z0-9]/.test(password)) errors.push('需要包含特殊字符');
+      return errors;
+    }
+    async function refresh(){
+      const status = await (await fetch(apiBasePath + '/api/status')).json();
+      if(status.bootstrapRequired){show('init', true);show('login', false);return;}
+      const me = await fetch(apiBasePath + '/api/me');
+      if(me.ok){window.location.href = redirectTarget();return;}
+      show('init', false);show('login', true);show('mfaSetup', false);show('mfaCodeRow', false);
+    }
+    async function initialize(){
+      msg('');
+      const password = document.getElementById('initPassword').value;
+      const errors = validateInitialPassword(password);
+      if(errors.length){msg('密码不符合策略：' + errors.join('，') + '。');return;}
+      const button = document.getElementById('initializeButton');
+      button.disabled = true;
+      try {
+        const response = await fetch(apiBasePath + '/api/initialize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          bootstrapTicket:document.getElementById('bootstrapTicket').value,
+          userName:document.getElementById('initUser').value,
+          password
+        })});
+        if(!response.ok){msg('初始化失败，请检查 Bootstrap Ticket、用户名和密码策略。');return;}
+        msg('初始化完成，请登录。', true);
+        await refresh();
+      } finally {
+        button.disabled = false;
+      }
+    }
+    async function login(){
+      msg('');
+      const button = document.getElementById('loginButton');
+      const mfaCode = document.getElementById('mfaCode').value.trim();
+      button.disabled = true;
+      try {
+        const response = await fetch(apiBasePath + '/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          userName:document.getElementById('loginUser').value,
+          password:document.getElementById('loginPassword').value,
+          mfaCode:mfaCode || null
+        })});
+        const data = await response.json();
+        if(!response.ok){
+          if(enableMfa && data.mfaSetupRequired){
+            const setupResponse = await fetch(apiBasePath + '/api/mfa/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+              userName:document.getElementById('loginUser').value,
+              password:document.getElementById('loginPassword').value
+            })});
+            const setup = await setupResponse.json().catch(() => ({}));
+            if(!setupResponse.ok){msg(setup.errorMessage || 'Authenticator 绑定初始化失败。');return;}
+            mfaSetupToken = setup.setupToken || '';
+            renderMfaQrCode(setup.provisioningUri || '');
+            show('mfaSetup', true);show('login', false);
+            msg('请完成 Authenticator 绑定。');
+            return;
+          }
+          if(enableMfa && data.requiresMfa){
+            show('mfaCodeRow', true);
+            msg(data.errorCode === 'invalid_mfa' && mfaCode ? 'Authenticator 验证码无效或已过期。' : '请输入 Authenticator 验证码。');
+            return;
+          }
+          msg(data.errorMessage || '登录失败。');
+          return;
+        }
+        localStorage.setItem('air.controlPlane.ticket', data.ticket || '');
+        window.location.href = redirectTarget();
+      } finally {
+        button.disabled = false;
+      }
+    }
+    async function completeMfaSetup(){
+      msg('');
+      const button = document.getElementById('mfaSetupButton');
+      button.disabled = true;
+      try {
+        const response = await fetch(apiBasePath + '/api/mfa/setup/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          setupToken:mfaSetupToken,
+          code:document.getElementById('mfaSetupCode').value
+        })});
+        const data = await response.json().catch(() => ({}));
+        if(!response.ok){msg(data.errorMessage || 'Authenticator 绑定失败。');return;}
+        document.getElementById('mfaCode').value = document.getElementById('mfaSetupCode').value;
+        show('mfaSetup', false);show('login', true);show('mfaCodeRow', true);
+        await login();
+      } finally {
+        button.disabled = false;
+      }
+    }
+    document.getElementById('initPasswordPolicy').textContent = describePasswordPolicy();
+    refresh().catch(error => msg(error.message || '加载失败。'));
+  </script>
+</body>
+</html>

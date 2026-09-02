@@ -99,7 +99,11 @@ namespace Air.Cloud.Modules.Consul.Service
                 Name = serverCenterServiceInformation.ServiceName,// 服务名
                 Address = uri.Host,
                 Port = uri.Port, // 服务端口
-                Check = new AgentServiceCheck
+            };
+            if (serverCenterServiceInformation is not ConsulServerCenterServiceRegisterOptions consulOptions
+                || consulOptions.EnableHealthCheck)
+            {
+                registration.Check = new AgentServiceCheck
                 {
                     // 注册超时
                     Timeout = serverCenterServiceInformation.Timeout,
@@ -109,8 +113,8 @@ namespace Air.Cloud.Modules.Consul.Service
                     HTTP = $"{uri.Scheme}://{uri.Host}:{uri.Port}{serverCenterServiceInformation.HealthCheckRoute}",
                     // 健康检查时间间隔
                     Interval = serverCenterServiceInformation.HealthCheckTimeStep,
-                }
-            };
+                };
+            }
 
             // 注册服务
             await ConsulClient.Agent.ServiceRegister(registration);

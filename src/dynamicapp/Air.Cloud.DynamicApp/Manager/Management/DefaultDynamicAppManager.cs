@@ -13,6 +13,7 @@ public sealed class DefaultDynamicAppManager : IDynamicAppManager
 {
     private readonly IDynamicAppManifestStore _manifestStore;
     private readonly IDynamicAppStateStore _stateStore;
+    private readonly IDynamicAppControlPlaneTransactionLog _transactionLog;
     private readonly IDynamicAppManifestValidator _validator;
 
     /// <summary>
@@ -31,14 +32,20 @@ public sealed class DefaultDynamicAppManager : IDynamicAppManager
     /// <para>zh-cn:Manifest 历史存储。</para>
     /// <para>en-us:The manifest history store.</para>
     /// </param>
+    /// <param name="transactionLog">
+    /// <para>zh-cn:控制面事务日志；未提供时使用空实现。</para>
+    /// <para>en-us:Control-plane transaction log; a no-op implementation is used when omitted.</para>
+    /// </param>
     public DefaultDynamicAppManager(
         IDynamicAppManifestValidator validator,
         IDynamicAppStateStore stateStore,
-        IDynamicAppManifestStore manifestStore)
+        IDynamicAppManifestStore manifestStore,
+        IDynamicAppControlPlaneTransactionLog? transactionLog = null)
     {
         _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _manifestStore = manifestStore ?? throw new ArgumentNullException(nameof(manifestStore));
+        _transactionLog = transactionLog ?? NullDynamicAppControlPlaneTransactionLog.Instance;
     }
 
     /// <summary>
@@ -71,28 +78,42 @@ public sealed class DefaultDynamicAppManager : IDynamicAppManager
             return DynamicAppOperationResult.Failure(string.Join(Environment.NewLine, validation.Errors));
         }
 
-        await _manifestStore.SaveAsync(manifest, cancellationToken).ConfigureAwait(false);
-        foreach (var mod in manifest.Mods)
+        var transactionId = _transactionLog.Begin("publish", manifest.Id.ToString());
+        DynamicAppManifestRecord? savedRecord = null;
+        var publishedKeys = new List<DynamicAppRuntimeKey>();
+        try
         {
-            if (cancellationToken.IsCancellationRequested)
+            savedRecord = await _manifestStore.SaveAsync(manifest, cancellationToken).ConfigureAwait(false);
+            foreach (var mod in manifest.Mods)
             {
-                return DynamicAppOperationResult.Failure("Publish was cancelled.");
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return await AbortPublishAsync(transactionId, savedRecord, publishedKeys, "Publish was cancelled.").ConfigureAwait(false);
+                }
+
+                var target = new DynamicAppRouteTarget
+                {
+                    Key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version),
+                    BaseAddress = ResolveInitialBaseAddress(mod),
+                    HealthPath = mod.Health.Path,
+                    HealthProbeTimeoutSeconds = mod.Health.StartupTimeoutSeconds,
+                    State = DynamicModLifecycleState.Starting,
+                    HealthStatus = DynamicModHealthStatus.Starting,
+                    LastStatusMessage = $"Manifest `{manifest.Id}` published target `{mod.Id}/{mod.Version}`."
+                };
+                _stateStore.UpsertTarget(target);
+                publishedKeys.Add(new DynamicAppRuntimeKey(target.Key, target.DeploymentId));
             }
 
-            _stateStore.UpsertTarget(new DynamicAppRouteTarget
-            {
-                Key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version),
-                BaseAddress = ResolveInitialBaseAddress(mod),
-                RoutePrefix = mod.Route.Prefix,
-                HealthPath = mod.Health.Path,
-                HealthProbeTimeoutSeconds = mod.Health.StartupTimeoutSeconds,
-                State = DynamicModLifecycleState.Starting,
-                HealthStatus = DynamicModHealthStatus.Starting,
-                LastStatusMessage = $"Manifest `{manifest.Id}` published target `{mod.Id}/{mod.Version}`."
-            });
+            _transactionLog.Commit(transactionId);
+            return DynamicAppOperationResult.Success($"DynamicApp `{manifest.Id}` manifest published with {manifest.Mods.Count} Mods.");
         }
-
-        return DynamicAppOperationResult.Success($"DynamicApp `{manifest.Id}` manifest published with {manifest.Mods.Count} Mods.");
+        catch (Exception exception)
+        {
+            await RollbackPublishAsync(savedRecord, publishedKeys).ConfigureAwait(false);
+            _transactionLog.Abort(transactionId, exception.Message);
+            throw;
+        }
     }
 
     /// <summary>
@@ -113,9 +134,33 @@ public sealed class DefaultDynamicAppManager : IDynamicAppManager
     /// </returns>
     public Task<DynamicAppOperationResult> ActivateAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(cancellationToken.IsCancellationRequested
-            ? DynamicAppOperationResult.Failure("Activation was cancelled.")
-            : _stateStore.Activate(key));
+        return Task.FromResult(ActivateVersion(key, cancellationToken));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:只激活指定运行实例，并把其他包版本置为排空；同版本其他实例不受影响。</para>
+    /// <para>en-us:Activates only the specified runtime instance and drains other package versions; sibling deployments of the same version remain unchanged.</para>
+    /// </summary>
+    public Task<DynamicAppOperationResult> ActivateInstanceAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromResult(DynamicAppOperationResult.Failure("Activation was cancelled."));
+        }
+
+        var transactionId = _transactionLog.Begin("activate-instance", key.ToString());
+        try
+        {
+            var result = _stateStore.ActivateInstance(key);
+            if (result.Succeeded) _transactionLog.Commit(transactionId);
+            else _transactionLog.Abort(transactionId, result.Message);
+            return Task.FromResult(result);
+        }
+        catch (Exception exception)
+        {
+            _transactionLog.Abort(transactionId, exception.Message);
+            throw;
+        }
     }
 
     /// <summary>
@@ -161,7 +206,67 @@ public sealed class DefaultDynamicAppManager : IDynamicAppManager
             return Task.FromResult(DynamicAppOperationResult.Failure($"No healthy rollback target was found for `{dynamicAppId}/{modId}`."));
         }
 
-        return Task.FromResult(_stateStore.Activate(rollbackTarget.Key));
+        var transactionId = _transactionLog.Begin("rollback", $"{dynamicAppId}/{modId}");
+        try
+        {
+            var result = _stateStore.Activate(rollbackTarget.Key);
+            if (result.Succeeded) _transactionLog.Commit(transactionId);
+            else _transactionLog.Abort(transactionId, result.Message);
+            return Task.FromResult(result);
+        }
+        catch (Exception exception)
+        {
+            _transactionLog.Abort(transactionId, exception.Message);
+            throw;
+        }
+    }
+
+    private DynamicAppOperationResult ActivateVersion(DynamicModVersionKey key, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return DynamicAppOperationResult.Failure("Activation was cancelled.");
+        }
+
+        var transactionId = _transactionLog.Begin("activate-version", key.ToString());
+        try
+        {
+            var result = _stateStore.Activate(key);
+            if (result.Succeeded) _transactionLog.Commit(transactionId);
+            else _transactionLog.Abort(transactionId, result.Message);
+            return result;
+        }
+        catch (Exception exception)
+        {
+            _transactionLog.Abort(transactionId, exception.Message);
+            throw;
+        }
+    }
+
+    private async Task<DynamicAppOperationResult> AbortPublishAsync(
+        string transactionId,
+        DynamicAppManifestRecord? savedRecord,
+        IReadOnlyCollection<DynamicAppRuntimeKey> publishedKeys,
+        string message)
+    {
+        await RollbackPublishAsync(savedRecord, publishedKeys).ConfigureAwait(false);
+        _transactionLog.Abort(transactionId, message);
+        return DynamicAppOperationResult.Failure(message);
+    }
+
+    private async Task RollbackPublishAsync(
+        DynamicAppManifestRecord? savedRecord,
+        IReadOnlyCollection<DynamicAppRuntimeKey> publishedKeys)
+    {
+        foreach (var key in publishedKeys.Reverse())
+        {
+            _stateStore.RemoveTarget(key);
+        }
+
+        if (savedRecord != null)
+        {
+            await _manifestStore.RemoveRecordAsync(savedRecord.RecordId, CancellationToken.None).ConfigureAwait(false);
+        }
     }
 
     private static Uri ResolveInitialBaseAddress(DynamicModManifest mod)

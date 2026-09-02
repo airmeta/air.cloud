@@ -16,7 +16,7 @@ Body: {}
 
 该接口在无有效业务签名时返回业务错误 `客户端非法请求`。压测判断以 HTTP 状态码、错误率和链路延迟为准，不以业务登录成功为准。
 
-测试链路：
+测试链路（历史基线，2026-07-27，当时入口 Gateway 与 AirTunnel Server 同进程）：
 
 ```text
 压测客户端
@@ -27,17 +27,18 @@ Body: {}
   -> 本地 account 服务
 ```
 
-本次测试保持单入口 Gateway/Server 实例、单本地 local_gateway/Agent 进程，不使用关闭日志作为优化方式。
+本次测试保持单入口 Gateway/Server 实例、单本地 local_gateway/Agent 进程，不使用关闭日志作为优化方式。该结果属于库内嵌模式历史基线；如果改用 `demo/airTunnel` 独立产品形态部署，应按“入口 Gateway -> AirTunnel Server -> Agent -> 后端服务”的实际链路重新跑基线。
 
 ## 测试配置
 
-入口 Gateway / AirTunnel Server：
+入口 Gateway / AirTunnel Server（历史基线配置）：
 
 ```json
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Server, Gateway",
+    "TunnelMode": "Server",
+    "EnableTunnelProxy": true,
     "SessionSelectionStrategy": "RoundRobin",
     "MaxConcurrentStreams": 128,
     "SessionIdleTimeoutSeconds": 45,
@@ -46,23 +47,30 @@ Body: {}
 }
 ```
 
-本地 local_gateway / Agent：
+本地 local_gateway / Agent（历史基线配置）：
 
 ```json
 {
   "ReverseTunnelSettings": {
     "Enabled": true,
-    "Roles": "Agent",
+    "TunnelMode": "Agent",
+    "EnableTunnelProxy": false,
     "AgentId": "local-dev",
     "AgentConnectionCount": 4,
     "LocalServices": [
       {
-        "ServiceKey": "account",
-        "LocalAddress": "http://127.0.0.1:5100"
+        "ServiceName": "账户服务",
+        "PublicPath": "/account",
+        "Protocol": "http",
+        "Host": "127.0.0.1",
+        "Port": 5100
       },
       {
-        "ServiceKey": "system",
-        "LocalAddress": "http://127.0.0.1:5100"
+        "ServiceName": "系统服务",
+        "PublicPath": "/system",
+        "Protocol": "http",
+        "Host": "127.0.0.1",
+        "Port": 5100
       }
     ]
   }
@@ -72,7 +80,7 @@ Body: {}
 说明：
 
 - `AgentConnectionCount=4` 表示单个 Agent 进程向 Server 建立 4 条物理 gRPC 双向流。
-- `SessionSelectionStrategy=RoundRobin` 表示入口 Gateway/Server 在当前进程内按 `ServiceKey` 轮询已注册会话。
+- `SessionSelectionStrategy=RoundRobin` 表示入口 Gateway/Server 在当时同一进程内按 `ServiceKey` 轮询已注册会话。
 - 本次测试前已停止旧的独立 Agent 进程，只保留 local_gateway 内置 Agent 连接。
 - 测试期间本地到 `192.168.80.101:18443` 保持 4 条已建立连接。
 

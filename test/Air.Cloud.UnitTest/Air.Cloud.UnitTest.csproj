@@ -55,7 +55,7 @@
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.SkyMirrorShield\Air.Cloud.Modules.SkyMirrorShield.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.ReverseTunnel\Air.Cloud.Modules.ReverseTunnel.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Kafka\Air.Cloud.Modules.Kafka.csproj" />
-    <ProjectReference Include="..\..\src\servers\air.gateway\air.gateway.csproj" />
+    <ProjectReference Include="..\..\demo\airGateway\air.gateway\air.gateway.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.RocketMQ\Air.Cloud.Modules.RocketMQ.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Akka\Air.Cloud.Modules.Akka.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Quartz\Air.Cloud.Modules.Quartz.csproj" />

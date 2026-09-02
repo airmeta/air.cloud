@@ -1,13 +1,12 @@
 # Air.Cloud Micro API Sample
 
-This is a complete backend microservice sample for Air.Cloud. It contains a gateway, an open service, and security-domain services. The projects consume `Air.Cloud.*` through NuGet packages so the sample validates the public consumer integration path rather than referencing this repository's `src` projects.
+This is a complete backend microservice sample for Air.Cloud. It contains open and security-domain services. The projects consume `Air.Cloud.*` through NuGet packages so the sample validates the public consumer integration path rather than referencing this repository's `src` projects.
 
 The frontend is intentionally not included. The admin application will later be rebuilt from the existing `demo/admin/VbenAdmin` project.
 
 ## Layout
 
 ```text
-GateWay/   API gateway
 Open/      Open service
 Security/  Account, Auth, System, and shared library
 ```
@@ -16,9 +15,9 @@ Security/  Account, Auth, System, and shared library
 
 ## Configuration
 
-Only `appsettings.Example.json` and `appsettings.Development.Example.json` are committed. Copy the applicable file into each gateway or Entry project as `appsettings.json` or `appsettings.Development.json`, then provide local endpoints and credentials.
+Only `appsettings.Example.json` and `appsettings.Development.Example.json` are committed. Copy the applicable file into each Entry project as `appsettings.json` or `appsettings.Development.json`, then provide local endpoints and credentials.
 
-The sample uses Consul, Redis, PostgreSQL, and gateway-related dependencies. System, Auth, and Account use `WebInjectInConsul()` and expect their complete business configuration in local Consul. Gateway and Open use local file configuration. Never commit connection strings, tokens, or private keys.
+The sample uses Consul, Redis, and PostgreSQL. System, Auth, and Account use `WebInjectInConsul()` and expect their complete business configuration in local Consul. Open uses local file configuration. Never commit connection strings, tokens, or private keys.
 
 ## Build
 
@@ -41,7 +40,6 @@ Afterward, point `OpenConnectionString` and `SecurityConnectionString` to that P
 Prepare the dependencies and local configuration before starting an Entry project:
 
 ```text
-GateWay/air.cloud.gateway
 Open/air.cloud.open.entry
 Security/Auth/air.cloud.auth.entry
 Security/Account/air.cloud.account.entry

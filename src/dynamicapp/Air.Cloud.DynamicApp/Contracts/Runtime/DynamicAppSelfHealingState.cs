@@ -15,6 +15,12 @@ public sealed class DynamicAppSelfHealingState
     public DynamicModVersionKey Key { get; set; }
 
     /// <summary>
+    /// <para>zh-cn:自愈状态所属的独立部署实例标识；未启用集群时使用 default。</para>
+    /// <para>en-us:Isolated deployment identifier that owns the self-healing state; default is used when clustering is not enabled.</para>
+    /// </summary>
+    public string DeploymentId { get; set; } = "default";
+
+    /// <summary>
     /// <para>zh-cn:当前统计窗口内已经保留或执行的自愈重启次数。</para>
     /// <para>en-us:The number of reserved or executed self-healing restart attempts in the current counting window.</para>
     /// </summary>

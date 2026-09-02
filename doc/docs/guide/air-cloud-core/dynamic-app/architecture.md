@@ -1,6 +1,6 @@
-# 架构边界
+# AirForge 架构边界
 
-动态应用运行时位于 `src/dynamicapp`，用于承载应用级 Mod 发布和运行控制。业务请求通过 Gateway 进入 DynamicApp，Manager 负责控制面，Host 和 Orchestrator 负责目标启动与生命周期管理。
+AirForge 是动态应用的独立产品宿主，位于 `demo/airForge`。底层运行时类库仍位于 `src/dynamicapp/Air.Cloud.DynamicApp`，用于承载应用级 Mod 发布和运行控制。业务请求通过 Gateway 进入 DynamicApp 运行时，Manager 负责控制面，Host 和 Orchestrator 负责目标启动与生命周期管理，AirForge Panel 负责浏览器管理界面。
 
 ## 组件关系
 
@@ -10,9 +10,17 @@
   -> Active/Healthy Mod 目标
 
 控制面
+  -> AirForge Panel
   -> Manager API
   -> State Store / Manifest Store
   -> Host / Orchestrator
+
+运行观测
+  -> Process stdout/stderr
+  -> Process Log Sink
+  -> DynamicAppProcessLogBroadcaster
+  -> AirForge SignalR Hub
+  -> Browser
 ```
 
 ## 项目职责
@@ -20,16 +28,19 @@
 | 项目 | 路径 | 职责 |
 | --- | --- | --- |
 | `Air.Cloud.DynamicApp` | `src/dynamicapp/Air.Cloud.DynamicApp` | Manifest、标识、生命周期枚举、运行时 DTO、Manager API、Gateway 转发、Host、Process Mod 启停、健康探测、排空清理和 Orchestrator 边界 |
+| `air.cloud.airforge` | `demo/airForge/air.cloud.airforge` | AirForge 产品宿主，组合 DynamicApp 运行时、Consul 可选接入、Docker 容器接管、受控文本文件编辑和内置管理面板 |
+
+AirForge Panel 的 Process 日志通道使用 `AirForgeProcessLogHub`。Hub 连接建立和日志流调用均要求有效的 ControlPlaneAuth 会话；实时日志不通过 `ILogger` 或浏览器轮询传递，而是由 `DynamicAppProcessLogBroadcaster` 通过 SignalR 推送。
 
 ## 注册关系
 
-Compact Host 典型接入方式：
+AirForge Host 典型接入方式：
 
 ```csharp
+using Air.Cloud.AirForge.Panel.Extensions;
 using Air.Cloud.DynamicApp.Gateway.Extensions;
 using Air.Cloud.DynamicApp.Host.Extensions;
 using Air.Cloud.DynamicApp.Manager.Extensions;
-using Air.Cloud.DynamicApp.Panel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +75,11 @@ builder.Services.AddFileDynamicAppStateStore(options =>
     options.FilePath = "data/dynamicapp-state.json";
 });
 
+builder.Services.AddFileDynamicAppGatewayRouteStore(options =>
+{
+    options.FilePath = "data/dynamicapp-gateway-routes.json";
+});
+
 builder.Services.AddFileDynamicAppManifestStore(options =>
 {
     options.FilePath = "data/dynamicapp-manifests.json";
@@ -71,17 +87,15 @@ builder.Services.AddFileDynamicAppManifestStore(options =>
 
 builder.Services.AddDynamicAppGateway(options =>
 {
-    options.DynamicAppId = "security-platform";
-    options.RoutePrefix = "/mods";
 });
 
-builder.Services.AddDynamicAppPanel(options =>
+builder.Services.AddAirForgePanel(options =>
 {
     options.RoutePrefix = "/dynamicapp-panel";
 });
 
 var app = builder.Build();
-app.UseDynamicAppPanel();
+app.UseAirForgePanel();
 app.UseDynamicAppManagerApi();
 app.UseDynamicAppGateway();
 app.Run();
@@ -89,7 +103,7 @@ app.Run();
 
 ## Gateway 转发
 
-`DynamicAppGatewayMiddleware` 按 DynamicApp 状态表选择当前活动目标，并把请求转发到目标上游地址。
+`DynamicAppGatewayMiddleware` 先按独立动态路由表匹配入口模板，再从状态表选择 `Active + Healthy` 目标并重写下游路径。
 
 默认行为：
 
@@ -107,8 +121,6 @@ app.Run();
 ```csharp
 builder.Services.AddDynamicAppGateway(options =>
 {
-    options.DynamicAppId = "security-platform";
-    options.RoutePrefix = "/mods";
     options.ForwardTimeout = TimeSpan.FromSeconds(30);
     options.MaxRequestBodyBytes = 50 * 1024 * 1024;
     options.RejectUpgradeRequests = true;
@@ -130,3 +142,30 @@ builder.Services.AddDynamicAppGateway(options =>
 - 命令超时后结束进程树并返回失败。
 
 生产环境应优先接入专用 Docker/Kubernetes 适配器或受控平台 API，不应把无限制 Docker Socket 暴露给普通 Manager。
+## Clustered Deployment Model
+
+The package inventory and runtime deployment are separate layers:
+
+```text
+package inventory (immutable source)
+  mods/{dynamicAppId}/{modId}/{version}/
+    package.zip
+    content/
+
+runtime deployments (independent copies)
+  deployments/{dynamicAppId}/{modId}/{version}/{deploymentId}/
+    package.zip
+    content/
+```
+
+`DynamicApp/Mod/Version` identifies the immutable package. `DeploymentId` identifies one runnable instance of that package. A single package version may therefore have `blue`, `gray`, and other replicas without sharing configuration files, process working directories, or port settings.
+
+Activation is version-oriented: activating one package version keeps all registered deployments of that version `Active` and moves other versions to `Draining`. Gateway routing only uses `Active` and `Healthy` deployments and selects among them with round-robin.
+
+Process recovery, health updates, self-healing retry counters, and process logs use the runtime key:
+
+```text
+DynamicApp/Mod/Version/DeploymentId
+```
+
+This prevents a failed gray instance from changing the state or retry window of the blue instance. Existing callers that do not provide a deployment identifier use `default`.

@@ -35,6 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\capabilities\Air.Cloud.Capabilities.ControlPlaneAuth\Air.Cloud.Capabilities.ControlPlaneAuth.csproj" />
     <ProjectReference Include="..\..\src\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
     <ProjectReference Include="..\..\src\db\Air.Cloud.EntityFrameWork.Oracle\Air.Cloud.EntityFrameWork.Oracle.csproj" />
     <ProjectReference Include="..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />

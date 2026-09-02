@@ -45,4 +45,27 @@ public interface IDynamicAppProcessLogSink
     /// <para>en-us:Log entries returned in ascending timestamp order.</para>
     /// </returns>
     Task<IReadOnlyCollection<DynamicAppProcessLogEntry>> QueryAsync(DynamicModVersionKey key, int take = 200, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <para>zh-cn:查询指定部署实例的近期进程日志，避免同一包版本的多个副本互相串日志。</para>
+    /// <para>en-us:Queries recent process logs for one deployment instance so replicas of the same package version do not share log history.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="take">
+    /// <para>zh-cn:最多返回的日志条数。</para>
+    /// <para>en-us:The maximum number of entries to return.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:Cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:按写入时间升序返回的日志集合。</para>
+    /// <para>en-us:Log entries returned in ascending write order.</para>
+    /// </returns>
+    Task<IReadOnlyCollection<DynamicAppProcessLogEntry>> QueryAsync(DynamicAppRuntimeKey key, int take = 200, CancellationToken cancellationToken = default)
+        => QueryAsync(key.PackageKey, take, cancellationToken);
 }

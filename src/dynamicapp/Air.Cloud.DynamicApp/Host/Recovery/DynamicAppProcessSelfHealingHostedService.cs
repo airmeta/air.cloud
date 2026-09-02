@@ -21,6 +21,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
     private readonly IDynamicAppSelfHealingStateStore _selfHealingStateStore;
     private readonly IDynamicAppStateStore _stateStore;
     private readonly IDynamicAppTargetArchiveStore _targetArchiveStore;
+    private readonly IDynamicAppRuntimeOperationCoordinator _operationCoordinator;
 
     /// <summary>
     /// <para>zh-cn:创建 Process 模式自愈后台服务。</para>
@@ -58,6 +59,10 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
     /// <para>zh-cn:自愈选项，用于控制扫描间隔、退避和最大重试次数。</para>
     /// <para>en-us:Self-healing options controlling scan interval, backoff, and maximum retry attempts.</para>
     /// </param>
+    /// <param name="operationCoordinator">
+    /// <para>zh-cn:运行实例操作协调器，用于避免自愈与人工生命周期操作交叉执行。</para>
+    /// <para>en-us:Runtime operation coordinator used to prevent self-healing from interleaving with manual lifecycle operations.</para>
+    /// </param>
     public DynamicAppProcessSelfHealingHostedService(
         IDynamicAppStateStore stateStore,
         IDynamicAppManifestStore manifestStore,
@@ -66,7 +71,8 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
         IDynamicAppManager manager,
         IDynamicAppSelfHealingStateStore selfHealingStateStore,
         IDynamicAppTargetArchiveStore targetArchiveStore,
-        DynamicAppSelfHealingOptions options)
+        DynamicAppSelfHealingOptions options,
+        IDynamicAppRuntimeOperationCoordinator operationCoordinator)
     {
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _manifestStore = manifestStore ?? throw new ArgumentNullException(nameof(manifestStore));
@@ -76,6 +82,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
         _selfHealingStateStore = selfHealingStateStore ?? throw new ArgumentNullException(nameof(selfHealingStateStore));
         _targetArchiveStore = targetArchiveStore ?? throw new ArgumentNullException(nameof(targetArchiveStore));
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _operationCoordinator = operationCoordinator ?? throw new ArgumentNullException(nameof(operationCoordinator));
     }
 
     /// <summary>
@@ -113,7 +120,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
                 return;
             }
 
-            if (_targetArchiveStore.IsArchived(target.Key))
+            if (_targetArchiveStore.IsArchived(new DynamicAppRuntimeKey(target.Key, target.DeploymentId)))
             {
                 continue;
             }
@@ -125,15 +132,49 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
                 continue;
             }
 
-            await HealTargetAsync(record.Manifest, mod, target, stoppingToken).ConfigureAwait(false);
+            var runtimeKey = ToRuntimeKey(target);
+            await using var operation = await _operationCoordinator
+                .AcquireAsync(runtimeKey, stoppingToken)
+                .ConfigureAwait(false);
+            // The initial list is only a candidate snapshot. A manual stop may have
+            // completed while this operation waited for the instance lock.
+            var currentTarget = _stateStore.ListTargets()
+                .FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+            if (currentTarget == null
+                || currentTarget.State is DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Draining)
+            {
+                continue;
+            }
+
+            await HealTargetAsync(record.Manifest, mod, currentTarget, stoppingToken).ConfigureAwait(false);
         }
     }
 
     private async Task HealTargetAsync(DynamicAppManifest manifest, DynamicModManifest mod, DynamicAppRouteTarget target, CancellationToken stoppingToken)
     {
-        var runtime = await _modRunner.InspectAsync(target.Key, stoppingToken).ConfigureAwait(false);
+        var runtimeKey = ToRuntimeKey(target);
+        mod.Artifact.DeploymentId = runtimeKey.DeploymentId;
+        mod.Artifact.DeploymentDirectory = target.DeploymentDirectory;
+        if (!string.IsNullOrWhiteSpace(target.DeploymentEntryFilePath))
+        {
+            mod.Artifact.File = target.DeploymentEntryFilePath;
+        }
+        var runtime = await _modRunner.InspectAsync(runtimeKey, stoppingToken).ConfigureAwait(false);
         if (runtime.Succeeded)
         {
+            if (target.State == DynamicModLifecycleState.Failed || target.HealthStatus == DynamicModHealthStatus.Unhealthy)
+            {
+                var reconciliationHealth = await _healthProbe.ProbeAsync(target, mod.Health, stoppingToken).ConfigureAwait(false);
+                if (!reconciliationHealth.IsHealthy)
+                {
+                    return;
+                }
+
+                _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Active, DynamicModHealthStatus.Healthy,
+                    $"Process target `{runtimeKey}` recovered after a successful health probe.");
+                _selfHealingStateStore.Remove(runtimeKey);
+            }
+
             ClearAttemptIfHealthy(target);
             return;
         }
@@ -147,7 +188,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
         {
             if (!string.IsNullOrWhiteSpace(skipMessage))
             {
-                _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, skipMessage);
+                _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, skipMessage);
             }
 
             return;
@@ -156,32 +197,42 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
         var start = await _modRunner.StartAsync(manifest, mod, stoppingToken).ConfigureAwait(false);
         if (!start.Succeeded)
         {
-            var failureMessage = BuildFailureMessage(target.Key, "restart", start.Message, attemptState.AttemptCount, attemptState.MaxAttempts);
+            var failureMessage = BuildFailureMessage(runtimeKey, "restart", start.Message, attemptState.AttemptCount, attemptState.MaxAttempts);
             MarkAttemptFailure(attemptState, "restart", failureMessage);
-            _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, failureMessage);
+            _stateStore.UpdateState(runtimeKey, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, failureMessage);
             return;
         }
 
-        var restartedTarget = _stateStore.ListTargets().FirstOrDefault(item => item.Key == target.Key) ?? target;
+        var restartedTarget = _stateStore.ListTargets().FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey) ?? target;
         var health = await _healthProbe.ProbeAsync(restartedTarget, mod.Health, stoppingToken).ConfigureAwait(false);
         if (!health.IsHealthy)
         {
-            var failureMessage = BuildFailureMessage(target.Key, "health probe", health.Message, attemptState.AttemptCount, attemptState.MaxAttempts);
+            var failureMessage = BuildFailureMessage(runtimeKey, "health probe", health.Message, attemptState.AttemptCount, attemptState.MaxAttempts);
             MarkAttemptFailure(attemptState, "health probe", failureMessage);
-            _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, failureMessage);
+            var stop = await _modRunner.StopAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false);
+            _stateStore.UpdateState(
+                runtimeKey,
+                DynamicModLifecycleState.Failed,
+                DynamicModHealthStatus.Unhealthy,
+                stop.Succeeded ? $"{failureMessage} The failed restart process was stopped." : $"{failureMessage} Process cleanup also failed: {stop.Message}");
             return;
         }
 
-        var activation = await _manager.ActivateAsync(target.Key, stoppingToken).ConfigureAwait(false);
+        var activation = await _manager.ActivateInstanceAsync(runtimeKey, stoppingToken).ConfigureAwait(false);
         if (activation.Succeeded)
         {
-            _selfHealingStateStore.Remove(target.Key);
+            _selfHealingStateStore.Remove(runtimeKey);
             return;
         }
 
-        var activationFailure = BuildFailureMessage(target.Key, "activation", activation.Message, attemptState.AttemptCount, attemptState.MaxAttempts);
+        var activationFailure = BuildFailureMessage(runtimeKey, "activation", activation.Message, attemptState.AttemptCount, attemptState.MaxAttempts);
         MarkAttemptFailure(attemptState, "activation", activationFailure);
-        _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, activationFailure);
+        var activationStop = await _modRunner.StopAsync(runtimeKey, CancellationToken.None).ConfigureAwait(false);
+        _stateStore.UpdateState(
+            runtimeKey,
+            DynamicModLifecycleState.Failed,
+            DynamicModHealthStatus.Unhealthy,
+            activationStop.Succeeded ? $"{activationFailure} The restarted process was stopped after activation failed." : $"{activationFailure} Process cleanup also failed: {activationStop.Message}");
     }
 
     private void ClearAttemptIfHealthy(DynamicAppRouteTarget target)
@@ -190,7 +241,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
             && target.State == DynamicModLifecycleState.Active
             && target.HealthStatus == DynamicModHealthStatus.Healthy)
         {
-            _selfHealingStateStore.Remove(target.Key);
+            _selfHealingStateStore.Remove(ToRuntimeKey(target));
         }
     }
 
@@ -204,10 +255,11 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
 
         lock (_attemptSync)
         {
-            var state = _selfHealingStateStore.Get(target.Key);
+            var runtimeKey = ToRuntimeKey(target);
+            var state = _selfHealingStateStore.Get(runtimeKey);
             if (state == null || now >= state.WindowResetAtUtc)
             {
-                attemptState = CreateAttemptState(target.Key, runtimeMessage, now, maxAttempts, window, backoff);
+                attemptState = CreateAttemptState(runtimeKey, runtimeMessage, now, maxAttempts, window, backoff);
                 _selfHealingStateStore.Upsert(attemptState);
                 return true;
             }
@@ -261,9 +313,10 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
         }
     }
 
-    private static DynamicAppSelfHealingState CreateAttemptState(DynamicModVersionKey key, string runtimeMessage, DateTimeOffset now, int maxAttempts, TimeSpan window, TimeSpan backoff) => new()
+    private static DynamicAppSelfHealingState CreateAttemptState(DynamicAppRuntimeKey key, string runtimeMessage, DateTimeOffset now, int maxAttempts, TimeSpan window, TimeSpan backoff) => new()
     {
-        Key = key,
+        Key = key.PackageKey,
+        DeploymentId = key.DeploymentId,
         AttemptCount = 1,
         MaxAttempts = maxAttempts,
         FirstAttemptUtc = now,
@@ -285,7 +338,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
         _selfHealingStateStore.Upsert(state);
     }
 
-    private static string BuildFailureMessage(DynamicModVersionKey key, string stage, string message, int attemptCount, int maxAttempts)
+    private static string BuildFailureMessage(DynamicAppRuntimeKey key, string stage, string message, int attemptCount, int maxAttempts)
     {
         var limitMessage = attemptCount >= maxAttempts ? $" Restart attempt limit `{maxAttempts}` reached; automatic self-healing is paused until the attempt window resets or the target becomes healthy." : string.Empty;
         return $"Self-healing {stage} failed for `{key}` on attempt `{attemptCount}/{maxAttempts}`. {message}{limitMessage}";
@@ -307,4 +360,7 @@ public sealed class DynamicAppProcessSelfHealingHostedService : BackgroundServic
     private static TimeSpan NormalizeBackoff(TimeSpan backoff) => backoff < TimeSpan.Zero ? TimeSpan.Zero : backoff;
 
     private static TimeSpan NormalizeWindow(TimeSpan window) => window <= TimeSpan.Zero ? TimeSpan.FromMinutes(5) : window;
+
+    private static DynamicAppRuntimeKey ToRuntimeKey(DynamicAppRouteTarget target)
+        => new(target.Key, string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim());
 }

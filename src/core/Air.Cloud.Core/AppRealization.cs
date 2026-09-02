@@ -229,6 +229,16 @@ namespace Air.Cloud.Core
             FieldInfo[] FieldInfos = typeof(InternalRealization).GetFields().ToArray();
             foreach (var item in FieldInfos)
             {
+                // 注入标准由 HostInjectInFile、WebInjectInFile 或 Consul 启动入口按宿主类型显式设置。
+                // 该标准同时存在 HostApp 和 WebApp 两个合法实现，不能在核心静态初始化阶段自动二选一。
+                // The injection standard is explicitly selected by the Host, Web, or Consul bootstrap entry point.
+                // HostApp and WebApp both provide valid implementations, so core static initialization must not
+                // attempt to select one when both assemblies are referenced by the process.
+                if (item.FieldType == typeof(IAppInjectStandard))
+                {
+                    continue;
+                }
+
                 //通过反射寻找IAppInjectStandard的实现
                 var Types = AppCore.StandardTypes.Where(s => item.FieldType.IsAssignableFrom(s) && s != item.FieldType).ToList();
                 if (Types.Count > 1)

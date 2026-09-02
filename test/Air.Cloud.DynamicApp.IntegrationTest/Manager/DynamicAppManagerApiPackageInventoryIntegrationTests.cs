@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 using Air.Cloud.DynamicApp.Contracts.Identifiers;
@@ -71,6 +72,146 @@ public sealed class DynamicAppManagerApiPackageInventoryIntegrationTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证 Manager API 可以创建空 Mod 配置，并在包库存接口中返回该 Mod 组，且不会创建运行实例。</para>
+    /// <para>en-us:Verifies that the Manager API creates an empty Mod configuration, returns it from package inventory, and does not create a runtime instance.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DynamicApp")]
+    public async Task PackageApis_should_create_mod_configuration_without_runtime_instance()
+    {
+        using var workspace = DynamicAppTestWorkspace.Create();
+        await using var app = await CreateAppAsync(workspace.RootPath);
+        var client = app.GetTestClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/dynamicapp-manager/packages/mods")
+        {
+            Content = JsonContent.Create(new
+            {
+                dynamicAppId = "chaos-platform",
+                modId = "workflow"
+            })
+        };
+        request.Headers.TryAddWithoutValidation("X-DynamicApp-Manager-Ticket", "integration-ticket");
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var packages = await GetJsonAsync(client, "/dynamicapp-manager/packages");
+        var mod = Assert.Single(
+            packages.RootElement.GetProperty("data").EnumerateArray(),
+            row => row.GetProperty("dynamicAppId").GetString() == "chaos-platform"
+                && row.GetProperty("modId").GetString() == "workflow");
+        Assert.Empty(mod.GetProperty("versions").EnumerateArray());
+        Assert.Empty(app.Services.GetRequiredService<IDynamicAppStateStore>().ListTargets());
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证同一应用下创建重复服务名会被 Manager API 拒绝。</para>
+    /// <para>en-us:Verifies that the Manager API rejects a duplicate service name under the same application.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DynamicApp")]
+    public async Task PackageApis_should_reject_duplicate_mod_service()
+    {
+        using var workspace = DynamicAppTestWorkspace.Create();
+        await using var app = await CreateAppAsync(workspace.RootPath);
+        var client = app.GetTestClient();
+
+        async Task<HttpResponseMessage> CreateAsync()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/dynamicapp-manager/packages/mods")
+            {
+                Content = JsonContent.Create(new
+                {
+                    dynamicAppId = "chaos-platform",
+                    modId = "workflow"
+                })
+            };
+            request.Headers.TryAddWithoutValidation("X-DynamicApp-Manager-Ticket", "integration-ticket");
+            return await client.SendAsync(request);
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await CreateAsync()).StatusCode);
+        var duplicate = await CreateAsync();
+        Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
+        var body = await duplicate.Content.ReadAsStringAsync();
+        Assert.Contains("already exists", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证空服务可以删除，并且删除后包管理器不再返回该服务。</para>
+    /// <para>en-us:Verifies that an empty service can be deleted and disappears from package-manager inventory afterward.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DynamicApp")]
+    public async Task PackageApis_should_delete_empty_mod_service()
+    {
+        using var workspace = DynamicAppTestWorkspace.Create();
+        await using var app = await CreateAppAsync(workspace.RootPath);
+        var client = app.GetTestClient();
+
+        using var create = new HttpRequestMessage(HttpMethod.Post, "/dynamicapp-manager/packages/mods")
+        {
+            Content = JsonContent.Create(new
+            {
+                dynamicAppId = "chaos-platform",
+                modId = "workflow"
+            })
+        };
+        create.Headers.TryAddWithoutValidation("X-DynamicApp-Manager-Ticket", "integration-ticket");
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(create)).StatusCode);
+
+        using var remove = new HttpRequestMessage(HttpMethod.Post, "/dynamicapp-manager/packages/mods/remove")
+        {
+            Content = JsonContent.Create(new
+            {
+                dynamicAppId = "chaos-platform",
+                modId = "workflow"
+            })
+        };
+        remove.Headers.TryAddWithoutValidation("X-DynamicApp-Manager-Ticket", "integration-ticket");
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(remove)).StatusCode);
+
+        var packages = await GetJsonAsync(client, "/dynamicapp-manager/packages");
+        Assert.DoesNotContain(
+            packages.RootElement.GetProperty("data").EnumerateArray(),
+            row => row.GetProperty("dynamicAppId").GetString() == "chaos-platform"
+                && row.GetProperty("modId").GetString() == "workflow");
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证未被运行实例或归档使用的单个包版本可以删除，并从包清单中消失。</para>
+    /// <para>en-us:Verifies that one package version with no runtime or archive references can be deleted and disappears from inventory.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DynamicApp")]
+    public async Task PackageApis_should_delete_unused_package_version()
+    {
+        using var workspace = DynamicAppTestWorkspace.Create();
+        await using var app = await CreateAppAsync(workspace.RootPath);
+        var client = app.GetTestClient();
+
+        using var remove = new HttpRequestMessage(HttpMethod.Post, "/dynamicapp-manager/packages/versions/remove")
+        {
+            Content = JsonContent.Create(new
+            {
+                dynamicAppId = "security-platform",
+                modId = "account",
+                version = "101-process-previous"
+            })
+        };
+        remove.Headers.TryAddWithoutValidation("X-DynamicApp-Manager-Ticket", "integration-ticket");
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(remove)).StatusCode);
+
+        var packages = await GetJsonAsync(client, "/dynamicapp-manager/packages");
+        var account = Assert.Single(packages.RootElement.GetProperty("data").EnumerateArray(), row => row.GetProperty("modId").GetString() == "account");
+        Assert.DoesNotContain(account.GetProperty("versions").EnumerateArray(), version => version.GetProperty("version").GetString() == "101-process-previous");
+    }
+
     private static async Task<WebApplication> CreateAppAsync(string packageRootPath)
     {
         var builder = WebApplication.CreateBuilder();
@@ -82,7 +223,8 @@ public sealed class DynamicAppManagerApiPackageInventoryIntegrationTests
                 options.RequireTicket = true;
                 options.Tickets = ["integration-ticket"];
             },
-            options => options.RootPath = packageRootPath);
+            options => options.RootPath = packageRootPath,
+            configureArchiveStore: options => options.FilePath = Path.Combine(packageRootPath, "dynamicapp-archives.json"));
 
         var app = builder.Build();
         await SeedPackagesAsync(app.Services.GetRequiredService<IDynamicAppModPackageStore>());
@@ -147,7 +289,6 @@ public sealed class DynamicAppManagerApiPackageInventoryIntegrationTests
                         Endpoint = "http://agentsprint-api:8080",
                         ContainerName = "agentsprint-api"
                     },
-                    Route = new DynamicModRouteManifest { Prefix = "/mods/agentsprint-api" },
                     Health = new DynamicModHealthManifest { Path = "/Health", StartupTimeoutSeconds = 10 }
                 }
             ]

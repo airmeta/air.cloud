@@ -196,6 +196,12 @@ public static class ReverseTunnelEndpointRouteBuilderExtensions
             .WithDisplayName("AirTunnel management disconnect session");
         endpoints.MapPost($"{prefix}/certificates/revoke", RevokeManagementCertificateAsync)
             .WithDisplayName("AirTunnel management revoke certificate");
+        endpoints.MapPost($"{prefix}/clients", CreateClientAsync)
+            .WithDisplayName("AirTunnel management create Agent");
+        endpoints.MapGet($"{prefix}/clients/{{agentId}}/export", ExportClientWithDefaultsAsync)
+            .WithDisplayName("AirTunnel management export Agent package with defaults");
+        endpoints.MapPost($"{prefix}/clients/{{agentId}}/export", ExportClientAsync)
+            .WithDisplayName("AirTunnel management export Agent package");
         endpoints.MapPost($"{prefix}/clients/configuration-requests", PushClientConfigurationAsync)
             .WithDisplayName("AirTunnel management client configuration request");
         endpoints.MapGet($"{prefix}/clients/{{agentId}}/configuration", ReadClientConfigurationAsync)
@@ -203,6 +209,138 @@ public static class ReverseTunnelEndpointRouteBuilderExtensions
         endpoints.MapGet($"{prefix}/clients/{{agentId}}/configuration-status", ReadClientConfigurationStatusAsync)
             .WithDisplayName("AirTunnel management client configuration status");
         return endpoints;
+    }
+
+    private static async Task<IResult> CreateClientAsync(
+        HttpContext context,
+        ReverseTunnelAgentCreateRequest request,
+        IReverseTunnelRuntimeOptionsAccessor runtimeOptions,
+        IReverseTunnelDesiredAgentConfigurationStore desiredConfigurations,
+        IReverseTunnelDiagnosticsService diagnostics,
+        IReverseTunnelManagementAuthorizer authorizer)
+    {
+        if (await authorizer.AuthorizeAsync(context, runtimeOptions.Current.Management, context.RequestAborted).ConfigureAwait(false) is { } unauthorized)
+        {
+            return unauthorized;
+        }
+
+        if (!runtimeOptions.Current.Management.AllowRemoteClientManagement)
+        {
+            return Results.Problem("AirTunnel remote client management is disabled.", statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var agentId = request.AgentId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(agentId))
+        {
+            return Results.BadRequest(new { code = "agent_id_required", message = "AgentId is required." });
+        }
+
+        if (agentId.Length > 128 || agentId.Any(char.IsControl) || agentId.Contains('/', StringComparison.Ordinal) || agentId.Contains('\\', StringComparison.Ordinal))
+        {
+            return Results.BadRequest(new { code = "agent_id_invalid", message = "AgentId must be 1-128 characters and cannot contain path separators." });
+        }
+
+        if (!Uri.TryCreate(request.ServerAddress?.Trim(), UriKind.Absolute, out var serverAddress) ||
+            (serverAddress.Scheme != Uri.UriSchemeHttp && serverAddress.Scheme != Uri.UriSchemeHttps) ||
+            string.IsNullOrWhiteSpace(serverAddress.Host))
+        {
+            return Results.BadRequest(new { code = "server_address_invalid", message = "ServerAddress must be an absolute HTTP or HTTPS URL." });
+        }
+
+        if (await desiredConfigurations.GetAsync(agentId, context.RequestAborted).ConfigureAwait(false) is not null)
+        {
+            return Results.Conflict(new { code = "agent_exists", message = "An Agent with this AgentId already exists." });
+        }
+
+        var configuration = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Agent,
+            EnableTunnelProxy = false,
+            AgentId = agentId,
+            ServerAddress = serverAddress.ToString().TrimEnd('/'),
+            AgentConnectionCount = request.AgentConnectionCount,
+            HeartbeatIntervalSeconds = request.HeartbeatIntervalSeconds,
+            ConfigurationSync = new ReverseTunnelConfigurationSyncOptions
+            {
+                Enabled = request.ConfigurationSyncEnabled,
+                IntervalSeconds = request.ConfigurationSyncIntervalSeconds
+            },
+            AgentCertificate = new ReverseTunnelAgentCertificateOptions
+            {
+                CertificatePath = "/app/data/certs/agent.crt",
+                PrivateKeyPath = "/app/data/certs/agent.key",
+                TrustedIssuerPath = "/app/data/certs/ca.crt",
+                PrivateKeySizeBits = 2048
+            }
+        };
+        configuration.PostConfigure(configuration, new ConfigurationBuilder().Build());
+
+        var result = await desiredConfigurations.TrySaveAsync(
+            agentId,
+            configuration,
+            expectedVersion: 0,
+            snapshots => ReverseTunnelAgentConfigurationConflictValidator.Validate(agentId, configuration, snapshots),
+            context.RequestAborted).ConfigureAwait(false);
+        if (result.VersionConflict)
+        {
+            return Results.Conflict(new { code = "agent_exists", message = "An Agent with this AgentId already exists." });
+        }
+
+        if (result.Conflicts.Count > 0)
+        {
+            return Results.Conflict(new { code = "agent_configuration_conflict", message = "Agent configuration conflicts with an existing Agent.", conflicts = result.Conflicts });
+        }
+
+        var sessionOnline = diagnostics.GetSessions().Any(item => string.Equals(item.AgentId, agentId, StringComparison.OrdinalIgnoreCase));
+        return Results.Json(
+            new ReverseTunnelAgentCreateResponse { AgentId = agentId, Version = result.Snapshot!.Version, Online = sessionOnline },
+            statusCode: StatusCodes.Status201Created);
+    }
+
+    private static Task<IResult> ExportClientWithDefaultsAsync(
+        HttpContext context,
+        string agentId,
+        IReverseTunnelRuntimeOptionsAccessor runtimeOptions,
+        IReverseTunnelAgentPackageExporter exporter,
+        IReverseTunnelManagementAuthorizer authorizer)
+        => ExportClientAsync(context, agentId, null, runtimeOptions, exporter, authorizer);
+
+    private static async Task<IResult> ExportClientAsync(
+        HttpContext context,
+        string agentId,
+        ReverseTunnelAgentPackageExportRequest? request,
+        IReverseTunnelRuntimeOptionsAccessor runtimeOptions,
+        IReverseTunnelAgentPackageExporter exporter,
+        IReverseTunnelManagementAuthorizer authorizer)
+    {
+        if (await authorizer.AuthorizeAsync(context, runtimeOptions.Current.Management, context.RequestAborted).ConfigureAwait(false) is { } unauthorized)
+        {
+            return unauthorized;
+        }
+
+        if (!runtimeOptions.Current.Management.AllowRemoteClientManagement)
+        {
+            return Results.Problem("AirTunnel remote client management is disabled.", statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        try
+        {
+            var package = await exporter.CreateAsync(agentId, request, context.RequestAborted).ConfigureAwait(false);
+            return Results.File(package.Content, "application/zip", package.FileName);
+        }
+        catch (KeyNotFoundException)
+        {
+            return Results.NotFound(new { code = "agent_not_found", message = "No desired configuration is stored for the Agent." });
+        }
+        catch (ArgumentException exception)
+        {
+            return Results.BadRequest(new
+            {
+                code = exception.ParamName == "request" ? "agent_package_options_invalid" : "agent_id_invalid",
+                message = exception.Message
+            });
+        }
     }
 
     private static IResult CreateDiagnosticsResult<TValue>(ReverseTunnelOptions options, Func<TValue> read)

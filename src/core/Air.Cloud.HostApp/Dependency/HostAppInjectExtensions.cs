@@ -43,7 +43,14 @@ namespace Air.Cloud.HostApp.Dependency
 
             builder = builder.ConfigureAppConfiguration(a =>
             {
-                a.AddConfiguration(AppConfigurationLoader.Configurations);
+                // 不将 ConfigurationManager 作为单一 ChainedConfigurationSource 再次挂载。
+                // 复制其底层配置源，避免聚合管理器互相监听造成变更令牌递归。
+                // Copy the underlying sources instead of chaining the aggregate
+                // ConfigurationManager itself, preventing recursive reload-token wiring.
+                foreach (var source in AppConfigurationLoader.Configurations.Sources)
+                {
+                    a.Sources.Add(source);
+                }
             });
             builder = AppRealization.Injection.Inject(builder, true);
             return builder;

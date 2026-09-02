@@ -37,6 +37,47 @@ appsettings.Common.Production.json
 
 ---
 
+## config 目录加载
+
+对于可复用能力组件，`appsettings.json` 不应承载所有配置。宿主可以使用 `Air.Cloud.Core` 提供的目录加载扩展，从运行目录下的 `config/` 读取能力配置：
+
+```csharp
+using Air.Cloud.Core.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddAirCloudConfigDirectory(
+    directoryName: "config",
+    environmentName: builder.Environment.EnvironmentName,
+    optional: true,
+    reloadOnChange: true);
+```
+
+加载规则：
+
+- 只加载当前目录下的 `*.json`，不递归扫描子目录。
+- 文件按名称升序加载，后加载的文件覆盖先加载的同名配置键。
+- 如果传入 `environmentName`，会在基础目录之后加载 `config/{Environment}/*.json`。
+- `optional: false` 且目录不存在时会抛出 `DirectoryNotFoundException`。
+
+示例：
+
+```text
+appsettings.json
+config/
+  control-plane-auth.json
+  Production/
+    control-plane-auth.json
+```
+
+适用边界：
+
+- `config/` 放策略配置，例如路径、产品名、登录策略、会话过期时间。
+- `data/` 放运行期数据，例如用户 hash、会话 hash、服务票据 hash、审计日志。
+- Ticket、Token、密码明文不应写入 `config/*.json`。
+
+---
+
 ## 环境选择机制
 
 环境由 `AppEnvironment.VirtualEnvironmentKey` 决定。常见来源如下：
@@ -212,6 +253,8 @@ AppConfiguration.AddChangeReloadFunction("Kafka", () =>
 
 AppConfiguration.StartListenChangeReloadFunction();
 ```
+
+`HostInjectInFile()` 会复用已加载配置源，不会把聚合配置管理器再次作为子配置挂载。框架监听器只在配置根生成新的变更令牌时执行一次监听动作，避免配置文件变更时重复注册回调。监听动作应保持幂等，不要在动作内部重复添加配置源。
 
 注意：配置热更新只能说明配置值变了，不代表所有模块都会自动重建连接。例如 Kafka、Redis、Consul 等外部连接是否重连，取决于对应模块是否实现了刷新逻辑。
 

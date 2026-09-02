@@ -34,26 +34,19 @@ namespace Air.Cloud.Core.Standard.Configuration.Defaults
         [Aspect(typeof(IfHttpRequestExceptionHandler))]
         public IConfiguration LoadConfiguration(string ConfigurationName, bool IsCommonConfiguration)
         {
-            IConfiguration config = null;
-            IChangeToken token = null;
-            Action action = new Action(() =>
-            {
-                config = new ConfigurationBuilder().SetBasePath(AppConst.ApplicationPath)
-                                                          .AddJsonFile(ConfigurationName, optional: true, reloadOnChange: true)
-                                                          .Build();
-                if (IsCommonConfiguration) token = AppConfigurationLoader.SetPublicConfiguration(config);
-                else token = AppConfigurationLoader.SetExternalConfiguration(config);
-            });
-            action();
+            var config = new ConfigurationBuilder().SetBasePath(AppConst.ApplicationPath)
+                .AddJsonFile(ConfigurationName, optional: true, reloadOnChange: true)
+                .Build();
             if (config == null) throw new Exception("加载外部配置文件" + ConfigurationName + "失败");
-            if (token != null)
-            {
-                //监视文件变更
-                token.RegisterChangeCallback((state) =>
-                {
-                    action();
-                }, config);
-            }
+
+            // JSON 配置提供程序自身负责文件变更和 reload。不要监听聚合配置的令牌后再次
+            // AddConfiguration，否则每次 reload 都会重新添加同一个源并触发递归回调。
+            // The JSON provider already handles file changes and reloads. Do not listen to the
+            // aggregate configuration and add the same source again, or each reload recursively
+            // re-enters the callback.
+            if (IsCommonConfiguration) AppConfigurationLoader.SetPublicConfiguration(config);
+            else AppConfigurationLoader.SetExternalConfiguration(config);
+
             return config;
         }
     }

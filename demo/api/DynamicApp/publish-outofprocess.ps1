@@ -73,6 +73,8 @@ function Set-ProcessModServiceAddress {
     }
 
     $json.ConsulServiceOptions.ServiceAddress = $ServiceAddress
+    $json.ConsulServiceOptions.DynamicAppManaged = $true
+    $json.ConsulServiceOptions.EnableServiceRegistration = $false
     $json | ConvertTo-Json -Depth 16 | Set-Content -LiteralPath $appsettingsPath -Encoding UTF8
 }
 

@@ -212,6 +212,7 @@ namespace Air.Cloud.Core.App
             /// <para>en-us:Configuration to listen to</para>
             /// </summary>
             internal static ConcurrentDictionary<string, Action> Actions = new ConcurrentDictionary<string, Action>();
+            private static int listening;
 
             /// <summary>
             /// <para>zh-cn:尝试添加配置信息监听动作</para>
@@ -226,18 +227,58 @@ namespace Air.Cloud.Core.App
                 Actions.TryAdd(ac.Key, ac.Value);
             }
             /// <summary>
-            /// <para>zh-cn:开始监听</para>
-            /// <para>en-us:Start listening</para>
+            /// <para>zh-cn:开始监听配置令牌。通过轮询令牌实例变化触发监听动作，避免在 ConfigurationManager 变更回调中再次注册已变更令牌。</para>
+            /// <para>en-us:Starts observing configuration tokens. It polls token-instance changes and invokes listeners without recursively registering callbacks on an already changed ConfigurationManager token.</para>
             /// </summary>
             public static void StartListen()
             {
-                ChangeToken.OnChange(Configuration.GetReloadToken, () =>
+                if (Interlocked.Exchange(ref listening, 1) != 0)
                 {
+                    return;
+                }
+
+                _ = Task.Run(ObserveReloadTokenAsync);
+            }
+
+            /// <summary>
+            /// <para>zh-cn:轮询配置令牌实例，在配置根生成新令牌时执行监听动作。</para>
+            /// <para>en-us:Polls the configuration token and invokes listeners when the configuration root creates a new token.</para>
+            /// </summary>
+            private static async Task ObserveReloadTokenAsync()
+            {
+                IChangeToken observedToken = Configuration.GetReloadToken();
+                while (Volatile.Read(ref listening) != 0)
+                {
+                    await Task.Delay(100).ConfigureAwait(false);
+                    var currentToken = Configuration.GetReloadToken();
+                    if (ReferenceEquals(observedToken, currentToken))
+                    {
+                        continue;
+                    }
+
+                    observedToken = currentToken;
                     foreach (var item in Actions)
                     {
-                        item.Value.Invoke();
+                        try
+                        {
+                            item.Value.Invoke();
+                        }
+                        catch (Exception ex)
+                        {
+                            AppRealization.Output.Print(new AppPrintInformation
+                            {
+                                State = true,
+                                AdditionalParams = new Dictionary<string, object>
+                                {
+                                    { ex.Message, ex }
+                                },
+                                Content = "执行配置变更监听动作时出现异常",
+                                Level = AppPrintLevel.Error,
+                                Title = ex.Message
+                            });
+                        }
                     }
-                });
+                }
             }
         }
 

@@ -37,6 +37,12 @@ namespace Air.Cloud.Modules.Consul.Model
         /// </remarks>
         public string ServiceKey { get; set; }
         /// <summary>
+        /// <para>zh-cn:是否在服务注册信息中内联健康检查；为 false 时只注册服务基础信息，健康检查可由上层单独注册。</para>
+        /// <para>en-us:Whether to inline the health check in the service registration; when false, only service identity information is registered and the caller may register the health check separately.</para>
+        /// </summary>
+        public bool EnableHealthCheck { get; set; } = true;
+
+        /// <summary>
         /// <para>zh-cn:健康检查超时时间</para>
         /// <para>en-us:Health check timeout</para>
         /// </summary>

@@ -26,6 +26,11 @@ namespace Air.Cloud.UnitTest
         /// </param>
         public void ConfigureHost(IHostBuilder hostBuilder)
         {
+            hostBuilder.UseDefaultServiceProvider((_, options) =>
+            {
+                options.ValidateOnBuild = false;
+                options.ValidateScopes = false;
+            });
             hostBuilder.HostInjectInFile(Assembly.GetAssembly(typeof(Startup)));
         }
 

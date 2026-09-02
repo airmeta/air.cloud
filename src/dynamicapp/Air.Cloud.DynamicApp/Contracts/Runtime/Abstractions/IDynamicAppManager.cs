@@ -46,6 +46,25 @@ public interface IDynamicAppManager
     Task<DynamicAppOperationResult> ActivateAsync(DynamicModVersionKey key, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <para>zh-cn:只激活指定部署实例；同包版本其他实例不会因本次激活被覆盖。</para>
+    /// <para>en-us:Activates only the specified deployment; other deployments of the same package version are not overwritten by this activation.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <param name="cancellationToken">
+    /// <para>zh-cn:取消令牌。</para>
+    /// <para>en-us:The cancellation token.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:实例激活结果。</para>
+    /// <para>en-us:The instance activation result.</para>
+    /// </returns>
+    Task<DynamicAppOperationResult> ActivateInstanceAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+        => ActivateAsync(key.PackageKey, cancellationToken);
+
+    /// <summary>
     /// <para>zh-cn:回滚指定 DynamicApp/Mod 到最近一个健康的非当前版本。</para>
     /// <para>en-us:Rolls the specified DynamicApp/Mod back to the latest healthy version that is not currently active.</para>
     /// </summary>

@@ -87,14 +87,17 @@ public sealed class CommandDynamicAppOrchestrator : IDynamicAppOrchestrator
         }
 
         var key = new DynamicModVersionKey(manifest.Id, mod.Id, mod.Version);
+        var runtimeKey = new DynamicAppRuntimeKey(
+            key,
+            string.IsNullOrWhiteSpace(mod.Artifact.DeploymentId) ? "default" : mod.Artifact.DeploymentId.Trim());
         using var process = CreateProcess(manifest, mod);
         if (!process.Start())
         {
             return DynamicAppOperationResult.Failure($"Command orchestrator failed to start for `{key}`.");
         }
 
-        var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        var outputTask = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        var errorTask = process.StandardError.ReadToEndAsync(CancellationToken.None);
         using var timeout = new CancellationTokenSource(NormalizeTimeout(_options.Timeout));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
         try
@@ -104,7 +107,14 @@ public sealed class CommandDynamicAppOrchestrator : IDynamicAppOrchestrator
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             TryKill(process);
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
             return DynamicAppOperationResult.Failure($"Command orchestrator timed out for `{key}`.");
+        }
+        catch (OperationCanceledException)
+        {
+            TryKill(process);
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            return DynamicAppOperationResult.Failure($"Command orchestrator was cancelled for `{key}` after the child process was terminated.");
         }
 
         var output = await outputTask.ConfigureAwait(false);
@@ -117,8 +127,8 @@ public sealed class CommandDynamicAppOrchestrator : IDynamicAppOrchestrator
         _stateStore.UpsertTarget(new DynamicAppRouteTarget
         {
             Key = key,
+            DeploymentId = runtimeKey.DeploymentId,
             BaseAddress = ResolveTargetBaseAddress(manifest, mod),
-            RoutePrefix = mod.Route.Prefix,
             HealthPath = mod.Health.Path,
             HealthProbeTimeoutSeconds = mod.Health.StartupTimeoutSeconds,
             State = DynamicModLifecycleState.Starting,
@@ -160,14 +170,43 @@ public sealed class CommandDynamicAppOrchestrator : IDynamicAppOrchestrator
             return DynamicAppOperationResult.Failure("Command DynamicApp orchestrator StopArgumentsTemplate is not configured.");
         }
 
+        using var process = CreateProcess(ApplyTemplate(_options.StopArgumentsTemplate, DynamicAppRuntimeKey.Default(key)));
+        return await ExecuteStopProcessAsync(process, key, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:按部署实例执行受控停止命令，向模板提供 deploymentId 以避免误停同版本其他副本。</para>
+    /// <para>en-us:Executes the trusted stop command for one deployment and supplies deploymentId to the template so other replicas of the same version are not stopped accidentally.</para>
+    /// </summary>
+    public async Task<DynamicAppOperationResult> StopAsync(DynamicAppRuntimeKey key, CancellationToken cancellationToken = default)
+    {
+        var validation = ValidateCommandOptions();
+        if (!validation.Succeeded)
+        {
+            return validation;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.StopArgumentsTemplate))
+        {
+            return DynamicAppOperationResult.Failure("Command DynamicApp orchestrator StopArgumentsTemplate is not configured.");
+        }
+
         using var process = CreateProcess(ApplyTemplate(_options.StopArgumentsTemplate, key));
+        return await ExecuteStopProcessAsync(process, key.PackageKey, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<DynamicAppOperationResult> ExecuteStopProcessAsync(
+        Process process,
+        DynamicModVersionKey key,
+        CancellationToken cancellationToken)
+    {
         if (!process.Start())
         {
             return DynamicAppOperationResult.Failure($"Command orchestrator failed to start stop command for `{key}`.");
         }
 
-        var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        var outputTask = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        var errorTask = process.StandardError.ReadToEndAsync(CancellationToken.None);
         using var timeout = new CancellationTokenSource(NormalizeTimeout(_options.Timeout));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
         try
@@ -177,7 +216,14 @@ public sealed class CommandDynamicAppOrchestrator : IDynamicAppOrchestrator
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             TryKill(process);
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
             return DynamicAppOperationResult.Failure($"Command orchestrator stop timed out for `{key}`.");
+        }
+        catch (OperationCanceledException)
+        {
+            TryKill(process);
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            return DynamicAppOperationResult.Failure($"Command orchestrator stop was cancelled for `{key}` after the child process was terminated.");
         }
 
         var output = await outputTask.ConfigureAwait(false);
@@ -262,17 +308,21 @@ public sealed class CommandDynamicAppOrchestrator : IDynamicAppOrchestrator
             .Replace("{dynamicAppId}", manifest.Id.Value, StringComparison.OrdinalIgnoreCase)
             .Replace("{modId}", mod.Id.Value, StringComparison.OrdinalIgnoreCase)
             .Replace("{version}", mod.Version.Value, StringComparison.OrdinalIgnoreCase)
+            .Replace("{deploymentId}", string.IsNullOrWhiteSpace(mod.Artifact.DeploymentId) ? "default" : mod.Artifact.DeploymentId.Trim(), StringComparison.OrdinalIgnoreCase)
             .Replace("{image}", mod.Artifact.Image ?? string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("{routePrefix}", mod.Route.Prefix, StringComparison.OrdinalIgnoreCase)
             .Replace("{healthPath}", mod.Health.Path, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ApplyTemplate(string? template, DynamicModVersionKey key)
+        => ApplyTemplate(template, DynamicAppRuntimeKey.Default(key));
+
+    private static string ApplyTemplate(string? template, DynamicAppRuntimeKey key)
     {
         return (template ?? string.Empty)
-            .Replace("{dynamicAppId}", key.DynamicAppId.Value, StringComparison.OrdinalIgnoreCase)
-            .Replace("{modId}", key.ModId.Value, StringComparison.OrdinalIgnoreCase)
-            .Replace("{version}", key.Version.Value, StringComparison.OrdinalIgnoreCase);
+            .Replace("{dynamicAppId}", key.PackageKey.DynamicAppId.Value, StringComparison.OrdinalIgnoreCase)
+            .Replace("{modId}", key.PackageKey.ModId.Value, StringComparison.OrdinalIgnoreCase)
+            .Replace("{version}", key.PackageKey.Version.Value, StringComparison.OrdinalIgnoreCase)
+            .Replace("{deploymentId}", key.DeploymentId, StringComparison.OrdinalIgnoreCase);
     }
 
     private static TimeSpan NormalizeTimeout(TimeSpan timeout) => timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(120) : timeout;

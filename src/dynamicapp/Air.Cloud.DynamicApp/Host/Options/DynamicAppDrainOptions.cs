@@ -25,8 +25,8 @@ public sealed class DynamicAppDrainOptions
     public TimeSpan DrainTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// <para>zh-cn:停止旧实例失败时是否仍移除状态目标，默认 true，用于避免状态存储永久残留不可运行目标。</para>
-    /// <para>en-us:Whether to remove state targets when stopping old instances fails, true by default to avoid permanently stale targets.</para>
+    /// <para>zh-cn:停止旧实例失败时是否仍移除状态目标，默认 false；必须保留目标以便继续重试和追踪幽灵进程。</para>
+    /// <para>en-us:Whether to remove state targets when stopping old instances fails, false by default so failed stops remain visible and retryable.</para>
     /// </summary>
-    public bool RemoveTargetWhenStopFails { get; set; } = true;
+    public bool RemoveTargetWhenStopFails { get; set; }
 }

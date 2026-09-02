@@ -21,6 +21,21 @@ public interface IDynamicAppSelfHealingStateStore
     DynamicAppSelfHealingState? Get(DynamicModVersionKey key);
 
     /// <summary>
+    /// <para>zh-cn:按独立部署实例读取自愈状态，保证集群副本的重试计数互不污染。</para>
+    /// <para>en-us:Reads self-healing state by isolated deployment instance so retry counters remain independent across replicas.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:自愈状态快照或 null。</para>
+    /// <para>en-us:The self-healing state snapshot or null.</para>
+    /// </returns>
+    DynamicAppSelfHealingState? Get(DynamicAppRuntimeKey key)
+        => Get(key.PackageKey);
+
+    /// <summary>
     /// <para>zh-cn:新增或更新一条自愈状态，并由实现决定是否立即持久化。</para>
     /// <para>en-us:Adds or updates one self-healing state and lets the implementation decide whether to persist immediately.</para>
     /// </summary>
@@ -43,6 +58,21 @@ public interface IDynamicAppSelfHealingStateStore
     /// <para>en-us:Whether a state entry was actually removed.</para>
     /// </returns>
     bool Remove(DynamicModVersionKey key);
+
+    /// <summary>
+    /// <para>zh-cn:删除指定部署实例的自愈状态，不影响同一包版本的其他副本。</para>
+    /// <para>en-us:Removes self-healing state for one deployment instance without affecting other replicas of the same package version.</para>
+    /// </summary>
+    /// <param name="key">
+    /// <para>zh-cn:运行实例键。</para>
+    /// <para>en-us:The runtime-instance key.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:是否实际删除了状态。</para>
+    /// <para>en-us:Whether a state entry was removed.</para>
+    /// </returns>
+    bool Remove(DynamicAppRuntimeKey key)
+        => Remove(key.PackageKey);
 
     /// <summary>
     /// <para>zh-cn:列出所有自愈状态快照副本。</para>

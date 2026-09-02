@@ -11,9 +11,9 @@
     <Authors>AC</Authors>
     <Company>AccessCross</Company>
     <Product>air.cloud</Product>
-    <Description>Air.Cloud.DynamicApp provides the DynamicApp runtime library for manifests, lifecycle state, manager APIs, gateway forwarding, process hosting, package inventory, panel UI, and orchestration boundaries.</Description>
-    <PackageDescription>Air.Cloud.DynamicApp provides the DynamicApp runtime library for manifests, lifecycle state, manager APIs, gateway forwarding, process hosting, package inventory, panel UI, and orchestration boundaries.</PackageDescription>
-    <PackageTags>Air.Cloud;DynamicApp;Manifest;Gateway;Host;Manager;Panel;Orchestrator</PackageTags>
+    <Description>Air.Cloud.DynamicApp provides the DynamicApp runtime library for manifests, lifecycle state, manager APIs, gateway forwarding, process hosting, package inventory, and orchestration boundaries.</Description>
+    <PackageDescription>Air.Cloud.DynamicApp provides the DynamicApp runtime library for manifests, lifecycle state, manager APIs, gateway forwarding, process hosting, package inventory, and orchestration boundaries.</PackageDescription>
+    <PackageTags>Air.Cloud;DynamicApp;Manifest;Gateway;Host;Manager;Orchestrator</PackageTags>
     <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

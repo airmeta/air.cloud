@@ -54,11 +54,11 @@ app.Run();
 2. 设置 `IPIDPlugin` 为 Consul PID 实现。
 3. 从本地 `appsettings.json` 读取 `ConsulServiceOptions`。
 4. 通过 `IConsulServiceOptionsConfigureStandard` 补齐配置。
-5. 从 Consul 远程加载当前环境配置和公共配置。
+5. 按 `EnableConfigurationCenter` 决定是否从 Consul 远程加载当前环境配置和公共配置。
 6. 写入 `AppConfigurationLoader.SetExternalConfiguration()` 和 `SetPublicConfiguration()`。
 7. 调用框架注入链路。
 8. 注册 `IServerCenterStandard`、`IKVCenterStandard`。
-9. 非开发环境下注册当前服务到 Consul。
+9. 按 `EnableServiceRegistration`、`EnableHealthCheck` 和 `DynamicAppManaged` 决定是否注册服务信息和健康检查。
 
 ---
 
@@ -73,7 +73,12 @@ ConsulServiceOptions
 | 配置项 | 说明 | 默认值 |
 | --- | --- | --- |
 | `ConsulAddress` | Consul 地址 | 无，必须配置 |
-| `ServiceName` | 当前服务名称 | 空时由默认配置构建逻辑按应用名补齐 |
+| `EnableConfigurationCenter` | 是否从 Consul 配置中心加载配置 | `true` |
+| `EnableServiceRegistration` | 是否向 Consul 注册当前服务 | `true` |
+| `EnableHealthCheck` | 是否启用本地健康检查并注册 Consul 健康检查 | `true` |
+| `DynamicAppManaged` | 当前进程是否由 DynamicApp 托管；托管进程不会自注册到 Consul | `false` |
+| `ConfigurationServiceName` | 配置中心读取使用的服务名 | 空时由默认配置构建逻辑按应用名补齐 |
+| `RegistryServiceName` | 注册中心注册使用的服务名 | 空时由默认配置构建逻辑按应用名补齐 |
 | `ServiceAddress` | 当前服务访问地址 | 无，默认配置构建逻辑要求必须配置 |
 | `IsIgnoreServiceNameKey` | 是否启用服务名忽略项 | `true` |
 | `IgnoreKey` | 忽略项名称 | `.Entry` |
@@ -93,8 +98,13 @@ ConsulServiceOptions
   "Environment": "Production",
   "ConsulServiceOptions": {
     "ConsulAddress": "http://192.168.1.129:8500/",
+    "EnableConfigurationCenter": true,
+    "EnableServiceRegistration": true,
+    "EnableHealthCheck": true,
+    "DynamicAppManaged": false,
     "ServiceAddress": "http://192.168.1.130:5295",
-    "ServiceName": "order-service",
+    "ConfigurationServiceName": "order-service",
+    "RegistryServiceName": "order-service",
     "HealthCheckRoute": "/Health",
     "HealthCheckTimeStep": 5,
     "EnableCommonConfig": true,
@@ -106,7 +116,7 @@ ConsulServiceOptions
 服务私有配置在 Consul KV 中按下面规则组织：
 
 ```text
-{ServiceName.Replace(".", "/")}/appsettings.{Environment}.json
+{ConfigurationServiceName.Replace(".", "/")}/appsettings.{Environment}.json
 ```
 
 例如：
@@ -141,7 +151,8 @@ public class MyConsulOptionsConfigure : IConsulServiceOptionsConfigureStandard
         Action<ConsulServiceOptions> action = null)
     {
         options ??= new ConsulServiceOptions();
-        options.ServiceName ??= "order-service";
+        options.ConfigurationServiceName ??= "order-service";
+        options.RegistryServiceName ??= "order-service";
         action?.Invoke(options);
         return options;
     }
@@ -165,6 +176,7 @@ app.Run();
 - `CommonConfigFileRoute` 只放公共配置，不要把服务私有配置混进去。
 - 如果 Consul 作为配置中心使用，优先排查远程配置是否被写入 `AppConfigurationLoader`。
 - 如果服务注册失败，分别检查 `ConsulAddress`、`ServiceAddress`、健康检查路由和网络 ACL。
+- DynamicApp 托管的子进程应设置 `DynamicAppManaged=true` 或 `EnableServiceRegistration=false`，避免子进程把自身注册成 Consul 服务；注册中心应只看到 DynamicApp 宿主或用户显式配置的服务实例。
 
 ## 健康检查日志过滤
 

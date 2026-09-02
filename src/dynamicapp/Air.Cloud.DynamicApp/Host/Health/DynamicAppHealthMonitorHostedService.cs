@@ -20,10 +20,12 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
     private readonly ConcurrentDictionary<string, int> _failureCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly IDynamicAppHealthProbe _healthProbe;
     private readonly IDynamicAppManifestStore _manifestStore;
+    private readonly IDynamicAppModRunner _modRunner;
     private readonly DynamicAppHealthMonitorOptions _options;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<string, int> _successCounts = new(StringComparer.OrdinalIgnoreCase);
     private readonly IDynamicAppStateStore _stateStore;
+    private readonly IDynamicAppRuntimeOperationCoordinator _operationCoordinator;
 
     /// <summary>
     /// <para>zh-cn:创建后台健康监控服务。</para>
@@ -41,6 +43,10 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
     /// <para>zh-cn:Manifest 历史存储，用于识别目标执行模式并决定是否跳过 HTTP 探活。</para>
     /// <para>en-us:The manifest history store used to identify target execution mode and decide whether HTTP probing should be skipped.</para>
     /// </param>
+    /// <param name="modRunner">
+    /// <para>zh-cn:Process 模式运行器，用于在健康探测成功后确认目标仍由当前 Host 持有。</para>
+    /// <para>en-us:The Process-mode runner used to confirm that a target is still owned by the current Host after a successful health probe.</para>
+    /// </param>
     /// <param name="options">
     /// <para>zh-cn:后台健康监控选项。</para>
     /// <para>en-us:The background health monitor options.</para>
@@ -49,18 +55,26 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
     /// <para>zh-cn:服务提供器，用于延迟解析可选的已有容器状态目录。</para>
     /// <para>en-us:The service provider used to lazily resolve the optional existing-container status catalog.</para>
     /// </param>
+    /// <param name="operationCoordinator">
+    /// <para>zh-cn:运行实例操作协调器，用于避免健康检查与生命周期操作交叉执行。</para>
+    /// <para>en-us:Runtime operation coordinator used to prevent health checks from interleaving with lifecycle operations.</para>
+    /// </param>
     public DynamicAppHealthMonitorHostedService(
         IDynamicAppStateStore stateStore,
         IDynamicAppHealthProbe healthProbe,
         IDynamicAppManifestStore manifestStore,
+        IDynamicAppModRunner modRunner,
         DynamicAppHealthMonitorOptions options,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IDynamicAppRuntimeOperationCoordinator operationCoordinator)
     {
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _healthProbe = healthProbe ?? throw new ArgumentNullException(nameof(healthProbe));
         _manifestStore = manifestStore ?? throw new ArgumentNullException(nameof(manifestStore));
+        _modRunner = modRunner ?? throw new ArgumentNullException(nameof(modRunner));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _operationCoordinator = operationCoordinator ?? throw new ArgumentNullException(nameof(operationCoordinator));
     }
 
     /// <summary>
@@ -91,41 +105,59 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
 
     private async Task ProbeTargetsAsync(CancellationToken stoppingToken)
     {
-        foreach (var target in _stateStore.ListTargets().Where(ShouldProbe))
+        foreach (var candidate in _stateStore.ListTargets().Where(ShouldProbe))
         {
             if (stoppingToken.IsCancellationRequested)
             {
                 return;
             }
 
-            var key = target.Key.ToString();
-            var manifestRecord = await _manifestStore.FindAsync(target.Key, stoppingToken).ConfigureAwait(false);
-            var mod = manifestRecord?.Manifest.Mods.FirstOrDefault(item => item.Id == target.Key.ModId && item.Version == target.Key.Version);
+            var runtimeKey = ToRuntimeKey(candidate);
+            await using var operation = await _operationCoordinator
+                .AcquireAsync(runtimeKey, stoppingToken)
+                .ConfigureAwait(false);
+            // The initial list is only a candidate snapshot. A manual stop may have
+            // completed while this operation waited for the instance lock.
+            var currentTarget = _stateStore.ListTargets()
+                .FirstOrDefault(item => ToRuntimeKey(item) == runtimeKey);
+            if (currentTarget == null
+                || currentTarget.State is DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Draining)
+            {
+                continue;
+            }
+
+            var key = runtimeKey.ToString();
+            var manifestRecord = await _manifestStore.FindAsync(currentTarget.Key, stoppingToken).ConfigureAwait(false);
+            var mod = manifestRecord?.Manifest.Mods.FirstOrDefault(item => item.Id == currentTarget.Key.ModId && item.Version == currentTarget.Key.Version);
             if (mod?.ExecutionMode == DynamicModExecutionMode.ExistingContainer)
             {
-                await SyncExistingContainerStatusAsync(target, stoppingToken).ConfigureAwait(false);
+                await SyncExistingContainerStatusAsync(currentTarget, stoppingToken).ConfigureAwait(false);
                 continue;
             }
 
             var health = new DynamicModHealthManifest
             {
-                Path = string.IsNullOrWhiteSpace(target.HealthPath) ? "/health" : target.HealthPath,
-                StartupTimeoutSeconds = target.HealthProbeTimeoutSeconds <= 0 ? 60 : target.HealthProbeTimeoutSeconds
+                Path = string.IsNullOrWhiteSpace(currentTarget.HealthPath) ? "/health" : currentTarget.HealthPath,
+                StartupTimeoutSeconds = currentTarget.HealthProbeTimeoutSeconds <= 0 ? 60 : currentTarget.HealthProbeTimeoutSeconds
             };
 
-            var result = await _healthProbe.ProbeAsync(target, health, stoppingToken).ConfigureAwait(false);
+            var result = await _healthProbe.ProbeAsync(currentTarget, health, stoppingToken).ConfigureAwait(false);
             if (result.IsHealthy)
             {
-                RecordSuccess(target, key);
+                await RecordSuccessAsync(currentTarget, mod, key, stoppingToken).ConfigureAwait(false);
             }
             else
             {
-                RecordFailure(target, key);
+                RecordFailure(currentTarget, key);
             }
         }
     }
 
-    private void RecordSuccess(DynamicAppRouteTarget target, string key)
+    private async Task RecordSuccessAsync(
+        DynamicAppRouteTarget target,
+        DynamicModManifest? mod,
+        string key,
+        CancellationToken cancellationToken)
     {
         _failureCounts[key] = 0;
         var successes = _successCounts.AddOrUpdate(key, 1, (_, current) => current + 1);
@@ -134,10 +166,38 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
             return;
         }
 
-        if (target.State is DynamicModLifecycleState.Active or DynamicModLifecycleState.Starting
-            && target.HealthStatus != DynamicModHealthStatus.Healthy)
+        if (target.State is DynamicModLifecycleState.Stopped or DynamicModLifecycleState.Draining)
         {
-            _stateStore.UpdateState(target.Key, target.State, DynamicModHealthStatus.Healthy);
+            return;
+        }
+
+        if (target.State == DynamicModLifecycleState.Failed || target.HealthStatus == DynamicModHealthStatus.Unhealthy)
+        {
+            // Only Process targets are owned by this Runner. Container and local-development
+            // targets are validated by their orchestrator or HTTP probe and must not be
+            // rejected because the Process Runner does not track them.
+            if (mod?.ExecutionMode == DynamicModExecutionMode.Process)
+            {
+                var runtime = await _modRunner.InspectAsync(ToRuntimeKey(target), cancellationToken).ConfigureAwait(false);
+                if (!runtime.Succeeded)
+                {
+                    return;
+                }
+            }
+
+            _stateStore.UpdateState(ToRuntimeKey(target), DynamicModLifecycleState.Active, DynamicModHealthStatus.Healthy,
+                $"Target `{ToRuntimeKey(target)}` recovered after a successful health probe.");
+            return;
+        }
+        else if (target.State is not (DynamicModLifecycleState.Active or DynamicModLifecycleState.Starting))
+        {
+            return;
+        }
+
+        if (target.HealthStatus != DynamicModHealthStatus.Healthy || target.State == DynamicModLifecycleState.Failed)
+        {
+            _stateStore.UpdateState(ToRuntimeKey(target), DynamicModLifecycleState.Active, DynamicModHealthStatus.Healthy,
+                $"Target `{ToRuntimeKey(target)}` recovered after a successful health probe.");
         }
     }
 
@@ -153,7 +213,7 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
         var nextState = target.State == DynamicModLifecycleState.Starting
             ? DynamicModLifecycleState.Failed
             : target.State;
-        _stateStore.UpdateState(target.Key, nextState, DynamicModHealthStatus.Unhealthy);
+        _stateStore.UpdateState(ToRuntimeKey(target), nextState, DynamicModHealthStatus.Unhealthy);
     }
 
     /// <summary>
@@ -177,28 +237,31 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
         var catalog = _serviceProvider.GetService<IDynamicAppExistingContainerCatalog>();
         if (catalog == null)
         {
-            _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, "IDynamicAppExistingContainerCatalog is not registered.");
+            _stateStore.UpdateState(ToRuntimeKey(target), DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, "IDynamicAppExistingContainerCatalog is not registered.");
             return;
         }
 
         DynamicAppExistingContainerView view;
         try
         {
-            view = await catalog.InspectAsync(target.Key, cancellationToken).ConfigureAwait(false);
+            view = await catalog.InspectAsync(ToRuntimeKey(target), cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or IOException)
         {
-            _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Docker container status inspection failed for `{target.Key}`. {exception.Message}");
+            _stateStore.UpdateState(ToRuntimeKey(target), DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Docker container status inspection failed for `{ToRuntimeKey(target)}`. {exception.Message}");
             return;
         }
 
         if (view.IsAvailable)
         {
-            _stateStore.UpdateState(target.Key, target.State, DynamicModHealthStatus.Healthy, $"Docker container `{view.Name}` is running for `{target.Key}`. {view.Status}");
+            var nextState = target.State == DynamicModLifecycleState.Failed
+                ? DynamicModLifecycleState.Active
+                : target.State;
+            _stateStore.UpdateState(ToRuntimeKey(target), nextState, DynamicModHealthStatus.Healthy, $"Docker container `{view.Name}` is running for `{ToRuntimeKey(target)}`. {view.Status}");
             return;
         }
 
-        _stateStore.UpdateState(target.Key, DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Docker container `{view.Name}` is not available for `{target.Key}`. {view.Status}");
+        _stateStore.UpdateState(ToRuntimeKey(target), DynamicModLifecycleState.Failed, DynamicModHealthStatus.Unhealthy, $"Docker container `{view.Name}` is not available for `{ToRuntimeKey(target)}`. {view.Status}");
     }
 
     private static bool ShouldProbe(DynamicAppRouteTarget target)
@@ -211,4 +274,7 @@ public sealed class DynamicAppHealthMonitorHostedService : BackgroundService
     {
         return interval <= TimeSpan.Zero ? TimeSpan.FromSeconds(15) : interval;
     }
+
+    private static DynamicAppRuntimeKey ToRuntimeKey(DynamicAppRouteTarget target)
+        => new(target.Key, string.IsNullOrWhiteSpace(target.DeploymentId) ? "default" : target.DeploymentId.Trim());
 }

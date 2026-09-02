@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  airtunnel-agent:
+    image: airtunnel-agent:1.0.0.0
+    container_name: airtunnel-agent
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_URLS: http://+:18543
+      ASPNETCORE_ENVIRONMENT: Production
+      TZ: Asia/Shanghai
+    extra_hosts:
+      - "api-mop.chinaums.com:118.25.167.181"
+    volumes:
+      - ./config:/app/config:ro
+      - ./configs:/app/configs:ro
+      - ./data:/app/data
+      - ./logs:/app/logs

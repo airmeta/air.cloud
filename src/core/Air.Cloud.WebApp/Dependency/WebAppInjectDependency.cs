@@ -19,7 +19,6 @@ using Air.Cloud.Core.Standard.AppInject;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Primitives;
 
 namespace Air.Cloud.WebApp.Dependency
 {
@@ -42,26 +41,18 @@ namespace Air.Cloud.WebApp.Dependency
         /// <returns></returns>
         private  static IWebHostBuilder ConfigureWebAppConfiguration(IWebHostBuilder builder)
         {
-            IConfiguration config = null;
-            IChangeToken token = null;
-            Action action = new Action(() =>
-            {
-                config = new ConfigurationBuilder().SetBasePath(AppConst.ApplicationPath)
-                                                        .AddJsonFile(AppConst.DEFAULT_CONFIG_FILE, optional: true, reloadOnChange: true)
-                                                        .Build();
-                AppConfigurationLoader.InnerConfiguration = config;
-                builder.ConfigureAppConfiguration(s =>
-                {
-                    s.AddConfiguration(config);
-                });
-            });
-            action();
-            token = config.GetReloadToken();
-            token.RegisterChangeCallback(state =>
-            {
-                action();
-            }, config);
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppConst.ApplicationPath)
+                .AddJsonFile(AppConst.DEFAULT_CONFIG_FILE, optional: true, reloadOnChange: true)
+                .Build();
             if (config == null) throw new Exception("加载内部配置文件" + AppConst.DEFAULT_CONFIG_FILE + "失败");
+
+            // JSON 配置提供程序自身负责文件变更和 reload。配置源只挂载一次，避免
+            // 在 reload 回调中重复 AddConfiguration 导致 ConfigurationManager 递归触发。
+            // The JSON provider owns file-change reloads. Mount this source once to avoid
+            // recursively re-adding the same source from a reload callback.
+            AppConfigurationLoader.InnerConfiguration = config;
+            builder.ConfigureAppConfiguration(s => s.AddConfiguration(config));
             return builder;
         }
         /// <summary>

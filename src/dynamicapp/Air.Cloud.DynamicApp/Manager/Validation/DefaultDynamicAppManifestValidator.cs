@@ -67,11 +67,6 @@ public sealed class DefaultDynamicAppManifestValidator : IDynamicAppManifestVali
 
     private static void ValidateMod(DynamicModManifest mod, DynamicAppManifestValidationResult result)
     {
-        if (string.IsNullOrWhiteSpace(mod.Route.Prefix) || !mod.Route.Prefix.StartsWith('/'))
-        {
-            result.Errors.Add($"Mod `{mod.Id}` must declare an absolute route prefix.");
-        }
-
         if (string.IsNullOrWhiteSpace(mod.Health.Path) || !mod.Health.Path.StartsWith('/'))
         {
             result.Errors.Add($"Mod `{mod.Id}` must declare an absolute health path.");

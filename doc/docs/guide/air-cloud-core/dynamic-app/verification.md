@@ -1,6 +1,6 @@
-# 验证与限制
+# AirForge 验证与限制
 
-本页列出 DynamicApp 文档和代码变更后的常用验证命令，以及运行边界。
+本页列出 AirForge 和 DynamicApp 运行时文档、代码变更后的常用验证命令，以及运行边界。
 
 ## 文档站点验证
 
@@ -52,8 +52,8 @@ Process 模式上线后建议至少覆盖以下破坏性场景：
 | --- | --- | --- |
 | 误杀子进程 | `pkill -f '/app/mods/account/air.cloud.account.entry.dll'` | 自愈服务自动重启目标，最终恢复 `Active/Healthy` |
 | 子进程停止后路由恢复 | 误杀后持续访问 `/mods/account/Health` | 短暂失败后恢复 `200 Healthy` |
-| Host 容器停止 | `docker stop air.dynamicapp && docker start air.dynamicapp` | Compose/容器恢复 Host，启动恢复服务重新拉起 Active 的 Process 目标 |
-| Host 容器重建 | `docker compose up -d --force-recreate air-dynamicapp` | 保留 `data` 和 `mods` 后，Process 目标恢复 |
+| Host 容器停止 | `docker stop air.forge && docker start air.forge` | Compose/容器恢复 Host，启动恢复服务重新拉起 Active 的 Process 目标 |
+| Host 容器重建 | `docker compose up -d --force-recreate air-forge` | 保留 `data` 和 `mods` 后，Process 目标恢复 |
 | 坏包或入口缺失 | 临时移动某个 `Artifact.File` 后启动 | 状态保持 `Failed/Unhealthy`，达到重试上限后不无限重启 |
 | 健康端口异常 | 临时占用或关闭 Mod 监听端口 | 健康探测失败，状态进入 `Failed/Unhealthy`，端口恢复后可自愈 |
 | 人工停止目标 | 调用 `/dynamicapp-manager/stop` | 状态为 `Stopped/Stopped`，自愈服务不会自动拉起 |
@@ -64,7 +64,7 @@ Process 模式上线后建议至少覆盖以下破坏性场景：
 python3 - <<'PY' >/tmp/dyn_ticket
 import json
 from pathlib import Path
-data=json.loads(Path('/opt/docker/air/dynamicapp/appsettings.json').read_text(encoding='utf-8-sig'))
+data=json.loads(Path('/opt/docker/air/airforge/appsettings.json').read_text(encoding='utf-8-sig'))
 print((data.get('DynamicApp',{}).get('ManagerApi',{}).get('Tickets') or [''])[0])
 PY
 ticket=$(cat /tmp/dyn_ticket)

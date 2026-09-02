@@ -60,6 +60,68 @@ public sealed class ReverseTunnelAgentConfigurationStatus
 }
 
 /// <summary>
+/// <para>zh-cn:创建 Agent 目标配置请求。请求只包含可由 Server 管理的连接参数，不接收证书私钥或 ServiceKey。</para>
+/// <para>en-us:Request for creating a desired Agent configuration. It contains only Server-managed connection settings and never accepts private keys or ServiceKeys.</para>
+/// </summary>
+public sealed class ReverseTunnelAgentCreateRequest
+{
+    /// <summary><para>zh-cn:新 Agent 的稳定标识，必须唯一。</para><para>en-us:Stable identifier for the new Agent; it must be unique.</para></summary>
+    public string AgentId { get; set; } = string.Empty;
+
+    /// <summary><para>zh-cn:Agent 连接的 Server 控制地址。</para><para>en-us:Server control address used by the Agent.</para></summary>
+    public string ServerAddress { get; set; } = string.Empty;
+
+    /// <summary><para>zh-cn:Agent 到 Server 的物理连接数量，默认 1。</para><para>en-us:Number of physical Agent-to-Server connections; defaults to 1.</para></summary>
+    public int AgentConnectionCount { get; set; } = 1;
+
+    /// <summary><para>zh-cn:心跳间隔秒数，默认 15。</para><para>en-us:Heartbeat interval in seconds; defaults to 15.</para></summary>
+    public int HeartbeatIntervalSeconds { get; set; } = 15;
+
+    /// <summary><para>zh-cn:是否启用周期配置同步，默认 true。</para><para>en-us:Whether periodic configuration synchronization is enabled; defaults to true.</para></summary>
+    public bool ConfigurationSyncEnabled { get; set; } = true;
+
+    /// <summary><para>zh-cn:配置同步间隔秒数，默认 30。</para><para>en-us:Configuration synchronization interval in seconds; defaults to 30.</para></summary>
+    public int ConfigurationSyncIntervalSeconds { get; set; } = 30;
+}
+
+/// <summary>
+/// <para>zh-cn:Agent 创建结果。</para>
+/// <para>en-us:Result returned after an Agent is created.</para>
+/// </summary>
+public sealed class ReverseTunnelAgentCreateResponse
+{
+    /// <summary><para>zh-cn:Agent 标识。</para><para>en-us:Agent identifier.</para></summary>
+    public string AgentId { get; init; } = string.Empty;
+
+    /// <summary><para>zh-cn:初始目标配置版本。</para><para>en-us:Initial desired configuration version.</para></summary>
+    public long Version { get; init; }
+
+    /// <summary><para>zh-cn:是否已经在线。</para><para>en-us:Whether the Agent is currently online.</para></summary>
+    public bool Online { get; init; }
+}
+
+/// <summary>
+/// <para>zh-cn:Agent 导出包的容器运行参数。参数会写入导出包中的 docker-compose.yml。</para>
+/// <para>en-us:Container runtime options for an Agent export. The options are written to docker-compose.yml in the package.</para>
+/// </summary>
+public sealed class ReverseTunnelAgentPackageExportRequest
+{
+    /// <summary><para>zh-cn:要使用的 Docker 镜像名称和标签，必须为小写。</para><para>en-us:Docker image name and tag to use; it must be lowercase.</para></summary>
+    public string ImageName { get; set; } = "airtunnel-agent:1.0.0.0";
+
+    /// <summary><para>zh-cn:要创建的容器名称，必须为小写。</para><para>en-us:Container name to create; it must be lowercase.</para></summary>
+    public string ContainerName { get; set; } = string.Empty;
+
+    /// <summary><para>zh-cn:写入 Compose environment 节点的运行环境变量。</para><para>en-us:Runtime environment variables written to the Compose environment section.</para></summary>
+    public Dictionary<string, string> RuntimeEnvironment { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ASPNETCORE_URLS"] = "http://+:18543",
+        ["ASPNETCORE_ENVIRONMENT"] = "Production",
+        ["TZ"] = "Asia/Shanghai"
+    };
+}
+
+/// <summary>
 /// <para>zh-cn:AirTunnel 拆分配置视图。</para>
 /// <para>en-us:AirTunnel split-configuration view.</para>
 /// </summary>

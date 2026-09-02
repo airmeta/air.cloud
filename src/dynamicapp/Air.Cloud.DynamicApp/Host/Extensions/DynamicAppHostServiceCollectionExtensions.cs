@@ -50,6 +50,10 @@ public static class DynamicAppHostServiceCollectionExtensions
     /// <para>zh-cn:可选目标归档文件存储配置，用于隔离坏包或错误 Manifest 对应的版本。</para>
     /// <para>en-us:Optional target archive file-store configuration used to isolate versions backed by bad packages or invalid manifests.</para>
     /// </param>
+    /// <param name="configureTransactionLog">
+    /// <para>zh-cn:可选控制面事务日志配置。</para>
+    /// <para>en-us:Optional control-plane transaction-log configuration.</para>
+    /// </param>
     /// <param name="configureDrain">
     /// <para>zh-cn:可选排空清理配置。</para>
     /// <para>en-us:Optional draining cleanup configuration.</para>
@@ -67,10 +71,11 @@ public static class DynamicAppHostServiceCollectionExtensions
         Action<DynamicAppSelfHealingOptions>? configureSelfHealing = null,
         Action<FileDynamicAppSelfHealingStateStoreOptions>? configureSelfHealingStore = null,
         Action<FileDynamicAppTargetArchiveStoreOptions>? configureArchiveStore = null,
-        Action<DynamicAppDrainOptions>? configureDrain = null)
+        Action<DynamicAppDrainOptions>? configureDrain = null,
+        Action<FileDynamicAppControlPlaneTransactionLogOptions>? configureTransactionLog = null)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.AddDynamicAppManager(configureManagerApi, configurePackageStore, configureSelfHealingStore, configureArchiveStore);
+        services.AddDynamicAppManager(configureManagerApi, configurePackageStore, configureSelfHealingStore, configureArchiveStore, configureTransactionLog);
 
         var processOptions = new DynamicAppProcessOptions();
         configureProcess?.Invoke(processOptions);
@@ -85,6 +90,8 @@ public static class DynamicAppHostServiceCollectionExtensions
         services.TryAddSingleton(monitorOptions);
         services.TryAddSingleton(selfHealingOptions);
         services.TryAddSingleton(drainOptions);
+        services.TryAddSingleton<DynamicAppProcessLogBroadcaster>();
+        services.TryAddSingleton<IDynamicAppRuntimeOperationCoordinator, DynamicAppRuntimeOperationCoordinator>();
         services.TryAddSingleton<IDynamicAppProcessLogSink, InMemoryDynamicAppProcessLogSink>();
         services.TryAddSingleton<IDynamicAppModRunner, ProcessDynamicAppModRunner>();
         services.TryAddSingleton<IDynamicAppOrchestrator, NoopDynamicAppOrchestrator>();
