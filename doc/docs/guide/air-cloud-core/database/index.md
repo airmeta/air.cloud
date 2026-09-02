@@ -22,7 +22,6 @@ Air.Cloud 的数据库能力分为两类：Entity Framework Core 数据访问包
 ```json
 {
   "DataSourceSettings": {
-    "ConnectionValidationSQL": "select 1",
     "ConnectionValidationIntervalMillis": 60000,
     "ConnectionStrings": {
       "default": "your-connection-string"

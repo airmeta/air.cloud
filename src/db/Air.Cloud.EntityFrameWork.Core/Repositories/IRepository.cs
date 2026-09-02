@@ -14,11 +14,11 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 using Air.Cloud.EntityFrameWork.Core.Repositories.Dependencies;
 
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Collections.Concurrent;
-using System.Data.Common;
 using System.Linq.Expressions;
 
 namespace Air.Cloud.EntityFrameWork.Core.Repositories;
@@ -67,19 +67,6 @@ public partial interface IRepository
         where TDbContextLocator : class, IDbContextLocator;
 
     /// <summary>
-    /// 获取 Sql 操作仓储
-    /// </summary>
-    /// <returns>ISqlRepository</returns>
-    ISqlRepository Sql();
-
-    /// <summary>
-    /// 获取多数据库上下文 Sql 操作仓储
-    /// </summary>
-    /// <returns>ISqlRepository{TDbContextLocator}</returns>
-    ISqlRepository<TDbContextLocator> Sql<TDbContextLocator>()
-         where TDbContextLocator : class, IDbContextLocator;
-
-    /// <summary>
     /// 解析服务
     /// </summary>
     /// <typeparam name="TService"></typeparam>
@@ -103,7 +90,6 @@ public partial interface IRepository
 public partial interface IRepository<TEntity> : IRepository<TEntity, MasterDbContextLocator>
     , IWritableRepository<TEntity>
     , IReadableRepository<TEntity>
-    , ISqlRepository
     where TEntity : class, IPrivateEntity, new()
 {
 }
@@ -116,7 +102,6 @@ public partial interface IRepository<TEntity> : IRepository<TEntity, MasterDbCon
 public partial interface IRepository<TEntity, TDbContextLocator> : IPrivateRepository<TEntity>
     , IWritableRepository<TEntity, TDbContextLocator>
     , IReadableRepository<TEntity, TDbContextLocator>
-    , ISqlRepository<TDbContextLocator>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator : class, IDbContextLocator
 {
@@ -129,9 +114,34 @@ public partial interface IRepository<TEntity, TDbContextLocator> : IPrivateRepos
 public interface IPrivateRepository<TEntity>
     : IPrivateWritableRepository<TEntity>
     , IPrivateReadableRepository<TEntity>
-    , IPrivateSqlRepository
+    , IPrivateRootRepository
     where TEntity : class, IPrivateEntity, new()
 {
+    /// <summary>
+    /// <para>zh-cn:EF Core 数据库操作对象；原生 SQL 文本执行请直接使用 EF Core API。</para>
+    /// <para>en-us:The EF Core database facade; execute raw SQL through EF Core APIs directly.</para>
+    /// </summary>
+    DatabaseFacade Database { get; }
+
+    /// <summary>
+    /// <para>zh-cn:当前数据库上下文。</para>
+    /// <para>en-us:The current EF Core database context.</para>
+    /// </summary>
+    DbContext Context { get; }
+
+    /// <summary>
+    /// <para>zh-cn:确保当前请求已登记本地事务上下文。</para>
+    /// <para>en-us:Ensures that the current request context is registered for a local transaction.</para>
+    /// </summary>
+    void EnsureTransaction();
+
+    /// <summary>
+    /// <para>zh-cn:将仓储约束为特定的 EF Core 仓储接口。</para>
+    /// <para>en-us:Constrains the repository to a specific EF Core repository interface.</para>
+    /// </summary>
+    TRestrainRepository Constraint<TRestrainRepository>()
+        where TRestrainRepository : class, IPrivateRootRepository;
+
     /// <summary>
     /// 实体集合
     /// </summary>
@@ -146,11 +156,6 @@ public interface IPrivateRepository<TEntity>
     /// 查看实体类型
     /// </summary>
     IEntityType EntityType { get; }
-
-    /// <summary>
-    /// 数据库连接对象
-    /// </summary>
-    DbConnection? DbConnection { get; }
 
     /// <summary>
     /// 实体追综器
@@ -383,19 +388,6 @@ public interface IPrivateRepository<TEntity>
     /// 创建数据库
     /// </summary>
     Task EnsureCreatedAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 动态改变数据库
-    /// </summary>
-    /// <param name="connectionString">连接字符串</param>
-    void ChangeDatabase(string connectionString);
-
-    /// <summary>
-    /// 动态改变数据库
-    /// </summary>
-    /// <param name="connectionString">连接字符串</param>
-    /// <param name="cancellationToken">异步取消令牌</param>
-    Task ChangeDatabaseAsync(string connectionString, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 判断是否是关系型数据库

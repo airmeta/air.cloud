@@ -52,12 +52,6 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
             // 注册数据库上下文池
             services.TryAddScoped<IDbContextPool, DbContextPool>();
 
-            // 注册 Sql 仓储
-            services.TryAddScoped(typeof(ISqlRepository<>), typeof(SqlRepository<>));
-
-            // 注册 Sql 非泛型仓储
-            services.TryAddScoped<ISqlRepository, SqlRepository>();
-
             // 注册多数据库上下文仓储
             services.TryAddScoped(typeof(IRepository<,>), typeof(EFCoreRepository<,>));
 

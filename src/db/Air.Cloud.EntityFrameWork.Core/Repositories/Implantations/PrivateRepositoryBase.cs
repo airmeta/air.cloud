@@ -9,7 +9,6 @@
  * and the "NO WARRANTY" clause of the MPL is hereby expressly
  * acknowledged.
  */
-using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.Core.Standard.DynamicServer;
 using Air.Cloud.EntityFrameWork.Core.ContextPools;
 using Air.Cloud.EntityFrameWork.Core.Repositories;
@@ -21,9 +20,10 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Air.Cloud.EntityFrameWork.Core.Repositories.Implantations;
 
 /// <summary>
-/// 私有 Sql 仓储
+/// <para>zh-cn:EF Core 仓储基础实现。</para>
+/// <para>en-us:Base implementation for EF Core repositories.</para>
 /// </summary>
-public partial class PrivateSqlRepository : IPrivateSqlRepository
+public partial class PrivateRepositoryBase
 {
     /// <summary>
     /// 服务提供器
@@ -31,11 +31,18 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:使用数据库上下文定位器和服务提供器初始化仓储基础实现。</para>
+    /// <para>en-us:Initializes the repository base with a database-context locator and service provider.</para>
     /// </summary>
-    /// <param name="dbContextLocator"></param>
-    /// <param name="serviceProvider">服务提供器</param>
-    public PrivateSqlRepository(Type dbContextLocator, IServiceProvider serviceProvider)
+    /// <param name="dbContextLocator">
+    /// <para>zh-cn:数据库上下文定位器类型。</para>
+    /// <para>en-us:The database-context locator type.</para>
+    /// </param>
+    /// <param name="serviceProvider">
+    /// <para>zh-cn:用于解析上下文和事务池的服务提供器。</para>
+    /// <para>en-us:The service provider used to resolve the context and transaction pool.</para>
+    /// </param>
+    public PrivateRepositoryBase(Type dbContextLocator, IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
 
@@ -50,30 +57,22 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
     }
 
     /// <summary>
-    /// 数据库上下文
+    /// <para>zh-cn:数据库上下文。</para>
+    /// <para>en-us:The EF Core database context.</para>
     /// </summary>
     public virtual DbContext Context { get; }
 
     /// <summary>
-    /// 动态数据库上下文
+    /// <para>zh-cn:动态数据库上下文。</para>
+    /// <para>en-us:The dynamic database context.</para>
     /// </summary>
     public virtual dynamic DynamicContext { get; }
 
     /// <summary>
-    /// 数据库操作对象
+    /// <para>zh-cn:EF Core 数据库操作对象。</para>
+    /// <para>en-us:The EF Core database facade.</para>
     /// </summary>
     public virtual DatabaseFacade Database { get; }
-
-    /// <summary>
-    /// 切换仓储
-    /// </summary>
-    /// <typeparam name="TChangeDbContextLocator">数据库上下文定位器</typeparam>
-    /// <returns>仓储</returns>
-    public virtual ISqlRepository<TChangeDbContextLocator> Change<TChangeDbContextLocator>()
-         where TChangeDbContextLocator : class, IDbContextLocator
-    {
-        return _serviceProvider.GetRequiredService<ISqlRepository<TChangeDbContextLocator>>();
-    }
 
     /// <summary>
     /// 解析服务
@@ -98,10 +97,17 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
     }
 
     /// <summary>
-    /// 将仓储约束为特定仓储
+    /// <para>zh-cn:将仓储约束为特定的 EF Core 仓储接口。</para>
+    /// <para>en-us:Constrains the repository to a specific EF Core repository interface.</para>
     /// </summary>
-    /// <typeparam name="TRestrainRepository">特定仓储</typeparam>
-    /// <returns>TRestrainRepository</returns>
+    /// <typeparam name="TRestrainRepository">
+    /// <para>zh-cn:特定仓储接口。</para>
+    /// <para>en-us:The target repository interface.</para>
+    /// </typeparam>
+    /// <returns>
+    /// <para>zh-cn:当前仓储转换后的接口实例。</para>
+    /// <para>en-us:The current repository cast to the target interface.</para>
+    /// </returns>
     public virtual TRestrainRepository Constraint<TRestrainRepository>()
         where TRestrainRepository : class, IPrivateRootRepository
     {
@@ -116,7 +122,8 @@ public partial class PrivateSqlRepository : IPrivateSqlRepository
     }
 
     /// <summary>
-    /// 确保工作单元（事务）可用
+    /// <para>zh-cn:确保工作单元（本地事务）可用。</para>
+    /// <para>en-us:Ensures that the local unit-of-work transaction is available.</para>
     /// </summary>
     public virtual void EnsureTransaction()
     {

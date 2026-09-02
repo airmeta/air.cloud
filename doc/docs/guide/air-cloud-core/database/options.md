@@ -22,7 +22,7 @@ Short (en-us): Common data source options including connection validation, valid
 
 | 名称 | 类型 | 说明 | 默认值 |
 |---|---|---|---|
-| `ConnectionValidationSQL` | `string` | 连接验证 SQL 语句；用于探活/健康检查或连接可用性验证。 | `string.Empty` |
+| `ConnectionValidationSQL` | `string` | 兼容旧配置的启用开关；状态检查实际调用 EF Core `CanConnectAsync`，不再执行该 SQL。 | `string.Empty` |
 | `ConnectionValidationIntervalMillis` | `int` | 连接验证间隔时间（毫秒）。 | `60000`（1 分钟） |
 | `ConnectionStrings` | `IDictionary<string, string>` | 数据库连接字符串集合，键为名称，值为连接串。 | `null` |
 
@@ -40,7 +40,7 @@ Short (en-us): Common data source options including connection validation, valid
 
 - `bool EnableDatabaseStatusCheck()`
   - 作用：是否启用数据库状态检查。
-  - 判定规则：当且仅当 `ConnectionValidationSQL` 非空时返回 `true`，否则返回 `false`。
+  - 判定规则：当且仅当 `ConnectionValidationSQL` 非空时返回 `true`，否则返回 `false`；启用后由后台服务调用 EF Core `CanConnectAsync`。
 
 ---
 
@@ -51,7 +51,7 @@ using Air.Cloud.EntityFrameWork.Core.Options;
 
 var options = new DataSourceOptions
 {
-    ConnectionValidationSQL = "连接验证语句",
+    ConnectionValidationSQL = "enabled",
     ConnectionValidationIntervalMillis = 60000
 };
 
@@ -70,7 +70,7 @@ bool enabled = options.EnableDatabaseStatusCheck(); // ConnectionValidationSQL �
 
 ### 备注（Notes）
 
-- 若仅需要关闭健康检查，将 `ConnectionValidationSQL` 置空即可。
+- 若需要关闭健康检查，将 `ConnectionValidationSQL` 置空即可；该属性仅保留用于兼容现有配置，不会被当作 SQL 执行。
 - 建议为不同用途（读写分离、报表、批处理）使用不同的命名连接串，便于按需获取与管理。
 
 ---

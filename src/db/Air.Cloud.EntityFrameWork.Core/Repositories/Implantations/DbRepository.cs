@@ -50,15 +50,6 @@ public partial class DbRepository<TDbContextLocator> : IDbRepository<TDbContextL
     }
 
     /// <summary>
-    /// 获取 Sql 操作仓储
-    /// </summary>
-    /// <returns></returns>
-    public virtual ISqlRepository<TDbContextLocator> Sql()
-    {
-        return _serviceProvider.GetRequiredService<ISqlRepository<TDbContextLocator>>();
-    }
-
-    /// <summary>
     /// 解析服务
     /// </summary>
     /// <typeparam name="TService"></typeparam>

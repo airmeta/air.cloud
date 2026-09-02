@@ -32,7 +32,7 @@ public partial class PrivateRepository<TEntity>
     /// <returns>数据库中的实体</returns>
     public virtual TEntity Find(object key)
     {
-        var entity = FindOrDefault(key) ?? throw DbHelpers.DataNotFoundException();
+        var entity = FindOrDefault(key) ?? throw RepositoryExceptionHelpers.DataNotFoundException();
         return entity;
     }
 
@@ -43,7 +43,7 @@ public partial class PrivateRepository<TEntity>
     /// <returns>数据库中的实体</returns>
     public virtual TEntity Find(params object[] keyValues)
     {
-        var entity = FindOrDefault(keyValues) ?? throw DbHelpers.DataNotFoundException();
+        var entity = FindOrDefault(keyValues) ?? throw RepositoryExceptionHelpers.DataNotFoundException();
         return entity;
     }
 
@@ -56,7 +56,7 @@ public partial class PrivateRepository<TEntity>
     public virtual async Task<TEntity> FindAsync(object key, CancellationToken cancellationToken = default)
     {
         var entity = await FindOrDefaultAsync(key, cancellationToken);
-        return entity ?? throw DbHelpers.DataNotFoundException();
+        return entity ?? throw RepositoryExceptionHelpers.DataNotFoundException();
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public partial class PrivateRepository<TEntity>
     public virtual async Task<TEntity> FindAsync(params object[] keyValues)
     {
         var entity = await FindOrDefaultAsync(keyValues);
-        return entity ?? throw DbHelpers.DataNotFoundException();
+        return entity ?? throw RepositoryExceptionHelpers.DataNotFoundException();
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public partial class PrivateRepository<TEntity>
     public virtual async Task<TEntity> FindAsync(object[] keyValues, CancellationToken cancellationToken = default)
     {
         var entity = await FindOrDefaultAsync(keyValues, cancellationToken);
-        return entity ?? throw DbHelpers.DataNotFoundException();
+        return entity ?? throw RepositoryExceptionHelpers.DataNotFoundException();
     }
 
     /// <summary>

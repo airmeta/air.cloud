@@ -18,8 +18,8 @@ namespace Air.Cloud.EntityFrameWork.Core.Options
     public class DataSourceOptions
     {
         /// <summary>
-        /// <para>zh-cn:连接验证SQL语句</para>
-        /// <para>en-us:Connection Validation SQL Statement</para>
+        /// <para>zh-cn:兼容旧配置的数据库状态检查启用标记；Core 不再执行其中的 SQL 文本。</para>
+        /// <para>en-us:Legacy switch for database status checks; Core no longer executes the configured SQL text.</para>
         /// </summary>
         public string ConnectionValidationSQL { get;set; }=string.Empty;
 

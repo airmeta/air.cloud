@@ -106,32 +106,10 @@ public static class Db
     }
 
     /// <summary>
-    /// 获取Sql仓储
-    /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <returns>ISqlRepository</returns>
-    public static ISqlRepository GetSqlRepository(IServiceProvider serviceProvider = default)
-    {
-        return AppCore.GetService<ISqlRepository>(serviceProvider);
-    }
-
-    /// <summary>
-    /// 获取Sql仓储
-    /// </summary>
-    /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-    /// <param name="serviceProvider"></param>
-    /// <returns>ISqlRepository{TDbContextLocator}</returns>
-    public static ISqlRepository<TDbContextLocator> GetSqlRepository<TDbContextLocator>(IServiceProvider serviceProvider = default)
-        where TDbContextLocator : class, IDbContextLocator
-    {
-        return AppCore.GetService<ISqlRepository<TDbContextLocator>>(serviceProvider);
-    }
-
-    /// <summary>
     /// 获取随机主从库仓储
     /// </summary>
     /// <param name="serviceProvider"></param>
-    /// <returns>ISqlRepository</returns>
+    /// <returns>主从库仓储</returns>
     public static IMSRepository GetMSRepository(IServiceProvider serviceProvider = default)
     {
         return AppCore.GetService<IMSRepository>(serviceProvider);

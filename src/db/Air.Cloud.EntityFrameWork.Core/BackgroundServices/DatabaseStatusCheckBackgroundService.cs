@@ -13,7 +13,6 @@ using Air.Cloud.Core;
 using Air.Cloud.Core.App;
 using Air.Cloud.Core.Modules.AppPrint;
 using Air.Cloud.EntityFrameWork.Core.Options;
-using Air.Cloud.EntityFrameWork.Core.Repositories;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,8 +20,8 @@ using Microsoft.Extensions.Hosting;
 namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
 {
     /// <summary>
-    /// <para>zh-cn:数据库状态检查后台服务，周期性执行连接验证 SQL 并输出数据库状态日志。</para>
-    /// <para>en-us:Database status check background service that periodically executes connection validation SQL and writes database status logs.</para>
+    /// <para>zh-cn:数据库状态检查后台服务，周期性通过 EF Core CanConnectAsync 验证连接并输出数据库状态日志。</para>
+    /// <para>en-us:Database status check background service that periodically validates connectivity with EF Core CanConnectAsync and writes database status logs.</para>
     /// </summary>
     public  class DatabaseStatusCheckBackgroundService : BackgroundService
     {
@@ -37,8 +36,8 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
         /// <para>en-us:Initializes the database status check background service.</para>
         /// </summary>
         /// <param name="serviceProvider">
-        /// <para>zh-cn:应用服务提供器，用于创建作用域并解析数据库仓储。</para>
-        /// <para>en-us:The application service provider used to create scopes and resolve database repositories.</para>
+        /// <para>zh-cn:应用服务提供器，用于创建作用域并解析数据库上下文。</para>
+        /// <para>en-us:The application service provider used to create scopes and resolve the database context.</para>
         /// </param>
         public DatabaseStatusCheckBackgroundService(IServiceProvider serviceProvider) { 
               this.provider=serviceProvider;
@@ -67,10 +66,11 @@ namespace Air.Cloud.EntityFrameWork.Core.BackgroundServices
                         using (var scope = provider.CreateScope())
                         {
                             var services = scope.ServiceProvider;
-                            var repository = services.GetRequiredService<IRepository>().Sql();
+                            var context = Db.GetDbContext(services);
                             try
                             {
-                                await repository.SqlNonQueryAsync(options.ConnectionValidationSQL);
+                                var connected = await context.Database.CanConnectAsync(stoppingToken);
+                                if (!connected) throw new InvalidOperationException("EF Core cannot connect to the configured database.");
                                 AppRealization.Output.Print("数据库状态检查", "数据库连接验证成功，数据库状态正常。", AppPrintLevel.Debug);
                             }
                             catch (Exception ex)

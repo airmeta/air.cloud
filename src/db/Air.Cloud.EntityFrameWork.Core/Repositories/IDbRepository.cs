@@ -31,12 +31,6 @@ public partial interface IDbRepository<TDbContextLocator>
         where TEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 获取 Sql 操作仓储
-    /// </summary>
-    /// <returns></returns>
-    ISqlRepository<TDbContextLocator> Sql();
-
-    /// <summary>
     /// 解析服务
     /// </summary>
     /// <typeparam name="TService"></typeparam>

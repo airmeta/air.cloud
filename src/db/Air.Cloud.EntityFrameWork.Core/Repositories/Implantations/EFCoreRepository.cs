@@ -20,7 +20,6 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Collections.Concurrent;
-using System.Data.Common;
 using System.Linq.Expressions;
 
 namespace Air.Cloud.EntityFrameWork.Core.Repositories.Implantations;
@@ -109,25 +108,6 @@ public partial class EFCoreRepository : IRepository
     }
 
     /// <summary>
-    /// 获取 Sql 操作仓储
-    /// </summary>
-    /// <returns>ISqlRepository</returns>
-    public virtual ISqlRepository Sql()
-    {
-        return _serviceProvider.GetRequiredService<ISqlRepository>();
-    }
-
-    /// <summary>
-    /// 获取多数据库上下文 Sql 操作仓储
-    /// </summary>
-    /// <returns>ISqlRepository{TDbContextLocator}</returns>
-    public virtual ISqlRepository<TDbContextLocator> Sql<TDbContextLocator>()
-         where TDbContextLocator : class, IDbContextLocator
-    {
-        return _serviceProvider.GetRequiredService<ISqlRepository<TDbContextLocator>>();
-    }
-
-    /// <summary>
     /// 解析服务
     /// </summary>
     /// <typeparam name="TService"></typeparam>
@@ -190,7 +170,7 @@ public partial class EFCoreRepository<TEntity, TDbContextLocator> : PrivateRepos
 /// 私有仓储
 /// </summary>
 /// <typeparam name="TEntity"></typeparam>
-public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivateRepository<TEntity>
+public partial class PrivateRepository<TEntity> : PrivateRepositoryBase, IPrivateRepository<TEntity>
     where TEntity : class, IPrivateEntity, new()
 {
     /// <summary>
@@ -216,8 +196,6 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
         // 设置提供器名称
         ProviderName = Database.ProviderName ?? string.Empty;
 
-        // 只有关系型数据库才有连接信息
-        DbConnection = Database.IsRelational() ? Database.GetDbConnection() : null;
         ChangeTracker = Context.ChangeTracker;
         Model = Context.Model;
 
@@ -247,11 +225,6 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
     /// 查看实体类型
     /// </summary>
     public virtual IEntityType EntityType { get; }
-
-    /// <summary>
-    /// 数据库连接对象
-    /// </summary>
-    public virtual DbConnection? DbConnection { get; }
 
     /// <summary>
     /// 实体追综器
@@ -612,37 +585,6 @@ public partial class PrivateRepository<TEntity> : PrivateSqlRepository, IPrivate
         if (EntityType is IConventionEntityType convention)
         {
             convention.SetTableName(tableName);
-        }
-    }
-
-    /// <summary>
-    /// 动态改变数据库
-    /// </summary>
-    /// <param name="connectionString">连接字符串</param>
-    public virtual void ChangeDatabase(string connectionString)
-    {
-        if (DbConnection == null) throw new NotSupportedException("当前数据库上下文不是关系型数据库，无法切换数据库连接。");
-
-        if (DbConnection.State == ConnectionState.Open) DbConnection.ChangeDatabase(connectionString);
-        else DbConnection.ConnectionString = connectionString;
-    }
-
-    /// <summary>
-    /// 动态改变数据库
-    /// </summary>
-    /// <param name="connectionString">连接字符串</param>
-    /// <param name="cancellationToken">异步取消令牌</param>
-    public virtual async Task ChangeDatabaseAsync(string connectionString, CancellationToken cancellationToken = default)
-    {
-        if (DbConnection == null) throw new NotSupportedException("当前数据库上下文不是关系型数据库，无法切换数据库连接。");
-
-        if (DbConnection.State == ConnectionState.Open)
-        {
-            await DbConnection.ChangeDatabaseAsync(connectionString, cancellationToken);
-        }
-        else
-        {
-            DbConnection.ConnectionString = connectionString;
         }
     }
 

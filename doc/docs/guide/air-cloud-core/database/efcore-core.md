@@ -1,6 +1,6 @@
 # EF Core 核心包
 
-`Air.Cloud.EntityFrameWork.Core` 是 Air.Cloud 的 EF Core 数据访问基础包，提供 DbContext 注册、仓储、SQL 仓储、连接字符串解析、数据库状态检查和 EF Core 模型元数据扩展。
+`Air.Cloud.EntityFrameWork.Core` 是 Air.Cloud 的 EF Core 数据访问基础包，提供 DbContext 注册、仓储、连接字符串解析、数据库状态检查和 EF Core 模型元数据扩展。
 
 ## 安装
 
@@ -17,7 +17,6 @@ Provider 包会引用核心包；业务项目通常还需要引用一个具体�
 ```json
 {
   "DataSourceSettings": {
-    "ConnectionValidationSQL": "select 1",
     "ConnectionValidationIntervalMillis": 60000,
     "ConnectionStrings": {
       "default": "Server=127.0.0.1;Database=air_cloud;User Id=root;Password=your-password;"
@@ -28,7 +27,7 @@ Provider 包会引用核心包；业务项目通常还需要引用一个具体�
 
 | 配置项 | 说明 |
 | --- | --- |
-| `ConnectionValidationSQL` | 数据库状态检查 SQL。为空时不启用状态检查后台服务 |
+| `ConnectionValidationSQL` | 兼容旧配置，仅用于决定是否启用状态检查；检查本身使用 EF Core `CanConnectAsync` |
 | `ConnectionValidationIntervalMillis` | 状态检查间隔，单位毫秒 |
 | `ConnectionStrings` | 命名连接字符串集合 |
 
@@ -73,8 +72,9 @@ services.AddDb<ReportingDbContext, ReportingDbContextLocator>(
 ```csharp
 var repository = Db.GetRepository<OrderEntity>();
 var dbRepository = Db.GetDbRepository<MasterDbContextLocator>();
-var sqlRepository = Db.GetSqlRepository<MasterDbContextLocator>();
 ```
+
+Core 不再注册或暴露独立 SQL/ADO.NET 仓储。需要执行 EF Core 支持的原生 SQL 时，直接使用 `repository.Database` 上的 EF Core API，并由业务代码负责参数和事务边界；DataTable、存储过程游标、批量复制等 ADO.NET 或 Provider 特有场景应由对应子包实现。
 
 ## 模型元数据扩展
 

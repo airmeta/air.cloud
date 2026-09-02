@@ -39,7 +39,7 @@ catch
 ## 其他写入方式
 
 - EF Core `ExecuteUpdateAsync` 在当前 `DbContext` 已绑定本地事务时，会随该事务执行；它不会自动加入其他数据库的事务。
-- Core 包中的 ADO.NET 命令辅助方法会把 `DatabaseFacade.CurrentTransaction` 绑定到 `DbCommand`，调用方仍需在本地事务边界内执行。
+- Core 包不再提供 ADO.NET 命令、DataTable、存储过程或 SQL 仓储封装。需要原生 SQL 时，业务代码直接调用 EF Core `DatabaseFacade` 的标准 API，并显式传入参数；该调用在当前 `DbContext` 已绑定本地事务时参与该事务。
 - Oracle `OracleBulkCopy` 等 Provider 特有批量 API 留在 Oracle 子包，由子包自行声明连接和事务参与规则。
 
 ## `Now` 方法迁移
