@@ -108,6 +108,9 @@ public sealed class DbProviderConnectionStringTests
 
             Assert.Equal(
                 "Server=inner;Database=configuration;",
+                AppConfigurationLoader.InnerConfiguration["DataSourceSettings:ConnectionStrings:inner"]);
+            Assert.Equal(
+                "Server=inner;Database=configuration;",
                 AppConfiguration.Configuration["DataSourceSettings:ConnectionStrings:inner"]);
         }
         finally

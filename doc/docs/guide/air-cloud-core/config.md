@@ -8,6 +8,8 @@ Air.Cloud 的配置机制不是简单读取 `appsettings.json`。它会先确定
 
 读取建议：业务和模块统一使用 `AppConfiguration.Configuration`（或 `AppCore.Configuration`）；只有需要访问宿主原始配置源、配置文件监听令牌或兼容旧代码时才使用 `AppConfigurationLoader.InnerConfiguration`。同一键存在于多个配置源时，后挂载的环境、公共或外部源按现有优先级覆盖基础内部配置。
 
+在 Web 服务构建之前，如果启动逻辑需要读取 `appsettings.json`（例如决定是否注册组件），直接使用 `AppConfigurationLoader.InnerConfiguration["SomeKey"]`。该配置根在类型初始化时加载，不依赖 `WebApplicationBuilder.Build()`；完成宿主配置后，框架会自动把它挂载到 `AppConfiguration.Configuration`。
+
 ---
 
 ## 配置加载总览

@@ -34,6 +34,10 @@ namespace Air.Cloud.Core.App
         /// <para>zh-cn:内部配置根；赋值时会同步挂载到统一的 Configuration 根。</para>
         /// <para>en-us:The internal configuration root; assigning it also mounts it into the unified Configuration root.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>zh-cn:类型初始化时会从应用程序目录读取可选的 appsettings.json，因此在 WebApplicationBuilder.Build 之前也可以直接读取该配置根。</para>
+        /// <para>en-us:The type initializer loads the optional appsettings.json from the application directory, so this configuration root can be read directly before WebApplicationBuilder.Build.</para>
+        /// </remarks>
         public static IConfiguration InnerConfiguration
         {
             get => _innerConfiguration;
