@@ -100,7 +100,7 @@ public class DbContextPool : IDbContextPool
             if (ReferenceEquals(DbContextTransaction?.GetDbTransaction(), currentTransaction.GetDbTransaction()))
             {
                 DetachTransactionContexts(currentTransaction.GetDbTransaction());
-                _transactionCoordinator.Clear();
+                _transactionCoordinator.Abort();
             }
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
@@ -226,6 +226,7 @@ public class DbContextPool : IDbContextPool
         if (DbContextTransaction != null)
         {
             ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
+            _transactionCoordinator.EnterScope();
             return;
         }
 
@@ -290,15 +291,32 @@ public class DbContextPool : IDbContextPool
     {
         var transaction = DbContextTransaction;
         var committed = false;
+        var nestedScopeCompleted = false;
         try
         {
             var hasChangesCount = 0;
             // 如果事务为空，则执行完毕后关闭连接
             if (transaction == null)
             {
+                if (_transactionCoordinator.IsRollbackOnly || _transactionCoordinator.IsAborted)
+                    throw new InvalidOperationException("当前本地事务已经回滚，不能在外层工作单元中继续提交。");
+
                 // 没有显式事务时保持 AutoSaveChanges 的历史语义。
                 hasChangesCount = SavePoolNow();
                 if (withCloseAll) CloseAll();
+                return;
+            }
+
+            if (_transactionCoordinator.IsRollbackOnly || _transactionCoordinator.IsAborted)
+            {
+                TryRollback(transaction);
+                throw new InvalidOperationException("当前本地事务已标记为回滚，外层工作单元不能提交。");
+            }
+
+            // 嵌套工作单元只完成自身层级，真正的保存和提交延迟到最外层。
+            if (!_transactionCoordinator.CompleteScope())
+            {
+                nestedScopeCompleted = true;
                 return;
             }
 
@@ -336,8 +354,11 @@ public class DbContextPool : IDbContextPool
         }
         finally
         {
-            DetachTransactionContexts(transaction?.GetDbTransaction());
-            _transactionCoordinator.Clear();
+            if (!nestedScopeCompleted)
+            {
+                DetachTransactionContexts(transaction?.GetDbTransaction());
+                _transactionCoordinator.Clear();
+            }
         }
         // 关闭所有连接
         if (withCloseAll) CloseAll();
@@ -351,6 +372,15 @@ public class DbContextPool : IDbContextPool
     public void RollbackTransaction(bool withCloseAll = false)
     {
         var transaction = DbContextTransaction;
+
+        // EF Core 本地事务没有跨上下文嵌套事务；内层回滚标记整个工作单元，交由最外层实际回滚。
+        if (transaction != null && _transactionCoordinator.Depth > 1)
+        {
+            _transactionCoordinator.MarkRollbackOnly();
+            _transactionCoordinator.CompleteScope();
+            return;
+        }
+
         try
         {
             // 回滚事务
@@ -455,6 +485,9 @@ public class DbContextPool : IDbContextPool
         var savedContextCount = 0;
         foreach (var item in pendingContexts)
         {
+            if (_transactionCoordinator.IsAborted)
+                throw new InvalidOperationException("当前本地事务已因保存失败而中止，不能继续保存其他上下文。");
+
             item.Value.SaveChanges(acceptAllChangesOnSuccess: false);
             savedContextCount++;
         }

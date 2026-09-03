@@ -103,6 +103,7 @@ public class OracleReadOnlyIntegrationTests
         pool.AddToPool(second);
 
         pool.BeginTransaction();
+        pool.BeginTransaction();
         Assert.NotNull(pool.DbContextTransaction);
         Assert.Same(connection, first.Database.GetDbConnection());
         Assert.Same(connection, second.Database.GetDbConnection());
@@ -114,6 +115,12 @@ public class OracleReadOnlyIntegrationTests
         var secondResult = await second.Database.SqlQueryRaw<int>("SELECT 1 AS VALUE FROM DUAL").ToListAsync();
         Assert.Equal(new[] { 1 }, firstResult);
         Assert.Equal(new[] { 1 }, secondResult);
+
+        // The inner scope must not commit or detach the outer transaction.
+        pool.CommitTransaction();
+        Assert.NotNull(pool.DbContextTransaction);
+        Assert.NotNull(first.Database.CurrentTransaction);
+        Assert.NotNull(second.Database.CurrentTransaction);
 
         pool.RollbackTransaction();
         Assert.Null(pool.DbContextTransaction);

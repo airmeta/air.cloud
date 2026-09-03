@@ -19,6 +19,37 @@ Short (en-us): `Air.Cloud.EntityFrameWork.Core` manages local EF Core transactio
 
 `IDbContextPool.BeginTransaction` 开启或接管一个本地事务，`CommitTransaction` 会先按顺序保存池中变更，再提交事务；任一保存失败都会回滚。显式事务提交时使用 `SaveChanges(false)`，只有数据库提交成功后才接受实体状态，避免后续上下文失败导致内存状态与数据库回滚结果不一致。池内多个上下文的 `SaveChanges`/`SaveChangesAsync` 按顺序执行，避免 EF Core `DbContext` 并发重入。
 
+## 嵌套工作单元
+
+同一个 `IDbContextPool` 内重复调用 `BeginTransaction` 会增加事务深度，但不会创建第二个数据库事务。内层 `CommitTransaction` 只完成当前层级，真正的保存和数据库提交延迟到最外层；内层 `RollbackTransaction` 会把整个工作单元标记为 rollback-only，外层提交时统一回滚并抛出异常。EF Core 本地事务不提供跨上下文的独立嵌套事务或自动保存点，因此不能把内层回滚当作局部回滚继续提交。
+
+```csharp
+pool.BeginTransaction();
+try
+{
+    pool.BeginTransaction(); // nested scope
+    try
+    {
+        // write through one or more compatible DbContext instances
+        pool.CommitTransaction(); // leaves the outer transaction active
+    }
+    catch
+    {
+        pool.RollbackTransaction(); // marks the outer unit rollback-only
+        throw;
+    }
+
+    pool.CommitTransaction(); // only here are changes saved and committed
+}
+catch
+{
+    pool.RollbackTransaction();
+    throw;
+}
+```
+
+当自动保存失败触发回滚时，协调器会记录事务已中止；外层工作单元不会退化为无事务 `SavePoolNow`，避免把原本应回滚的变更再次写入数据库。
+
 ```csharp
 var pool = serviceProvider.GetRequiredService<IDbContextPool>();
 pool.BeginTransaction();
