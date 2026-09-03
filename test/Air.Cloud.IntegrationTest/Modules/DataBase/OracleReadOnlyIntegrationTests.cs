@@ -129,6 +129,87 @@ public class OracleReadOnlyIntegrationTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证同一本地事务中的 EF Core 保存和 EF Core 原生 SQL 更新可以一起回滚。</para>
+    /// <para>en-us:Verifies that an EF Core save and an EF Core raw SQL update in one local transaction roll back together.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DataBase")]
+    public async Task Oracle_efcore_save_and_raw_sql_should_rollback_together()
+    {
+        if (!IsEnabled()) return;
+
+        var connectionStringName = GetRequiredConfiguration("RealDbIntegration:OracleConnectionStringName");
+        var connectionString = DbProvider.GetConnectionString<OracleReadOnlyDbContext>(connectionStringName);
+        await using var connection = new OracleConnection(connectionString);
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<OracleReadOnlyDbContext>()
+            .UseOracle(connection, oracle =>
+            {
+                oracle.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19);
+                oracle.CommandTimeout(15);
+            })
+            .Options;
+
+        await using var first = new OracleReadOnlyDbContext(options);
+        await using var second = new OracleReadOnlyDbContext(options);
+        var initialRows = await first.SysUserServices
+            .FromSqlRaw("SELECT ID, USER_ID, SERVICE_NO, LOSE_TIME FROM SYS_USER_SERVICE WHERE ROWNUM = 1")
+            .AsNoTracking()
+            .ToListAsync();
+        var original = initialRows.FirstOrDefault();
+        Assert.NotNull(original);
+        Assert.NotNull(original.Id);
+        var originalLoseTime = original.LoseTime;
+
+        var pool = new DbContextPool(null!);
+        pool.AddToPool(first);
+        pool.AddToPool(second);
+        pool.BeginTransaction();
+
+        try
+        {
+            var trackedRows = await first.SysUserServices
+                .Where(item => item.Id == original.Id)
+                .ToListAsync();
+            var tracked = Assert.Single(trackedRows);
+            tracked.LoseTime = originalLoseTime.AddSeconds(2);
+            await first.SaveChangesAsync(acceptAllChangesOnSuccess: false);
+
+            var afterEfRows = await second.SysUserServices
+                .AsNoTracking()
+                .Where(item => item.Id == original.Id)
+                .ToListAsync();
+            var afterEf = Assert.Single(afterEfRows);
+            Assert.True(afterEf.LoseTime > originalLoseTime);
+
+            var affectedRows = await second.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE SYS_USER_SERVICE SET LOSE_TIME = LOSE_TIME + 1/86400 WHERE ID = {original.Id}");
+            Assert.Equal(1, affectedRows);
+
+            var afterSqlRows = await second.SysUserServices
+                .AsNoTracking()
+                .Where(item => item.Id == original.Id)
+                .ToListAsync();
+            var afterSql = Assert.Single(afterSqlRows);
+            Assert.True(afterSql.LoseTime > afterEf.LoseTime);
+        }
+        finally
+        {
+            pool.RollbackTransaction();
+        }
+
+        await using var verification = new OracleReadOnlyDbContext(options);
+        var restoredRows = await verification.SysUserServices
+            .AsNoTracking()
+            .Where(item => item.Id == original.Id)
+            .ToListAsync();
+        var restored = Assert.Single(restoredRows);
+        Assert.Equal(originalLoseTime, restored.LoseTime);
+    }
+
+    /// <summary>
     /// <para>zh-cn:读取集成测试开关。</para>
     /// <para>en-us:Reads the integration-test switch.</para>
     /// </summary>
