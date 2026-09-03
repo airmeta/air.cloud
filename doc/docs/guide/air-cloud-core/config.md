@@ -4,6 +4,10 @@ Air.Cloud 的配置机制不是简单读取 `appsettings.json`。它会先确定
 
 配置加载是 `Air.Cloud.Core` 的核心能力之一。理解这条链路，对排查模块配置、生产环境配置、公共配置覆盖都很重要。
 
+`AppConfigurationLoader.InnerConfiguration` 保留为内部/宿主配置根；`AppConfiguration.Configuration` 返回框架统一配置根。统一配置根默认已经挂载 `InnerConfiguration`，并在后续继续叠加环境、公共及外部配置，因此两者不是互相隔离的配置树。
+
+读取建议：业务和模块统一使用 `AppConfiguration.Configuration`（或 `AppCore.Configuration`）；只有需要访问宿主原始配置源、配置文件监听令牌或兼容旧代码时才使用 `AppConfigurationLoader.InnerConfiguration`。同一键存在于多个配置源时，后挂载的环境、公共或外部源按现有优先级覆盖基础内部配置。
+
 ---
 
 ## 配置加载总览
@@ -11,12 +15,13 @@ Air.Cloud 的配置机制不是简单读取 `appsettings.json`。它会先确定
 ```mermaid
 flowchart TD
     A["启动进程"] --> B["AppConfigurationLoader 静态加载 appsettings.json"]
-    B --> C["读取 Environment 配置"]
-    C --> D["AppEnvironment 计算 VirtualEnvironmentKey"]
-    D --> E["加载 appsettings.{Environment}.json"]
-    E --> F["加载 appsettings.Common.{Environment}.json"]
-    F --> G["写入 AppConfigurationLoader.Configurations"]
-    G --> H["AppCore.Configuration / AppConfiguration.Configuration"]
+    B --> C["InnerConfiguration 挂载到统一 Configuration"]
+    C --> D["读取 Environment 配置"]
+    D --> E["AppEnvironment 计算 VirtualEnvironmentKey"]
+    E --> F["加载 appsettings.{Environment}.json"]
+    F --> G["加载 appsettings.Common.{Environment}.json"]
+    G --> H["写入统一 Configuration"]
+    H --> I["AppCore.Configuration / AppConfiguration.Configuration"]
 ```
 
 默认入口：

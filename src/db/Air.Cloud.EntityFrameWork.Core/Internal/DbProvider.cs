@@ -12,6 +12,8 @@
 
 using Air.Cloud.EntityFrameWork.Core.Contexts.Attributes;
 
+using Air.Cloud.Core.App;
+
 using Microsoft.Extensions.Configuration;
 
 using System.Collections.Concurrent;
@@ -48,43 +50,55 @@ public static class DbProvider
     }
 
     /// <summary>
-    /// 获取数据库上下文连接字符串
+    /// <para>zh-cn:兼容入口：获取数据库上下文连接字符串。</para>
+    /// <para>en-us:Compatibility entry point for resolving a DbContext connection string.</para>
     /// </summary>
+    /// <remarks>
+    /// <para>zh-cn:新的 AddDb 和 AddDbPool 注册流程直接使用 DataSourceOptions.GetConnectionString；此方法保留给已有业务代码。</para>
+    /// <para>en-us:New AddDb and AddDbPool registrations use DataSourceOptions.GetConnectionString directly; this method remains for existing application code.</para>
+    /// </remarks>
     /// <typeparam name="TDbContext"></typeparam>
-    /// <param name="connectionMetadata">支持数据库连接字符串，配置文件的 ConnectionStrings 中的Key或 配置文件的完整的配置路径，如果是内存数据库，则为数据库名称</param>
-    /// <returns></returns>
+    /// <param name="connectionMetadata">
+    /// <para>zh-cn:连接元数据。新配置应传入 <c>DataSourceSettings:ConnectionStrings</c> 下的名称；直接连接字符串、官方 <c>ConnectionStrings</c> 节点和完整配置路径仅用于兼容旧调用。</para>
+    /// <para>en-us:Connection metadata. New configuration should pass a name under <c>DataSourceSettings:ConnectionStrings</c>; raw connection strings, the official <c>ConnectionStrings</c> section, and full configuration paths are supported only for legacy compatibility.</para>
+    /// </param>
+    /// <returns>
+    /// <para>zh-cn:解析后的原始连接字符串；没有元数据时返回空字符串，未解析的名称按历史兼容行为原样透传。</para>
+    /// <para>en-us:The resolved raw connection string; an empty string is returned when metadata is absent, while unresolved names are passed through for legacy compatibility.</para>
+    /// </returns>
     public static string GetConnectionString<TDbContext>(string? connectionMetadata = default)
         where TDbContext : DbContext
     {
-        // 支持读取配置渲染
-        var connStrOrConnKey = connectionMetadata?.Render() ?? string.Empty;
+        var metadata = GetConnectionMetadata<TDbContext>(connectionMetadata);
+        var configuration = AppConfiguration.Configuration;
+        var resolved = DataSourceConnectionStringResolver.Resolve(configuration, null, metadata);
 
-        // 如果没有配置数据库连接字符串，那么查找特性
-        if (string.IsNullOrWhiteSpace(connStrOrConnKey))
+        // 直接调用兼容入口时，宿主可能尚未把 InnerConfiguration 合并到 ConfigurationManager。
+        // 两者使用同一解析规则，避免连接名称被错误地原样透传。
+        if (string.Equals(resolved, metadata, StringComparison.Ordinal)
+            && AppConfigurationLoader.InnerConfiguration != null
+            && !ReferenceEquals(configuration, AppConfigurationLoader.InnerConfiguration))
         {
-            var dbContextAttribute = GetAppDbContextAttribute(typeof(TDbContext));
-            if (dbContextAttribute == null) return string.Empty;
-
-            // 获取特性连接字符串（渲染配置模板）
-            connStrOrConnKey = dbContextAttribute.ConnectionMetadata?.Render() ?? string.Empty;
+            resolved = DataSourceConnectionStringResolver.Resolve(AppConfigurationLoader.InnerConfiguration, null, metadata);
         }
 
-        // 如果都没有，则直接返回空
-        if (string.IsNullOrWhiteSpace(connStrOrConnKey)) return string.Empty;
+        return resolved;
+    }
 
-        // 如果包含 = 符号，那么认为是连接字符串
-        if (connStrOrConnKey.Contains('=')) return connStrOrConnKey;
-        else
-        {
-            // 如果包含 : 符号，那么认为是一个 Key 路径
-            if (connStrOrConnKey.Contains(':')) return AppConfiguration.Configuration[connStrOrConnKey] ?? string.Empty;
-            else
-            {
-                // 首先查找 DbConnectionString 键，如果没有找到，则当成 Key 去查找
-                var connStrValue = AppConfiguration.Configuration.GetConnectionString(connStrOrConnKey);
-                return (!string.IsNullOrWhiteSpace(connStrValue) ? connStrValue : AppConfiguration.Configuration[connStrOrConnKey]) ?? connStrOrConnKey;
-            }
-        }
+    /// <summary>
+    /// <para>zh-cn:选择 DbContext 的连接元数据。该方法只处理显式参数和上下文特性，不读取配置值。</para>
+    /// <para>en-us:Selects DbContext connection metadata. This method handles only the explicit argument and context attribute; it does not read configuration values.</para>
+    /// </summary>
+    /// <typeparam name="TDbContext">数据库上下文类型。</typeparam>
+    /// <param name="connectionMetadata">显式连接元数据。</param>
+    /// <returns>选中的连接元数据。</returns>
+    internal static string GetConnectionMetadata<TDbContext>(string? connectionMetadata = default)
+        where TDbContext : DbContext
+    {
+        var metadata = connectionMetadata?.Render() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(metadata)) return metadata;
+
+        return GetAppDbContextAttribute(typeof(TDbContext))?.ConnectionMetadata?.Render() ?? string.Empty;
     }
 
     /// <summary>

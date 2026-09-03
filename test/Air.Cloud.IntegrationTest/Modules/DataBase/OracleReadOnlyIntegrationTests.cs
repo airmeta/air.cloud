@@ -1,6 +1,10 @@
 using Air.Cloud.Core.App;
+using Air.Cloud.EntityFrameWork.Core.Internal;
+using Air.Cloud.EntityFrameWork.Core.ContextPools;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Oracle.ManagedDataAccess.Client;
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -36,11 +40,15 @@ public class OracleReadOnlyIntegrationTests
         }
 
         var connectionStringName = GetRequiredConfiguration("RealDbIntegration:OracleConnectionStringName");
-        var connectionString = AppConfigurationLoader.InnerConfiguration[$"ConnectionStrings:{connectionStringName}"];
-        if (string.IsNullOrWhiteSpace(connectionString))
+        var configuredConnectionString = AppConfigurationLoader.InnerConfiguration[
+            $"DataSourceSettings:ConnectionStrings:{connectionStringName}"];
+        if (string.IsNullOrWhiteSpace(configuredConnectionString))
         {
-            throw new InvalidOperationException($"ConnectionStrings:{connectionStringName} is required when RealDbIntegration:RunReadOnlyOracleQuery is true.");
+            throw new InvalidOperationException($"DataSourceSettings:ConnectionStrings:{connectionStringName} is required when RealDbIntegration:RunReadOnlyOracleQuery is true.");
         }
+
+        var connectionString = DbProvider.GetConnectionString<OracleReadOnlyDbContext>(connectionStringName);
+        Assert.Equal(configuredConnectionString, connectionString);
 
         var queryUserId = GetRequiredConfiguration("RealDbIntegration:OracleQueryUserId");
         var options = new DbContextOptionsBuilder<OracleReadOnlyDbContext>()
@@ -53,14 +61,64 @@ public class OracleReadOnlyIntegrationTests
 
         await using var dbContext = new OracleReadOnlyDbContext(options);
 
-        var rows = await dbContext.SysUserServices
+        // Some supported Oracle versions reject the FETCH clause generated for Take(1).
+        // The user-id predicate keeps this validation read-only and narrowly scoped.
+        var query = dbContext.SysUserServices
             .AsNoTracking()
-            .Where(item => item.UserId == queryUserId)
-            .Take(1)
-            .ToListAsync();
+            .Where(item => item.UserId == queryUserId);
+        var rows = await query.ToListAsync();
 
         Assert.NotNull(rows);
-        Assert.True(rows.Count <= 1);
+        Assert.All(rows, row => Assert.Equal(queryUserId, row.UserId));
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证两个共享同一 Oracle 连接的上下文可以参加同一个本地事务，并在回滚后清理事务绑定。</para>
+    /// <para>en-us:Verifies that two contexts sharing one Oracle connection participate in one local transaction and that rollback clears their transaction bindings.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DataBase")]
+    public async Task Oracle_shared_connection_contexts_should_share_and_clear_local_transaction()
+    {
+        if (!IsEnabled()) return;
+
+        var connectionStringName = GetRequiredConfiguration("RealDbIntegration:OracleConnectionStringName");
+        var connectionString = DbProvider.GetConnectionString<OracleReadOnlyDbContext>(connectionStringName);
+        await using var connection = new OracleConnection(connectionString);
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<OracleReadOnlyDbContext>()
+            .UseOracle(connection, oracle =>
+            {
+                oracle.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19);
+                oracle.CommandTimeout(15);
+            })
+            .Options;
+
+        await using var first = new OracleReadOnlyDbContext(options);
+        await using var second = new OracleReadOnlyDbContext(options);
+        var pool = new DbContextPool(null!);
+        pool.AddToPool(first);
+        pool.AddToPool(second);
+
+        pool.BeginTransaction();
+        Assert.NotNull(pool.DbContextTransaction);
+        Assert.Same(connection, first.Database.GetDbConnection());
+        Assert.Same(connection, second.Database.GetDbConnection());
+        Assert.Same(
+            pool.DbContextTransaction!.GetDbTransaction(),
+            second.Database.CurrentTransaction!.GetDbTransaction());
+
+        var firstResult = await first.Database.SqlQueryRaw<int>("SELECT 1 AS VALUE FROM DUAL").ToListAsync();
+        var secondResult = await second.Database.SqlQueryRaw<int>("SELECT 1 AS VALUE FROM DUAL").ToListAsync();
+        Assert.Equal(new[] { 1 }, firstResult);
+        Assert.Equal(new[] { 1 }, secondResult);
+
+        pool.RollbackTransaction();
+        Assert.Null(pool.DbContextTransaction);
+        Assert.Null(first.Database.CurrentTransaction);
+        Assert.Null(second.Database.CurrentTransaction);
     }
 
     /// <summary>
