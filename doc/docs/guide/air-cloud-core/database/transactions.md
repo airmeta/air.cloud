@@ -17,7 +17,7 @@ Short (en-us): `Air.Cloud.EntityFrameWork.Core` manages local EF Core transactio
 
 ## 提交流程
 
-`IDbContextPool.BeginTransaction` 开启或接管一个本地事务，`CommitTransaction` 会先保存池中变更，再提交事务；任一保存失败都会回滚。池内多个上下文的 `SaveChanges`/`SaveChangesAsync` 按顺序执行，避免 EF Core `DbContext` 并发重入。
+`IDbContextPool.BeginTransaction` 开启或接管一个本地事务，`CommitTransaction` 会先按顺序保存池中变更，再提交事务；任一保存失败都会回滚。显式事务提交时使用 `SaveChanges(false)`，只有数据库提交成功后才接受实体状态，避免后续上下文失败导致内存状态与数据库回滚结果不一致。池内多个上下文的 `SaveChanges`/`SaveChangesAsync` 按顺序执行，避免 EF Core `DbContext` 并发重入。
 
 ```csharp
 var pool = serviceProvider.GetRequiredService<IDbContextPool>();

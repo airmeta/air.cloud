@@ -34,14 +34,14 @@ public class DbContextPool : IDbContextPool
     private readonly ConcurrentDictionary<Guid, DbContext> _dbContexts;
 
     /// <summary>
-    /// 登记错误的数据库上下文
-    /// </summary>
-    private readonly ConcurrentDictionary<Guid, DbContext> _failedDbContexts;
-
-    /// <summary>
     /// 服务提供器
     /// </summary>
     private readonly IServiceProvider _serviceProvider;
+
+    /// <summary>
+    /// 本地事务生命周期协调器。
+    /// </summary>
+    private readonly LocalTransactionCoordinator _transactionCoordinator;
 
     /// <summary>
     /// 构造函数
@@ -52,13 +52,13 @@ public class DbContextPool : IDbContextPool
         _serviceProvider = serviceProvider;
 
         _dbContexts = new ConcurrentDictionary<Guid, DbContext>();
-        _failedDbContexts = new ConcurrentDictionary<Guid, DbContext>();
+        _transactionCoordinator = new LocalTransactionCoordinator();
     }
 
     /// <summary>
     /// 数据库上下文事务
     /// </summary>
-    public IDbContextTransaction? DbContextTransaction { get; private set; }
+    public IDbContextTransaction? DbContextTransaction => _transactionCoordinator.Transaction;
 
     /// <summary>
     /// 获取所有数据库上下文
@@ -70,7 +70,8 @@ public class DbContextPool : IDbContextPool
     }
 
     /// <summary>
-    /// 保存数据库上下文
+    /// <para>zh-cn:登记一个关系型数据库上下文，并在保存失败且上下文启用自动回滚时回滚当前本地事务。</para>
+    /// <para>en-us:Registers a relational DbContext and rolls back the current local transaction on save failure when that context enables automatic rollback.</para>
     /// </summary>
     /// <param name="dbContext"></param>
     public void AddToPool(DbContext dbContext)
@@ -84,21 +85,23 @@ public class DbContextPool : IDbContextPool
         // 订阅数据库上下文操作失败事件
         dbContext.SaveChangesFailed += (s, e) =>
         {
-            // 排除已经存在的数据库上下文
-            if (!_failedDbContexts.TryAdd(instanceId, dbContext)) return;
-
             // 当前事务
             if (s is not DbContext context) return;
-            dynamic dynamicContext = context;
             var database = context.Database;
             var currentTransaction = database.CurrentTransaction;
 
             // 只有事务不等于空且支持自动回滚
-            if (!(currentTransaction != null && dynamicContext.FailedAutoRollback == true)) return;
+            if (currentTransaction == null || !IsFailedAutoRollbackEnabled(context)) return;
             // 获取数据库连接信息
             var connection = database.GetDbConnection();
             // 回滚事务
-            currentTransaction?.Rollback();
+            currentTransaction.Rollback();
+            // 自动回滚也必须同步清理池中的事务状态，否则下一次 BeginTransaction 可能复用已失效事务。
+            if (ReferenceEquals(DbContextTransaction?.GetDbTransaction(), currentTransaction.GetDbTransaction()))
+            {
+                DetachTransactionContexts(currentTransaction.GetDbTransaction());
+                _transactionCoordinator.Clear();
+            }
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
@@ -200,10 +203,10 @@ public class DbContextPool : IDbContextPool
     }
 
     /// <summary>
-    /// 打开事务
+    /// <para>zh-cn:打开或接管当前上下文池的本地事务，并将兼容上下文绑定到同一连接事务。</para>
+    /// <para>en-us:Starts or adopts the local transaction for this context pool and binds compatible contexts to the same connection transaction.</para>
     /// </summary>
-    /// <param name="ensureTransaction"></param>
-    /// <returns></returns>
+    /// <param name="ensureTransaction"><para>zh-cn:池为空时是否解析默认上下文并确保事务存在。</para><para>en-us:Whether to resolve the default context and ensure a transaction when the pool is empty.</para></param>
     public void BeginTransaction(bool ensureTransaction = false)
     {
         var transactionContexts = GetUnitOfWorkContexts();
@@ -231,12 +234,14 @@ public class DbContextPool : IDbContextPool
         if (transactionDbContext != null)
         {
             EnsureCompatibleConnections(transactionDbContext, transactionContexts);
-            DbContextTransaction = transactionDbContext.Database.CurrentTransaction;
+            var existingTransaction = transactionDbContext.Database.CurrentTransaction
+                ?? throw new InvalidOperationException("数据库上下文事务状态在读取期间发生变化。");
+            _transactionCoordinator.Attach(existingTransaction, ownsTransaction: false);
         }
         else
         {
             EnsureCompatibleConnections(transactionContexts[0], transactionContexts);
-            DbContextTransaction = transactionContexts[0].Database.BeginTransaction();
+            _transactionCoordinator.Attach(transactionContexts[0].Database.BeginTransaction(), ownsTransaction: true);
             transactionCreatedByPool = true;
         }
 
@@ -248,6 +253,7 @@ public class DbContextPool : IDbContextPool
         }
         catch
         {
+            DetachTransactionContexts(DbContextTransaction.GetDbTransaction());
             if (transactionCreatedByPool)
             {
                 try
@@ -258,12 +264,9 @@ public class DbContextPool : IDbContextPool
                 {
                     // 保留绑定失败异常，清理动作本身不应覆盖根因。
                 }
-                finally
-                {
-                    DbContextTransaction.Dispose();
-                    DbContextTransaction = null;
-                }
             }
+
+            _transactionCoordinator.Clear();
 
             throw;
         }
@@ -279,24 +282,33 @@ public class DbContextPool : IDbContextPool
     }
 
     /// <summary>
-    /// 提交事务
+    /// <para>zh-cn:保存池中变更并提交本地事务；事务提交成功后才接受实体状态。</para>
+    /// <para>en-us:Saves pending changes and commits the local transaction; entity states are accepted only after the commit succeeds.</para>
     /// </summary>
-    /// <param name="withCloseAll">是否自动关闭所有连接</param>
+    /// <param name="withCloseAll"><para>zh-cn:是否自动关闭所有连接。</para><para>en-us:Whether to close all connections after completion.</para></param>
     public void CommitTransaction(bool withCloseAll = false)
     {
         var transaction = DbContextTransaction;
+        var committed = false;
         try
         {
-            // 将所有数据库上下文修改 SaveChanges();，这里另外判断是否需要手动提交。
-            var hasChangesCount = SavePoolNow();
+            var hasChangesCount = 0;
             // 如果事务为空，则执行完毕后关闭连接
             if (transaction == null)
             {
+                // 没有显式事务时保持 AutoSaveChanges 的历史语义。
+                hasChangesCount = SavePoolNow();
                 if (withCloseAll) CloseAll();
                 return;
             }
+
+            // 事务内延迟 AcceptAllChanges，避免后续上下文保存失败后内存状态与数据库回滚结果不一致。
+            var pendingContexts = GetPendingDbContexts();
+            hasChangesCount = SavePoolForTransaction(pendingContexts);
             // 提交共享事务
             transaction.Commit();
+            committed = true;
+            foreach (var item in pendingContexts) item.Value.ChangeTracker.AcceptAllChanges();
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
@@ -309,14 +321,14 @@ public class DbContextPool : IDbContextPool
         }
         catch
         {
-            // 回滚事务
-            if (transaction?.GetDbTransaction()?.Connection != null) transaction.Rollback();
+            // 只有数据库提交尚未完成时才尝试回滚；提交后的实体状态异常不能伪装成数据库回滚。
+            if (!committed) TryRollback(transaction);
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
                 Title = "数据库事务状态更新",
                 Level = AppPrintLevel.Error,
-                Content = "已触发事务回滚",
+                Content = committed ? "数据库已提交，但实体状态接受失败" : "已触发事务回滚",
                 State = true,
                 Type = AppPrintConstType.ORM_EXEC_TYPE
             }), Db.TraceLogTags);
@@ -324,17 +336,18 @@ public class DbContextPool : IDbContextPool
         }
         finally
         {
-            DbContextTransaction = null;
-            transaction?.Dispose();
+            DetachTransactionContexts(transaction?.GetDbTransaction());
+            _transactionCoordinator.Clear();
         }
         // 关闭所有连接
         if (withCloseAll) CloseAll();
     }
 
     /// <summary>
-    /// 回滚事务
+    /// <para>zh-cn:回滚当前本地事务并清理参与上下文的事务绑定。</para>
+    /// <para>en-us:Rolls back the current local transaction and clears transaction bindings from participating contexts.</para>
     /// </summary>
-    /// <param name="withCloseAll">是否自动关闭所有连接</param>
+    /// <param name="withCloseAll"><para>zh-cn:是否自动关闭所有连接。</para><para>en-us:Whether to close all connections after rollback.</para></param>
     public void RollbackTransaction(bool withCloseAll = false)
     {
         var transaction = DbContextTransaction;
@@ -345,8 +358,8 @@ public class DbContextPool : IDbContextPool
         }
         finally
         {
-            DbContextTransaction = null;
-            transaction?.Dispose();
+            DetachTransactionContexts(transaction?.GetDbTransaction());
+            _transactionCoordinator.Clear();
         }
         // 打印数据库关闭信息
         AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
@@ -412,19 +425,76 @@ public class DbContextPool : IDbContextPool
         EnsureCompatibleConnections(owner, transactionContexts);
 
         // 跳过已经拥有该事务的上下文，其余上下文绑定到同一个本地事务。
-        foreach (var dbContext in transactionContexts)
+        var boundContexts = new List<DbContext>();
+        try
         {
-            if (ReferenceEquals(dbContext.Database.CurrentTransaction?.GetDbTransaction(), transaction)) continue;
-            dbContext.Database.UseTransaction(transaction);
+            foreach (var dbContext in transactionContexts)
+            {
+                if (ReferenceEquals(dbContext.Database.CurrentTransaction?.GetDbTransaction(), transaction)) continue;
+                dbContext.Database.UseTransaction(transaction);
+                boundContexts.Add(dbContext);
+            }
+        }
+        catch
+        {
+            foreach (var dbContext in boundContexts) TryDetachTransaction(dbContext, transaction);
+            throw;
         }
     }
 
     private List<KeyValuePair<Guid, DbContext>> GetPendingDbContexts()
     {
         return _dbContexts
-            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges() && !_failedDbContexts.ContainsKey(u.Key))
+            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges())
             .OrderBy(u => u.Key)
             .ToList();
+    }
+
+    private int SavePoolForTransaction(IReadOnlyCollection<KeyValuePair<Guid, DbContext>> pendingContexts)
+    {
+        var savedContextCount = 0;
+        foreach (var item in pendingContexts)
+        {
+            item.Value.SaveChanges(acceptAllChangesOnSuccess: false);
+            savedContextCount++;
+        }
+
+        return savedContextCount;
+    }
+
+    private void DetachTransactionContexts(DbTransaction? transaction)
+    {
+        if (transaction == null) return;
+
+        foreach (var dbContext in _dbContexts.Values)
+        {
+            if (ReferenceEquals(dbContext.Database.CurrentTransaction?.GetDbTransaction(), transaction))
+                TryDetachTransaction(dbContext, transaction);
+        }
+    }
+
+    private static void TryDetachTransaction(DbContext dbContext, DbTransaction transaction)
+    {
+        try
+        {
+            dbContext.Database.UseTransaction(null);
+        }
+        catch
+        {
+            // 事务已经提交或回滚时，部分 Provider 会拒绝再次解绑；不覆盖原始异常。
+        }
+    }
+
+    private static void TryRollback(IDbContextTransaction? transaction)
+    {
+        try
+        {
+            if (transaction?.GetDbTransaction()?.Connection != null) transaction.Rollback();
+        }
+        catch
+        {
+            // 回滚失败不能覆盖触发提交失败的原始异常。
+        }
     }
 
     private List<DbContext> GetUnitOfWorkContexts()
@@ -440,6 +510,12 @@ public class DbContextPool : IDbContextPool
         // AppDbContext 的配置属性位于泛型基类，使用反射兼容自定义 DbContext 实现。
         var property = dbContext.GetType().GetProperty("UseUnitOfWork", BindingFlags.Instance | BindingFlags.Public);
         return property?.GetValue(dbContext) is not bool enabled || enabled;
+    }
+
+    private static bool IsFailedAutoRollbackEnabled(DbContext dbContext)
+    {
+        var property = dbContext.GetType().GetProperty("FailedAutoRollback", BindingFlags.Instance | BindingFlags.Public);
+        return property?.GetValue(dbContext) is true;
     }
 
     private static void EnsureCompatibleConnections(DbContext owner, IEnumerable<DbContext> contexts)

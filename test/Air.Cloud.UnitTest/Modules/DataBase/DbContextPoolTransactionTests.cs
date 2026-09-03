@@ -46,6 +46,23 @@ public sealed class DbContextPoolTransactionTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证无显式事务时仍保持保存并接受实体状态的兼容语义。</para>
+    /// <para>en-us:Verifies that saving without an explicit transaction keeps the compatibility behavior of accepting entity states.</para>
+    /// </summary>
+    [Fact]
+    public void CommitTransaction_should_accept_entity_state_without_explicit_transaction()
+    {
+        using var context = new TrackingDbContext();
+        context.Add(new TestRow());
+
+        var pool = new DbContextPool(null!);
+        pool.GetDbContexts()[context.ContextId.InstanceId] = context;
+
+        pool.CommitTransaction();
+        Assert.False(context.ChangeTracker.HasChanges());
+    }
+
+    /// <summary>
     /// <para>zh-cn:跟踪保存并发度的最小测试上下文。</para>
     /// <para>en-us:Minimal test context that tracks save concurrency.</para>
     /// </summary>
