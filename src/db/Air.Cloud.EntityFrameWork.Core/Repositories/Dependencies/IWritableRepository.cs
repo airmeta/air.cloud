@@ -82,31 +82,4 @@ public partial interface IPrivateWritableRepository<TEntity>
     /// <returns></returns>
     Task<int> SavePoolNowAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// 提交更改操作
-    /// </summary>
-    /// <returns></returns>
-    int SaveNow();
-
-    /// <summary>
-    /// 提交更改操作
-    /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <returns></returns>
-    int SaveNow(bool acceptAllChangesOnSuccess);
-
-    /// <summary>
-    /// 提交更改操作（异步）
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task<int> SaveNowAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 提交更改操作（异步）
-    /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task<int> SaveNowAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default);
 }

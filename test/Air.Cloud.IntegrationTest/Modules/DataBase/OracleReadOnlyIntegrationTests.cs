@@ -1,9 +1,16 @@
 using Air.Cloud.Core.App;
+using Air.Cloud.EntityFrameWork.Core.Configure;
 using Air.Cloud.EntityFrameWork.Core.Internal;
 using Air.Cloud.EntityFrameWork.Core.ContextPools;
+using Air.Cloud.EntityFrameWork.Core.Contexts.Attributes;
+using Air.Cloud.EntityFrameWork.Core.Extensions;
+using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
+using Air.Cloud.EntityFrameWork.Oracle.Configure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Oracle.ManagedDataAccess.Client;
 
 using System.ComponentModel.DataAnnotations;
@@ -73,6 +80,36 @@ public class OracleReadOnlyIntegrationTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证真实 Oracle DbContext 可以通过 Provider 类型注册自动解析，而不依赖手写 Provider 字符串。</para>
+    /// <para>en-us:Verifies that a real Oracle DbContext is resolved through type-based Provider registration without a handwritten Provider string.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DataBase")]
+    public async Task Oracle_type_based_provider_registration_should_resolve_real_context()
+    {
+        if (!IsEnabled()) return;
+
+        var connectionStringName = GetRequiredConfiguration("RealDbIntegration:OracleConnectionStringName");
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(AppConfiguration.Configuration);
+        services.AddDatabaseConfigure<OracleDatabaseConfigure, OracleDataBaseProvider>();
+        services.AddDatabaseAccessor(registration =>
+        {
+            registration.AddDb<OracleReadOnlyDbContext, OracleIntegrationLocator>(connectionMetadata: connectionStringName);
+        });
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        await using var dbContext = serviceProvider.GetRequiredService<OracleReadOnlyDbContext>();
+        var pool = serviceProvider.GetRequiredService<IDbContextPool>();
+        var transactionManager = serviceProvider.GetRequiredService<ILocalTransactionManager>();
+        Assert.Same(pool, transactionManager);
+        var result = await dbContext.Database.SqlQueryRaw<int>("SELECT 1 AS VALUE FROM DUAL").ToListAsync();
+
+        Assert.Equal(new[] { 1 }, result);
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证两个共享同一 Oracle 连接的上下文可以参加同一个本地事务，并在回滚后清理事务绑定。</para>
     /// <para>en-us:Verifies that two contexts sharing one Oracle connection participate in one local transaction and that rollback clears their transaction bindings.</para>
     /// </summary>
@@ -99,11 +136,13 @@ public class OracleReadOnlyIntegrationTests
         await using var first = new OracleReadOnlyDbContext(options);
         await using var second = new OracleReadOnlyDbContext(options);
         var pool = new DbContextPool(null!);
+        var transactionManager = (ILocalTransactionManager)pool;
         pool.AddToPool(first);
         pool.AddToPool(second);
 
-        pool.BeginTransaction();
-        pool.BeginTransaction();
+        transactionManager.Begin();
+        transactionManager.Begin();
+        Assert.Equal(2, transactionManager.Depth);
         Assert.NotNull(pool.DbContextTransaction);
         Assert.Same(connection, first.Database.GetDbConnection());
         Assert.Same(connection, second.Database.GetDbConnection());
@@ -117,13 +156,72 @@ public class OracleReadOnlyIntegrationTests
         Assert.Equal(new[] { 1 }, secondResult);
 
         // The inner scope must not commit or detach the outer transaction.
-        pool.CommitTransaction();
+        transactionManager.Commit();
         Assert.NotNull(pool.DbContextTransaction);
         Assert.NotNull(first.Database.CurrentTransaction);
         Assert.NotNull(second.Database.CurrentTransaction);
 
-        pool.RollbackTransaction();
+        transactionManager.Rollback();
         Assert.Null(pool.DbContextTransaction);
+        Assert.Null(first.Database.CurrentTransaction);
+        Assert.Null(second.Database.CurrentTransaction);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证同一 Provider 的不同物理连接会维护独立本地事务，并可由上下文池统一回滚清理。</para>
+    /// <para>en-us:Verifies that different physical connections for one Provider keep independent local transactions and can be rolled back and cleared by the context pool.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "DataBase")]
+    public async Task Oracle_different_connections_should_use_independent_local_transactions()
+    {
+        if (!IsEnabled()) return;
+
+        var connectionStringName = GetRequiredConfiguration("RealDbIntegration:OracleConnectionStringName");
+        var connectionString = DbProvider.GetConnectionString<OracleReadOnlyDbContext>(connectionStringName);
+        await using var firstConnection = new OracleConnection(connectionString);
+        await using var secondConnection = new OracleConnection(connectionString);
+        await firstConnection.OpenAsync();
+        await secondConnection.OpenAsync();
+
+        var firstOptions = new DbContextOptionsBuilder<OracleReadOnlyDbContext>()
+            .UseOracle(firstConnection, oracle =>
+            {
+                oracle.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19);
+                oracle.CommandTimeout(15);
+            })
+            .Options;
+        var secondOptions = new DbContextOptionsBuilder<OracleReadOnlyDbContext>()
+            .UseOracle(secondConnection, oracle =>
+            {
+                oracle.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19);
+                oracle.CommandTimeout(15);
+            })
+            .Options;
+
+        await using var first = new OracleReadOnlyDbContext(firstOptions);
+        await using var second = new OracleReadOnlyDbContext(secondOptions);
+        var pool = new DbContextPool(null!);
+        pool.AddToPool(first);
+        pool.BeginTransaction();
+
+        // 第二个物理连接在外层事务已开启后加入，必须继承现有事务组的嵌套深度。
+        pool.AddToPool(second);
+        pool.BeginTransaction();
+
+        Assert.NotNull(first.Database.CurrentTransaction);
+        Assert.NotNull(second.Database.CurrentTransaction);
+        Assert.NotSame(
+            first.Database.CurrentTransaction!.GetDbTransaction(),
+            second.Database.CurrentTransaction!.GetDbTransaction());
+
+        pool.RollbackTransaction();
+        Assert.NotNull(first.Database.CurrentTransaction);
+        Assert.NotNull(second.Database.CurrentTransaction);
+
+        pool.RollbackTransaction();
+
         Assert.Null(first.Database.CurrentTransaction);
         Assert.Null(second.Database.CurrentTransaction);
     }
@@ -272,6 +370,11 @@ public class OracleReadOnlyIntegrationTests
         /// <para>en-us:The SYS_USER_SERVICE table.</para>
         /// </summary>
         public DbSet<SysUserService> SysUserServices => Set<SysUserService>();
+    }
+
+    [DatabaseProvider(typeof(OracleDataBaseProvider))]
+    private sealed class OracleIntegrationLocator : Air.Cloud.Core.Standard.DataBase.Locators.IDbContextLocator
+    {
     }
 
     /// <summary>

@@ -30,6 +30,7 @@ public class WebAppReflectionTests
         Assert.Contains(mvcOptions.Conventions, IsDynamicApiConvention);
         AssertContainsFilter(mvcOptions, "Air.Cloud.WebApp.DataValidation.Filters.DataValidationFilter");
         AssertContainsFilter(mvcOptions, "Air.Cloud.WebApp.FriendlyException.Filters.FriendlyExceptionFilter");
+        AssertContainsFilter(mvcOptions, "Air.Cloud.EntityFrameWork.Core.Filters.AutoSaveChangesFilter");
         AssertDoesNotContainFilter(mvcOptions, "Air.Cloud.WebApp.UnifyResult.Filters.SucceededUnifyResultFilter");
     }
 

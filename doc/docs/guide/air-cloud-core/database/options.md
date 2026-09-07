@@ -24,7 +24,7 @@ Short (en-us): Common data source options including connection validation, valid
 |---|---|---|---|
 | `ConnectionValidationSQL` | `string` | 兼容旧配置的启用开关；状态检查实际调用 EF Core `CanConnectAsync`，不再执行该 SQL。 | `string.Empty` |
 | `ConnectionValidationIntervalMillis` | `int` | 连接验证间隔时间（毫秒）。 | `60000`（1 分钟） |
-| `ConnectionStrings` | `IDictionary<string, string>` | 数据库连接字符串集合，键为名称，值为连接串。 | `null` |
+| `ConnectionStrings` | `IDictionary<string, string>` | Air.Cloud 正式命名连接字符串集合，配置路径为 `DataSourceSettings:ConnectionStrings`；键为名称，值为原始连接串。 | 空字典 |
 
 ---
 
@@ -71,6 +71,7 @@ bool enabled = options.EnableDatabaseStatusCheck(); // ConnectionValidationSQL �
 ### 备注（Notes）
 
 - 若需要关闭健康检查，将 `ConnectionValidationSQL` 置空即可；该属性仅保留用于兼容现有配置，不会被当作 SQL 执行。
+- 连接字符串的新配置入口统一为 `DataSourceSettings:ConnectionStrings`。官方根节点 `ConnectionStrings` 和完整配置路径仅用于兼容历史项目。
 - 建议为不同用途（读写分离、报表、批处理）使用不同的命名连接串，便于按需获取与管理。
 
 ---

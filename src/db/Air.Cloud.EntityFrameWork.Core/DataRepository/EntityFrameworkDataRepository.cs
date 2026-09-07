@@ -40,7 +40,8 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
         /// <inheritdoc />
         public async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
-            await repository.InsertNowAsync(entity, cancellationToken: cancellationToken);
+            await repository.InsertAsync(entity, cancellationToken: cancellationToken);
+            await repository.Context.SaveChangesAsync(cancellationToken);
         }
 
         /// <inheritdoc />
@@ -65,7 +66,7 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
         /// <inheritdoc />
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            return repository.SaveNowAsync(cancellationToken);
+            return repository.Context.SaveChangesAsync(cancellationToken);
         }
     }
 }

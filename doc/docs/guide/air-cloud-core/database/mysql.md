@@ -30,7 +30,7 @@ using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 services.AddDb<DefaultDbContext>(connectionMetadata: "default");
 ```
 
-`MySQLDatabaseConfigure` 使用 `ServerVersion.AutoDetect(connectionMetadata)` 自动识别 MySQL 版本，并使用 `Db.MigrationAssemblyName` 作为迁移程序集。
+`MySQLDatabaseConfigure` 使用解析后的原始连接字符串调用 `ServerVersion.AutoDetect` 自动识别 MySQL 版本，并使用 `Db.MigrationAssemblyName` 作为迁移程序集。
 
 ## 注意事项
 

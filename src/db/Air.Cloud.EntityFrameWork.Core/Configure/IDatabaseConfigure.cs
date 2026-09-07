@@ -30,8 +30,8 @@ namespace Air.Cloud.EntityFrameWork.Core.Configure
         ///  <para>en-us:Database context options builder</para>
         /// </param>
         /// <param name="connectionMetadata">
-        ///  <para>zh-cn:连接元数据</para>
-        ///  <para>en-us:Connection metadata</para>
+        ///  <para>zh-cn:由 Core 解析后的原始连接字符串；Provider 不负责读取配置或判断连接元数据类型。</para>
+        ///  <para>en-us:The raw connection string resolved by Core; the Provider does not read configuration or infer metadata types.</para>
         /// </param>
         /// <returns>
         ///  <para>zh-cn:配置后的数据库上下文选项构建器</para>

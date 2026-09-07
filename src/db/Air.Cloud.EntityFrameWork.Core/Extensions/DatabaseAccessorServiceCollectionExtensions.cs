@@ -13,12 +13,14 @@
 using Air.Cloud.Core.Standard.DataBase.Locators;
 using Air.Cloud.Core.Standard.DataRepository;
 using Air.Cloud.Core.Standard.DynamicServer;
+using Air.Cloud.EntityFrameWork.Core.Configure;
 using Air.Cloud.EntityFrameWork.Core.ContextPools;
 using Air.Cloud.EntityFrameWork.Core.Contexts.Dynamic;
 using Air.Cloud.EntityFrameWork.Core.Contexts.Enums;
 using Air.Cloud.EntityFrameWork.Core.DataRepository;
 using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 using Air.Cloud.EntityFrameWork.Core.Internal;
+using Air.Cloud.EntityFrameWork.Core.Options;
 using Air.Cloud.EntityFrameWork.Core.Repositories;
 using Air.Cloud.EntityFrameWork.Core.Repositories.Implantations;
 using Air.Cloud.EntityFrameWork.Core.UnitOfWork;
@@ -35,14 +37,23 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
     public static class DatabaseAccessorServiceCollectionExtensions
     {
         /// <summary>
-        /// 添加数据库上下文
+        /// <para>zh-cn:添加数据库访问基础设施，并注册 DataSourceSettings 的统一选项绑定。</para>
+        /// <para>en-us:Adds the database access infrastructure and registers the unified DataSourceSettings options binding.</para>
         /// </summary>
         /// <param name="services">服务集合</param>
         /// <param name="configure">配置</param>
         /// <param name="migrationAssemblyName">迁移类库名称</param>
-        /// <returns>服务集合</returns>
+        /// <returns>
+        /// <para>zh-cn:已注册数据库访问服务的服务集合。</para>
+        /// <para>en-us:The service collection with database access services registered.</para>
+        /// </returns>
         public static IServiceCollection AddDatabaseAccessor(this IServiceCollection services, Action<IServiceCollection> configure = null, string migrationAssemblyName = default)
         {
+            // Core owns the canonical DataSourceSettings binding. Providers consume the resulting raw string.
+            services.AddOptions<DataSourceOptions>()
+                .BindConfiguration("DataSourceSettings")
+                .ValidateDataAnnotations();
+
             // 设置迁移类库名称
             if (!string.IsNullOrWhiteSpace(migrationAssemblyName)) Db.MigrationAssemblyName = migrationAssemblyName;
 
@@ -51,6 +62,17 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
 
             // 注册数据库上下文池
             services.TryAddScoped<IDbContextPool, DbContextPool>();
+
+            // 对外公开同一作用域内的本地事务管理器；默认实现与上下文池使用同一个实例。
+            services.TryAddScoped<ILocalTransactionManager>(provider =>
+            {
+                var pool = provider.GetRequiredService<IDbContextPool>();
+                return pool as ILocalTransactionManager
+                    ?? new LocalTransactionManagerAdapter(pool);
+            });
+
+            // 注册全局数据库 Provider 配置器解析器。Provider 包会在自身 Startup 中登记实现。
+            services.TryAddSingleton<IDatabaseConfigureResolver, DatabaseConfigureResolver>();
 
             // 注册多数据库上下文仓储
             services.TryAddScoped(typeof(IRepository<,>), typeof(EFCoreRepository<,>));
@@ -91,9 +113,6 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
             // 注册全局工作单元过滤器
             services.AddUnitOfWork<EFCoreUnitOfWork>();
 
-            // 注册自动 SaveChanges
-            //services.AddMvcFilter<AutoSaveChangesFilter>();
-
             return services;
         }
 
@@ -119,7 +138,15 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
             where TDbContextLocator : class, IDbContextLocator
         {
             // 存储数据库上下文和定位器关系
-            Penetrates.DbContextDescriptors.AddOrUpdate(typeof(TDbContextLocator), typeof(TDbContext), (key, value) => typeof(TDbContext));
+            var locatorType = typeof(TDbContextLocator);
+            var contextType = typeof(TDbContext);
+            if (Penetrates.DbContextDescriptors.TryGetValue(locatorType, out var registeredContextType)
+                && registeredContextType != contextType)
+            {
+                throw new InvalidOperationException($"Database locator `{locatorType.FullName}` is already bound to `{registeredContextType.FullName}` and cannot be rebound to `{contextType.FullName}`.");
+            }
+
+            Penetrates.DbContextDescriptors.TryAdd(locatorType, contextType);
 
             // 注册数据库上下文
             services.TryAddScoped<TDbContext>();

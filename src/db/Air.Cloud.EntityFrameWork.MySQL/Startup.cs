@@ -13,6 +13,7 @@ using Air.Cloud.Core.App;
 using Air.Cloud.Core.App.Startups;
 using Air.Cloud.EntityFrameWork.Core.BackgroundServices;
 using Air.Cloud.EntityFrameWork.Core.Configure;
+using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 using Air.Cloud.EntityFrameWork.Core.Options;
 using Air.Cloud.EntityFrameWork.MySQL.Configure;
 
@@ -61,7 +62,7 @@ namespace Air.Cloud.EntityFrameWork.MySQL
                .ValidateDataAnnotations()
                .PostConfigure(options =>
                { });
-            services.AddSingleton<IDatabaseConfigure, MySQLDatabaseConfigure>();
+            services.AddDatabaseConfigure<MySQLDatabaseConfigure, MySQLDataBaseProvider>();
             var Options = AppCore.GetOptions<DataSourceOptions>();
             if (Options.EnableDatabaseStatusCheck())
                 services.AddHostedService<DatabaseStatusCheckBackgroundService>();

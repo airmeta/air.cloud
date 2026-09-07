@@ -26,7 +26,7 @@ namespace Air.Cloud.EntityFrameWork.Core.ContextPools;
 /// 数据库上下文池
 /// </summary>
 [IgnoreScanning]
-public class DbContextPool : IDbContextPool
+public class DbContextPool : IDbContextPool, ILocalTransactionManager
 {
     /// <summary>
     /// 线程安全的数据库上下文集合
@@ -39,9 +39,9 @@ public class DbContextPool : IDbContextPool
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
-    /// 本地事务生命周期协调器。
+    /// 按物理连接实例隔离的本地事务生命周期协调器。
     /// </summary>
-    private readonly LocalTransactionCoordinator _transactionCoordinator;
+    private readonly Dictionary<DbConnection, LocalTransactionCoordinator> _transactionCoordinators;
 
     /// <summary>
     /// 构造函数
@@ -52,13 +52,64 @@ public class DbContextPool : IDbContextPool
         _serviceProvider = serviceProvider;
 
         _dbContexts = new ConcurrentDictionary<Guid, DbContext>();
-        _transactionCoordinator = new LocalTransactionCoordinator();
+        _transactionCoordinators = new Dictionary<DbConnection, LocalTransactionCoordinator>(ReferenceEqualityComparer.Instance);
     }
 
     /// <summary>
-    /// 数据库上下文事务
+    /// 数据库上下文事务；多连接场景返回首个本地事务，仅用于兼容旧调用。
     /// </summary>
-    public IDbContextTransaction? DbContextTransaction => _transactionCoordinator.Transaction;
+    public IDbContextTransaction? DbContextTransaction => _transactionCoordinators.Values
+        .Select(u => u.Transaction)
+        .FirstOrDefault(u => u != null);
+
+    /// <summary>
+    /// <para>zh-cn:当前可观察到的首个本地事务，供公共事务管理器使用。</para>
+    /// <para>en-us:The first observable local transaction exposed to the public transaction manager.</para>
+    /// </summary>
+    public IDbContextTransaction? CurrentTransaction => DbContextTransaction;
+
+    /// <summary>
+    /// <para>zh-cn:当前是否存在活动事务组。</para>
+    /// <para>en-us:Whether an active local transaction group exists.</para>
+    /// </summary>
+    public bool IsActive => GetActiveCoordinators().Count > 0;
+
+    /// <summary>
+    /// <para>zh-cn:当前事务组的嵌套深度；多事务组必须保持同一深度，不一致时返回最大值用于诊断。</para>
+    /// <para>en-us:The current transaction-group nesting depth; multiple groups must stay aligned, and the maximum is returned for diagnostics when they are not.</para>
+    /// </summary>
+    public int Depth => GetActiveCoordinators().Select(u => u.Depth).DefaultIfEmpty(0).Max();
+
+    /// <summary>
+    /// <para>zh-cn:当前事务是否已经标记为只能回滚。</para>
+    /// <para>en-us:Whether the current transaction is marked rollback-only.</para>
+    /// </summary>
+    public bool IsRollbackOnly => _transactionCoordinators.Values.Any(u => u.IsRollbackOnly || u.IsAborted);
+
+    /// <summary>
+    /// <para>zh-cn:公共事务管理器的开始入口。</para>
+    /// <para>en-us:Begins a scope through the public transaction manager.</para>
+    /// </summary>
+    public void Begin(bool ensureTransaction = false) => BeginTransaction(ensureTransaction);
+
+    /// <summary>
+    /// <para>zh-cn:创建一个自动回滚的本地事务作用域。</para>
+    /// <para>en-us:Creates a local transaction scope that automatically rolls back when not completed.</para>
+    /// </summary>
+    public ILocalTransactionScope BeginScope(bool ensureTransaction = false, bool closeAllOnCompletion = false)
+        => new LocalTransactionScope(this, ensureTransaction, closeAllOnCompletion);
+
+    /// <summary>
+    /// <para>zh-cn:公共事务管理器的提交入口。</para>
+    /// <para>en-us:Commits a scope through the public transaction manager.</para>
+    /// </summary>
+    public void Commit(bool withCloseAll = false) => CommitTransaction(withCloseAll);
+
+    /// <summary>
+    /// <para>zh-cn:公共事务管理器的回滚入口。</para>
+    /// <para>en-us:Rolls back a scope through the public transaction manager.</para>
+    /// </summary>
+    public void Rollback(bool withCloseAll = false) => RollbackTransaction(withCloseAll);
 
     /// <summary>
     /// 获取所有数据库上下文
@@ -97,10 +148,11 @@ public class DbContextPool : IDbContextPool
             // 回滚事务
             currentTransaction.Rollback();
             // 自动回滚也必须同步清理池中的事务状态，否则下一次 BeginTransaction 可能复用已失效事务。
-            if (ReferenceEquals(DbContextTransaction?.GetDbTransaction(), currentTransaction.GetDbTransaction()))
+            var transaction = currentTransaction.GetDbTransaction();
+            if (transaction != null && TryGetCoordinator(transaction, out var coordinator))
             {
-                DetachTransactionContexts(currentTransaction.GetDbTransaction());
-                _transactionCoordinator.Abort();
+                DetachTransactionContexts(transaction);
+                coordinator.Abort();
             }
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
@@ -203,8 +255,8 @@ public class DbContextPool : IDbContextPool
     }
 
     /// <summary>
-    /// <para>zh-cn:打开或接管当前上下文池的本地事务，并将兼容上下文绑定到同一连接事务。</para>
-    /// <para>en-us:Starts or adopts the local transaction for this context pool and binds compatible contexts to the same connection transaction.</para>
+    /// <para>zh-cn:按物理连接实例打开或接管本地事务；同一连接的上下文共享事务，不同连接分别维护本地事务。</para>
+    /// <para>en-us:Starts or adopts local transactions per physical connection; contexts sharing one connection share a transaction, while different connections keep independent local transactions.</para>
     /// </summary>
     /// <param name="ensureTransaction"><para>zh-cn:池为空时是否解析默认上下文并确保事务存在。</para><para>en-us:Whether to resolve the default context and ensure a transaction when the pool is empty.</para></param>
     public void BeginTransaction(bool ensureTransaction = false)
@@ -222,52 +274,54 @@ public class DbContextPool : IDbContextPool
 
         if (transactionContexts.Count == 0) return;
 
-        // 已经开启的事务只允许在相同 Provider、相同连接实例的上下文之间共享。
-        if (DbContextTransaction != null)
-        {
-            ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
-            _transactionCoordinator.EnterScope();
-            return;
-        }
-
-        var transactionCreatedByPool = false;
-        var transactionDbContext = transactionContexts.FirstOrDefault(u => u.Database.CurrentTransaction != null);
-        if (transactionDbContext != null)
-        {
-            EnsureCompatibleConnections(transactionDbContext, transactionContexts);
-            var existingTransaction = transactionDbContext.Database.CurrentTransaction
-                ?? throw new InvalidOperationException("数据库上下文事务状态在读取期间发生变化。");
-            _transactionCoordinator.Attach(existingTransaction, ownsTransaction: false);
-        }
-        else
-        {
-            EnsureCompatibleConnections(transactionContexts[0], transactionContexts);
-            _transactionCoordinator.Attach(transactionContexts[0].Database.BeginTransaction(), ownsTransaction: true);
-            transactionCreatedByPool = true;
-        }
-
-        if (DbContextTransaction == null) return;
-
+        var groups = GroupContextsByConnection(transactionContexts);
+        var activeDepths = GetActiveCoordinators().Select(u => u.Depth).Distinct().ToArray();
+        if (activeDepths.Length > 1)
+            throw new InvalidOperationException("多个本地事务组的嵌套工作单元深度不一致，无法加入新的事务组。");
+        var targetDepth = activeDepths.Length == 0 ? 1 : activeDepths[0] + 1;
         try
         {
-            ShareTransaction(DbContextTransaction.GetDbTransaction(), transactionContexts);
+            foreach (var group in groups)
+            {
+                var coordinator = GetOrCreateCoordinator(group.Connection);
+                if (coordinator.IsAborted)
+                    throw new InvalidOperationException("当前本地事务已因保存失败而中止，不能在同一工作单元中重新开启事务。");
+                var transactionContext = group.Contexts.FirstOrDefault(u => u.Database.CurrentTransaction != null);
+                if (coordinator.Transaction != null)
+                {
+                    ShareTransaction(coordinator.Transaction.GetDbTransaction(), group.Contexts);
+                    coordinator.EnterScope();
+                    continue;
+                }
+
+                if (transactionContext != null)
+                {
+                    var existingTransaction = transactionContext.Database.CurrentTransaction
+                        ?? throw new InvalidOperationException("数据库上下文事务状态在读取期间发生变化。");
+                    coordinator.Attach(existingTransaction, ownsTransaction: false);
+                    coordinator.AlignScopeDepth(targetDepth);
+                }
+                else
+                {
+                    coordinator.Attach(group.Contexts[0].Database.BeginTransaction(), ownsTransaction: true);
+                    coordinator.AlignScopeDepth(targetDepth);
+                }
+
+                var transaction = coordinator.Transaction?.GetDbTransaction()
+                    ?? throw new InvalidOperationException("数据库上下文未能建立本地事务。");
+                ShareTransaction(transaction, group.Contexts);
+            }
         }
         catch
         {
-            DetachTransactionContexts(DbContextTransaction.GetDbTransaction());
-            if (transactionCreatedByPool)
+            // 加入新事务组失败时，当前工作单元中的已有事务也不能继续悬挂；全部回滚并清理。
+            foreach (var coordinator in GetActiveCoordinators())
             {
-                try
-                {
-                    DbContextTransaction.Rollback();
-                }
-                catch
-                {
-                    // 保留绑定失败异常，清理动作本身不应覆盖根因。
-                }
+                var transaction = coordinator.Transaction?.GetDbTransaction();
+                TryRollback(coordinator.Transaction);
+                DetachTransactionContexts(transaction);
             }
-
-            _transactionCoordinator.Clear();
+            ClearTransactionCoordinators();
 
             throw;
         }
@@ -283,50 +337,60 @@ public class DbContextPool : IDbContextPool
     }
 
     /// <summary>
-    /// <para>zh-cn:保存池中变更并提交本地事务；事务提交成功后才接受实体状态。</para>
-    /// <para>en-us:Saves pending changes and commits the local transaction; entity states are accepted only after the commit succeeds.</para>
+    /// <para>zh-cn:保存池中变更并按事务组顺序提交本地事务；每个事务提交成功后才接受对应实体状态。多个连接组之间不提供原子性。</para>
+    /// <para>en-us:Saves pending changes and commits local transactions in group order; entity states are accepted only after their group commits. No atomicity is provided across connection groups.</para>
     /// </summary>
     /// <param name="withCloseAll"><para>zh-cn:是否自动关闭所有连接。</para><para>en-us:Whether to close all connections after completion.</para></param>
     public void CommitTransaction(bool withCloseAll = false)
     {
-        var transaction = DbContextTransaction;
-        var committed = false;
-        var nestedScopeCompleted = false;
+        var coordinators = GetActiveCoordinators();
+        var committed = new HashSet<DbTransaction>(ReferenceEqualityComparer.Instance);
+        var shouldClear = false;
         try
         {
             var hasChangesCount = 0;
-            // 如果事务为空，则执行完毕后关闭连接
-            if (transaction == null)
-            {
-                if (_transactionCoordinator.IsRollbackOnly || _transactionCoordinator.IsAborted)
-                    throw new InvalidOperationException("当前本地事务已经回滚，不能在外层工作单元中继续提交。");
+            if (coordinators.Count == 0 && _transactionCoordinators.Values.Any(u => u.IsRollbackOnly || u.IsAborted))
+                throw new InvalidOperationException("当前本地事务已经回滚，不能在外层工作单元中继续提交。");
 
+            // 如果事务为空，则执行完毕后关闭连接
+            if (coordinators.Count == 0)
+            {
                 // 没有显式事务时保持 AutoSaveChanges 的历史语义。
                 hasChangesCount = SavePoolNow();
                 if (withCloseAll) CloseAll();
                 return;
             }
 
-            if (_transactionCoordinator.IsRollbackOnly || _transactionCoordinator.IsAborted)
+            if (coordinators.Any(u => u.IsRollbackOnly || u.IsAborted))
             {
-                TryRollback(transaction);
+                foreach (var coordinator in coordinators) TryRollback(coordinator.Transaction);
                 throw new InvalidOperationException("当前本地事务已标记为回滚，外层工作单元不能提交。");
             }
 
+            // 所有事务组必须处于同一嵌套层级，避免一组提前提交而另一组仍在内层。
+            var depths = coordinators.Select(u => u.Depth).Distinct().ToArray();
+            if (depths.Length != 1)
+                throw new InvalidOperationException("多个本地事务组的嵌套工作单元深度不一致，无法安全提交。");
+
             // 嵌套工作单元只完成自身层级，真正的保存和提交延迟到最外层。
-            if (!_transactionCoordinator.CompleteScope())
+            if (!coordinators.All(u => u.CompleteScope()))
             {
-                nestedScopeCompleted = true;
                 return;
             }
+            shouldClear = true;
 
-            // 事务内延迟 AcceptAllChanges，避免后续上下文保存失败后内存状态与数据库回滚结果不一致。
-            var pendingContexts = GetPendingDbContexts();
-            hasChangesCount = SavePoolForTransaction(pendingContexts);
-            // 提交共享事务
-            transaction.Commit();
-            committed = true;
-            foreach (var item in pendingContexts) item.Value.ChangeTracker.AcceptAllChanges();
+            // 每个物理连接组独立保存并提交；跨组不提供原子性，应由业务使用 Outbox/补偿保证最终一致。
+            foreach (var coordinator in coordinators)
+            {
+                var transaction = coordinator.Transaction?.GetDbTransaction()
+                    ?? throw new InvalidOperationException("本地事务状态在提交期间丢失。");
+                var pendingContexts = GetPendingDbContexts(transaction.Connection);
+                hasChangesCount += SavePoolForTransaction(pendingContexts, coordinator);
+                coordinator.Transaction!.Commit();
+                committed.Add(transaction);
+                foreach (var item in pendingContexts) item.Value.ChangeTracker.AcceptAllChanges();
+            }
+
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
@@ -339,14 +403,19 @@ public class DbContextPool : IDbContextPool
         }
         catch
         {
-            // 只有数据库提交尚未完成时才尝试回滚；提交后的实体状态异常不能伪装成数据库回滚。
-            if (!committed) TryRollback(transaction);
+            shouldClear = true;
+            // 已提交的组无法再回滚；其余组仍尝试回滚，并将部分提交事实留给上层补偿。
+            foreach (var coordinator in coordinators)
+            {
+                var transaction = coordinator.Transaction?.GetDbTransaction();
+                if (transaction != null && !committed.Contains(transaction)) TryRollback(coordinator.Transaction);
+            }
             // 打印数据库关闭信息
             AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
             {
                 Title = "数据库事务状态更新",
                 Level = AppPrintLevel.Error,
-                Content = committed ? "数据库已提交，但实体状态接受失败" : "已触发事务回滚",
+                Content = committed.Count > 0 ? "部分本地事务已提交，其余事务已回滚或提交失败" : "已触发事务回滚",
                 State = true,
                 Type = AppPrintConstType.ORM_EXEC_TYPE
             }), Db.TraceLogTags);
@@ -354,10 +423,14 @@ public class DbContextPool : IDbContextPool
         }
         finally
         {
-            if (!nestedScopeCompleted)
+            if (shouldClear)
             {
-                DetachTransactionContexts(transaction?.GetDbTransaction());
-                _transactionCoordinator.Clear();
+                foreach (var coordinator in coordinators)
+                {
+                    var transaction = coordinator.Transaction?.GetDbTransaction();
+                    DetachTransactionContexts(transaction);
+                }
+                ClearTransactionCoordinators();
             }
         }
         // 关闭所有连接
@@ -371,25 +444,32 @@ public class DbContextPool : IDbContextPool
     /// <param name="withCloseAll"><para>zh-cn:是否自动关闭所有连接。</para><para>en-us:Whether to close all connections after rollback.</para></param>
     public void RollbackTransaction(bool withCloseAll = false)
     {
-        var transaction = DbContextTransaction;
+        var coordinators = GetActiveCoordinators();
 
         // EF Core 本地事务没有跨上下文嵌套事务；内层回滚标记整个工作单元，交由最外层实际回滚。
-        if (transaction != null && _transactionCoordinator.Depth > 1)
+        if (coordinators.Count > 0 && coordinators.All(u => u.Depth > 1))
         {
-            _transactionCoordinator.MarkRollbackOnly();
-            _transactionCoordinator.CompleteScope();
+            foreach (var coordinator in coordinators)
+            {
+                coordinator.MarkRollbackOnly();
+                coordinator.CompleteScope();
+            }
             return;
         }
 
         try
         {
-            // 回滚事务
-            if (transaction?.GetDbTransaction()?.Connection != null) transaction.Rollback();
+            foreach (var coordinator in coordinators)
+            {
+                // 回滚事务
+                if (coordinator.Transaction?.GetDbTransaction()?.Connection != null) coordinator.Transaction.Rollback();
+            }
         }
         finally
         {
-            DetachTransactionContexts(transaction?.GetDbTransaction());
-            _transactionCoordinator.Clear();
+            foreach (var coordinator in coordinators)
+                DetachTransactionContexts(coordinator.Transaction?.GetDbTransaction());
+            ClearTransactionCoordinators();
         }
         // 打印数据库关闭信息
         AppRealization.TraceLog.Write(AppRealization.JSON.Serialize(new AppPrintInformation
@@ -472,20 +552,22 @@ public class DbContextPool : IDbContextPool
         }
     }
 
-    private List<KeyValuePair<Guid, DbContext>> GetPendingDbContexts()
+    private List<KeyValuePair<Guid, DbContext>> GetPendingDbContexts(DbConnection? connection = null)
     {
         return _dbContexts
-            .Where(u => u.Value != null && u.Value.ChangeTracker.HasChanges())
+            .Where(u => u.Value != null
+                && u.Value.ChangeTracker.HasChanges()
+                && (connection == null || ReferenceEquals(u.Value.Database.GetDbConnection(), connection)))
             .OrderBy(u => u.Key)
             .ToList();
     }
 
-    private int SavePoolForTransaction(IReadOnlyCollection<KeyValuePair<Guid, DbContext>> pendingContexts)
+    private int SavePoolForTransaction(IReadOnlyCollection<KeyValuePair<Guid, DbContext>> pendingContexts, LocalTransactionCoordinator coordinator)
     {
         var savedContextCount = 0;
         foreach (var item in pendingContexts)
         {
-            if (_transactionCoordinator.IsAborted)
+            if (coordinator.IsAborted)
                 throw new InvalidOperationException("当前本地事务已因保存失败而中止，不能继续保存其他上下文。");
 
             item.Value.SaveChanges(acceptAllChangesOnSuccess: false);
@@ -493,6 +575,65 @@ public class DbContextPool : IDbContextPool
         }
 
         return savedContextCount;
+    }
+
+    private LocalTransactionCoordinator GetOrCreateCoordinator(DbConnection connection)
+    {
+        if (!_transactionCoordinators.TryGetValue(connection, out var coordinator))
+        {
+            coordinator = new LocalTransactionCoordinator();
+            _transactionCoordinators.Add(connection, coordinator);
+        }
+
+        return coordinator;
+    }
+
+    private bool TryGetCoordinator(DbTransaction transaction, out LocalTransactionCoordinator coordinator)
+    {
+        if (transaction.Connection != null
+            && _transactionCoordinators.TryGetValue(transaction.Connection, out coordinator!)
+            && ReferenceEquals(coordinator.Transaction?.GetDbTransaction(), transaction))
+            return true;
+
+        coordinator = null!;
+        return false;
+    }
+
+    private List<LocalTransactionCoordinator> GetActiveCoordinators() => _transactionCoordinators.Values
+        .Where(u => u.IsActive)
+        .ToList();
+
+    private void ClearTransactionCoordinators()
+    {
+        foreach (var coordinator in _transactionCoordinators.Values) coordinator.Clear();
+        _transactionCoordinators.Clear();
+    }
+
+    private static List<TransactionContextGroup> GroupContextsByConnection(IReadOnlyCollection<DbContext> contexts)
+    {
+        var groups = new Dictionary<DbConnection, TransactionContextGroup>(ReferenceEqualityComparer.Instance);
+        foreach (var context in contexts)
+        {
+            var connection = context.Database.GetDbConnection();
+            if (!groups.TryGetValue(connection, out var group))
+            {
+                group = new TransactionContextGroup(connection);
+                groups.Add(connection, group);
+            }
+
+            group.Contexts.Add(context);
+        }
+
+        return groups.Values.ToList();
+    }
+
+    private sealed class TransactionContextGroup
+    {
+        public TransactionContextGroup(DbConnection connection) => Connection = connection;
+
+        public DbConnection Connection { get; }
+
+        public List<DbContext> Contexts { get; } = new();
     }
 
     private void DetachTransactionContexts(DbTransaction? transaction)

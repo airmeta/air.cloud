@@ -12,7 +12,7 @@
 | --- | --- |
 | `RealDbIntegration:RunReadOnlyOracleQuery` | `false` |
 | `RealDbIntegration:OracleConnectionStringName` | `OracleConnectionString` |
-| `ConnectionStrings:OracleConnectionString` | 空 |
+| `DataSourceSettings:ConnectionStrings:OracleConnectionString` | 空 |
 | `RealDbIntegration:OracleQueryUserId` | `a09cdb089b7f48498090d1f7f11c0e7b` |
 
 ## 3. 测试内容与边界

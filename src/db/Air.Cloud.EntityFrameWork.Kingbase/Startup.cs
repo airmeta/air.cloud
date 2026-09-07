@@ -15,6 +15,7 @@ using Air.Cloud.Core.App.Startups;
 using Air.Cloud.EntityFrameWork.Core.BackgroundServices;
 using Air.Cloud.EntityFrameWork.Core.Configure;
 using Air.Cloud.EntityFrameWork.Core.Options;
+using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 using Air.Cloud.EntityFrameWork.Kingbase.Configure;
 
 using Microsoft.AspNetCore.Builder;
@@ -60,7 +61,7 @@ namespace Air.Cloud.EntityFrameWork.Kingbase
                .ValidateDataAnnotations()
                .PostConfigure(options =>
                { });
-            services.AddSingleton<IDatabaseConfigure, KingbaseDatabaseConfigure>();
+            services.AddDatabaseConfigure<KingbaseDatabaseConfigure, KingbaseDataBaseProvider>();
             var Options = AppCore.GetOptions<DataSourceOptions>();
             try
             {

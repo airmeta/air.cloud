@@ -11,6 +11,7 @@
  */
 using Air.Cloud.EntityFrameWork.Core.ContextPools;
 using Air.Cloud.EntityFrameWork.Core.UnitOfWork.Attributes;
+using Air.Cloud.Core.Standard.DynamicServer;
 
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -19,10 +20,13 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Air.Cloud.EntityFrameWork.Core.Filters;
 
 /// <summary>
-/// 自动调用 SaveChanges 拦截器
+/// <para>zh-cn:仅为动态服务自动调用 SaveChanges 的 MVC 过滤器。</para>
+/// <para>en-us:MVC filter that automatically invokes SaveChanges only for dynamic services.</para>
 /// </summary>
 public  sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
 {
+    private const string AutoSaveCompletedItemKey = "Air.Cloud.EntityFrameWork.Core.AutoSaveChangesCompleted";
+
     /// <summary>
     /// 过滤器排序
     /// </summary>
@@ -34,7 +38,8 @@ public  sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
     public int Order => FilterOrder;
 
     /// <summary>
-    /// 拦截请求
+    /// <para>zh-cn:执行动态服务请求，并在成功且未显式提交时保存上下文池。</para>
+    /// <para>en-us:Executes a dynamic-service request and saves the context pool after successful execution unless manual commit is requested.</para>
     /// </summary>
     /// <param name="context">动作方法上下文</param>
     /// <param name="next">中间件委托</param>
@@ -48,6 +53,15 @@ public  sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
             return;
         }
         var method = actionDescriptor.MethodInfo;
+
+        // AutoSaveChanges 仅服务于动态服务；普通 MVC 控制器必须显式调用事务或 SaveChanges。
+        var isDynamicService = typeof(IDynamicService).IsAssignableFrom(method.DeclaringType)
+            || typeof(IDynamicService).IsAssignableFrom(actionDescriptor.ControllerTypeInfo.AsType());
+        if (!isDynamicService)
+        {
+            await next();
+            return;
+        }
 
         // 获取请求上下文
         var httpContext = context.HttpContext;
@@ -67,9 +81,13 @@ public  sealed class AutoSaveChangesFilter : IAsyncActionFilter, IOrderedFilter
         var isManualSaveChanges = method.IsDefined(typeof(ManualCommitAttribute), true);
 
         // 判断是否异常，并且没有贴 [ManualSaveChanges] 特性
-        if (resultContext.Exception == null && !isManualSaveChanges)
+        if (resultContext.Exception == null
+            && !isManualSaveChanges
+            && !httpContext.Items.ContainsKey(AutoSaveCompletedItemKey))
         {
-            httpContext.RequestServices.GetRequiredService<IDbContextPool>().SavePoolNow();
+            httpContext.RequestServices.GetService<IDbContextPool>()?.SavePoolNow();
+            // 兼容旧项目手动注册过滤器，确保同一请求只自动提交一次。
+            httpContext.Items[AutoSaveCompletedItemKey] = true;
         }
     }
 }

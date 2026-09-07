@@ -32,7 +32,10 @@ public class AppDbContextAttribute : Attribute
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="connectionMetadata">支持数据库连接字符串，配置文件的 ConnectionStrings 中的Key或配置文件的完整的配置路径，如果是内存数据库，则为数据库名称</param>
+    /// <param name="connectionMetadata">
+    /// <para>zh-cn:新配置应传入 `DataSourceSettings:ConnectionStrings` 下的连接名称；完整连接字符串和历史配置路径仅用于兼容。</para>
+    /// <para>en-us:New configuration should pass a connection name under `DataSourceSettings:ConnectionStrings`; raw connection strings and historical configuration paths are compatibility options.</para>
+    /// </param>
     /// <param name="slaveDbContextLocators"></param>
     public AppDbContextAttribute(string connectionMetadata, params Type[] slaveDbContextLocators)
     {
@@ -43,7 +46,10 @@ public class AppDbContextAttribute : Attribute
     /// <summary>
     /// 数据库连接元数据
     /// </summary>
-    /// <remarks>支持数据库连接字符串，配置文件的 ConnectionStrings 中的Key或配置文件的完整的配置路径，如果是内存数据库，则为数据库名称</remarks>
+    /// <remarks>
+    /// <para>zh-cn:连接元数据最终由 DbProvider 解析为一个原始连接字符串，不会拆解连接字符串内容。</para>
+    /// <para>en-us:DbProvider resolves the connection metadata to one raw connection string without parsing its contents.</para>
+    /// </remarks>
     public string ConnectionMetadata { get; set; } = string.Empty;
 
     /// <summary>

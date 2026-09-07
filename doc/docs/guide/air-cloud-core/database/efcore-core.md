@@ -12,7 +12,7 @@ Provider 包会引用核心包；业务项目通常还需要引用一个具体�
 
 ## 连接配置
 
-配置节点为 `DataSourceSettings`：
+数据库连接配置统一位于 `DataSourceSettings:ConnectionStrings`，最终仍以原始字符串传递给 EF Core Provider：
 
 ```json
 {
@@ -29,7 +29,7 @@ Provider 包会引用核心包；业务项目通常还需要引用一个具体�
 | --- | --- |
 | `ConnectionValidationSQL` | 兼容旧配置，仅用于决定是否启用状态检查；检查本身使用 EF Core `CanConnectAsync` |
 | `ConnectionValidationIntervalMillis` | 状态检查间隔，单位毫秒 |
-| `ConnectionStrings` | 命名连接字符串集合 |
+| `ConnectionStrings` | Air.Cloud 正式命名连接字符串集合，键为连接名称，值为原始连接字符串 |
 
 ## 注册 DbContext
 
@@ -83,5 +83,9 @@ Core 不再注册或暴露独立 SQL/ADO.NET 仓储。需要执行 EF Core 支�
 ## 注意事项
 
 - 核心包不绑定具体数据库；必须引入一个 Provider 包，或手动注册 `IDatabaseConfigure`。
-- `AddDb` / `AddDbPool` 会通过当前 `IDatabaseConfigure` 把连接元数据应用到 EF Core Provider。
+- `AddDb` / `AddDbPool` 会先由数据源配置解析器绑定 `DataSourceOptions` 并读取连接名称，再通过当前 `IDatabaseConfigure` 把原始连接字符串应用到 EF Core Provider；`DbProvider` 只负责选择上下文特性中的连接元数据。
 - 如果启用了动态模型，模型缓存键会切换到动态缓存实现。
+
+### 连接配置迁移
+
+新项目只应使用 `DataSourceSettings:ConnectionStrings:<name>`。旧版本支持官方根节点 `ConnectionStrings:<name>`、完整配置路径以及直接传入连接字符串，但这些形式仅用于迁移兼容；未解析的名称目前仍按历史行为原样透传，后续主版本将改为启动期直接报错。

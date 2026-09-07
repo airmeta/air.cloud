@@ -10,6 +10,8 @@
  * acknowledged.
  */
 using Air.Cloud.Core.Extensions;
+using Air.Cloud.EntityFrameWork.Core.Filters;
+using Air.Cloud.WebApp.Extensions;
 using Air.Cloud.WebApp.DynamicApiController.Conventions;
 using Air.Cloud.WebApp.DynamicApiController.Internal;
 using Air.Cloud.WebApp.DynamicApiController.Options;
@@ -64,6 +66,9 @@ public static class DynamicApiControllerServiceCollectionExtensions
     {
         //装配动态应用服务
         services.AddDynamicApp();
+
+        // 自动保存只绑定动态服务，普通 MVC 控制器必须显式控制提交边界。
+        services.AddMvcFilter<AutoSaveChangesFilter>();
 
         // 添加配置
         services.AddConfigurableOptions<DynamicApiControllerSettingsOptions>();

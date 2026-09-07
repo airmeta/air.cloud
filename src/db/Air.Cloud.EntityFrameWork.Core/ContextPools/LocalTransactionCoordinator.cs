@@ -82,6 +82,19 @@ internal sealed class LocalTransactionCoordinator : IDisposable
     }
 
     /// <summary>
+    /// <para>zh-cn:将新加入的本地事务组对齐到当前工作单元深度。</para>
+    /// <para>en-us:Aligns a newly joined local transaction group with the current work-unit depth.</para>
+    /// </summary>
+    /// <param name="depth"><para>zh-cn:目标深度，必须为正数。</para><para>en-us:The target depth, which must be positive.</para></param>
+    public void AlignScopeDepth(int depth)
+    {
+        if (Transaction == null) throw new InvalidOperationException("当前没有可以对齐的本地事务。");
+        if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth));
+        if (IsRollbackOnly || IsAborted) throw new InvalidOperationException("当前本地事务已经标记为回滚，不能对齐工作单元深度。");
+        Depth = depth;
+    }
+
+    /// <summary>
     /// <para>zh-cn:完成当前工作单元层级，并返回是否已经到达最外层。</para>
     /// <para>en-us:Completes the current work-unit level and returns whether the outermost level has been reached.</para>
     /// </summary>

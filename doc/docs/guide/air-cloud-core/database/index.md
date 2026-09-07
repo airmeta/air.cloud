@@ -36,7 +36,13 @@ using Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 services.AddDb<DefaultDbContext>(connectionMetadata: "default");
 ```
 
-`connectionMetadata` 可以是连接字符串、`DataSourceSettings:ConnectionStrings` 中的 key，或完整配置路径。具体解析逻辑由 `DbProvider.GetConnectionString<TDbContext>()` 处理。
+`DataSourceSettings:ConnectionStrings` 是 Air.Cloud 的正式命名连接字符串节点。`connectionMetadata` 新调用应传入该节点下的名称，例如 `default`；解析后的结果始终是一个原始连接字符串，再交给具体 EF Core Provider。官方根节点 `ConnectionStrings`、完整配置路径和直接传入连接字符串仅保留用于兼容历史调用，不应作为新配置格式。
+
+环境变量应使用配置节点的标准映射，例如：
+
+```text
+DataSourceSettings__ConnectionStrings__default=Server=...;Database=...;
+```
 
 ## Provider 选择
 

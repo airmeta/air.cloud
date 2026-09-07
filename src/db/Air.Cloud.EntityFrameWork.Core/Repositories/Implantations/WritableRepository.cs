@@ -68,43 +68,4 @@ public partial class PrivateRepository<TEntity>
         return _dbContextPool.SavePoolNowAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
-    /// <summary>
-    /// 提交更改操作
-    /// </summary>
-    /// <returns></returns>
-    public virtual int SaveNow()
-    {
-        return Context.SaveChanges();
-    }
-
-    /// <summary>
-    /// 提交更改操作
-    /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <returns></returns>
-    public virtual int SaveNow(bool acceptAllChangesOnSuccess)
-    {
-        return Context.SaveChanges(acceptAllChangesOnSuccess);
-    }
-
-    /// <summary>
-    /// 提交更改操作（异步）
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public virtual Task<int> SaveNowAsync(CancellationToken cancellationToken = default)
-    {
-        return Context.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// 提交更改操作（异步）
-    /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public virtual Task<int> SaveNowAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
-    {
-        return Context.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-    }
 }

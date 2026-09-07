@@ -47,5 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+    <ProjectReference Include="..\..\db\Air.Cloud.EntityFrameWork.Core\Air.Cloud.EntityFrameWork.Core.csproj" />
   </ItemGroup>
 </Project>

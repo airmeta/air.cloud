@@ -91,6 +91,23 @@ public sealed class LocalTransactionCoordinatorTests
         Assert.False(coordinator.IsAborted);
     }
 
+    /// <summary>
+    /// <para>zh-cn:验证在工作单元执行过程中加入的新事务组可以继承当前嵌套深度。</para>
+    /// <para>en-us:Verifies that a transaction group joined during a work unit can inherit the current nesting depth.</para>
+    /// </summary>
+    [Fact]
+    public void Align_scope_depth_should_update_new_transaction_group()
+    {
+        using var coordinator = new LocalTransactionCoordinator();
+        using var transaction = new TestTransaction();
+
+        coordinator.Attach(transaction, ownsTransaction: false);
+        coordinator.AlignScopeDepth(3);
+
+        Assert.Equal(3, coordinator.Depth);
+        Assert.Throws<ArgumentOutOfRangeException>(() => coordinator.AlignScopeDepth(0));
+    }
+
     private sealed class TestTransaction : IDbContextTransaction
     {
         public int DisposeCount { get; private set; }
