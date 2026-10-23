@@ -74,3 +74,18 @@ bld/
 /demo/airGateway/.vs/AirGateway.slnx
 /demo/airGateway/air.gateway/builds/nuget
 /tmp
+
+# Local development state and generated packages
+**/.codex-tmp/
+**/.vs/
+**/builds/nuget/
+/data/
+**/data/control-plane-auth/
+
+# Machine-specific demo settings and deployment archives
+/demo/airForge/air.cloud.airforge/appsettings.json
+/demo/airGateway/air.gateway/appsettings.json
+/fcj-auth-*.zip
+/.codex-dom-login*.html
+/codex-dom-login*.html
+/.tmp-roles-refs.txt
