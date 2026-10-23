@@ -112,6 +112,12 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
     public ReverseTunnelCertificateAuthorityOptions CertificateAuthority { get; set; } = new();
 
     /// <summary>
+    /// <para>zh-cn:Server TLS 证书的主题和 SAN 配置。该配置只用于描述可迁移的证书身份，证书生成和私钥保存仍由部署工具负责。</para>
+    /// <para>en-us:Subject and SAN configuration for the Server TLS certificate. It describes the portable certificate identity only; deployment tooling remains responsible for certificate generation and private-key storage.</para>
+    /// </summary>
+    public ReverseTunnelServerCertificateOptions ServerCertificate { get; set; } = new();
+
+    /// <summary>
     /// <para>zh-cn:Agent 首次注册或证书恢复使用的 Enrollment 配置。首次注册通过 CA 加密 GUID 和服务端 replay store 完成。</para>
     /// <para>en-us:Enrollment configuration used for initial Agent registration or certificate recovery. Initial registration uses a CA-encrypted GUID and the Server replay store.</para>
     /// </summary>
@@ -176,6 +182,8 @@ public sealed class ReverseTunnelOptions : IConfigurableOptions<ReverseTunnelOpt
         AgentAuthorizations ??= [];
         CertificateAuthority ??= new ReverseTunnelCertificateAuthorityOptions();
         CertificateAuthority.Normalize();
+        ServerCertificate ??= new ReverseTunnelServerCertificateOptions();
+        ServerCertificate.Normalize();
         Enrollment ??= new ReverseTunnelEnrollmentOptions();
         Enrollment.Normalize();
         AgentCertificate ??= new ReverseTunnelAgentCertificateOptions();

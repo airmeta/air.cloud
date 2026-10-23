@@ -21,17 +21,22 @@ using System.Collections.Concurrent;
 namespace Air.Cloud.EntityFrameWork.Core.Internal;
 
 /// <summary>
-/// 数据库提供器选项
+/// <para>zh-cn:数据库 Provider 和上下文特性解析辅助入口。</para>
+/// <para>en-us:Helper entry point for resolving database Providers and context attributes.</para>
 /// </summary>
 [IgnoreScanning]
 public static class DbProvider
 {
     /// <summary>
     /// 数据库上下文 [AppDbContext] 特性缓存
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     private static readonly ConcurrentDictionary<Type, AppDbContextAttribute> DbContextAppDbContextAttributes;
     /// <summary>
     /// 构造函数
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     static DbProvider()
     {
@@ -39,11 +44,12 @@ public static class DbProvider
     }
 
     /// <summary>
-    /// 判断是否是特定数据库
+    /// <para>zh-cn:判断 Provider 名称是否与数据库程序集名称一致。</para>
+    /// <para>en-us:Determines whether a Provider name matches a database assembly name.</para>
     /// </summary>
-    /// <param name="providerName"></param>
-    /// <param name="dbAssemblyName"></param>
-    /// <returns>bool</returns>
+    /// <param name="providerName"><para>zh-cn:要比较的 Provider 名称。</para><para>en-us:The Provider name to compare.</para></param>
+    /// <param name="dbAssemblyName"><para>zh-cn:数据库程序集名称。</para><para>en-us:The database assembly name.</para></param>
+    /// <returns><para>zh-cn:名称完全一致时返回 true。</para><para>en-us:True when the names match exactly.</para></returns>
     public static bool IsDatabaseFor(string providerName, string dbAssemblyName)
     {
         return providerName.Equals(dbAssemblyName, StringComparison.Ordinal);
@@ -57,7 +63,7 @@ public static class DbProvider
     /// <para>zh-cn:新的 AddDb 和 AddDbPool 注册流程直接使用 DataSourceOptions.GetConnectionString；此方法保留给已有业务代码。</para>
     /// <para>en-us:New AddDb and AddDbPool registrations use DataSourceOptions.GetConnectionString directly; this method remains for existing application code.</para>
     /// </remarks>
-    /// <typeparam name="TDbContext"></typeparam>
+    /// <typeparam name="TDbContext"><para>zh-cn:泛型参数类型</para><para>en-us:The database context locator type.</para></typeparam>
     /// <param name="connectionMetadata">
     /// <para>zh-cn:连接元数据。新配置应传入 <c>DataSourceSettings:ConnectionStrings</c> 下的名称；直接连接字符串、官方 <c>ConnectionStrings</c> 节点和完整配置路径仅用于兼容旧调用。</para>
     /// <para>en-us:Connection metadata. New configuration should pass a name under <c>DataSourceSettings:ConnectionStrings</c>; raw connection strings, the official <c>ConnectionStrings</c> section, and full configuration paths are supported only for legacy compatibility.</para>
@@ -89,9 +95,9 @@ public static class DbProvider
     /// <para>zh-cn:选择 DbContext 的连接元数据。该方法只处理显式参数和上下文特性，不读取配置值。</para>
     /// <para>en-us:Selects DbContext connection metadata. This method handles only the explicit argument and context attribute; it does not read configuration values.</para>
     /// </summary>
-    /// <typeparam name="TDbContext">数据库上下文类型。</typeparam>
-    /// <param name="connectionMetadata">显式连接元数据。</param>
-    /// <returns>选中的连接元数据。</returns>
+    /// <typeparam name="TDbContext"><para>zh-cn:数据库上下文类型。</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <param name="connectionMetadata"><para>zh-cn:显式连接元数据。</para><para>en-us:The connectionMetadata value.</para></param>
+    /// <returns><para>zh-cn:选中的连接元数据。</para><para>en-us:The operation result.</para></returns>
     internal static string GetConnectionMetadata<TDbContext>(string? connectionMetadata = default)
         where TDbContext : DbContext
     {
@@ -102,10 +108,11 @@ public static class DbProvider
     }
 
     /// <summary>
-    /// 获取数据库上下文 [AppDbContext] 特性
+    /// <para>zh-cn:获取数据库上下文类型上声明的 AppDbContext 配置特性，并缓存解析结果。</para>
+    /// <para>en-us:Gets and caches the AppDbContext configuration attribute declared on a database context type.</para>
     /// </summary>
-    /// <param name="dbContexType"></param>
-    /// <returns></returns>
+    /// <param name="dbContexType"><para>zh-cn:要读取特性的数据库上下文类型。</para><para>en-us:The database context type whose attribute is read.</para></param>
+    /// <returns><para>zh-cn:找到的配置特性；未声明时返回 null。</para><para>en-us:The configuration attribute, or null when none is declared.</para></returns>
     public static AppDbContextAttribute? GetAppDbContextAttribute(Type dbContexType)
     {
         if (DbContextAppDbContextAttributes.TryGetValue(dbContexType, out var cachedAttribute))

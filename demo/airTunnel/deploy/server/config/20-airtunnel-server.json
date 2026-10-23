@@ -20,6 +20,16 @@
     "Enabled": true,
     "TunnelMode": "Server",
     "EnableTunnelProxy": true,
+    "ServerCertificate": {
+      "CommonName": "192.168.100.156",
+      "SubjectAlternativeNames": [
+        "192.168.100.156",
+        "192.168.100.165",
+        "localhost",
+        "air-gateway",
+        "dev-gateway-airtunnel"
+      ]
+    },
     "SessionSelectionStrategy": "RoundRobin",
     "MaxConcurrentStreams": 512,
     "MaxRequestBodyBytes": 104857600,

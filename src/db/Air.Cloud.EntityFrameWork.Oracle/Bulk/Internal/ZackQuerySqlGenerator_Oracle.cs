@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -16,16 +16,21 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
     class ZackQuerySqlGenerator_Oracle : OracleQuerySqlGenerator, IZackQuerySqlGenerator
     {
         /// <summary>
-        /// columns of the select statement
+        /// <para>zh-cn:SELECT 语句的列投影 SQL。</para>
+        /// <para>en-us:The column projection SQL for the SELECT statement.</para>
         /// </summary>
         private List<string> _projectionSQL = new List<string>();
 
         /// <summary>
-        /// if IsForSingleTable=true, ZackQuerySqlGenerator will change the default behavior to capture PredicateSQL and so on.
-        /// if IsForSingleTable=false, ZackQuerySqlGenerator will use all the implementations of base class
+        /// <para>zh-cn:批量 EF 模式下用于控制 SQL 生成行为的标志。</para>
+        /// <para>en-us:Flag that controls SQL-generation behavior for batch EF mode.</para>
         /// </summary>
         public bool IsForBatchEF { get; set; }
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public List<string> ProjectionSQL
         {
             get
@@ -35,7 +40,8 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
         }
 
         /// <summary>
-        /// the where clause
+        /// <para>zh-cn:生成的 WHERE 条件 SQL。</para>
+        /// <para>en-us:The generated WHERE-clause SQL.</para>
         /// </summary>
         public string PredicateSQL
         {
@@ -44,6 +50,10 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
         }
 
         private ISqlGenerationHelper _sqlGenerationHelper;
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public ZackQuerySqlGenerator_Oracle(QuerySqlGeneratorDependencies dependencies, IOracleOptions _oracleOptions,
             ISqlGenerationHelper sqlGenerationHelper, IRelationalTypeMappingSource typeMappingSource)
             : base(dependencies, typeMappingSource, _oracleOptions.OracleSQLCompatibility)
@@ -53,6 +63,10 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
         }
 
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         protected override Expression VisitSelect(SelectExpression selectExpression)
         {
             if (!IsForBatchEF)
@@ -62,6 +76,10 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
             return SqlGeneratorUtils.VisitSelect(this, this._sqlGenerationHelper, selectExpression);
         }
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         protected override Expression VisitColumn(ColumnExpression columnExpression)
         {
             if (IsForBatchEF)
@@ -75,6 +93,10 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
             }
         }
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         protected override Expression VisitTable(TableExpression tableExpression)
         {
             if (IsForBatchEF)
@@ -88,22 +110,58 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal
             }
         }
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public IRelationalCommandBuilder P_Sql => this.Sql;
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public string P_AliasSeparator => this.AliasSeparator;
 
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public void P_GenerateSetOperation(SetOperationBase setOperation) => this.GenerateSetOperation(setOperation);
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public void P_GenerateTop(SelectExpression selectExpression) => this.GenerateTop(selectExpression);
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public void P_GeneratePseudoFromClause()=> this.GeneratePseudoFromClause();
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public void P_GenerateOrderings(SelectExpression selectExpression) => this.GenerateOrderings(selectExpression);
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public void P_GenerateLimitOffset(SelectExpression selectExpression) => this.GenerateLimitOffset(selectExpression);
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public DbParameter CreateParameter(string parameterName, object? parameterValue = null)=> new OracleParameter(parameterName, parameterValue);
 
+        /// <summary>
+        /// <para>zh-cn:Oracle 批量 SQL 生成成员。</para>
+        /// <para>en-us:Oracle batch SQL generation member.</para>
+        /// </summary>
         public IRelationalCommand GetCommand(SelectExpression selectExpression)
         {
             // 1. 直接调用 Visit。

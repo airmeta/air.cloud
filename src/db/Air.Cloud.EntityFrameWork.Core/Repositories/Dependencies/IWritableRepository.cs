@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,19 +16,21 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 namespace Air.Cloud.EntityFrameWork.Core.Repositories.Dependencies;
 
 /// <summary>
-/// 可写仓储接口
+/// <para>zh-cn:可写仓储接口</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
 public partial interface IWritableRepository<TEntity> : IWritableRepository<TEntity, MasterDbContextLocator>
     where TEntity : class, IPrivateEntity, new()
 {
 }
 
 /// <summary>
-/// 可写仓储接口
+/// <para>zh-cn:可写仓储接口</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+/// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The database context locator type.</para></typeparam>
 public partial interface IWritableRepository<TEntity, TDbContextLocator> : IPrivateWritableRepository<TEntity>
     , IInsertableRepository<TEntity>
     , IUpdateableRepository<TEntity>
@@ -39,9 +41,10 @@ public partial interface IWritableRepository<TEntity, TDbContextLocator> : IPriv
 }
 
 /// <summary>
-/// 可写仓储接口
+/// <para>zh-cn:可写仓储接口</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
 public partial interface IPrivateWritableRepository<TEntity>
     : IPrivateInsertableRepository<TEntity>
     , IPrivateUpdateableRepository<TEntity>
@@ -50,36 +53,41 @@ public partial interface IPrivateWritableRepository<TEntity>
     where TEntity : class, IPrivateEntity, new()
 {
     /// <summary>
-    /// 接受所有更改
+    /// <para>zh-cn:接受所有更改</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     void AcceptAllChanges();
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:保存数据库上下文池中所有已更改的数据库上下文</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <returns></returns>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     int SavePoolNow();
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:保存数据库上下文池中所有已更改的数据库上下文</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <returns></returns>
+    /// <param name="acceptAllChangesOnSuccess"><para>zh-cn:保存成功后是否接受所有更改。</para><para>en-us:Whether to accept all changes after saving.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     int SavePoolNow(bool acceptAllChangesOnSuccess);
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:保存数据库上下文池中所有已更改的数据库上下文</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="cancellationToken"><para>zh-cn:取消令牌。</para><para>en-us:The cancellation token.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     Task<int> SavePoolNowAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:保存数据库上下文池中所有已更改的数据库上下文</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="acceptAllChangesOnSuccess"><para>zh-cn:保存成功后是否接受所有更改。</para><para>en-us:Whether to accept all changes after saving.</para></param>
+    /// <param name="cancellationToken"><para>zh-cn:取消令牌。</para><para>en-us:The cancellation token.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     Task<int> SavePoolNowAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default);
 
 }

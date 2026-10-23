@@ -1,0 +1,26 @@
+version: "3.3"
+
+services:
+  air-cloud-gateway:
+    image: air-cloud-gateway:latest
+    container_name: air-cloud-gateway
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      TZ: Asia/Shanghai
+    ports:
+      - "18081:8080/tcp"
+      - "18082:8081/tcp"
+    volumes:
+      - ./runtime/appsettings.json:/app/appsettings.json:ro
+      - ./config:/app/config:ro
+      - ./plugins:/app/plugins:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - fcj
+
+networks:
+  fcj:
+    external: true

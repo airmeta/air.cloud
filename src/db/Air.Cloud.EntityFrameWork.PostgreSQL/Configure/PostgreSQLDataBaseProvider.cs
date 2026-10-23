@@ -20,6 +20,6 @@ namespace Air.Cloud.EntityFrameWork.PostgreSQL.Configure;
 /// </summary>
 public sealed class PostgreSQLDataBaseProvider : IDatabaseProvider
 {
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:PostgreSQL Provider 的稳定标识。</para><para>en-us:The stable identifier of the PostgreSQL Provider.</para></summary>
     public string ProviderKey => "PostgreSQL";
 }

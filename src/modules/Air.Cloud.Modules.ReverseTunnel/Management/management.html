@@ -250,6 +250,7 @@
     function pick(object, ...keys){for(const key of keys){if(object && object[key] !== undefined && object[key] !== null)return object[key];}return null;}
     function formatNumber(value){return Number(value || 0).toLocaleString(lang()==="zh-CN" ? "zh-CN" : "en-US");}
     function formatList(value){return Array.isArray(value) ? value.join(", ") : String(value || "-");}
+    function formatDistinctList(values,fallback="-",separator=", "){const distinct=[...new Set((values||[]).filter(value=>value!==undefined&&value!==null&&String(value).trim()!=="").map(value=>String(value)))];return distinct.length?distinct.join(separator):fallback;}
     function headers(contentType){const result={};if(adminToken)result["X-AirTunnel-Admin-Token"]=adminToken;if(controlPlaneTicket)result["X-Air-ControlPlane-Ticket"]=controlPlaneTicket;if(contentType)result["Content-Type"]=contentType;return result;}
     function apiUrl(path){const params=[];if(controlPlaneTicket)params.push("airControlPlaneTicket="+encodeURIComponent(controlPlaneTicket));return prefix+path+(params.length ? (path.includes("?") ? "&" : "?")+params.join("&") : "");}
     async function api(path,options){const request=options||{};const response=await fetch(apiUrl(path),Object.assign({},request,{headers:Object.assign(headers(request.body ? "application/json" : ""),request.headers||{})}));if(response.status===401){lock(text("unauthorized"));throw new Error("unauthorized");}if(!response.ok)throw new Error(await response.text());return response;}
@@ -439,9 +440,9 @@
         const expected=desired.find(item=>String(item.agentId||item.AgentId).toLowerCase()===String(agentId).toLowerCase())||{};
         const online=sessions.filter(item=>String(item.agentId||item.AgentId).toLowerCase()===String(agentId).toLowerCase());
         const keys=[...new Set(online.flatMap(item=>item.serviceKeys||item.ServiceKeys||[]))];
-        const versions=online.map(item=>pick(item,"configurationVersion","ConfigurationVersion")||"-").join(", ")||"-";
-        const status=online.map(item=>pick(item,"configurationDeliveryStatus","ConfigurationDeliveryStatus")||"not_started").join(", ")||"queued";
-        const failure=online.map(item=>pick(item,"configurationDeliveryFailureReason","ConfigurationDeliveryFailureReason")).filter(Boolean).join("; ");
+        const versions=formatDistinctList(online.map(item=>pick(item,"configurationVersion","ConfigurationVersion")));
+        const status=formatDistinctList(online.map(item=>pick(item,"configurationDeliveryStatus","ConfigurationDeliveryStatus")),"queued");
+        const failure=formatDistinctList(online.map(item=>pick(item,"configurationDeliveryFailureReason","ConfigurationDeliveryFailureReason")),"","; ");
         return "<tr><td>"+(index+1)+"</td><td><strong>"+escapeHtml(agentId)+"</strong></td><td><span class=\"pill "+(online.length?"ok":"")+"\">"+
           escapeHtml(online.length?text("online"):text("offline"))+"</span></td><td>"+escapeHtml(keys.join(", ")||"-")+"</td><td>"+
           escapeHtml(String(pick(expected,"desiredVersion","DesiredVersion")||"-"))+"</td><td>"+escapeHtml(versions)+"</td><td class=\""+

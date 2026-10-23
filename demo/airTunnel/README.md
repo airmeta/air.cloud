@@ -22,6 +22,10 @@ dotnet run --project .\air.cloud.airtunnel\air.cloud.airtunnel.csproj -- --urls 
 - `air.cloud.airtunnel/appsettings.Agent.example.json`：Agent 侧示例。
 - `air.cloud.airtunnel/appsettings.Full.example.json`：Gateway 与 Server 同进程的本地验证示例；Agent 连接端需使用独立的 Agent 配置。
 
+Windows Agent 分发包使用 `scripts/Package-AirTunnelWindowsAgent.ps1`。把 Server 管理端导出的 Agent ZIP 放入脚本同级的 `certificates`，把 `win-x64` 自包含发布结果放入 `publish-input/win-x64`，运行脚本后依次输入使用人和版本号，再从按时间倒排的证书包列表中选择一个。每次运行都会在 `publishs` 下生成带使用人、版本、AgentId 和时间戳的新运行包；脚本会把导出配置包装到宿主读取的 `ReverseTunnelSettings` 配置节中。若脚本同级或发布输入目录存在 `nssm.exe`，运行包还会生成 NSSM 安装、卸载脚本，安装和卸载都需要管理员 PowerShell。
+
+Server TLS 证书的 `CommonName` 和 `SubjectAlternativeNames` 位于 `ReverseTunnelSettings.ServerCertificate`。迁移 Server 时修改这里的地址，然后使用 `scripts/Generate-AirTunnelServerCertificate.ps1` 按现有 CA 重新生成证书，再重启 Server；这样不需要手工编辑 OpenSSL 扩展文件。
+
 ## 与 Gateway 内嵌模式的关系
 
 `Air.Cloud.Modules.ReverseTunnel` 仍然可以作为类库被现有 Gateway 或其它 HTTP Web 应用引用。该模式适合把 AirTunnel Server endpoint 或 Ocelot handler 直接挂在已有 Web 应用内。

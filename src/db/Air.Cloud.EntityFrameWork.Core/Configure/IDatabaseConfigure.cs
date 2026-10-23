@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public

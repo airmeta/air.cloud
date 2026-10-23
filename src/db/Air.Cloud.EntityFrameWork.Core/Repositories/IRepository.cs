@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -24,69 +24,77 @@ using System.Linq.Expressions;
 namespace Air.Cloud.EntityFrameWork.Core.Repositories;
 
 /// <summary>
-/// 非泛型仓储
+/// <para>zh-cn:非泛型仓储</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
 public partial interface IRepository
 {
     /// <summary>
-    /// 切换仓储
+    /// <para>zh-cn:切换仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     IRepository<TEntity> Change<TEntity>()
         where TEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 切换多数据库上下文仓储
+    /// <para>zh-cn:切换多数据库上下文仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The database context locator type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     IRepository<TEntity, TDbContextLocator> Change<TEntity, TDbContextLocator>()
         where TEntity : class, IPrivateEntity, new()
         where TDbContextLocator : class, IDbContextLocator;
 
     /// <summary>
-    /// 重新构建并切换仓储
+    /// <para>zh-cn:重新构建并切换仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     /// <remarks>特别注意，Scoped 必须手动释放</remarks>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     (IRepository<TEntity> Repository, IServiceScope Scoped) BuildChange<TEntity>()
         where TEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 重新构建并切换多数据库上下文仓储
+    /// <para>zh-cn:重新构建并切换多数据库上下文仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     /// <remarks>特别注意，Scoped 必须手动释放</remarks>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The database context locator type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     (IRepository<TEntity, TDbContextLocator> Repository, IServiceScope Scoped) BuildChange<TEntity, TDbContextLocator>()
         where TEntity : class, IPrivateEntity, new()
         where TDbContextLocator : class, IDbContextLocator;
 
     /// <summary>
-    /// 解析服务
+    /// <para>zh-cn:解析服务</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TService"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TService"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     TService GetService<TService>()
         where TService : notnull;
 
     /// <summary>
-    /// 解析服务
+    /// <para>zh-cn:解析服务</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TService"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TService"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     TService GetRequiredService<TService>()
         where TService : notnull;
 }
 
 /// <summary>
-/// 仓储接口
+/// <para>zh-cn:仓储接口</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
 public partial interface IRepository<TEntity> : IRepository<TEntity, MasterDbContextLocator>
     , IWritableRepository<TEntity>
     , IReadableRepository<TEntity>
@@ -95,10 +103,11 @@ public partial interface IRepository<TEntity> : IRepository<TEntity, MasterDbCon
 }
 
 /// <summary>
-/// 多数据库上下文仓储
+/// <para>zh-cn:多数据库上下文仓储</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+/// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The database context locator type.</para></typeparam>
 public partial interface IRepository<TEntity, TDbContextLocator> : IPrivateRepository<TEntity>
     , IWritableRepository<TEntity, TDbContextLocator>
     , IReadableRepository<TEntity, TDbContextLocator>
@@ -108,9 +117,10 @@ public partial interface IRepository<TEntity, TDbContextLocator> : IPrivateRepos
 }
 
 /// <summary>
-/// 私有公共实体
+/// <para>zh-cn:私有公共实体</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity"></typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:泛型参数类型</para><para>en-us:The entity type.</para></typeparam>
 public interface IPrivateRepository<TEntity>
     : IPrivateWritableRepository<TEntity>
     , IPrivateReadableRepository<TEntity>
@@ -143,292 +153,335 @@ public interface IPrivateRepository<TEntity>
         where TRestrainRepository : class, IPrivateRootRepository;
 
     /// <summary>
-    /// 实体集合
+    /// <para>zh-cn:实体集合</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     DbSet<TEntity> Entities { get; }
 
     /// <summary>
-    /// 不跟踪的（脱轨）实体
+    /// <para>zh-cn:不跟踪的（脱轨）实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     IQueryable<TEntity> DetachedEntities { get; }
 
     /// <summary>
-    /// 查看实体类型
+    /// <para>zh-cn:查看实体类型</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     IEntityType EntityType { get; }
 
     /// <summary>
-    /// 实体追综器
+    /// <para>zh-cn:实体追综器</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     ChangeTracker ChangeTracker { get; }
 
     /// <summary>
-    /// 实体模型
+    /// <para>zh-cn:实体模型</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     IModel Model { get; }
     /// <summary>
-    /// 数据库提供器名
+    /// <para>zh-cn:数据库提供器名</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     string ProviderName { get; }
 
     /// <summary>
-    /// 服务提供器
+    /// <para>zh-cn:服务提供器</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     IServiceProvider ServiceProvider { get; }
 
     /// <summary>
-    /// 租户Id
+    /// <para>zh-cn:租户Id</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     Guid? TenantId { get; }
 
     /// <summary>
-    /// 判断上下文是否更改
+    /// <para>zh-cn:判断上下文是否更改</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <returns>bool</returns>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     bool HasChanges();
 
     /// <summary>
-    /// 将实体加入数据上下文托管
+    /// <para>zh-cn:将实体加入数据上下文托管</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>EntityEntry</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:EntityEntry</para><para>en-us:The operation result.</para></returns>
     EntityEntry Entry(object entity);
 
     /// <summary>
-    /// 将实体加入数据上下文托管
+    /// <para>zh-cn:将实体加入数据上下文托管</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns></returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     EntityEntry<TEntity> Entry(TEntity entity);
 
     /// <summary>
-    /// 获取实体状态
+    /// <para>zh-cn:获取实体状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns></returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     EntityState EntityEntryState(object entity);
 
     /// <summary>
-    /// 获取实体状态
+    /// <para>zh-cn:获取实体状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>EntityState</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:EntityState</para><para>en-us:The operation result.</para></returns>
     EntityState EntityEntryState(TEntity entity);
 
     /// <summary>
-    /// 将实体属性加入托管
+    /// <para>zh-cn:将实体属性加入托管</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="propertyName">属性名</param>
-    /// <returns>PropertyEntry</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <param name="propertyName"><para>zh-cn:属性名</para><para>en-us:The property name.</para></param>
+    /// <returns><para>zh-cn:PropertyEntry</para><para>en-us:The operation result.</para></returns>
     PropertyEntry EntityPropertyEntry(object entity, string propertyName);
 
     /// <summary>
-    /// 将实体属性加入托管
+    /// <para>zh-cn:将实体属性加入托管</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="propertyName">属性名</param>
-    /// <returns>PropertyEntry</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <param name="propertyName"><para>zh-cn:属性名</para><para>en-us:The property name.</para></param>
+    /// <returns><para>zh-cn:PropertyEntry</para><para>en-us:The operation result.</para></returns>
     PropertyEntry EntityPropertyEntry(TEntity entity, string propertyName);
 
     /// <summary>
-    /// 将实体属性加入托管
+    /// <para>zh-cn:将实体属性加入托管</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TProperty">属性类型</typeparam>
-    /// <param name="entity">实体</param>
-    /// <param name="propertyPredicate">属性表达式</param>
-    /// <returns>PropertyEntry</returns>
+    /// <typeparam name="TProperty"><para>zh-cn:属性类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <param name="propertyPredicate"><para>zh-cn:属性表达式</para><para>en-us:The property predicate.</para></param>
+    /// <returns><para>zh-cn:PropertyEntry</para><para>en-us:The operation result.</para></returns>
     PropertyEntry<TEntity, TProperty> EntityPropertyEntry<TProperty>(TEntity entity, Expression<Func<TEntity, TProperty>> propertyPredicate);
 
     /// <summary>
-    /// 改变实体状态
+    /// <para>zh-cn:改变实体状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="entityState">实体状态</param>
-    /// <returns>EntityEntry</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <param name="entityState"><para>zh-cn:实体状态</para><para>en-us:The entityState value.</para></param>
+    /// <returns><para>zh-cn:EntityEntry</para><para>en-us:The operation result.</para></returns>
     EntityEntry ChangeEntityState(object entity, EntityState entityState);
 
     /// <summary>
-    /// 改变实体状态
+    /// <para>zh-cn:改变实体状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <param name="entityState">实体状态</param>
-    /// <returns>EntityEntry{TEntity}</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <param name="entityState"><para>zh-cn:实体状态</para><para>en-us:The entityState value.</para></param>
+    /// <returns><para>zh-cn:EntityEntry{TEntity}</para><para>en-us:The operation result.</para></returns>
     EntityEntry<TEntity> ChangeEntityState(TEntity entity, EntityState entityState);
 
     /// <summary>
-    /// 改变实体状态
+    /// <para>zh-cn:改变实体状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityEntry">实体条目</param>
-    /// <param name="entityState">实体状态</param>
-    /// <returns>EntityEntry</returns>
+    /// <param name="entityEntry"><para>zh-cn:实体条目</para><para>en-us:The entity entry.</para></param>
+    /// <param name="entityState"><para>zh-cn:实体状态</para><para>en-us:The entityState value.</para></param>
+    /// <returns><para>zh-cn:EntityEntry</para><para>en-us:The operation result.</para></returns>
     EntityEntry ChangeEntityState(EntityEntry entityEntry, EntityState entityState);
 
     /// <summary>
-    /// 改变实体状态
+    /// <para>zh-cn:改变实体状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityEntry">实体条目</param>
-    /// <param name="entityState">实体状态</param>
-    /// <returns>EntityEntry{TEntity}</returns>
+    /// <param name="entityEntry"><para>zh-cn:实体条目</para><para>en-us:The entity entry.</para></param>
+    /// <param name="entityState"><para>zh-cn:实体状态</para><para>en-us:The entityState value.</para></param>
+    /// <returns><para>zh-cn:EntityEntry{TEntity}</para><para>en-us:The operation result.</para></returns>
     EntityEntry<TEntity> ChangeEntityState(EntityEntry<TEntity> entityEntry, EntityState entityState);
 
     /// <summary>
-    /// 检查实体跟踪状态
+    /// <para>zh-cn:检查实体跟踪状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="entityEntry"></param>
-    /// <param name="keyName"></param>
-    /// <returns></returns>
+    /// <param name="id"><para>zh-cn:参数值。</para><para>en-us:The id value.</para></param>
+    /// <param name="entityEntry"><para>zh-cn:参数值。</para><para>en-us:The entityEntry value.</para></param>
+    /// <param name="keyName"><para>zh-cn:参数值。</para><para>en-us:The keyName value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     bool CheckTrackState(object id, out EntityEntry entityEntry, string? keyName = default);
 
     /// <summary>
-    /// 检查实体跟踪状态
+    /// <para>zh-cn:检查实体跟踪状态</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TTrackEntity"></typeparam>
-    /// <param name="id"></param>
-    /// <param name="entityEntry"></param>
-    /// <param name="keyName"></param>
-    /// <returns></returns>
+    /// <typeparam name="TTrackEntity"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <param name="id"><para>zh-cn:参数值。</para><para>en-us:The id value.</para></param>
+    /// <param name="entityEntry"><para>zh-cn:参数值。</para><para>en-us:The entityEntry value.</para></param>
+    /// <param name="keyName"><para>zh-cn:参数值。</para><para>en-us:The keyName value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     bool CheckTrackState<TTrackEntity>(object id, out EntityEntry entityEntry, string? keyName = default)
          where TTrackEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 判断是否被附加
+    /// <para>zh-cn:判断是否被附加</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>bool</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     bool IsAttached(object entity);
 
     /// <summary>
-    /// 判断是否被附加
+    /// <para>zh-cn:判断是否被附加</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>bool</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     bool IsAttached(TEntity entity);
 
     /// <summary>
-    /// 附加实体
+    /// <para>zh-cn:附加实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>EntityEntry</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:EntityEntry</para><para>en-us:The operation result.</para></returns>
     EntityEntry Attach(object entity);
 
     /// <summary>
-    /// 附加实体
+    /// <para>zh-cn:附加实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>EntityEntry</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:EntityEntry</para><para>en-us:The operation result.</para></returns>
     EntityEntry<TEntity> Attach(TEntity entity);
 
     /// <summary>
-    /// 附加多个实体
+    /// <para>zh-cn:附加多个实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entities">多个实体</param>
+    /// <param name="entities"><para>zh-cn:多个实体</para><para>en-us:The entities.</para></param>
     void AttachRange(params object[] entities);
 
     /// <summary>
-    /// 附加多个实体
+    /// <para>zh-cn:附加多个实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entities">多个实体</param>
+    /// <param name="entities"><para>zh-cn:多个实体</para><para>en-us:The entities.</para></param>
     void AttachRange(IEnumerable<TEntity> entities);
 
     /// <summary>
-    /// 取消附加实体
+    /// <para>zh-cn:取消附加实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
     void Detach(object entity);
 
     /// <summary>
-    /// 取消附加实体
+    /// <para>zh-cn:取消附加实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
     void Detach(TEntity entity);
 
     /// <summary>
-    /// 取消附加实体
+    /// <para>zh-cn:取消附加实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityEntry">实体条目</param>
+    /// <param name="entityEntry"><para>zh-cn:实体条目</para><para>en-us:The entity entry.</para></param>
     void Detach(EntityEntry entityEntry);
 
     /// <summary>
-    /// 取消附加实体
+    /// <para>zh-cn:取消附加实体</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityEntry">实体条目</param>
+    /// <param name="entityEntry"><para>zh-cn:实体条目</para><para>en-us:The entity entry.</para></param>
     void Detach(EntityEntry<TEntity> entityEntry);
 
     /// <summary>
-    /// 获取所有数据库上下文
+    /// <para>zh-cn:获取所有数据库上下文</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <returns>ConcurrentBag{DbContext}</returns>
+    /// <returns><para>zh-cn:ConcurrentBag{DbContext}</para><para>en-us:The operation result.</para></returns>
     public ConcurrentDictionary<Guid, DbContext> GetDbContexts();
 
     /// <summary>
-    /// 判断实体是否设置了主键
+    /// <para>zh-cn:判断实体是否设置了主键</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>bool</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     bool IsKeySet(TEntity entity);
 
     /// <summary>
-    /// 删除数据库
+    /// <para>zh-cn:删除数据库</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     void EnsureDeleted();
 
     /// <summary>
-    /// 删除数据库
+    /// <para>zh-cn:删除数据库</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     Task EnsureDeletedAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 创建数据库
+    /// <para>zh-cn:创建数据库</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     void EnsureCreated();
 
     /// <summary>
-    /// 创建数据库
+    /// <para>zh-cn:创建数据库</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     Task EnsureCreatedAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 判断是否是关系型数据库
+    /// <para>zh-cn:判断是否是关系型数据库</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <returns>bool</returns>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     bool IsRelational();
 
     /// <summary>
-    /// 切换仓储
+    /// <para>zh-cn:切换仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TChangeEntity">实体类型</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TChangeEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     new IRepository<TChangeEntity> Change<TChangeEntity>()
             where TChangeEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 切换多数据库上下文仓储
+    /// <para>zh-cn:切换多数据库上下文仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TChangeEntity">实体类型</typeparam>
-    /// <typeparam name="TChangeDbContextLocator">数据库上下文定位器</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TChangeEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <typeparam name="TChangeDbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     IRepository<TChangeEntity, TChangeDbContextLocator> Change<TChangeEntity, TChangeDbContextLocator>()
         where TChangeEntity : class, IPrivateEntity, new()
         where TChangeDbContextLocator : class, IDbContextLocator;
 
     /// <summary>
-    /// 重新构建并切换仓储
+    /// <para>zh-cn:重新构建并切换仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     /// <remarks>特别注意，Scoped 必须手动释放</remarks>
-    /// <typeparam name="TChangeEntity">实体类型</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TChangeEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     (IRepository<TChangeEntity> Repository, IServiceScope Scoped) BuildChange<TChangeEntity>()
         where TChangeEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 重新构建并切换多数据库上下文仓储
+    /// <para>zh-cn:重新构建并切换多数据库上下文仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
     /// <remarks>特别注意，Scoped 必须手动释放</remarks>
-    /// <typeparam name="TChangeEntity">实体类型</typeparam>
-    /// <typeparam name="TChangeDbContextLocator">数据库上下文定位器</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TChangeEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <typeparam name="TChangeDbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     (IRepository<TChangeEntity, TChangeDbContextLocator> Repository, IServiceScope Scoped) BuildChange<TChangeEntity, TChangeDbContextLocator>()
         where TChangeEntity : class, IPrivateEntity, new()
         where TChangeDbContextLocator : class, IDbContextLocator;

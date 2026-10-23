@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -27,6 +27,8 @@ public partial class PrivateRepositoryBase
 {
     /// <summary>
     /// 服务提供器
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
@@ -76,9 +78,11 @@ public partial class PrivateRepositoryBase
 
     /// <summary>
     /// 解析服务
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TService"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TService"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual TService GetService<TService>()
         where TService : class
     {
@@ -87,9 +91,11 @@ public partial class PrivateRepositoryBase
 
     /// <summary>
     /// 解析服务
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TService"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TService"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual TService GetRequiredService<TService>()
         where TService : class
     {

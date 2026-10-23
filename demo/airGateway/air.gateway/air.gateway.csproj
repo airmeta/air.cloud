@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>Air.Gateway</PackageId>
+    <Title>Air.Gateway</Title>
+    <Authors>AC</Authors>
+    <Company>星曳数据</Company>
+    <Product>air.cloud</Product>
+    <Description>Air.Gateway provides the standalone AirGateway host, Ocelot gateway integration, and runtime gateway plugin contracts.</Description>
+    <PackageDescription>Air.Gateway provides the standalone AirGateway host, Ocelot gateway integration, and runtime gateway plugin contracts.</PackageDescription>
+    <PackageTags>Air.Cloud;Gateway;Ocelot;Plugin</PackageTags>
+    <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageOutputPath>..\..\..\builds\nuget</PackageOutputPath>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Version>10.26.9.1</Version>
+    <PackageVersion>10.26.9.1</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.26.9.1</FileVersion>
+    <InformationalVersion>10.26.09.01</InformationalVersion>
+    <PackageReleaseNotes>Initial package for the airGateway host and runtime gateway plugin contracts.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="builds\**" />
+    <Content Remove="builds\**" />
+    <EmbeddedResource Remove="builds\**" />
+    <None Remove="builds\**" />
+  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Ocelot" Version="17.0.1" />
+		<PackageReference Include="Ocelot.Cache.CacheManager" Version="17.0.1" />
+		<PackageReference Include="Ocelot.Provider.Consul" Version="17.0.1" />
+		<PackageReference Include="Ocelot.Provider.Polly" Version="17.0.1" />
+		<PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.0" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\src\core\Air.Cloud.Core\Air.Cloud.Core.csproj" />
+	  <ProjectReference Include="..\..\..\src\core\Air.Cloud.WebApp\Air.Cloud.WebApp.csproj" />
+	  <ProjectReference Include="..\..\..\src\capabilities\Air.Cloud.Capabilities.ControlPlaneAuth\Air.Cloud.Capabilities.ControlPlaneAuth.csproj" />
+	  <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.ElasticSearch\Air.Cloud.Modules.ElasticSearch.csproj" />
+	  <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Consul\Air.Cloud.Modules.Consul.csproj" />
+	  <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.RedisCache\Air.Cloud.Modules.RedisCache.csproj" />
+	  <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.SkyMirrorShield\Air.Cloud.Modules.SkyMirrorShield.csproj" />
+	  <ProjectReference Include="..\..\..\src\modules\Air.Cloud.Modules.Taxin\Air.Cloud.Modules.Taxin.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="logs\" />
+	  <EmbeddedResource Include="Manage\Assets\gateway-configuration.html" />
+	  <Content Update="config\control-plane-auth.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+</Project>

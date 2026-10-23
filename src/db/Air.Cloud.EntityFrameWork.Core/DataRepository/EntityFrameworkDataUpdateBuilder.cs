@@ -28,7 +28,10 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
     {
         private readonly List<IEntityFrameworkDataUpdateSetter> setters = new();
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:为更新配置一个常量属性值。</para><para>en-us:Configures a constant property value for the update.</para></summary>
+        /// <typeparam name="TProperty"><para>zh-cn:属性类型。</para><para>en-us:The property type.</para></typeparam>
+        /// <param name="propertyExpression"><para>zh-cn:要更新的属性表达式。</para><para>en-us:Expression selecting the property to update.</para></param>
+        /// <param name="value"><para>zh-cn:要写入的属性值。</para><para>en-us:The property value to write.</para></param>
         public IDataUpdateBuilder<TEntity> SetProperty<TProperty>(
             Expression<Func<TEntity, TProperty>> propertyExpression,
             TProperty value)
@@ -37,7 +40,10 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
             return this;
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:为更新配置基于当前实体计算的属性值。</para><para>en-us:Configures a property value computed from the current entity.</para></summary>
+        /// <typeparam name="TProperty"><para>zh-cn:属性类型。</para><para>en-us:The property type.</para></typeparam>
+        /// <param name="propertyExpression"><para>zh-cn:要更新的属性表达式。</para><para>en-us:Expression selecting the property to update.</para></param>
+        /// <param name="valueExpression"><para>zh-cn:计算新属性值的表达式。</para><para>en-us:Expression that computes the new property value.</para></param>
         public IDataUpdateBuilder<TEntity> SetProperty<TProperty>(
             Expression<Func<TEntity, TProperty>> propertyExpression,
             Expression<Func<TEntity, TProperty>> valueExpression)
@@ -78,6 +84,9 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
             private readonly TProperty? value;
             private readonly Expression<Func<TEntity, TProperty>>? valueExpression;
 
+            /// <summary><para>zh-cn:创建常量属性值更新器。</para><para>en-us:Creates an updater for a constant property value.</para></summary>
+            /// <param name="propertyExpression"><para>zh-cn:要更新的属性表达式。</para><para>en-us:Expression selecting the property to update.</para></param>
+            /// <param name="value"><para>zh-cn:要写入的属性值。</para><para>en-us:The value to write.</para></param>
             public EntityFrameworkDataUpdateSetter(
                 Expression<Func<TEntity, TProperty>> propertyExpression,
                 TProperty value)
@@ -86,6 +95,9 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
                 this.value = value;
             }
 
+            /// <summary><para>zh-cn:创建表达式属性值更新器。</para><para>en-us:Creates an updater for an expression-based property value.</para></summary>
+            /// <param name="propertyExpression"><para>zh-cn:要更新的属性表达式。</para><para>en-us:Expression selecting the property to update.</para></param>
+            /// <param name="valueExpression"><para>zh-cn:计算新值的表达式。</para><para>en-us:Expression that computes the new value.</para></param>
             public EntityFrameworkDataUpdateSetter(
                 Expression<Func<TEntity, TProperty>> propertyExpression,
                 Expression<Func<TEntity, TProperty>> valueExpression)
@@ -94,6 +106,9 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
                 this.valueExpression = valueExpression;
             }
 
+            /// <summary><para>zh-cn:将属性赋值应用到当前 EF Core 更新表达式。</para><para>en-us:Applies the property assignment to the current EF Core update expression.</para></summary>
+            /// <param name="current"><para>zh-cn:当前的更新表达式。</para><para>en-us:The current update expression.</para></param>
+            /// <returns><para>zh-cn:追加赋值后的更新表达式。</para><para>en-us:The update expression with the assignment appended.</para></returns>
             public Expression Apply(Expression current)
             {
                 var method = GetSetPropertyMethod(valueExpression != null).MakeGenericMethod(typeof(TProperty));

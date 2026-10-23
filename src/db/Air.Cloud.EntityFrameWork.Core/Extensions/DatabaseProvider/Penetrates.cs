@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,16 +20,22 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions.DatabaseProvider;
 
 /// <summary>
 /// 常量、公共方法配置类
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 internal static class Penetrates
 {
     /// <summary>
     /// 数据库上下文描述器
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal static readonly ConcurrentDictionary<Type, Type> DbContextDescriptors;
 
     /// <summary>
     /// 构造函数
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     static Penetrates()
     {
@@ -38,10 +44,12 @@ internal static class Penetrates
 
     /// <summary>
     /// 配置 SqlServer 数据库上下文
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="optionBuilder">数据库上下文选项构建器</param>
-    /// <param name="interceptors">拦截器</param>
-    /// <returns></returns>
+    /// <param name="optionBuilder"><para>zh-cn:数据库上下文选项构建器</para><para>en-us:The optionBuilder value.</para></param>
+    /// <param name="interceptors"><para>zh-cn:拦截器</para><para>en-us:The interceptors value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     internal static Action<IServiceProvider, DbContextOptionsBuilder> ConfigureDbContext(Action<IServiceProvider, DbContextOptionsBuilder> optionBuilder, params IInterceptor[] interceptors)
     {
         return (serviceProvider, options) =>
@@ -61,10 +69,12 @@ internal static class Penetrates
 
     /// <summary>
     /// 检查数据库上下文是否绑定
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="dbContextLocatorType"></param>
-    /// <param name="dbContextType"></param>
-    /// <returns></returns>
+    /// <param name="dbContextLocatorType"><para>zh-cn:参数值。</para><para>en-us:The dbContextLocatorType value.</para></param>
+    /// <param name="dbContextType"><para>zh-cn:参数值。</para><para>en-us:The dbContextType value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     internal static void CheckDbContextLocator(Type dbContextLocatorType, out Type dbContextType)
     {
         if (!DbContextDescriptors.TryGetValue(dbContextLocatorType, out var foundDbContextType)) throw new InvalidCastException($" The dbcontext locator `{dbContextLocatorType.Name}` is not bind.");
@@ -73,9 +83,11 @@ internal static class Penetrates
 
     /// <summary>
     /// 数据库数据库拦截器
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="interceptors">拦截器</param>
-    /// <param name="options"></param>
+    /// <param name="interceptors"><para>zh-cn:拦截器</para><para>en-us:The interceptors value.</para></param>
+    /// <param name="options"><para>zh-cn:参数值。</para><para>en-us:The options value.</para></param>
     private static void AddInterceptors(IInterceptor[] interceptors, DbContextOptionsBuilder options)
     {
         // 添加拦截器
@@ -90,6 +102,8 @@ internal static class Penetrates
 
     /// <summary>
     /// 获取默认拦截器
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     public static List<IInterceptor> GetDefaultInterceptors()
     {

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,7 +13,8 @@
 namespace Air.Cloud.EntityFrameWork.Core.Entities.Attributes;
 
 /// <summary>
-/// 禁止实体监听
+/// <para>zh-cn:标记不参与实体变更监听的实体类型。</para>
+/// <para>en-us:Marks an entity type that should not participate in change listening.</para>
 /// </summary>
 [IgnoreScanning, AttributeUsage(AttributeTargets.Class)]
 public sealed class SuppressChangedListenerAttribute : Attribute

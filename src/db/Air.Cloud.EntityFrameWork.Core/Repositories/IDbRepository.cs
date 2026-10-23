@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,33 +16,37 @@ using Air.Cloud.Core.Standard.DataBase.Model;
 namespace Air.Cloud.EntityFrameWork.Core.Repositories;
 
 /// <summary>
-/// 多数据库仓储
+/// <para>zh-cn:多数据库仓储</para>
+/// <para>en-us:Describes the behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TDbContextLocator"></typeparam>
+/// <typeparam name="TDbContextLocator"><para>zh-cn:泛型参数类型</para><para>en-us:The database context locator type.</para></typeparam>
 public partial interface IDbRepository<TDbContextLocator>
     where TDbContextLocator : class, IDbContextLocator
 {
     /// <summary>
-    /// 切换仓储
+    /// <para>zh-cn:切换仓储</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns>仓储</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:仓储</para><para>en-us:The operation result.</para></returns>
     IRepository<TEntity, TDbContextLocator> Change<TEntity>()
         where TEntity : class, IPrivateEntity, new();
 
     /// <summary>
-    /// 解析服务
+    /// <para>zh-cn:解析服务</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TService"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TService"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     TService GetService<TService>()
         where TService : notnull;
 
     /// <summary>
-    /// 解析服务
+    /// <para>zh-cn:解析服务</para>
+    /// <para>en-us:Describes the behavior provided by this member.</para>
     /// </summary>
-    /// <typeparam name="TService"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TService"><para>zh-cn:泛型参数类型</para><para>en-us:The generic parameter type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     TService GetRequiredService<TService>()
         where TService : notnull;
 }

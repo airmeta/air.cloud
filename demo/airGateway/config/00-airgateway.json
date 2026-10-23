@@ -1,0 +1,107 @@
+{
+  "ConsulServiceOptions": {
+    "ConsulAddress": "http://fcj-consul:8500/",
+    "ConfigurationServiceName": "FCJ.GateWay",
+    "RegistryServiceName": "air.gateway"
+  },
+  "GatewaySettings": {
+    "OcelotConfigurationSource": "Consul"
+  },
+  "WhiteListRouteRefresh": {
+    "IntervalSeconds": 30
+  },
+  "GatewayPluginSettings": {
+    "Enabled": true,
+    "PluginDirectory": "plugins",
+    "FailOnLoadError": true,
+    "Plugins": [
+      {
+        "Enabled": true,
+        "Name": "LegacyTraceLog",
+        "Assembly": "AirGatewayPlugins.LegacyTraceLog.dll",
+        "Type": "AirGatewayPlugins.LegacyTraceLog.LegacyTraceLogGatewayPlugin",
+        "Order": 10
+      },
+      {
+        "Enabled": true,
+        "Name": "LegacyUrlProxy",
+        "Assembly": "AirGatewayPlugins.LegacyUrlProxy.dll",
+        "Type": "AirGatewayPlugins.LegacyUrlProxy.LegacyUrlProxyGatewayPlugin",
+        "Order": 150
+      },
+      {
+        "Enabled": true,
+        "Name": "WhiteListRequest",
+        "Assembly": "AirGatewayPlugins.WhiteListRequest.dll",
+        "Type": "AirGatewayPlugins.WhiteListRequest.WhiteListRequestGatewayPlugin",
+        "Order": 400
+      },
+      {
+        "Enabled": true,
+        "Name": "HfAuthorizationAdapter",
+        "Assembly": "AirGatewayPlugins.HfAuthorizationAdapter.dll",
+        "Type": "AirGatewayPlugins.HfAuthorizationAdapter.HfAuthorizationAdapterGatewayPlugin",
+        "Order": 430
+      },
+      {
+        "Enabled": true,
+        "Name": "LegacyAuthorization",
+        "Assembly": "AirGatewayPlugins.LegacyAuthorization.dll",
+        "Type": "AirGatewayPlugins.LegacyAuthorization.LegacyAuthorizationGatewayPlugin",
+        "Order": 450
+      },
+      {
+        "Enabled": true,
+        "Name": "RemoteIp",
+        "Assembly": "AirGatewayPlugins.RemoteIp.dll",
+        "Type": "AirGatewayPlugins.RemoteIp.RemoteIpGatewayPlugin",
+        "Order": 500
+      },
+      {
+        "Enabled": false,
+        "Name": "LegacyInterfaceValidation",
+        "Assembly": "AirGatewayPlugins.LegacyInterfaceValidation.dll",
+        "Type": "AirGatewayPlugins.LegacyInterfaceValidation.LegacyInterfaceValidationGatewayPlugin",
+        "Order": 510
+      }
+    ]
+  },
+  "LegacyAuthorizationSettings": {
+    "Enabled": true,
+    "ValidateRequestUKey": true,
+    "LoadWhiteListRoutesFromConsul": true,
+    "Jwt": {
+      "ValidateIssuerSigningKey": true,
+      "ValidateIssuer": true,
+      "ValidIssuer": "san shi soft",
+      "ValidateAudience": true,
+      "ValidAudience": "client",
+      "ValidateLifetime": true,
+      "IsRefreshAccessToken": false,
+      "ExpiredTime": 120,
+      "RefreshTokenExpiredTime": 43200,
+      "ClockSkew": 5,
+      "IssuerSigningKey": "",
+      "SigningKeyFile": "data/legacy-authorization/jwt_keys.txt"
+    }
+  },
+  "LegacyInterfaceValidationSettings": {
+    "Enabled": false,
+    "RemoteUrl": "http://fcj-auth-service:8080/hffcj_auth_api/route/validate",
+    "TimeoutSeconds": 180,
+    "LauncherHeader": "Launcher",
+    "UniqueKeyHeader": "UNIQUEKEY"
+  },
+  "InterfaceAuthOptions": {
+    "Route": "/",
+    "AppIdKey": "APPID",
+    "AppSecretKey": "APPSECRET",
+    "TimeStampKey": "TIMESTAMP",
+    "SignKey": "Sign",
+    "UKey": "UKey",
+    "RequestLimit": 1,
+    "RouteValidateWhiteList": "",
+    "RemoteValidateRoute": "/hffcj_auth_api/route/validate",
+    "RemotePlatRoute": "/hffcj_auth_api/route/plat"
+  }
+}

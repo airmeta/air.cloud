@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Gateway/">
+    <Project Path="air.gateway/air.gateway.csproj" />
+  </Folder>
+  <Folder Name="/Gateway/Manage/" />
+  <Folder Name="/Plugins/">
+    <Project Path="air.gateway.plugins.sample/air.gateway.plugins.sample.csproj" />
+    <Project Path="air.gateway.plugins.tests/air.gateway.plugins.tests.csproj" />
+  </Folder>
+</Solution>

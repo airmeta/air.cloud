@@ -77,7 +77,14 @@ public sealed class DatabaseConfigureResolver : IDatabaseConfigureResolver
                 .ToList();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// <para>zh-cn:根据上下文定位器声明解析数据库配置器；未声明 Provider 时仅允许唯一候选。</para>
+    /// <para>en-us:Resolves the database configurator from the context locator declaration; an undeclared Provider is allowed only when one candidate exists.</para>
+    /// </summary>
+    /// <param name="dbContextType"><para>zh-cn:待配置的数据库上下文类型。</para><para>en-us:The database context type to configure.</para></param>
+    /// <param name="dbContextLocatorType"><para>zh-cn:用于选择 Provider 的上下文定位器类型。</para><para>en-us:The context locator type used to select the Provider.</para></param>
+    /// <returns><para>zh-cn:匹配的数据库配置器。</para><para>en-us:The matching database configurator.</para></returns>
+    /// <exception cref="InvalidOperationException"><para>zh-cn:Provider 未注册或多个 Provider 注册但定位器未声明 Provider 时抛出。</para><para>en-us:Thrown when the Provider is not registered or multiple Providers exist without a locator declaration.</para></exception>
     public IDatabaseConfigure Resolve(Type dbContextType, Type dbContextLocatorType)
     {
         if (dbContextType == null) throw new ArgumentNullException(nameof(dbContextType));

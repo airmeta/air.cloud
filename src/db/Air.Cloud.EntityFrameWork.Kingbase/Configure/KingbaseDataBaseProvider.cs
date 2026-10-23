@@ -20,6 +20,6 @@ namespace Air.Cloud.EntityFrameWork.Kingbase.Configure;
 /// </summary>
 public sealed class KingbaseDataBaseProvider : IDatabaseProvider
 {
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:Kingbase Provider 的稳定标识。</para><para>en-us:The stable identifier of the Kingbase Provider.</para></summary>
     public string ProviderKey => "Kingbase";
 }

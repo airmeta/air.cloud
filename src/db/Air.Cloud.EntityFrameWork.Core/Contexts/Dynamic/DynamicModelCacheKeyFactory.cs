@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -27,6 +27,8 @@ public class DynamicModelCacheKeyFactory : IModelCacheKeyFactory
 {
     /// <summary>
     /// 动态模型缓存Key
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     private static int cacheKey;
 
@@ -57,7 +59,7 @@ public class DynamicModelCacheKeyFactory : IModelCacheKeyFactory
     /// </param>
     /// <returns>
     /// <para>zh-cn:包含上下文类型和动态缓存版本的模型缓存键。</para>
-    /// <para>en-us>A model cache key containing the context type and dynamic cache version.</para>
+    /// <para>en-us:A model cache key containing the context type and dynamic cache version.</para>
     /// </returns>
     public object Create(DbContext context, bool designTime)
     {

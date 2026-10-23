@@ -1,0 +1,78 @@
+{
+  "id": {
+    "value": "security-platform"
+  },
+  "version": {
+    "value": "101-current"
+  },
+  "runtime": {
+    "profile": "Compact"
+  },
+  "endpoints": {
+    "gatewayPort": 8080,
+    "managerPort": 8081,
+    "managerInternalOnly": true
+  },
+  "mods": [
+    {
+      "id": {
+        "value": "auth"
+      },
+      "version": {
+        "value": "101-current"
+      },
+      "executionMode": "ExistingContainer",
+      "artifact": {
+        "containerName": "air.auth",
+        "endpoint": "http://air.auth:8080"
+      },
+      "health": {
+        "path": "/Health",
+        "startupTimeoutSeconds": 60
+      },
+      "route": {
+        "prefix": "/mods/auth"
+      }
+    },
+    {
+      "id": {
+        "value": "account"
+      },
+      "version": {
+        "value": "101-current"
+      },
+      "executionMode": "ExistingContainer",
+      "artifact": {
+        "containerName": "air.account",
+        "endpoint": "http://air.account:8080"
+      },
+      "health": {
+        "path": "/Health",
+        "startupTimeoutSeconds": 60
+      },
+      "route": {
+        "prefix": "/mods/account"
+      }
+    },
+    {
+      "id": {
+        "value": "system"
+      },
+      "version": {
+        "value": "101-current"
+      },
+      "executionMode": "ExistingContainer",
+      "artifact": {
+        "containerName": "air.system",
+        "endpoint": "http://air.system:8080"
+      },
+      "health": {
+        "path": "/Health",
+        "startupTimeoutSeconds": 60
+      },
+      "route": {
+        "prefix": "/mods/system"
+      }
+    }
+  ]
+}

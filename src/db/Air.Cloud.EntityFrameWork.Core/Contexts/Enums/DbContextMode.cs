@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,25 +14,22 @@ using System.ComponentModel;
 namespace Air.Cloud.EntityFrameWork.Core.Contexts.Enums;
 
 /// <summary>
-/// 数据库上下文模式
+/// <para>zh-cn:数据库上下文模型缓存策略。</para>
+/// <para>en-us:Database-context model caching strategy.</para>
 /// </summary>
 [IgnoreScanning]
 public enum DbContextMode
 {
     /// <summary>
-    /// 缓存模型数据库上下文
-    /// <para>
-    /// OnModelCreating 只会初始化一次
-    /// </para>
+    /// <para>zh-cn:缓存模型数据库上下文；OnModelCreating 通常只初始化一次。</para>
+    /// <para>en-us:Uses a cached model; OnModelCreating is normally initialized once.</para>
     /// </summary>
     [Description("缓存模型数据库上下文")]
     Cached,
 
     /// <summary>
-    /// 动态模型数据库上下文
-    /// <para>
-    /// OnModelCreating 每次都会调用
-    /// </para>
+    /// <para>zh-cn:动态模型数据库上下文；每次创建上下文时都会调用 OnModelCreating。</para>
+    /// <para>en-us:Uses a dynamic model; OnModelCreating is called whenever the context is created.</para>
     /// </summary>
     [Description("动态模型数据库上下文")]
     Dynamic

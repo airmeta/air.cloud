@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,6 +15,8 @@ namespace Air.Cloud.EntityFrameWork.Core.Interceptors;
 
 /// <summary>
 /// 数据库执行命令拦截
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 internal sealed class SqlCommandProfilerInterceptor : DbCommandInterceptor
 {

@@ -30,14 +30,17 @@ namespace Air.Cloud.EntityFrameWork.PostgreSQL
     public class Startup : AppStartup
     {
         
-        /// <inheritdoc/>
+        /// <summary><para>zh-cn:配置 PostgreSQL 模块的应用中间件。</para><para>en-us:Configures application middleware for the PostgreSQL module.</para></summary>
+        /// <param name="app"><para>zh-cn:应用构建器。</para><para>en-us:The application builder.</para></param>
+        /// <param name="env"><para>zh-cn:当前主机环境。</para><para>en-us:The current hosting environment.</para></param>
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
 
 
         }
 
-        /// <inheritdoc/>
+        /// <summary><para>zh-cn:注册 PostgreSQL 数据库配置器和状态检查服务。</para><para>en-us:Registers the PostgreSQL database configurator and status-check service.</para></summary>
+        /// <param name="services"><para>zh-cn:应用服务集合。</para><para>en-us:The application service collection.</para></param>
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions<DataSourceOptions>()

@@ -52,12 +52,12 @@ public sealed class DatabaseConfigureDescriptor : IDatabaseConfigureDescriptor
         ConfigureType = configureType;
     }
 
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:注册描述中的稳定 Provider 标识。</para><para>en-us:The stable Provider identifier in the registration descriptor.</para></summary>
     public string ProviderKey { get; }
 
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:用于标识 Provider 的实现类型；按字符串注册时为 null。</para><para>en-us:The Provider implementation type; null for string-based registrations.</para></summary>
     public Type? ProviderType { get; }
 
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:数据库配置器实现类型。</para><para>en-us:The database configurator implementation type.</para></summary>
     public Type ConfigureType { get; }
 }

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -17,54 +17,60 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 namespace Air.Cloud.EntityFrameWork.Core.Repositories.Implantations;
 
 /// <summary>
-/// 可删除仓储分部类
+/// <para>zh-cn:可删除仓储实现。</para>
+/// <para>en-us:Repository implementation for delete operations.</para>
 /// </summary>
 public partial class PrivateRepository<TEntity>
     where TEntity : class, IPrivateEntity, new()
 {
     /// <summary>
-    /// 删除一条记录
+    /// <para>zh-cn:删除一条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>代理中的实体</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:代理中的实体</para><para>en-us:The tracked entity entry.</para></returns>
     public virtual EntityEntry<TEntity> Delete(TEntity entity)
     {
         return Entities.Remove(entity);
     }
 
     /// <summary>
-    /// 删除多条记录
+    /// <para>zh-cn:删除多条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="entities">多个实体</param>
+    /// <param name="entities"><para>zh-cn:多个实体</para><para>en-us:The entities to process.</para></param>
     public virtual void Delete(params TEntity[] entities)
     {
         Entities.RemoveRange(entities);
     }
 
     /// <summary>
-    /// 删除多条记录
+    /// <para>zh-cn:删除多条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="entities">多个实体</param>
+    /// <param name="entities"><para>zh-cn:多个实体</para><para>en-us:The entities to process.</para></param>
     public virtual void Delete(IEnumerable<TEntity> entities)
     {
         Entities.RemoveRange(entities);
     }
 
     /// <summary>
-    /// 删除一条记录
+    /// <para>zh-cn:删除一条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="entity">实体</param>
-    /// <returns>代理中的实体</returns>
+    /// <param name="entity"><para>zh-cn:实体</para><para>en-us:The entity.</para></param>
+    /// <returns><para>zh-cn:代理中的实体</para><para>en-us:The tracked entity entry.</para></returns>
     public virtual Task<EntityEntry<TEntity>> DeleteAsync(TEntity entity)
     {
         return Task.FromResult(Delete(entity));
     }
 
     /// <summary>
-    /// 删除多条记录
+    /// <para>zh-cn:删除多条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="entities">多个实体</param>
-    /// <returns>Task</returns>
+    /// <param name="entities"><para>zh-cn:多个实体</para><para>en-us:The entities to process.</para></param>
+    /// <returns><para>zh-cn:Task</para><para>en-us:A task representing completion.</para></returns>
     public virtual Task DeleteAsync(params TEntity[] entities)
     {
         Delete(entities);
@@ -72,10 +78,11 @@ public partial class PrivateRepository<TEntity>
     }
 
     /// <summary>
-    /// 删除多条记录
+    /// <para>zh-cn:删除多条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="entities">多个实体</param>
-    /// <returns>Task</returns>
+    /// <param name="entities"><para>zh-cn:多个实体</para><para>en-us:The entities to process.</para></param>
+    /// <returns><para>zh-cn:Task</para><para>en-us:A task representing completion.</para></returns>
     public virtual Task DeleteAsync(IEnumerable<TEntity> entities)
     {
         Delete(entities);
@@ -83,9 +90,10 @@ public partial class PrivateRepository<TEntity>
     }
 
     /// <summary>
-    /// 根据主键删除一条记录
+    /// <para>zh-cn:根据主键删除一条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="key">主键</param>
+    /// <param name="key"><para>zh-cn:主键</para><para>en-us:The key value.</para></param>
     public virtual void Delete(object key)
     {
         var deletedEntity = BuildDeletedEntity(key);
@@ -97,11 +105,12 @@ public partial class PrivateRepository<TEntity>
     }
 
     /// <summary>
-    /// 根据主键删除一条记录
+    /// <para>zh-cn:根据主键删除一条记录</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="key">主键</param>
-    /// <param name="cancellationToken">异步取消令牌</param>
-    /// <returns>Task</returns>
+    /// <param name="key"><para>zh-cn:主键</para><para>en-us:The key value.</para></param>
+    /// <param name="cancellationToken"><para>zh-cn:异步取消令牌</para><para>en-us:The cancellation token.</para></param>
+    /// <returns><para>zh-cn:Task</para><para>en-us:A task representing completion.</para></returns>
     public virtual async Task DeleteAsync(object key, CancellationToken cancellationToken = default)
     {
         var deletedEntity = BuildDeletedEntity(key);
@@ -113,11 +122,12 @@ public partial class PrivateRepository<TEntity>
     }
 
     /// <summary>
-    /// 构建被删除的实体
+    /// <para>zh-cn:构建被删除的实体</para>
+    /// <para>en-us:Deletes a record.</para>
     /// </summary>
-    /// <param name="key">主键</param>
-    /// <param name="isRealDelete">是否真删除</param>
-    /// <returns></returns>
+    /// <param name="key"><para>zh-cn:主键</para><para>en-us:The key value.</para></param>
+    /// <param name="isRealDelete"><para>zh-cn:是否真删除</para><para>en-us:The isRealDelete value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     private TEntity BuildDeletedEntity(object key, bool isRealDelete = true)
     {
         // 读取主键

@@ -73,6 +73,7 @@ public sealed class ReverseTunnelConfigurationStoreIntegrationTests
             var firstServerJson = await File.ReadAllTextAsync(Path.Combine(initial.Management.ConfigDirectory, "airtunnel.server.json"));
             Assert.DoesNotContain("\"routes\"", firstServerJson, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("\"localServices\"", firstServerJson, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("\"serverCertificate\"", firstServerJson, StringComparison.OrdinalIgnoreCase);
             Assert.Empty(runtimeOptions.Current.Routes);
             Assert.Empty(runtimeOptions.Current.LocalServices);
 
@@ -95,6 +96,8 @@ public sealed class ReverseTunnelConfigurationStoreIntegrationTests
                     Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                 });
             Assert.Equal(1, backupOptions!.AgentConnectionCount);
+            Assert.Equal("192.168.100.156", backupOptions.ServerCertificate.CommonName);
+            Assert.Equal(["192.168.100.156", "dev-gateway-airtunnel"], backupOptions.ServerCertificate.SubjectAlternativeNames);
             Assert.Contains("agentConnectionCount", (await store.ListAuditAsync()).First().DifferenceSummary);
 
             var backupName = Path.GetFileName(secondSave.BackupDirectory);
@@ -120,6 +123,11 @@ public sealed class ReverseTunnelConfigurationStoreIntegrationTests
         {
             Enabled = false,
             AgentConnectionCount = 1,
+            ServerCertificate = new ReverseTunnelServerCertificateOptions
+            {
+                CommonName = "192.168.100.156",
+                SubjectAlternativeNames = ["192.168.100.156", "dev-gateway-airtunnel"]
+            },
             Routes = [new ReverseTunnelRouteOptions { VirtualHost = "legacy.example", ServiceKey = "legacy" }],
             LocalServices = [new ReverseTunnelLocalServiceOptions { ServiceKey = "legacy", LocalAddress = "http://127.0.0.1:5101" }],
             Management = new ReverseTunnelManagementOptions

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -23,30 +23,38 @@ using System.Reflection;
 namespace Air.Cloud.EntityFrameWork.Core.ContextPools;
 
 /// <summary>
-/// 数据库上下文池
+/// <para>zh-cn:按请求作用域管理多个 Entity Framework Core 数据库上下文及其本地事务。</para>
+/// <para>en-us:Manages multiple Entity Framework Core contexts and their local transactions within a request scope.</para>
 /// </summary>
 [IgnoreScanning]
 public class DbContextPool : IDbContextPool, ILocalTransactionManager
 {
     /// <summary>
     /// 线程安全的数据库上下文集合
+    /// <para>zh-cn:按实例标识保存当前作用域中已解析的数据库上下文。</para>
+    /// <para>en-us:Stores database contexts resolved in the current scope by instance identifier.</para>
     /// </summary>
     private readonly ConcurrentDictionary<Guid, DbContext> _dbContexts;
 
     /// <summary>
     /// 服务提供器
+    /// <para>zh-cn:用于解析上下文和相关服务的作用域服务提供器。</para>
+    /// <para>en-us:Scoped service provider used to resolve contexts and related services.</para>
     /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// 按物理连接实例隔离的本地事务生命周期协调器。
+    /// <para>zh-cn:按物理连接实例关联本地事务的生命周期协调器。</para>
+    /// <para>en-us:Coordinates local transaction lifetimes by physical connection instance.</para>
     /// </summary>
     private readonly Dictionary<DbConnection, LocalTransactionCoordinator> _transactionCoordinators;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:创建上下文池并初始化上下文集合和事务协调器。</para>
+    /// <para>en-us:Creates the context pool and initializes its context collection and transaction coordinators.</para>
     /// </summary>
-    /// <param name="serviceProvider"></param>
+    /// <param name="serviceProvider"><para>zh-cn:用于解析默认数据库上下文的服务提供器。</para><para>en-us:The service provider used to resolve the default database context.</para></param>
     public DbContextPool(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
@@ -56,7 +64,8 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 数据库上下文事务；多连接场景返回首个本地事务，仅用于兼容旧调用。
+    /// <para>zh-cn:数据库上下文事务；多连接场景返回首个本地事务，仅用于兼容旧调用。</para>
+    /// <para>en-us:The context transaction; in multi-connection scenarios, the first local transaction is returned for legacy callers only.</para>
     /// </summary>
     public IDbContextTransaction? DbContextTransaction => _transactionCoordinators.Values
         .Select(u => u.Transaction)
@@ -112,9 +121,10 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     public void Rollback(bool withCloseAll = false) => RollbackTransaction(withCloseAll);
 
     /// <summary>
-    /// 获取所有数据库上下文
+    /// <para>zh-cn:获取当前作用域中已经登记的所有数据库上下文。</para>
+    /// <para>en-us:Gets all database contexts registered in the current scope.</para>
     /// </summary>
-    /// <returns></returns>
+    /// <returns><para>zh-cn:按上下文实例标识索引的线程安全集合。</para><para>en-us:A thread-safe collection indexed by context instance identifier.</para></returns>
     public ConcurrentDictionary<Guid, DbContext> GetDbContexts()
     {
         return _dbContexts;
@@ -124,7 +134,7 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     /// <para>zh-cn:登记一个关系型数据库上下文，并在保存失败且上下文启用自动回滚时回滚当前本地事务。</para>
     /// <para>en-us:Registers a relational DbContext and rolls back the current local transaction on save failure when that context enables automatic rollback.</para>
     /// </summary>
-    /// <param name="dbContext"></param>
+    /// <param name="dbContext"><para>zh-cn:要登记到当前池中的数据库上下文。</para><para>en-us:The database context to register in the current pool.</para></param>
     public void AddToPool(DbContext dbContext)
     {
         // 跳过非关系型数据库
@@ -173,9 +183,11 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 保存数据库上下文（异步）
+    /// <para>zh-cn:异步登记数据库上下文；当前实现不执行额外异步 I/O。</para>
+    /// <para>en-us:Asynchronously registers a database context; the current implementation performs no additional asynchronous I/O.</para>
     /// </summary>
-    /// <param name="dbContext"></param>
+    /// <param name="dbContext"><para>zh-cn:要登记到当前池中的数据库上下文。</para><para>en-us:The database context to register in the current pool.</para></param>
+    /// <returns><para>zh-cn:表示登记操作完成的任务。</para><para>en-us:A task representing completion of the registration.</para></returns>
     public Task AddToPoolAsync(DbContext dbContext)
     {
         AddToPool(dbContext);
@@ -183,9 +195,10 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:顺序保存池中所有有待处理变更的数据库上下文。</para>
+    /// <para>en-us:Sequentially saves all contexts with pending changes in the pool.</para>
     /// </summary>
-    /// <returns></returns>
+    /// <returns><para>zh-cn:成功执行保存的上下文数量。</para><para>en-us:The number of contexts successfully saved.</para></returns>
     public int SavePoolNow()
     {
         // DbContext 不支持并发操作；即使池本身是线程安全集合，保存也必须串行执行。
@@ -200,10 +213,11 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:按指定策略顺序保存池中所有有待处理变更的上下文。</para>
+    /// <para>en-us:Sequentially saves all contexts with pending changes using the specified policy.</para>
     /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <returns></returns>
+    /// <param name="acceptAllChangesOnSuccess"><para>zh-cn:保存成功后是否调用 AcceptAllChanges。</para><para>en-us:Whether to call AcceptAllChanges after a successful save.</para></param>
+    /// <returns><para>zh-cn:成功执行保存的上下文数量。</para><para>en-us:The number of contexts successfully saved.</para></returns>
     public int SavePoolNow(bool acceptAllChangesOnSuccess)
     {
         // DbContext 不支持并发操作；即使池本身是线程安全集合，保存也必须串行执行。
@@ -218,10 +232,11 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文
+    /// <para>zh-cn:异步顺序保存池中所有有待处理变更的上下文。</para>
+    /// <para>en-us:Asynchronously and sequentially saves all contexts with pending changes in the pool.</para>
     /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="cancellationToken"><para>zh-cn:用于取消保存操作的令牌。</para><para>en-us:The token used to cancel the save operation.</para></param>
+    /// <returns><para>zh-cn:成功执行保存的上下文数量。</para><para>en-us:The number of contexts successfully saved.</para></returns>
     public async Task<int> SavePoolNowAsync(CancellationToken cancellationToken = default)
     {
         // DbContext 不支持并发操作；多个上下文也必须按顺序保存，避免同一上下文重入。
@@ -236,11 +251,12 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 保存数据库上下文池中所有已更改的数据库上下文（异步）
+    /// <para>zh-cn:按指定实体状态接受策略异步保存池中所有有待处理变更的上下文。</para>
+    /// <para>en-us:Asynchronously saves all contexts with pending changes using the specified entity-state acceptance policy.</para>
     /// </summary>
-    /// <param name="acceptAllChangesOnSuccess"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="acceptAllChangesOnSuccess"><para>zh-cn:保存成功后是否调用 AcceptAllChanges。</para><para>en-us:Whether to call AcceptAllChanges after a successful save.</para></param>
+    /// <param name="cancellationToken"><para>zh-cn:用于取消保存操作的令牌。</para><para>en-us:The token used to cancel the save operation.</para></param>
+    /// <returns><para>zh-cn:成功执行保存的上下文数量。</para><para>en-us:The number of contexts successfully saved.</para></returns>
     public async Task<int> SavePoolNowAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         // DbContext 不支持并发操作；多个上下文也必须按顺序保存，避免同一上下文重入。
@@ -485,7 +501,8 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 释放所有数据库上下文
+    /// <para>zh-cn:关闭并清理当前池中的所有数据库上下文及事务状态。</para>
+    /// <para>en-us:Closes and cleans up all database contexts and transaction state in the current pool.</para>
     /// </summary>
     public void CloseAll()
     {
@@ -509,10 +526,11 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
     }
 
     /// <summary>
-    /// 设置数据库上下文共享事务
+    /// <para>zh-cn:将同一物理连接上的数据库上下文绑定到共享事务。</para>
+    /// <para>en-us:Binds database contexts on the same physical connection to a shared transaction.</para>
     /// </summary>
-    /// <param name="transaction"></param>
-    /// <param name="transactionContexts">参与当前本地事务的数据库上下文</param>
+    /// <param name="transaction"><para>zh-cn:要绑定到上下文的数据库事务。</para><para>en-us:The database transaction to bind to the contexts.</para></param>
+    /// <param name="transactionContexts"><para>zh-cn:参与当前本地事务的数据库上下文集合。</para><para>en-us:The database contexts participating in the current local transaction.</para></param>
     private void ShareTransaction(DbTransaction transaction, IReadOnlyCollection<DbContext> transactionContexts)
     {
         var conflictingTransaction = transactionContexts.FirstOrDefault(u =>
@@ -629,10 +647,14 @@ public class DbContextPool : IDbContextPool, ILocalTransactionManager
 
     private sealed class TransactionContextGroup
     {
+        /// <summary><para>zh-cn:创建按物理连接分组的事务上下文集合。</para><para>en-us:Creates a transaction-context group for a physical connection.</para></summary>
+        /// <param name="connection"><para>zh-cn:该分组对应的物理数据库连接。</para><para>en-us:The physical database connection represented by the group.</para></param>
         public TransactionContextGroup(DbConnection connection) => Connection = connection;
 
+        /// <summary><para>zh-cn:该事务分组使用的物理数据库连接。</para><para>en-us:The physical database connection used by this transaction group.</para></summary>
         public DbConnection Connection { get; }
 
+        /// <summary><para>zh-cn:绑定到该物理连接的数据库上下文集合。</para><para>en-us:The database contexts bound to this physical connection.</para></summary>
         public List<DbContext> Contexts { get; } = new();
     }
 

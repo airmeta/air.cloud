@@ -1,4 +1,4 @@
-﻿using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Client;
 
 using Zack.EFCore.Batch.Internal;
 

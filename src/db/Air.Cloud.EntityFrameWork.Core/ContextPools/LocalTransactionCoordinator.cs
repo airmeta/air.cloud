@@ -21,16 +21,22 @@ internal sealed class LocalTransactionCoordinator : IDisposable
 {
     /// <summary>
     /// 当前事务。
+    /// <para>zh-cn:由协调器跟踪的当前数据库事务。</para>
+    /// <para>en-us:The current database transaction tracked by the coordinator.</para>
     /// </summary>
     public IDbContextTransaction? Transaction { get; private set; }
 
     /// <summary>
     /// 当前事务是否由协调器创建并负责释放。
+    /// <para>zh-cn:指示协调器是否拥有并负责释放当前事务。</para>
+    /// <para>en-us:Indicates whether the coordinator owns and must dispose the current transaction.</para>
     /// </summary>
     public bool OwnsTransaction { get; private set; }
 
     /// <summary>
     /// 事务是否处于活动状态。
+    /// <para>zh-cn:指示当前是否已登记活动事务。</para>
+    /// <para>en-us:Indicates whether an active transaction is attached.</para>
     /// </summary>
     public bool IsActive => Transaction != null;
 
@@ -56,8 +62,8 @@ internal sealed class LocalTransactionCoordinator : IDisposable
     /// <para>zh-cn:登记一个本地事务；已有事务不能被静默替换。</para>
     /// <para>en-us:Attaches a local transaction; an existing transaction cannot be silently replaced.</para>
     /// </summary>
-    /// <param name="transaction">要登记的事务。</param>
-    /// <param name="ownsTransaction">是否由协调器负责释放。</param>
+    /// <param name="transaction"><para>zh-cn:要登记的数据库事务。</para><para>en-us:The database transaction to attach.</para></param>
+    /// <param name="ownsTransaction"><para>zh-cn:是否由协调器负责释放该事务。</para><para>en-us:Whether the coordinator owns disposal of the transaction.</para></param>
     public void Attach(IDbContextTransaction transaction, bool ownsTransaction)
     {
         ArgumentNullException.ThrowIfNull(transaction);

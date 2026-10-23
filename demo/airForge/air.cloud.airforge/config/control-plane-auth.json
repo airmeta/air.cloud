@@ -1,0 +1,61 @@
+{
+  "ControlPlaneAuth": {
+    "Enabled": true,
+    "EnableMFA": true,
+    "ProductCode": "airforge",
+    "ProductName": "AirForge",
+    "MfaIssuer": "AirForge",
+    "BasePath": "/_airforge/control-plane",
+    "AuthPath": "/_airforge/control-auth",
+    "PlanePath": "/_airforge/control-plane",
+    "DefaultReturnUrl": "/_airforge/control-plane",
+    "StorageDirectory": "data/control-plane-auth",
+    "Shell": {
+      "Enabled": true,
+      "Title": "AirForge Console",
+      "DefaultMenuKey": "airforge-manager",
+      "ShowServiceTickets": true,
+      "Frames": [
+        {
+          "Key": "airforge-manager",
+          "Title": "AirForge Manager",
+          "Url": "/dynamicapp-panel",
+          "Embedded": true
+        }
+      ]
+    },
+    "Bootstrap": {
+      "Enabled": true,
+      "TicketExpiresMinutes": 30,
+      "PrintTicketToConsole": true,
+      "WriteTicketFile": true,
+      "TicketFileName": "initial-admin-ticket"
+    },
+    "Session": {
+      "HeaderName": "X-Air-ControlPlane-Ticket",
+      "CookieName": "AirForge.ControlPlane.Ticket",
+      "QueryName": "airControlPlaneTicket",
+      "ExpiresMinutes": 120,
+      "SlidingExpiration": true
+    },
+    "PasswordPolicy": {
+      "MinLength": 8,
+      "RequireDigit": true,
+      "RequireLowercase": true,
+      "RequireUppercase": false,
+      "RequireSpecialCharacter": false
+    },
+    "LoginPolicy": {
+      "MaxFailedAttempts": 5,
+      "LockoutMinutes": 15
+    },
+    "ServiceTickets": {
+      "DefaultExpiresDays": 180,
+      "AllowMultipleActiveTickets": true
+    },
+    "Audit": {
+      "Enabled": true,
+      "FileName": "audit.log"
+    }
+  }
+}

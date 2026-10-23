@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -21,11 +21,15 @@ namespace Air.Cloud.EntityFrameWork.Core.Interceptors;
 
 /// <summary>
 /// 数据库连接拦截分析器
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
 {
     /// <summary>
     /// 构造函数
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     public SqlConnectionProfilerInterceptor()
     {
@@ -33,11 +37,13 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
 
     /// <summary>
     /// 拦截数据库连接
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="connection">数据库连接对象</param>
-    /// <param name="eventData">数据库连接事件数据</param>
-    /// <param name="result">拦截结果</param>
-    /// <returns></returns>
+    /// <param name="connection"><para>zh-cn:数据库连接对象</para><para>en-us:The connection value.</para></param>
+    /// <param name="eventData"><para>zh-cn:数据库连接事件数据</para><para>en-us:The eventData value.</para></param>
+    /// <param name="result"><para>zh-cn:拦截结果</para><para>en-us:The result value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public override InterceptionResult ConnectionOpening(DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
     {
         // 打印数据库连接信息到 MiniProfiler
@@ -48,12 +54,14 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
 
     /// <summary>
     /// 拦截数据库连接
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="connection">数据库连接对象</param>
-    /// <param name="eventData">数据库连接事件数据</param>
-    /// <param name="result">拦截器结果</param>
-    /// <param name="cancellationToken">取消异步Token</param>
-    /// <returns></returns>
+    /// <param name="connection"><para>zh-cn:数据库连接对象</para><para>en-us:The connection value.</para></param>
+    /// <param name="eventData"><para>zh-cn:数据库连接事件数据</para><para>en-us:The eventData value.</para></param>
+    /// <param name="result"><para>zh-cn:拦截器结果</para><para>en-us:The result value.</para></param>
+    /// <param name="cancellationToken"><para>zh-cn:取消异步Token</para><para>en-us:The cancellationToken value.</para></param>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public override ValueTask<InterceptionResult> ConnectionOpeningAsync(DbConnection connection, ConnectionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)
     {
         // 打印数据库连接信息到 MiniProfiler
@@ -64,9 +72,11 @@ internal sealed class SqlConnectionProfilerInterceptor : DbConnectionInterceptor
 
     /// <summary>
     /// 打印数据库连接信息到 MiniProfiler
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="connection">数据库连接对象</param>
-    /// <param name="eventData">数据库连接事件数据</param>
+    /// <param name="connection"><para>zh-cn:数据库连接对象</para><para>en-us:The connection value.</para></param>
+    /// <param name="eventData"><para>zh-cn:数据库连接事件数据</para><para>en-us:The eventData value.</para></param>
     private void PrintConnectionToMiniProfiler(DbConnection connection, ConnectionEventData eventData)
     {
         if (AppEnvironment.IsDevelopment)

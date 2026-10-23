@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,6 +14,8 @@ namespace Air.Cloud.EntityFrameWork.Core.Repositories.Dependencies;
 
 /// <summary>
 /// 仓储依赖空接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 public interface IPrivateRootRepository
 {

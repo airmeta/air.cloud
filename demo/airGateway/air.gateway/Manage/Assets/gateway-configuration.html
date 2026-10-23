@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>网关配置</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#fff;--line:#d9e2ef;--text:#172033;--muted:#6b778c;--primary:#0f766e;--danger:#b42318;--shadow:0 8px 24px rgba(15,23,42,.12)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;font-size:14px}button,input,select{font:inherit}button{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:6px;padding:8px 12px;cursor:pointer}button:hover{border-color:#9fb3c8}button.primary{border-color:var(--primary);background:var(--primary);color:#fff}button:disabled{cursor:not-allowed;opacity:.55}.page{min-height:100vh;padding:24px}.header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px}.header h1{margin:0 0 6px;font-size:24px}.header p{margin:0;color:var(--muted)}.workspace{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 8px rgba(15,23,42,.04)}.filters{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) 160px auto;gap:10px;padding:16px;border-bottom:1px solid var(--line)}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted)}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--text)}.filter-actions{display:flex;align-items:flex-end;gap:8px}.list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}.list-title{font-weight:650}.toolbar-actions{display:flex;gap:8px}.icon{width:16px;height:16px;vertical-align:-3px;margin-right:5px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:860px}th,td{border-top:1px solid var(--line);padding:11px 12px;text-align:left;vertical-align:middle}th{font-size:12px;color:var(--muted);font-weight:600;background:#fbfcfe}.empty{text-align:center;color:var(--muted);padding:46px 20px}.actions{display:flex;gap:8px;white-space:nowrap}.actions button{padding:5px 9px}.pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-top:1px solid var(--line);color:var(--muted)}.pagination-actions{display:flex;gap:8px}.dialog-backdrop{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.38)}.dialog{width:min(680px,100%);background:#fff;border-radius:8px;box-shadow:var(--shadow);padding:20px}.dialog h2{margin:0 0 16px;font-size:18px}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.message{margin-top:12px;color:var(--muted)}@media(max-width:900px){.page{padding:16px}.header{display:block}.header button{margin-top:14px}.filters{grid-template-columns:1fr}.filter-actions{align-items:stretch}.filter-actions button{flex:1}.dialog-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <h1>网关配置</h1>
+        <p>维护 AirGateway 的上游入口、下游服务和请求方法。</p>
+      </div>
+      <button class="primary" type="button" onclick="openRouteDialog()">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6V5Z"/></svg>
+        新增路由
+      </button>
+    </header>
+
+    <section class="workspace" aria-label="网关路由维护">
+      <form class="filters" onsubmit="queryRoutes(event)">
+        <div class="field"><label for="upstreamFilter">上游路径</label><input id="upstreamFilter" placeholder="例如 /api/order/{everything}"></div>
+        <div class="field"><label for="downstreamFilter">下游路径</label><input id="downstreamFilter" placeholder="例如 /v1/order/{everything}"></div>
+        <div class="field"><label for="methodFilter">请求方法</label><select id="methodFilter"><option value="">全部方法</option><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option></select></div>
+        <div class="filter-actions"><button class="primary" type="submit">查询</button><button type="button" onclick="resetFilters()">重置</button></div>
+      </form>
+
+      <div class="list-toolbar">
+        <div class="list-title">网关路由列表</div>
+        <div class="toolbar-actions"><button type="button" title="刷新列表" aria-label="刷新列表" onclick="refreshRoutes()"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 7.1A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L14 10h6V4l-2.6 3.1Z"/></svg>刷新</button></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>上游路径</th><th>下游路径</th><th>下游地址</th><th>请求方法</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="routeRows"><tr><td colspan="7" class="empty">路由管理接口待接入</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="pagination"><span>共计 0 条数据</span><div class="pagination-actions"><button type="button" disabled>上一页</button><button type="button" disabled>下一页</button></div></div>
+    </section>
+    <div id="pageMessage" class="message" role="status"></div>
+  </main>
+
+  <div id="routeDialog" class="dialog-backdrop" hidden>
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <h2 id="dialogTitle">新增路由</h2>
+      <div class="dialog-grid">
+        <div class="field"><label for="upstreamPath">上游路径</label><input id="upstreamPath" placeholder="/api/order/{everything}"></div>
+        <div class="field"><label for="downstreamPath">下游路径</label><input id="downstreamPath" placeholder="/v1/order/{everything}"></div>
+        <div class="field"><label for="downstreamHost">下游主机</label><input id="downstreamHost" placeholder="127.0.0.1"></div>
+        <div class="field"><label for="downstreamPort">下游端口</label><input id="downstreamPort" type="number" min="1" max="65535" placeholder="5100"></div>
+        <div class="field"><label for="downstreamScheme">下游协议</label><select id="downstreamScheme"><option>http</option><option>https</option></select></div>
+        <div class="field"><label for="routeMethods">请求方法</label><input id="routeMethods" placeholder="GET,POST"></div>
+      </div>
+      <div class="dialog-actions"><button type="button" onclick="closeRouteDialog()">取消</button><button class="primary" type="button" onclick="saveRoute()">保存</button></div>
+    </section>
+  </div>
+
+  <script>
+    function setMessage(message){document.getElementById('pageMessage').textContent=message||'';}
+    function openRouteDialog(){document.getElementById('routeDialog').hidden=false;document.getElementById('upstreamPath').focus();}
+    function closeRouteDialog(){document.getElementById('routeDialog').hidden=true;}
+    function queryRoutes(event){event.preventDefault();setMessage('路由查询接口待接入。');}
+    function resetFilters(){document.getElementById('upstreamFilter').value='';document.getElementById('downstreamFilter').value='';document.getElementById('methodFilter').value='';setMessage('筛选条件已重置。');}
+    function refreshRoutes(){setMessage('路由列表已刷新，数据接口待接入。');}
+    function saveRoute(){setMessage('路由保存接口待接入。');closeRouteDialog();}
+    document.getElementById('routeDialog').addEventListener('click',event=>{if(event.target.id==='routeDialog')closeRouteDialog();});
+  </script>
+</body>
+</html>

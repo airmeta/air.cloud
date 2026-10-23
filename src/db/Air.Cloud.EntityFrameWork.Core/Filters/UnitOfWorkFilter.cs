@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,26 +22,30 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Air.Cloud.EntityFrameWork.Core.Filters;
 
 /// <summary>
-/// 工作单元拦截器
+/// <para>zh-cn:根据 UnitOfWorkAttribute 管理动态服务请求事务的 MVC 过滤器。</para>
+/// <para>en-us:MVC filter that manages dynamic-service request transactions according to UnitOfWorkAttribute.</para>
 /// </summary>
 public sealed class UnitOfWorkFilter : IAsyncActionFilter
 {
     /// <summary>
-    /// 过滤器排序
+    /// <para>zh-cn:过滤器排序值。</para>
+    /// <para>en-us:The filter order value.</para>
     /// </summary>
     internal const int FilterOrder = 9999;
 
     /// <summary>
-    /// 排序属性
+    /// <para>zh-cn:返回 MVC 过滤器排序值。</para>
+    /// <para>en-us:Returns the MVC filter order value.</para>
     /// </summary>
     public int Order => FilterOrder;
 
     /// <summary>
-    /// 拦截请求
+    /// <para>zh-cn:执行请求并在动作成功或失败后提交或回滚工作单元。</para>
+    /// <para>en-us:Executes the request and commits or rolls back the work unit after action success or failure.</para>
     /// </summary>
-    /// <param name="context">动作方法上下文</param>
-    /// <param name="next">中间件委托</param>
-    /// <returns></returns>
+    /// <param name="context"><para>zh-cn:当前动作执行上下文。</para><para>en-us:The current action execution context.</para></param>
+    /// <param name="next"><para>zh-cn:用于继续执行后续过滤器和动作的委托。</para><para>en-us:The delegate that continues execution of later filters and the action.</para></param>
+    /// <returns><para>zh-cn:表示动作执行完成的任务。</para><para>en-us:A task representing completion of action execution.</para></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         // 获取动作方法描述器

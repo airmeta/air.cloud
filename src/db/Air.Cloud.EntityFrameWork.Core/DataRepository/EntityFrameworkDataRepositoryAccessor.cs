@@ -33,14 +33,17 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
             this.serviceProvider = serviceProvider;
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:解析指定实体类型的数据仓储。</para><para>en-us:Resolves the data repository for the specified entity type.</para></summary>
+        /// <typeparam name="TEntity"><para>zh-cn:实体类型。</para><para>en-us:The entity type.</para></typeparam>
         public IDataRepository<TEntity> Change<TEntity>()
             where TEntity : class, IPrivateEntity, new()
         {
             return serviceProvider.GetRequiredService<IDataRepository<TEntity>>();
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:判断异常是否表示唯一约束冲突。</para><para>en-us:Determines whether an exception represents a unique-constraint violation.</para></summary>
+        /// <param name="exception"><para>zh-cn:要分析的异常。</para><para>en-us:The exception to analyze.</para></param>
+        /// <returns><para>zh-cn:检测到唯一或重复键错误时返回 true。</para><para>en-us:True when a unique or duplicate-key error is detected.</para></returns>
         public bool IsUniqueConstraintException(Exception exception)
         {
             var message = exception.InnerException?.Message ?? exception.Message;

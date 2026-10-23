@@ -163,6 +163,28 @@ public class ReverseTunnelOptionsTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证 Server 证书主题和 SAN 会去除空白、去重，并保留迁移时需要的主机身份。</para>
+    /// <para>en-us:Verifies that the Server certificate subject and SAN values are trimmed and deduplicated while preserving the host identities needed during migration.</para>
+    /// </summary>
+    [Fact]
+    public void PostConfigure_should_normalize_server_certificate_identity()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            ServerCertificate = new ReverseTunnelServerCertificateOptions
+            {
+                CommonName = " 192.168.100.156 ",
+                SubjectAlternativeNames = [" 192.168.100.156 ", "localhost", " LOCALHOST "]
+            }
+        };
+
+        options.PostConfigure(options, new ConfigurationBuilder().Build());
+
+        Assert.Equal("192.168.100.156", options.ServerCertificate.CommonName);
+        Assert.Equal(["192.168.100.156", "localhost"], options.ServerCertificate.SubjectAlternativeNames);
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证诊断 API 配置默认关闭，并且空路径会回退到稳定默认路径。</para>
     /// <para>en-us:Verifies that diagnostic API options are disabled by default and that an empty path falls back to the stable default path.</para>
     /// </summary>
@@ -315,6 +337,31 @@ public class ReverseTunnelOptionsTests
 
         Assert.True(result.Failed);
         Assert.Contains("ReverseTunnelSettings:SessionSelectionStrategy must be one of NewestActive, OldestActive, or RoundRobin.", result.Failures);
+    }
+
+    /// <summary>
+    /// <para>zh-cn:验证 Server 证书身份配置只接受 IP 地址或 DNS 名称，避免迁移脚本生成无法校验的 SAN。</para>
+    /// <para>en-us:Verifies that Server certificate identity settings accept only IP addresses or DNS names, preventing migration scripts from generating unverifiable SAN entries.</para>
+    /// </summary>
+    [Fact]
+    public void Validate_should_reject_invalid_server_certificate_identity()
+    {
+        var options = new ReverseTunnelOptions
+        {
+            Enabled = true,
+            TunnelMode = ReverseTunnelMode.Server,
+            ServerCertificate = new ReverseTunnelServerCertificateOptions
+            {
+                CommonName = "https://bad-host",
+                SubjectAlternativeNames = ["not a host"]
+            }
+        };
+
+        var result = new ReverseTunnelOptionsValidation().Validate(null, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains("ReverseTunnelSettings:ServerCertificate:CommonName must be an IP address or DNS name.", result.Failures);
+        Assert.Contains("ReverseTunnelSettings:ServerCertificate:SubjectAlternativeNames:0 must be an IP address or DNS name.", result.Failures);
     }
 
     /// <summary>

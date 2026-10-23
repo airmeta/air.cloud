@@ -69,3 +69,8 @@ bld/
 /.claude
 /.github
 /works
+/.deploy
+/builds
+/demo/airGateway/.vs/AirGateway.slnx
+/demo/airGateway/air.gateway/builds/nuget
+/tmp

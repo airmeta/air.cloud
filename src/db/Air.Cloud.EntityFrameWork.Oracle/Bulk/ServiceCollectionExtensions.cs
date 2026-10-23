@@ -1,4 +1,4 @@
-﻿using Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal;
+using Air.Cloud.EntityFrameWork.Oracle.Bulk.Internal;
 
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;

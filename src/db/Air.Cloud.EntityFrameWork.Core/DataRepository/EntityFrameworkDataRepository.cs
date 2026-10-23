@@ -37,20 +37,28 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
             this.repository = repository;
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:添加实体并保存更改。</para><para>en-us:Adds an entity and saves the changes.</para></summary>
+        /// <param name="entity"><para>zh-cn:要添加的实体。</para><para>en-us:The entity to add.</para></param>
+        /// <param name="cancellationToken"><para>zh-cn:取消异步操作的令牌。</para><para>en-us:The token used to cancel the asynchronous operation.</para></param>
         public async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
             await repository.InsertAsync(entity, cancellationToken: cancellationToken);
             await repository.Context.SaveChangesAsync(cancellationToken);
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:按条件查询第一个实体；查询不跟踪实体。</para><para>en-us:Queries the first entity matching the predicate without tracking.</para></summary>
+        /// <param name="predicate"><para>zh-cn:实体筛选条件。</para><para>en-us:The entity filter predicate.</para></param>
+        /// <param name="cancellationToken"><para>zh-cn:取消异步操作的令牌。</para><para>en-us:The token used to cancel the asynchronous operation.</para></param>
         public Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
         {
             return repository.Entities.AsNoTracking().FirstOrDefaultAsync(predicate, cancellationToken);
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:按条件执行 EF Core 批量更新。</para><para>en-us:Executes an EF Core bulk update for entities matching the predicate.</para></summary>
+        /// <param name="predicate"><para>zh-cn:实体筛选条件。</para><para>en-us:The entity filter predicate.</para></param>
+        /// <param name="update"><para>zh-cn:配置要更新属性的回调。</para><para>en-us:Callback that configures the properties to update.</para></param>
+        /// <param name="cancellationToken"><para>zh-cn:取消异步操作的令牌。</para><para>en-us:The token used to cancel the asynchronous operation.</para></param>
+        /// <returns><para>zh-cn:受影响的记录数。</para><para>en-us:The number of affected records.</para></returns>
         public Task<int> UpdateWhereAsync(
             Expression<Func<TEntity, bool>> predicate,
             Action<IDataUpdateBuilder<TEntity>> update,
@@ -63,7 +71,9 @@ namespace Air.Cloud.EntityFrameWork.Core.DataRepository
                 .ExecuteUpdateAsync(updateBuilder.Build(), cancellationToken);
         }
 
-        /// <inheritdoc />
+        /// <summary><para>zh-cn:保存当前仓储上下文中的跟踪更改。</para><para>en-us:Saves tracked changes in the current repository context.</para></summary>
+        /// <param name="cancellationToken"><para>zh-cn:取消异步操作的令牌。</para><para>en-us:The token used to cancel the asynchronous operation.</para></param>
+        /// <returns><para>zh-cn:保存的实体数量。</para><para>en-us:The number of saved entities.</para></returns>
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             return repository.Context.SaveChangesAsync(cancellationToken);

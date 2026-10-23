@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -18,8 +18,10 @@ namespace Air.Cloud.EntityFrameWork.Core.Entities.Configures;
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity> : IEntityTypeBuilder<TEntity, MasterDbContextLocator>
     where TEntity : class, IPrivateEntity, new()
 {
@@ -27,9 +29,11 @@ public interface IEntityTypeBuilder<TEntity> : IEntityTypeBuilder<TEntity, Maste
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -38,10 +42,12 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1> : IPrivateEntit
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -51,11 +57,13 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator3">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator3"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2, TDbContextLocator3> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -66,12 +74,14 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator3">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator4">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator3"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator4"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2, TDbContextLocator3, TDbContextLocator4> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -83,13 +93,15 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator3">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator4">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator5">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator3"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator4"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator5"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2, TDbContextLocator3, TDbContextLocator4, TDbContextLocator5> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -102,14 +114,16 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator3">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator4">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator5">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator6">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator3"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator4"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator5"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator6"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2, TDbContextLocator3, TDbContextLocator4, TDbContextLocator5, TDbContextLocator6> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -123,15 +137,17 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator3">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator4">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator5">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator6">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator7">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator3"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator4"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator5"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator6"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator7"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2, TDbContextLocator3, TDbContextLocator4, TDbContextLocator5, TDbContextLocator6, TDbContextLocator7> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -146,16 +162,18 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity">实体类型</typeparam>
-/// <typeparam name="TDbContextLocator1">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator2">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator3">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator4">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator5">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator6">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator7">数据库上下文定位器</typeparam>
-/// <typeparam name="TDbContextLocator8">数据库上下文定位器</typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator1"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator2"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator3"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator4"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator5"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator6"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator7"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
+/// <typeparam name="TDbContextLocator8"><para>zh-cn:数据库上下文定位器</para><para>en-us:The generic parameter type.</para></typeparam>
 public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocator2, TDbContextLocator3, TDbContextLocator4, TDbContextLocator5, TDbContextLocator6, TDbContextLocator7, TDbContextLocator8> : IPrivateEntityTypeBuilder<TEntity>
     where TEntity : class, IPrivateEntity, new()
     where TDbContextLocator1 : class, IDbContextLocator
@@ -171,16 +189,20 @@ public interface IEntityTypeBuilder<TEntity, TDbContextLocator1, TDbContextLocat
 
 /// <summary>
 /// 数据库实体类型配置依赖接口（禁止外部继承）
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
-/// <typeparam name="TEntity"></typeparam>
+/// <typeparam name="TEntity"><para>zh-cn:泛型参数类型</para><para>en-us:The entity type.</para></typeparam>
 public interface IPrivateEntityTypeBuilder<TEntity> : IPrivateModelBuilder
     where TEntity : class, IPrivateEntity, new()
 {
     /// <summary>
     /// 实体类型配置
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
     void Configure(EntityTypeBuilder<TEntity> entityBuilder, DbContext dbContext, Type dbContextLocator);
 }

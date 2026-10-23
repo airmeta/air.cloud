@@ -8,6 +8,13 @@
       "InvokePathPrefix": "/_airtunnel/gateway",
       "AccessTokenEnvironmentVariable": "AIR_TUNNEL_GATEWAY_TOKEN"
     },
+    "ServerCertificate": {
+      "CommonName": "127.0.0.1",
+      "SubjectAlternativeNames": [
+        "127.0.0.1",
+        "localhost"
+      ]
+    },
     "CertificateAuthority": {
       "CertificatePath": "X:/air-cloud-reverse-tunnel/server/ca.pfx",
       "CertificatePasswordEnvironmentVariable": "AIR_TUNNEL_CA_PASSWORD",

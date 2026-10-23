@@ -75,6 +75,37 @@ public class ReverseTunnelRegistrationIntegrationTests
     }
 
     /// <summary>
+    /// <para>zh-cn:验证模块注册链路能够保留 Server 证书的可迁移主题和 SAN 配置。</para>
+    /// <para>en-us:Verifies that the module registration path preserves the portable Server certificate subject and SAN configuration.</para>
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Module", "ReverseTunnel")]
+    public void AddReverseTunnel_should_preserve_server_certificate_identity_options()
+    {
+        var settings = new ReverseTunnelOptions
+        {
+            ServerCertificate = new ReverseTunnelServerCertificateOptions
+            {
+                CommonName = " 192.168.100.156 ",
+                SubjectAlternativeNames = [" 192.168.100.156 ", "dev-gateway-airtunnel"]
+            }
+        };
+        settings.PostConfigure(settings, new ConfigurationBuilder().Build());
+
+        var services = new ServiceCollection();
+        services.AddReverseTunnel();
+        services.AddSingleton<IOptions<ReverseTunnelOptions>>(Options.Create(settings));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var registeredOptions = serviceProvider.GetRequiredService<IOptions<ReverseTunnelOptions>>().Value;
+
+        Assert.Equal("192.168.100.156", registeredOptions.ServerCertificate.CommonName);
+        Assert.Equal(["192.168.100.156", "dev-gateway-airtunnel"], registeredOptions.ServerCertificate.SubjectAlternativeNames);
+        Assert.Contains(serviceProvider.GetServices<IValidateOptions<ReverseTunnelOptions>>(), item => item is ReverseTunnelOptionsValidation);
+    }
+
+    /// <summary>
     /// <para>zh-cn:验证模块注册会加入 Server mTLS 控制面依赖，但不会自动映射 gRPC endpoint。</para>
     /// <para>en-us:Verifies that module registration adds Server mTLS control-plane dependencies without automatically mapping a gRPC endpoint.</para>
     /// </summary>
@@ -468,6 +499,10 @@ public class ReverseTunnelRegistrationIntegrationTests
             var executableScript = Regex.Replace(html, @"/\*[\s\S]*?\*/", string.Empty);
             Assert.DoesNotContain("if(lang()===\"zh-CN\"){document.documentElement.lang=\"zh-CN\";document.getElementById(\"languageIcon\").textContent=\"ZH\";return;}", executableScript, StringComparison.Ordinal);
             Assert.Contains("function updateAgentConfigSelector", executableScript, StringComparison.Ordinal);
+            Assert.Contains("function formatDistinctList", executableScript, StringComparison.Ordinal);
+            Assert.Contains("const versions=formatDistinctList(online.map", executableScript, StringComparison.Ordinal);
+            Assert.Contains("const status=formatDistinctList(online.map", executableScript, StringComparison.Ordinal);
+            Assert.DoesNotContain("const versions=online.map", executableScript, StringComparison.Ordinal);
             Assert.Contains("data-mapping-tab", executableScript, StringComparison.Ordinal);
             Assert.Contains("data-mapping-edit", executableScript, StringComparison.Ordinal);
             Assert.Contains("data-mapping-delete", executableScript, StringComparison.Ordinal);

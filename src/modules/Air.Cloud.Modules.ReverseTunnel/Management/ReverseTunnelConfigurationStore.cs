@@ -133,6 +133,7 @@ public sealed class ReverseTunnelConfigurationStore : IReverseTunnelConfiguratio
                 validation.Options.SessionIdleTimeoutSeconds,
                 validation.Options.Gateway,
                 validation.Options.CertificateAuthority,
+                validation.Options.ServerCertificate,
                 validation.Options.Enrollment,
                 validation.Options.AgentCertificate
             }
@@ -405,6 +406,7 @@ public sealed class ReverseTunnelConfigurationStore : IReverseTunnelConfiguratio
             target.SessionIdleTimeoutSeconds = source.SessionIdleTimeoutSeconds;
             target.Gateway = source.Gateway;
             target.CertificateAuthority = source.CertificateAuthority;
+            target.ServerCertificate = source.ServerCertificate;
             target.Enrollment = source.Enrollment;
             target.AgentCertificate = source.AgentCertificate;
         }

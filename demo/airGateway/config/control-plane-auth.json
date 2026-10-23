@@ -1,0 +1,64 @@
+{
+  "ControlPlaneAuth": {
+    "Enabled": true,
+    "ProductCode": "airgateway",
+    "ProductName": "AirGateway",
+    "BasePath": "/_airgateway/control-plane",
+    "AuthPath": "/_airgateway/control-auth",
+    "PlanePath": "/_airgateway/control-plane",
+    "DefaultReturnUrl": "/_airgateway/control-plane",
+    "Management": {
+      "Enabled": true,
+      "Port": 8081,
+      "BindAddress": "0.0.0.0",
+      "RestrictToPort": true
+    },
+    "StorageDirectory": "data/control-plane-auth",
+    "Shell": {
+      "Enabled": true,
+      "Title": "AirGateway 控制台",
+      "DefaultMenuKey": "gateway-config",
+      "Frames": [
+        {
+          "Key": "gateway-config",
+          "Title": "网关配置",
+          "Url": "/_airgateway/control-plane/gateway-config",
+          "Embedded": true
+        }
+      ]
+    },
+    "Bootstrap": {
+      "Enabled": true,
+      "TicketExpiresMinutes": 30,
+      "PrintTicketToConsole": true,
+      "WriteTicketFile": true,
+      "TicketFileName": "initial-admin-ticket"
+    },
+    "Session": {
+      "HeaderName": "X-Air-ControlPlane-Ticket",
+      "CookieName": "AirGateway.ControlPlane.Ticket",
+      "QueryName": "airControlPlaneTicket",
+      "ExpiresMinutes": 120,
+      "SlidingExpiration": true
+    },
+    "PasswordPolicy": {
+      "MinLength": 8,
+      "RequireDigit": true,
+      "RequireLowercase": true,
+      "RequireUppercase": false,
+      "RequireSpecialCharacter": false
+    },
+    "LoginPolicy": {
+      "MaxFailedAttempts": 5,
+      "LockoutMinutes": 15
+    },
+    "ServiceTickets": {
+      "DefaultExpiresDays": 180,
+      "AllowMultipleActiveTickets": true
+    },
+    "Audit": {
+      "Enabled": true,
+      "FileName": "audit.log"
+    }
+  }
+}

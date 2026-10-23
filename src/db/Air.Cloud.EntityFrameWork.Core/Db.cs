@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -19,13 +19,15 @@ using Air.Cloud.EntityFrameWork.Core.Repositories;
 namespace Air.Cloud.EntityFrameWork.Core;
 
 /// <summary>
-/// 数据库公开类
+/// <para>zh-cn:数据库访问静态入口，用于解析仓储和数据库上下文。</para>
+/// <para>en-us:Static database access entry point for resolving repositories and database contexts.</para>
 /// </summary>
 [IgnoreScanning]
 public static class Db
 {
     /// <summary>
-    /// 迁移类库名称
+    /// <para>zh-cn:数据库迁移程序集名称。</para>
+    /// <para>en-us:The database migration assembly name.</para>
     /// </summary>
     public static string MigrationAssemblyName = "Air.Database.Migrations";
 
@@ -39,21 +41,23 @@ public static class Db
     };
 
     /// <summary>
-    /// 获取非泛型仓储
+    /// <para>zh-cn:获取非泛型数据库仓储。</para>
+    /// <para>en-us:Gets the non-generic database repository.</para>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器；为空时使用全局服务。</para><para>en-us:An optional service provider; global services are used when null.</para></param>
+    /// <returns><para>zh-cn:非泛型数据库仓储。</para><para>en-us:The non-generic database repository.</para></returns>
     public static IRepository GetRepository(IServiceProvider? serviceProvider = default)
     {
         return serviceProvider == null ? AppCore.GetService<IRepository>() : AppCore.GetService<IRepository>(serviceProvider);
     }
 
     /// <summary>
-    /// 获取实体仓储
+    /// <para>zh-cn:获取指定实体类型的数据库仓储。</para>
+    /// <para>en-us:Gets the database repository for the specified entity type.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <param name="serviceProvider"></param>
-    /// <returns>IRepository{TEntity}</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型。</para><para>en-us:The entity type.</para></typeparam>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器；为空时使用全局服务。</para><para>en-us:An optional service provider; global services are used when null.</para></param>
+    /// <returns><para>zh-cn:指定实体类型的仓储。</para><para>en-us:The repository for the specified entity type.</para></returns>
     public static IRepository<TEntity> GetRepository<TEntity>(IServiceProvider? serviceProvider = default)
         where TEntity : class, IPrivateEntity, new()
     {
@@ -61,12 +65,13 @@ public static class Db
     }
 
     /// <summary>
-    /// 获取实体仓储
+    /// <para>zh-cn:获取指定实体类型和上下文定位器的数据库仓储。</para>
+    /// <para>en-us:Gets the repository for the specified entity type and context locator.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-    /// <param name="serviceProvider"></param>
-    /// <returns>IRepository{TEntity, TDbContextLocator}</returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型。</para><para>en-us:The entity type.</para></typeparam>
+    /// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器类型。</para><para>en-us:The database context locator type.</para></typeparam>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器；为空时使用全局服务。</para><para>en-us:An optional service provider; global services are used when null.</para></param>
+    /// <returns><para>zh-cn:指定实体和定位器的仓储。</para><para>en-us:The repository for the specified entity and locator.</para></returns>
     public static IRepository<TEntity, TDbContextLocator> GetRepository<TEntity, TDbContextLocator>(IServiceProvider? serviceProvider = default)
         where TEntity : class, IPrivateEntity, new()
         where TDbContextLocator : class, IDbContextLocator
@@ -75,12 +80,13 @@ public static class Db
     }
 
     /// <summary>
-    /// 根据定位器类型获取仓储
+    /// <para>zh-cn:根据定位器类型获取指定实体的数据库仓储。</para>
+    /// <para>en-us:Gets the database repository for an entity using a locator type.</para>
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <param name="dbContextLocator"></param>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型。</para><para>en-us:The entity type.</para></typeparam>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器类型。</para><para>en-us:The database context locator type.</para></param>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器。</para><para>en-us:An optional service provider.</para></param>
+    /// <returns><para>zh-cn:指定实体和定位器的私有仓储。</para><para>en-us:The private repository for the entity and locator.</para></returns>
     public static IPrivateRepository<TEntity> GetRepository<TEntity>(Type dbContextLocator, IServiceProvider? serviceProvider = default)
          where TEntity : class, IPrivateEntity, new()
     {
@@ -94,11 +100,12 @@ public static class Db
     }
 
     /// <summary>
-    /// 获取特定数据库上下文仓储
+    /// <para>zh-cn:获取指定数据库上下文定位器的仓储。</para>
+    /// <para>en-us:Gets the repository for the specified database-context locator.</para>
     /// </summary>
-    /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
+    /// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器类型。</para><para>en-us:The database context locator type.</para></typeparam>
+    /// <param name="serviceProvider"><para>zh-cn:服务提供器。</para><para>en-us:The service provider.</para></param>
+    /// <returns><para>zh-cn:指定定位器的数据库仓储。</para><para>en-us:The database repository for the specified locator.</para></returns>
     public static IDbRepository<TDbContextLocator> GetDbRepository<TDbContextLocator>(IServiceProvider serviceProvider = default)
         where TDbContextLocator : class, IDbContextLocator
     {
@@ -106,21 +113,23 @@ public static class Db
     }
 
     /// <summary>
-    /// 获取随机主从库仓储
+    /// <para>zh-cn:获取主从数据库仓储。</para>
+    /// <para>en-us:Gets the master-slave database repository.</para>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <returns>主从库仓储</returns>
+    /// <param name="serviceProvider"><para>zh-cn:服务提供器。</para><para>en-us:The service provider.</para></param>
+    /// <returns><para>zh-cn:主从数据库仓储。</para><para>en-us:The master-slave database repository.</para></returns>
     public static IMSRepository GetMSRepository(IServiceProvider serviceProvider = default)
     {
         return AppCore.GetService<IMSRepository>(serviceProvider);
     }
 
     /// <summary>
-    /// 获取随机主从库仓储
+    /// <para>zh-cn:获取指定主库定位器的主从数据库仓储。</para>
+    /// <para>en-us:Gets the master-slave repository for the specified master locator.</para>
     /// </summary>
-    /// <typeparam name="TMasterDbContextLocator">主库数据库上下文定位器</typeparam>
-    /// <param name="serviceProvider"></param>
-    /// <returns>IMSRepository{TDbContextLocator}</returns>
+    /// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库数据库上下文定位器类型。</para><para>en-us:The master database context locator type.</para></typeparam>
+    /// <param name="serviceProvider"><para>zh-cn:服务提供器。</para><para>en-us:The service provider.</para></param>
+    /// <returns><para>zh-cn:指定主库定位器的主从仓储。</para><para>en-us:The master-slave repository for the specified locator.</para></returns>
     public static IMSRepository<TMasterDbContextLocator> GetMSRepository<TMasterDbContextLocator>(IServiceProvider serviceProvider = default)
         where TMasterDbContextLocator : class, IDbContextLocator
     {
@@ -128,21 +137,23 @@ public static class Db
     }
 
     /// <summary>
-    /// 获取默认数据库上下文
+    /// <para>zh-cn:获取默认数据库上下文。</para>
+    /// <para>en-us:Gets the default database context.</para>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器。</para><para>en-us:An optional service provider.</para></param>
+    /// <returns><para>zh-cn:默认数据库上下文。</para><para>en-us:The default database context.</para></returns>
     public static DbContext GetDbContext(IServiceProvider serviceProvider = default)
     {
         return GetDbContext(typeof(MasterDbContextLocator), serviceProvider);
     }
 
     /// <summary>
-    /// 获取特定数据库上下文
+    /// <para>zh-cn:根据定位器类型获取数据库上下文。</para>
+    /// <para>en-us:Gets a database context by locator type.</para>
     /// </summary>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器类型。</para><para>en-us:The database context locator type.</para></param>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器。</para><para>en-us:An optional service provider.</para></param>
+    /// <returns><para>zh-cn:解析得到的数据库上下文。</para><para>en-us:The resolved database context.</para></returns>
     public static DbContext GetDbContext(Type dbContextLocator, IServiceProvider serviceProvider = default)
     {
         // 判断数据库上下文定位器是否绑定
@@ -153,11 +164,12 @@ public static class Db
     }
 
     /// <summary>
-    /// 获取特定数据库上下文
+    /// <para>zh-cn:根据泛型定位器类型获取数据库上下文。</para>
+    /// <para>en-us:Gets a database context by generic locator type.</para>
     /// </summary>
-    /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
+    /// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器类型。</para><para>en-us:The database context locator type.</para></typeparam>
+    /// <param name="serviceProvider"><para>zh-cn:可选的服务提供器。</para><para>en-us:An optional service provider.</para></param>
+    /// <returns><para>zh-cn:解析得到的数据库上下文。</para><para>en-us:The resolved database context.</para></returns>
     public static DbContext GetDbContext<TDbContextLocator>(IServiceProvider serviceProvider = default)
         where TDbContextLocator : class, IDbContextLocator
     {

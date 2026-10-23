@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -21,16 +21,18 @@ using System.Security.Cryptography;
 namespace Air.Cloud.EntityFrameWork.Core.Repositories;
 
 /// <summary>
-/// 默认主库主从仓储
+/// <para>zh-cn:默认主库主从仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
 [IgnoreScanning]
 public partial class MSRepository : MSRepository<MasterDbContextLocator>, IMSRepository
 {
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="serviceProvider"><para>zh-cn:服务提供器。</para><para>en-us:The service provider.</para></param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IServiceProvider serviceProvider
         , IRepository repository) : base(serviceProvider, repository)
     {
@@ -38,28 +40,32 @@ public partial class MSRepository : MSRepository<MasterDbContextLocator>, IMSRep
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMasterDbContextLocator>
     where TMasterDbContextLocator : class, IDbContextLocator
 {
     /// <summary>
-    /// 服务提供器
+    /// <para>zh-cn:服务提供器</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="serviceProvider"><para>zh-cn:服务提供器。</para><para>en-us:The service provider.</para></param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IServiceProvider serviceProvider
         , IRepository repository)
     {
@@ -68,10 +74,11 @@ public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMast
     }
 
     /// <summary>
-    /// 获取主库仓储
+    /// <para>zh-cn:获取主库仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IRepository<TEntity, TMasterDbContextLocator> Master<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -79,10 +86,11 @@ public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMast
     }
 
     /// <summary>
-    /// 动态获取从库（随机）
+    /// <para>zh-cn:动态获取从库（随机）</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IPrivateReadableRepository<TEntity> Slave<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -110,10 +118,11 @@ public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMast
     }
 
     /// <summary>
-    /// 动态获取从库（自定义）
+    /// <para>zh-cn:动态获取从库（自定义）</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IPrivateReadableRepository<TEntity> Slave<TEntity>(Func<Type> locatorHandler)
         where TEntity : class, IPrivateEntity, new()
     {
@@ -139,34 +148,38 @@ public partial class MSRepository<TMasterDbContextLocator> : IMSRepository<TMast
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1> : IMSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1>
     where TMasterDbContextLocator : class, IDbContextLocator
     where TSlaveDbContextLocator1 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取主库仓储
+    /// <para>zh-cn:获取主库仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IRepository<TEntity, TMasterDbContextLocator> Master<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -174,10 +187,11 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     }
 
     /// <summary>
-    /// 获取从库仓储
+    /// <para>zh-cn:获取从库仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator1> Slave1<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -186,11 +200,12 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator2">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator2"><para>zh-cn:从库</para><para>en-us:The second slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2>
     : MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1>
@@ -200,24 +215,27 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     where TSlaveDbContextLocator2 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository) : base(repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取从库仓储2
+    /// <para>zh-cn:获取从库仓储2</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator2> Slave2<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -226,12 +244,13 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator2">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator3">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator2"><para>zh-cn:从库</para><para>en-us:The second slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator3"><para>zh-cn:从库</para><para>en-us:The third slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3>
     : MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2>
@@ -242,24 +261,27 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     where TSlaveDbContextLocator3 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository) : base(repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取从库仓储3
+    /// <para>zh-cn:获取从库仓储3</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator3> Slave3<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -268,13 +290,14 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator2">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator3">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator4">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator2"><para>zh-cn:从库</para><para>en-us:The second slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator3"><para>zh-cn:从库</para><para>en-us:The third slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator4"><para>zh-cn:从库</para><para>en-us:The fourth slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4>
     : MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3>
@@ -286,24 +309,27 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     where TSlaveDbContextLocator4 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository) : base(repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取从库仓储4
+    /// <para>zh-cn:获取从库仓储4</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator4> Slave4<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -312,14 +338,15 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator2">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator3">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator4">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator5">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator2"><para>zh-cn:从库</para><para>en-us:The second slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator3"><para>zh-cn:从库</para><para>en-us:The third slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator4"><para>zh-cn:从库</para><para>en-us:The fourth slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator5"><para>zh-cn:从库</para><para>en-us:The fifth slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4, TSlaveDbContextLocator5>
     : MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4>
@@ -332,24 +359,27 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     where TSlaveDbContextLocator5 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository) : base(repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取从库仓储5
+    /// <para>zh-cn:获取从库仓储5</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator5> Slave5<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -358,15 +388,16 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator2">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator3">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator4">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator5">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator6">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator2"><para>zh-cn:从库</para><para>en-us:The second slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator3"><para>zh-cn:从库</para><para>en-us:The third slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator4"><para>zh-cn:从库</para><para>en-us:The fourth slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator5"><para>zh-cn:从库</para><para>en-us:The fifth slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator6"><para>zh-cn:从库</para><para>en-us:The sixth slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4, TSlaveDbContextLocator5, TSlaveDbContextLocator6>
     : MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4, TSlaveDbContextLocator5>
@@ -380,24 +411,27 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     where TSlaveDbContextLocator6 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository) : base(repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取从库仓储6
+    /// <para>zh-cn:获取从库仓储6</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator6> Slave6<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {
@@ -406,16 +440,17 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
 }
 
 /// <summary>
-/// 主从库仓储
+/// <para>zh-cn:主从库仓储</para>
+/// <para>en-us:Provides the corresponding database repository operation.</para>
 /// </summary>
-/// <typeparam name="TMasterDbContextLocator">主库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator1">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator2">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator3">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator4">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator5">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator6">从库</typeparam>
-/// <typeparam name="TSlaveDbContextLocator7">从库</typeparam>
+/// <typeparam name="TMasterDbContextLocator"><para>zh-cn:主库</para><para>en-us:The master database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator1"><para>zh-cn:从库</para><para>en-us:The first slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator2"><para>zh-cn:从库</para><para>en-us:The second slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator3"><para>zh-cn:从库</para><para>en-us:The third slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator4"><para>zh-cn:从库</para><para>en-us:The fourth slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator5"><para>zh-cn:从库</para><para>en-us:The fifth slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator6"><para>zh-cn:从库</para><para>en-us:The sixth slave database context locator type.</para></typeparam>
+/// <typeparam name="TSlaveDbContextLocator7"><para>zh-cn:从库</para><para>en-us:The seventh slave database context locator type.</para></typeparam>
 [IgnoreScanning]
 public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4, TSlaveDbContextLocator5, TSlaveDbContextLocator6, TSlaveDbContextLocator7>
     : MSRepository<TMasterDbContextLocator, TSlaveDbContextLocator1, TSlaveDbContextLocator2, TSlaveDbContextLocator3, TSlaveDbContextLocator4, TSlaveDbContextLocator5, TSlaveDbContextLocator6>
@@ -430,24 +465,27 @@ public partial class MSRepository<TMasterDbContextLocator, TSlaveDbContextLocato
     where TSlaveDbContextLocator7 : class, IDbContextLocator
 {
     /// <summary>
-    /// 非泛型仓储
+    /// <para>zh-cn:非泛型仓储</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
     private readonly IRepository _repository;
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:构造函数</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <param name="repository">非泛型仓储</param>
+    /// <param name="repository"><para>zh-cn:非泛型仓储</para><para>en-us:The repository value.</para></param>
     public MSRepository(IRepository repository) : base(repository)
     {
         _repository = repository;
     }
 
     /// <summary>
-    /// 获取从库仓储7
+    /// <para>zh-cn:获取从库仓储7</para>
+    /// <para>en-us:Provides the corresponding database repository operation.</para>
     /// </summary>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <returns></returns>
+    /// <typeparam name="TEntity"><para>zh-cn:实体类型</para><para>en-us:The entity type.</para></typeparam>
+    /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
     public virtual IReadableRepository<TEntity, TSlaveDbContextLocator7> Slave7<TEntity>()
         where TEntity : class, IPrivateEntity, new()
     {

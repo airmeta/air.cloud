@@ -28,26 +28,36 @@ namespace Air.Cloud.EntityFrameWork.Core.Contexts.Builders;
 
 /// <summary>
 /// 数据库上下文构建器
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 internal static class AppDbContextBuilder
 {
     /// <summary>
     /// 数据库实体相关类型
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     private static IEnumerable<Type> EntityCorrelationTypes=>AppCore.EntityTypes;
 
     /// <summary>
     /// 数据库函数方法集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     private static readonly IEnumerable<MethodInfo> DbFunctionMethods;
 
     /// <summary>
     /// 创建数据库实体方法
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     private static readonly MethodInfo ModelBuildEntityMethod;
 
     /// <summary>
     /// 构造函数
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     static AppDbContextBuilder()
     {
@@ -67,10 +77,12 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 配置数据库上下文实体
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="modelBuilder">模型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
+    /// <param name="modelBuilder"><para>zh-cn:模型构建器</para><para>en-us:The modelBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
     internal static void ConfigureDbContextEntity(ModelBuilder modelBuilder, DbContext dbContext, Type dbContextLocator)
     {
         // 获取当前数据库上下文关联的类型
@@ -115,15 +127,17 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 创建实体类型构建器
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="type">数据库关联类型</param>
-    /// <param name="modelBuilder">模型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextType">数据库上下文类型</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="dbContextCorrelationType"></param>
-    /// <param name="appDbContextAttribute">数据库上下文特性</param>
-    /// <returns>EntityTypeBuilder</returns>
+    /// <param name="type"><para>zh-cn:数据库关联类型</para><para>en-us:The type value.</para></param>
+    /// <param name="modelBuilder"><para>zh-cn:模型构建器</para><para>en-us:The modelBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextType"><para>zh-cn:数据库上下文类型</para><para>en-us:The dbContextType value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="dbContextCorrelationType"><para>zh-cn:参数值。</para><para>en-us:The dbContextCorrelationType value.</para></param>
+    /// <param name="appDbContextAttribute"><para>zh-cn:数据库上下文特性</para><para>en-us:The appDbContextAttribute value.</para></param>
+    /// <returns><para>zh-cn:EntityTypeBuilder</para><para>en-us:The operation result.</para></returns>
     private static EntityTypeBuilder CreateEntityTypeBuilder(Type type, ModelBuilder modelBuilder, DbContext dbContext, Type dbContextType, Type dbContextLocator, DbContextCorrelationType dbContextCorrelationType, AppDbContextAttribute? appDbContextAttribute = null)
     {
         // 反射创建实体类型构建器
@@ -136,12 +150,14 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 配置实体表名
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="type">实体类型</param>
-    /// <param name="appDbContextAttribute">数据库上下文特性</param>
-    /// <param name="entityTypeBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextType">数据库上下文类型</param>
+    /// <param name="type"><para>zh-cn:实体类型</para><para>en-us:The type value.</para></param>
+    /// <param name="appDbContextAttribute"><para>zh-cn:数据库上下文特性</para><para>en-us:The appDbContextAttribute value.</para></param>
+    /// <param name="entityTypeBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityTypeBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextType"><para>zh-cn:数据库上下文类型</para><para>en-us:The dbContextType value.</para></param>
     private static void ConfigureEntityTableName(Type type, AppDbContextAttribute? appDbContextAttribute, EntityTypeBuilder entityTypeBuilder, DbContext dbContext, Type dbContextType)
     {
         // 获取表是否定义 [Table] 特性
@@ -158,10 +174,12 @@ internal static class AppDbContextBuilder
     }
     /// <summary>
     /// 配置无键实体类型
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityType">实体类型</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="EntityNoKeyTypes">无键实体列表</param>
+    /// <param name="entityType"><para>zh-cn:实体类型</para><para>en-us:The entityType value.</para></param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="EntityNoKeyTypes"><para>zh-cn:无键实体列表</para><para>en-us:The EntityNoKeyTypes value.</para></param>
     private static void ConfigureEntityNoKeyType(Type entityType, EntityTypeBuilder entityBuilder, List<Type> EntityNoKeyTypes)
     {
         if (!EntityNoKeyTypes.Contains(entityType)) return;
@@ -176,12 +194,14 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 加载模型构建筛选器创建之前拦截
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="modelBuilder">模型构建器</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="modelBuilderFilterInstances">模型构建器筛选器实例</param>
+    /// <param name="modelBuilder"><para>zh-cn:模型构建器</para><para>en-us:The modelBuilder value.</para></param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="modelBuilderFilterInstances"><para>zh-cn:模型构建器筛选器实例</para><para>en-us:The modelBuilderFilterInstances value.</para></param>
     private static void LoadModelBuilderOnCreating(ModelBuilder modelBuilder, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator, List<IPrivateModelBuilderFilter> modelBuilderFilterInstances)
     {
         if (modelBuilderFilterInstances.Count == 0) return;
@@ -196,12 +216,14 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 加载模型构建筛选器创建之后拦截
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="modelBuilder">模型构建器</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="modelBuilderFilterInstances">模型构建器筛选器实例</param>
+    /// <param name="modelBuilder"><para>zh-cn:模型构建器</para><para>en-us:The modelBuilder value.</para></param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="modelBuilderFilterInstances"><para>zh-cn:模型构建器筛选器实例</para><para>en-us:The modelBuilderFilterInstances value.</para></param>
     private static void LoadModelBuilderOnCreated(ModelBuilder modelBuilder, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator, List<IPrivateModelBuilderFilter> modelBuilderFilterInstances)
     {
         if (modelBuilderFilterInstances.Count == 0) return;
@@ -216,12 +238,14 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 配置数据库实体类型构建器
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityType">实体类型</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="dbContextCorrelationType">数据库实体关联类型</param>
+    /// <param name="entityType"><para>zh-cn:实体类型</para><para>en-us:The entityType value.</para></param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="dbContextCorrelationType"><para>zh-cn:数据库实体关联类型</para><para>en-us:The dbContextCorrelationType value.</para></param>
     private static void ConfigureEntityTypeBuilder(Type entityType, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator, DbContextCorrelationType dbContextCorrelationType)
     {
         // 获取该实体类型的配置类型
@@ -251,11 +275,13 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 配置数据库实体属性元数据
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="modelBuilder">模型构建器</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
+    /// <param name="modelBuilder"><para>zh-cn:模型构建器</para><para>en-us:The modelBuilder value.</para></param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
     private static void ConfigureColumnMetadata(ModelBuilder modelBuilder, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator)
     {
         var columnMetadataProvider = AppCore.GetService<IColumnMetadataProvider>();
@@ -281,12 +307,14 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 配置数据库实体种子数据
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="entityType">实体类型</param>
-    /// <param name="entityBuilder">实体类型构建器</param>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="dbContextCorrelationType">数据库实体关联类型</param>
+    /// <param name="entityType"><para>zh-cn:实体类型</para><para>en-us:The entityType value.</para></param>
+    /// <param name="entityBuilder"><para>zh-cn:实体类型构建器</para><para>en-us:The entityBuilder value.</para></param>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="dbContextCorrelationType"><para>zh-cn:数据库实体关联类型</para><para>en-us:The dbContextCorrelationType value.</para></param>
     private static void ConfigureEntitySeedData(Type entityType, EntityTypeBuilder entityBuilder, DbContext dbContext, Type dbContextLocator, DbContextCorrelationType dbContextCorrelationType)
     {
         // 获取该实体类型的种子配置
@@ -318,9 +346,11 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 配置数据库函数
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="modelBuilder">模型构建器</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
+    /// <param name="modelBuilder"><para>zh-cn:模型构建器</para><para>en-us:The modelBuilder value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
     private static void ConfigureDbFunctions(ModelBuilder modelBuilder, Type dbContextLocator)
     {
         var dbContextFunctionMethods = DbFunctionMethods.Where(u => IsInThisDbContext(dbContextLocator, u));
@@ -334,10 +364,12 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 判断当前类型是否在数据库上下文中
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="entityCorrelationType">数据库实体关联类型</param>
-    /// <returns>bool</returns>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="entityCorrelationType"><para>zh-cn:数据库实体关联类型</para><para>en-us:The entityCorrelationType value.</para></param>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     private static bool IsInThisDbContext(Type dbContextLocator, Type entityCorrelationType)
     {
         // 获取所有祖先类型
@@ -356,10 +388,12 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 判断当前函数是否在数据库上下文中
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <param name="method">标识为数据库的函数</param>
-    /// <returns>bool</returns>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <param name="method"><para>zh-cn:标识为数据库的函数</para><para>en-us:The method value.</para></param>
+    /// <returns><para>zh-cn:bool</para><para>en-us:The operation result.</para></returns>
     private static bool IsInThisDbContext(Type dbContextLocator, MethodInfo method)
     {
         var queryableFunctionAttribute = method.GetCustomAttribute<QueryableFunctionAttribute>(true);
@@ -376,15 +410,19 @@ internal static class AppDbContextBuilder
 
     /// <summary>
     /// 数据库上下文定位器关联类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal static ConcurrentDictionary<Type, DbContextCorrelationType> DbContextLocatorCorrelationTypes;
 
     /// <summary>
     /// 获取当前数据库上下文关联类型
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
-    /// <param name="dbContext">数据库上下文</param>
-    /// <param name="dbContextLocator">数据库上下文定位器</param>
-    /// <returns>DbContextCorrelationType</returns>
+    /// <param name="dbContext"><para>zh-cn:数据库上下文</para><para>en-us:The dbContext value.</para></param>
+    /// <param name="dbContextLocator"><para>zh-cn:数据库上下文定位器</para><para>en-us:The dbContextLocator value.</para></param>
+    /// <returns><para>zh-cn:DbContextCorrelationType</para><para>en-us:The operation result.</para></returns>
     private static DbContextCorrelationType GetDbContextCorrelationType(DbContext dbContext, Type dbContextLocator)
     {
         // 读取缓存

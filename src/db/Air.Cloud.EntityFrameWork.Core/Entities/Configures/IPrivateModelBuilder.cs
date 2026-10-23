@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,6 +14,8 @@ namespace Air.Cloud.EntityFrameWork.Core.Entities.Configures;
 
 /// <summary>
 /// 数据库模型构建器依赖（禁止直接继承）
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 /// <remarks>
 /// 对应 <see cref="DbContext.OnModelCreating(ModelBuilder)"/>

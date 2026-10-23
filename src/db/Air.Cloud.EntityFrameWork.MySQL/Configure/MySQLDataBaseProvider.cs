@@ -20,6 +20,6 @@ namespace Air.Cloud.EntityFrameWork.MySQL.Configure;
 /// </summary>
 public sealed class MySQLDataBaseProvider : IDatabaseProvider
 {
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:MySQL Provider 的稳定标识。</para><para>en-us:The stable identifier of the MySQL Provider.</para></summary>
     public string ProviderKey => "MySQL";
 }

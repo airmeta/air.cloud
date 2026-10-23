@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,11 +16,15 @@ namespace Air.Cloud.EntityFrameWork.Core.Contexts.Builders.Models;
 
 /// <summary>
 /// 数据库上下文关联类型
+/// <para>zh-cn:该成员的数据库访问行为。</para>
+/// <para>en-us:Database access behavior provided by this member.</para>
 /// </summary>
 internal sealed class DbContextCorrelationType
 {
     /// <summary>
     /// 构造函数
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal DbContextCorrelationType()
     {
@@ -39,56 +43,78 @@ internal sealed class DbContextCorrelationType
 
     /// <summary>
     /// 关联的数据库上下文
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal Type DbContextLocator { get; set; }
 
     /// <summary>
     /// 所有关联类型
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> Types { get; set; }
 
     /// <summary>
     /// 实体类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> EntityTypes { get; set; }
 
     /// <summary>
     /// 无键实体类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> EntityNoKeyTypes { get; set; }
 
     /// <summary>
     /// 实体构建器类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> EntityTypeBuilderTypes { get; set; }
 
     /// <summary>
     /// 种子数据类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> EntitySeedDataTypes { get; set; }
 
     /// <summary>
     /// 实体数据改变类型
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> EntityChangedTypes { get; set; }
 
     /// <summary>
     /// 模型构建筛选器类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> ModelBuilderFilterTypes { get; set; }
 
     /// <summary>
     /// 可变表实体类型集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<Type> EntityMutableTableTypes { get; set; }
 
     /// <summary>
     /// 数据库函数方法集合
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<MethodInfo> DbFunctionMethods { get; set; }
 
     /// <summary>
     /// 模型构建器筛选器实例
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal List<IPrivateModelBuilderFilter> ModelBuilderFilterInstances { get; set; }
 }

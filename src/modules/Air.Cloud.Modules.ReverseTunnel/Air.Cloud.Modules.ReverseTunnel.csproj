@@ -11,8 +11,8 @@
     <Authors>AC</Authors>
     <Company>AccessCross</Company>
     <Product>air.cloud</Product>
-    <Description>Air.Cloud.Modules.ReverseTunnel provides the AirTunnel HTTP network penetration module, including server access, agent sessions, Ocelot tunnel forwarding, stream relay, runtime limits, metrics, and diagnostics APIs.</Description>
-    <PackageDescription>Air.Cloud.Modules.ReverseTunnel provides the AirTunnel HTTP network penetration module, including server access, agent sessions, Ocelot tunnel forwarding, stream relay, runtime limits, metrics, and diagnostics APIs.</PackageDescription>
+    <Description>Air.Cloud.Modules.ReverseTunnel 提供 AirTunnel HTTP 内网穿透模块，包含服务端接入、代理会话、Ocelot 隧道转发、流量中继、运行时限制、指标采集和诊断 API。</Description>
+    <PackageDescription>Air.Cloud.Modules.ReverseTunnel 提供 AirTunnel HTTP 内网穿透模块，包含服务端接入、代理会话、Ocelot 隧道转发、流量中继、运行时限制、指标采集和诊断 API。</PackageDescription>
     <PackageTags>Air.Cloud;AirTunnel;ReverseTunnel;NetworkTunnel;Gateway;Ocelot;HTTP;Module</PackageTags>
     <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
@@ -23,10 +23,11 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>10.0.0</Version>
-    <PackageVersion>10.0.0</PackageVersion>
-    <AssemblyVersion>10.0.0</AssemblyVersion>
-    <FileVersion>10.0.0</FileVersion>
+    <Version>10.26.9.1</Version>
+    <PackageVersion>10.26.9.1</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.26.9.1</FileVersion>
+    <InformationalVersion>10.26.09.01</InformationalVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

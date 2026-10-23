@@ -92,9 +92,54 @@ Gateway 通过 `GatewayPluginSettings` 读取插件配置。
 | SkyMirrorShield | `AirGatewayPlugins.SkyMirrorShield.dll` | `AirGatewayPlugins.SkyMirrorShield.SkyMirrorShieldGatewayPlugin` |
 | 请求签名 | `AirGatewayPlugins.Signature.dll` | `AirGatewayPlugins.Signature.SignatureGatewayPlugin` |
 | 白名单标记 | `AirGatewayPlugins.WhiteListRequest.dll` | `AirGatewayPlugins.WhiteListRequest.WhiteListRequestGatewayPlugin` |
+| 旧接口远程校验 | `AirGatewayPlugins.LegacyInterfaceValidation.dll` | `AirGatewayPlugins.LegacyInterfaceValidation.LegacyInterfaceValidationGatewayPlugin` |
 | 远端 IP | `AirGatewayPlugins.RemoteIp.dll` | `AirGatewayPlugins.RemoteIp.RemoteIpGatewayPlugin` |
 
 如果某个网关项目不接入 SkyMirrorShield，不要复制 `AirGatewayPlugins.SkyMirrorShield.dll`，也不要配置 `SkyMirrorShieldGatewayPlugin`。
+
+## 旧授权兼容链
+
+旧 `.NET 6` 网关迁移到 AirGateway 时，建议使用以下顺序：
+
+```text
+LegacyTraceLog -> LegacyUrlProxy -> WhiteListRequest -> HfAuthorizationAdapter -> LegacyAuthorization -> RemoteIp -> LegacyInterfaceValidation -> Ocelot
+```
+
+`HfAuthorizationAdapter` 不调用 gRPC 授权服务。它和 `LegacyAuthorization` 分别从同一个 `LegacyAuthorizationSettings:Jwt` 配置节读取签发方、受众、有效期与签名密钥；HF 插件在进程内签发双 Token，后续旧授权插件据此校验。`SigningKeyFile` 应位于持久化挂载目录，替换旧网关前必须迁移原 `jwt_keys.txt` 内容，否则存量 Token 会失效。
+
+`WhiteListRequest` 必须排在 HF 插件之前，保证带 `DQ=HF` 的白名单请求在旧 Token 适配前放行。需要给下游转发客户端地址时，再启用 `RemoteIp`。
+
+## 旧 .NET 6 接口远程校验
+
+`LegacyInterfaceValidation` 将服务内的 `ActionValidateFilter` 前移到 Ocelot 前。它不属于 SkyMirrorShield，也不属于旧 `Authorization`/JWT 链：该插件独立按 `APPID`、`APPSECRET`、`TIMESTAMP`、`Sign`、`UKey` 和请求 body 构造原有签名数据，调用 auth 服务的 `/hffcj_auth_api/route/validate` 完成第三方平台、路由、签名重放和来源地址校验。
+
+旧服务中的 `AppSettings:InjectAuthValidateService` 不作为网关插件的绕过开关。插件启用后每个非白名单请求都会执行远程校验；停用必须显式设置 `LegacyInterfaceValidationSettings:Enabled=false` 或移除该插件。
+
+使用统一的 `InterfaceAuthOptions` 配置，插件自身只配置内部 auth 地址和超时：
+
+```json
+{
+  "LegacyInterfaceValidationSettings": {
+    "Enabled": true,
+    "RemoteUrl": "http://fcj-auth-service:8080/hffcj_auth_api/route/validate",
+    "TimeoutSeconds": 180
+  },
+  "InterfaceAuthOptions": {
+    "Route": "/",
+    "AppIdKey": "APPID",
+    "AppSecretKey": "APPSECRET",
+    "TimeStampKey": "TIMESTAMP",
+    "SignKey": "Sign",
+    "UKey": "UKey",
+    "RequestLimit": 1,
+    "RouteValidateWhiteList": ""
+  }
+}
+```
+
+`RemoteUrl` 必须是 auth 服务的内部地址，不能配置为 Gateway 自己的业务入口；否则 auth 校验请求会递归经过 Gateway。该插件应排在 `RemoteIp` 后，保证提交给 auth 的 `RequesterIP` 已使用 `REMOTE_IP`。它读取 `POST`/`PUT` body 后会恢复流位置，现有 Ocelot 内容恢复处理器会继续把原 body 和 Content-Type 转发给下游。
+
+auth 返回 `0` 时放行；返回 `1` 至 `6` 时保持原 ActionValidateFilter 的 HTTP `200` 和业务错误 JSON。调用超时、非成功 HTTP 状态或无效响应采用拒绝策略，以防 auth 故障绕过安全校验。
 
 ## 部署目录
 
@@ -119,6 +164,18 @@ GatewayPluginHostMiddleware
   -> 已启用插件，按 Order 排序
   -> Ocelot
 ```
+
+## Ocelot 请求体恢复
+
+AirGateway 同时启用 WebApp 的请求缓冲和 Ocelot 17 时，未读取的可回读请求流可能被 Ocelot 误判为空内容。宿主已内置 `OcelotRequestContentRestorationDelegatingHandler`：当下游请求内容缺失、但入口 POST/PUT/PATCH 仍带有 body 时，它会在实际发送前恢复请求体和 `Content-Type` 等内容头。
+
+该处理器不需要额外配置，也不会为 GET/HEAD/TRACE 请求添加内容。它只处理 Ocelot 普通下游链路；直接短路转发的插件应自行保证 request body 可读取并正确设置内容头。
+
+## 白名单刷新
+
+当启用 `WhiteListRequest` 时，AirGateway 的 Quartz 作业会每 30 秒读取 Consul 中 `{ConfigurationServiceName}/default_app_whiteroute_settings.json`，并原子替换进程内白名单快照。插件在每个请求中读取该快照，不会在每个请求中访问 Consul，因此刷新后的路由会在下一次请求生效。
+
+若本次读取失败，网关继续使用最后一次成功的白名单；首次加载失败时快照为空，后续旧授权链会按非白名单请求校验并返回 401。`WhiteListRouteRefresh:IntervalSeconds` 默认值为 `30`，部署配置可以按需要调整，但必须是大于零的整数。
 
 ## 注意事项
 

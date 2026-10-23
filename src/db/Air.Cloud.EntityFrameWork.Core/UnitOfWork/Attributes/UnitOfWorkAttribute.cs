@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,30 +13,33 @@
 namespace Air.Cloud.EntityFrameWork.Core.UnitOfWork.Attributes;
 
 /// <summary>
-/// 工作单元配置特性
+/// <para>zh-cn:标记需要工作单元事务处理的 MVC 动作。</para>
+/// <para>en-us:Marks an MVC action that requires work-unit transaction handling.</para>
 /// </summary>
 [IgnoreScanning, AttributeUsage(AttributeTargets.Method)]
 public sealed class UnitOfWorkAttribute : Attribute
 {
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:创建使用默认事务策略的工作单元特性。</para>
+    /// <para>en-us:Creates the attribute with the default transaction policy.</para>
     /// </summary>
     public UnitOfWorkAttribute()
     {
     }
 
     /// <summary>
-    /// 构造函数
+    /// <para>zh-cn:创建指定事务策略的工作单元特性。</para>
+    /// <para>en-us:Creates the attribute with the specified transaction policy.</para>
     /// </summary>
-    /// <param name="ensureTransaction"></param>
+    /// <param name="ensureTransaction"><para>zh-cn:没有已解析上下文时是否确保创建事务。</para><para>en-us:Whether to ensure a transaction is created when no context has been resolved.</para></param>
     public UnitOfWorkAttribute(bool ensureTransaction)
     {
         EnsureTransaction = ensureTransaction;
     }
 
     /// <summary>
-    /// 确保事务可用
-    /// <para>此方法为了解决静态类方式操作数据库的问题</para>
+    /// <para>zh-cn:指示没有已解析上下文时是否确保事务可用。</para>
+    /// <para>en-us:Indicates whether a transaction must be available when no context has been resolved.</para>
     /// </summary>
     public bool EnsureTransaction { get; set; } = false;
 }

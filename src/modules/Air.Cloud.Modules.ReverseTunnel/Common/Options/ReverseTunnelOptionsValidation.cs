@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using Air.Cloud.Modules.ReverseTunnel.Common.Routing;
 
+using System.Net;
+
 namespace Air.Cloud.Modules.ReverseTunnel.Common.Options;
 
 /// <summary>
@@ -110,9 +112,54 @@ public sealed class ReverseTunnelOptionsValidation : IValidateOptions<ReverseTun
             ValidateRequiredMountedFile(certificateAuthority.TrustedIssuerPath, "ReverseTunnelSettings:CertificateAuthority:TrustedIssuerPath", failures);
         }
 
+        ValidateServerCertificate(options.ServerCertificate, failures);
         ValidateAgentAuthorizations(options.AgentAuthorizations, failures);
         ValidateTcpListeners(options.Tcp, failures);
         ValidateUdpListeners(options.Udp, failures);
+    }
+
+    private static void ValidateServerCertificate(
+        ReverseTunnelServerCertificateOptions? certificate,
+        ICollection<string> failures)
+    {
+        if (certificate is null ||
+            (string.IsNullOrWhiteSpace(certificate.CommonName) &&
+             (certificate.SubjectAlternativeNames is null || certificate.SubjectAlternativeNames.Count == 0)))
+        {
+            return;
+        }
+
+        if (!IsCertificateHostName(certificate.CommonName))
+        {
+            failures.Add("ReverseTunnelSettings:ServerCertificate:CommonName must be an IP address or DNS name.");
+        }
+
+        var names = certificate.SubjectAlternativeNames ?? [];
+        if (names.Count == 0)
+        {
+            failures.Add("ReverseTunnelSettings:ServerCertificate:SubjectAlternativeNames must contain at least one IP address or DNS name.");
+            return;
+        }
+
+        for (var index = 0; index < names.Count; index++)
+        {
+            if (!IsCertificateHostName(names[index]))
+            {
+                failures.Add($"ReverseTunnelSettings:ServerCertificate:SubjectAlternativeNames:{index} must be an IP address or DNS name.");
+            }
+        }
+    }
+
+    private static bool IsCertificateHostName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        return IPAddress.TryParse(trimmed, out _) ||
+            Uri.CheckHostName(trimmed) is UriHostNameType.Dns or UriHostNameType.IPv4 or UriHostNameType.IPv6;
     }
 
     private static void ValidateAgentAuthorizations(IEnumerable<ReverseTunnelAgentAuthorizationOptions>? authorizations, ICollection<string> failures)

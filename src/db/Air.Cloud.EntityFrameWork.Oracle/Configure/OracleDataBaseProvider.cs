@@ -20,6 +20,6 @@ namespace Air.Cloud.EntityFrameWork.Oracle.Configure;
 /// </summary>
 public sealed class OracleDataBaseProvider : IDatabaseProvider
 {
-    /// <inheritdoc />
+    /// <summary><para>zh-cn:Oracle Provider 的稳定标识。</para><para>en-us:The stable identifier of the Oracle Provider.</para></summary>
     public string ProviderKey => "Oracle";
 }

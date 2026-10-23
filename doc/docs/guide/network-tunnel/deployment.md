@@ -61,6 +61,47 @@ dotnet publish .\demo\airTunnel\air.cloud.airtunnel\air.cloud.airtunnel.csproj -
 
 部署时把对应示例复制为发布目录下的 `appsettings.json`，再替换地址、端口和证书路径。`ServiceKey` 不需要配置，由 Agent 公开路由自动生成。
 
+## Windows Agent 组合运行包
+
+Server 管理端导出的 Agent ZIP 只包含该 Agent 的运行配置和 CA 公钥。Windows 运行包需要再合并同一版本的 `win-x64` 自包含发布目录。仓库提供 `Package-AirTunnelWindowsAgent.ps1`，脚本会在自身目录创建 `certificates`、`publish-input\win-x64` 和 `publishs` 三个目录；每次调用都会按使用人、版本、AgentId 和时间戳生成一个新的独立目录和 ZIP。
+
+先发布 Windows 运行时：
+
+```powershell
+dotnet publish .\demo\airTunnel\air.cloud.airtunnel\air.cloud.airtunnel.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -o .\.deploy\airtunnel-win-x64
+```
+
+把 Server 导出的 Agent ZIP 放到脚本同级的 `certificates` 目录，把发布结果复制到脚本同级的 `publish-input\win-x64`，然后直接运行脚本：
+
+```powershell
+.\demo\airTunnel\scripts\Package-AirTunnelWindowsAgent.ps1
+```
+
+脚本依次询问使用人名称、版本号，再按证书包修改时间倒排列出 `certificates` 中的 ZIP 并让你输入数字选择。`publish-input\win-x64` 是固定输入目录，`publishs` 是固定输出目录。脚本会：
+
+- 把发布结果写入运行包的 `app` 目录；
+- 把 Server 导出的 `config/00-airtunnel-agent.json` 写入 `app/config`；
+- 将扁平的 Server 导出配置包装为宿主读取的 `ReverseTunnelSettings` 配置节，确保 Agent 模式和 Server 地址在 Windows 宿主中生效；
+- 把 `data/certs/ca.crt` 写入 `app/data/certs`；
+- 将容器使用的 `/app/data/certs/...` 路径转换为 Windows 运行目录下的相对路径；
+- 生成 `start-agent.ps1`、`README-Windows.md` 和 `airtunnel-agent.windows.manifest.json`；
+- 检查导出包不包含 `agent.key`、`agent.crt`、`ca.key` 或 `ca.pfx`；
+- 同时在 `publishs` 下生成可分发的同名 ZIP；不会覆盖上一次发包结果。
+
+给另一个人打包时把新的 Agent 导出 ZIP 放入 `certificates` 后重新运行即可。启动方解压 ZIP 后在根目录执行：
+
+```powershell
+.\start-agent.ps1
+```
+
+如果脚本同级或 `publish-input\win-x64` 中存在 `nssm.exe`，运行包会附带后台服务脚本。需要安装为 Windows 后台服务时，在管理员 PowerShell 中执行 `.\install-agent-service.ps1`；卸载时执行 `.\uninstall-agent-service.ps1`。脚本会把 NSSM 的工作目录设为 `app`，因此配置中的相对证书路径可以直接使用。修改配置或替换运行包后需要重启该服务，才能让宿主重新读取 `ReverseTunnelSettings`。
+
+Agent 首次启动仍需要能够访问 Server，并由 Server 根据导出时的 `AgentId` 完成 enrollment；`agent.crt` 和 `agent.key` 会写入运行包的 `app/data/certs`，不会预置在分发 ZIP 中。若服务显示 Running 但在线列表没有 Agent，应先检查 `app/logs/service.stdout.log` 中是否出现 `Agent enrollment succeeded` 或连接重试日志，并确认 `agent.crt`、`agent.key` 已生成。
+
 ## 目录规划
 
 建议把程序、配置、证书和日志分开：
@@ -135,6 +176,14 @@ Server 最小配置结构：
     "Enabled": true,
     "TunnelMode": "Server",
     "EnableTunnelProxy": false,
+    "ServerCertificate": {
+      "CommonName": "192.168.100.156",
+      "SubjectAlternativeNames": [
+        "192.168.100.156",
+        "localhost",
+        "air-gateway"
+      ]
+    },
     "SessionSelectionStrategy": "RoundRobin",
     "Gateway": {
       "InvokePathPrefix": "/_airtunnel/gateway",
@@ -170,6 +219,8 @@ Server 最小配置结构：
 | `EnableTunnelProxy` | Gateway 与 Server 同进程时配置为 `true`，独立 Server 配置为 `false` |
 | `Gateway.InvokePathPrefix` | 入口 Gateway 调用 Server 的 HTTP 前缀，默认 `/_airtunnel/gateway` |
 | `Gateway.AccessTokenEnvironmentVariable` | Gateway 到 Server 的访问令牌环境变量名；配置后请求必须携带匹配 token |
+| `ServerCertificate.CommonName` | Server TLS 证书主题名称；迁移主机时同步修改 |
+| `ServerCertificate.SubjectAlternativeNames` | Server TLS 证书 SAN 列表，必须包含 Agent 实际访问 Server 使用的 IP 或 DNS 名称 |
 | `CertificateAuthority.CertificatePath` | Server 用于签发 Agent 证书的 CA PFX 路径 |
 | `CertificateAuthority.CertificatePasswordEnvironmentVariable` | CA PFX 密码所在环境变量 |
 | `Enrollment.ReplayWindowSeconds` | 同一加密 GUID 的 replay 防护窗口，默认 300 秒 |
@@ -189,9 +240,31 @@ export AIR_TUNNEL_CA_PASSWORD='<ca-pfx-password>'
 export AIR_TUNNEL_GATEWAY_TOKEN='<gateway-to-server-token>'
 ```
 
+### 迁移时重新生成 Server 证书
+
+Server 的 TLS 证书由部署文件挂载，程序不会根据当前主机 IP 自动重签。迁移 Server 时，先修改 `ReverseTunnelSettings.ServerCertificate` 中的 `CommonName` 和 `SubjectAlternativeNames`，再使用仓库脚本按同一 CA 重新生成 `server.crt`、`server.key` 和可选的 `server.pfx`：
+
+```powershell
+.\demo\airTunnel\scripts\Generate-AirTunnelServerCertificate.ps1 `
+  -ServerConfig .\config\20-airtunnel-server.json `
+  -CertificateDirectory .\data\airtunnel `
+  -CaCertificatePath .\data\airtunnel\ca.crt `
+  -CaPrivateKeyPath .\data\airtunnel\ca.key `
+  -Force
+```
+
+如果配置了 `ASPNETCORE_Kestrel__Certificates__Default__Password`，脚本会使用该环境变量生成 `server.pfx`；否则仍会生成 PEM 证书和私钥，适用于配置中使用 `Path` 与 `KeyPath` 的 Kestrel endpoint。脚本会在覆盖前创建带时间戳的证书备份目录。替换证书后重启 Server，并确认实际 endpoint 返回的 SAN 包含新的 Server 地址：
+
+```bash
+openssl s_client -connect <server-ip>:18443 -showcerts </dev/null 2>/dev/null |
+  openssl x509 -noout -subject -issuer -ext subjectAltName
+```
+
 ## Server 远程管理端
 
 AirTunnel Server 可以单独开放管理端口，用于查看运行状态、管理 TCP/UDP listener、调整授权与限制策略、吊销证书和踢掉在线 session。管理端不承载隧道控制流量，建议与控制端口 `18443` 分开：
+
+“在线 Agent”按 `AgentId` 聚合当前会话；同一 Agent 存在多个物理连接时，当前配置版本、下发状态和失败原因会按唯一值显示一次，不会因为多个 session 重复拼接同一个版本号。需要排查每条物理连接时，到“会话与指标”查看完整 session 列表。
 
 ```text
 控制端口: https://0.0.0.0:18443

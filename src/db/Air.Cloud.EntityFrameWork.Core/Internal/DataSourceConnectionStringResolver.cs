@@ -24,6 +24,8 @@ internal static class DataSourceConnectionStringResolver
 {
     /// <summary>
     /// Air.Cloud 命名连接字符串的正式配置节点。
+    /// <para>zh-cn:该成员的数据库访问行为。</para>
+    /// <para>en-us:Database access behavior provided by this member.</para>
     /// </summary>
     internal const string ConfigurationPath = "DataSourceSettings:ConnectionStrings";
 

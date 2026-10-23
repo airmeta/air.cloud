@@ -11,8 +11,8 @@
     <Authors>AC</Authors>
     <Company>AccessCross</Company>
     <Product>air.cloud</Product>
-    <Description>Reusable Air.Cloud control-plane authentication capability with bootstrap initialization, administrator login, management sessions, and service-ticket management.</Description>
-    <PackageDescription>Reusable Air.Cloud control-plane authentication capability with bootstrap initialization, administrator login, management sessions, and service-ticket management.</PackageDescription>
+    <Description>可复用的 Air.Cloud 控制平面认证能力，提供引导初始化、管理员登录、管理会话和服务票据管理。</Description>
+    <PackageDescription>可复用的 Air.Cloud 控制平面认证能力，提供引导初始化、管理员登录、管理会话和服务票据管理。</PackageDescription>
     <PackageTags>Air.Cloud;Capability;ControlPlane;Auth;Ticket;Management</PackageTags>
     <PackageProjectUrl>https://github.com/AccessCross/air.cloud</PackageProjectUrl>
     <RepositoryUrl>https://github.com/AccessCross/air.cloud</RepositoryUrl>
@@ -23,10 +23,11 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
     <PackAsTool>False</PackAsTool>
-    <Version>10.0.0</Version>
-    <PackageVersion>10.0.0</PackageVersion>
-    <AssemblyVersion>10.0.0</AssemblyVersion>
-    <FileVersion>10.0.0</FileVersion>
+    <Version>10.26.9.1</Version>
+    <PackageVersion>10.26.9.1</PackageVersion>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <FileVersion>10.26.9.1</FileVersion>
+    <InformationalVersion>10.26.09.01</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

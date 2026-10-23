@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2024-2030 星曳数据
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -31,7 +31,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Air.Cloud.EntityFrameWork.Core.Extensions
 {
     /// <summary>
-    /// 数据库访问器服务拓展类
+    /// <para>zh-cn:数据库访问基础设施和上下文注册扩展。</para>
+    /// <para>en-us:Extensions for registering database access infrastructure and database contexts.</para>
     /// </summary>
     [IgnoreScanning]
     public static class DatabaseAccessorServiceCollectionExtensions
@@ -40,9 +41,9 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
         /// <para>zh-cn:添加数据库访问基础设施，并注册 DataSourceSettings 的统一选项绑定。</para>
         /// <para>en-us:Adds the database access infrastructure and registers the unified DataSourceSettings options binding.</para>
         /// </summary>
-        /// <param name="services">服务集合</param>
-        /// <param name="configure">配置</param>
-        /// <param name="migrationAssemblyName">迁移类库名称</param>
+        /// <param name="services"><para>zh-cn:服务集合。</para><para>en-us:The service collection.</para></param>
+        /// <param name="configure"><para>zh-cn:可选的附加服务注册回调。</para><para>en-us:An optional callback for additional service registrations.</para></param>
+        /// <param name="migrationAssemblyName"><para>zh-cn:可选的迁移程序集名称。</para><para>en-us:The optional migration assembly name.</para></param>
         /// <returns>
         /// <para>zh-cn:已注册数据库访问服务的服务集合。</para>
         /// <para>en-us:The service collection with database access services registered.</para>
@@ -117,10 +118,12 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
         }
 
         /// <summary>
-        /// 注册默认数据库上下文
+        /// <para>zh-cn:注册默认数据库上下文与主定位器。</para>
+        /// <para>en-us:Registers the default database context with the master locator.</para>
         /// </summary>
-        /// <typeparam name="TDbContext">数据库上下文</typeparam>
-        /// <param name="services">服务提供器</param>
+        /// <typeparam name="TDbContext"><para>zh-cn:数据库上下文类型。</para><para>en-us:The database context type.</para></typeparam>
+        /// <param name="services"><para>zh-cn:服务集合。</para><para>en-us:The service collection.</para></param>
+        /// <returns><para>zh-cn:已注册上下文的服务集合。</para><para>en-us:The service collection with the context registered.</para></returns>
         public static IServiceCollection RegisterDbContext<TDbContext>(this IServiceCollection services)
             where TDbContext : DbContext
         {
@@ -128,11 +131,13 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
         }
 
         /// <summary>
-        /// 注册数据库上下文
+        /// <para>zh-cn:注册数据库上下文与指定定位器。</para>
+        /// <para>en-us:Registers a database context with the specified locator.</para>
         /// </summary>
-        /// <typeparam name="TDbContext">数据库上下文</typeparam>
-        /// <typeparam name="TDbContextLocator">数据库上下文定位器</typeparam>
-        /// <param name="services">服务提供器</param>
+        /// <typeparam name="TDbContext"><para>zh-cn:数据库上下文类型。</para><para>en-us:The database context type.</para></typeparam>
+        /// <typeparam name="TDbContextLocator"><para>zh-cn:数据库上下文定位器类型。</para><para>en-us:The database context locator type.</para></typeparam>
+        /// <param name="services"><para>zh-cn:服务集合。</para><para>en-us:The service collection.</para></param>
+        /// <returns><para>zh-cn:已注册上下文的服务集合。</para><para>en-us:The service collection with the context registered.</para></returns>
         public static IServiceCollection RegisterDbContext<TDbContext, TDbContextLocator>(this IServiceCollection services)
             where TDbContext : DbContext
             where TDbContextLocator : class, IDbContextLocator
@@ -156,10 +161,12 @@ namespace Air.Cloud.EntityFrameWork.Core.Extensions
 
         /// <summary>
         /// 通过定位器解析上下文
+        /// <para>zh-cn:该成员的数据库访问行为。</para>
+        /// <para>en-us:Database access behavior provided by this member.</para>
         /// </summary>
-        /// <param name="provider"></param>
-        /// <param name="dbContextLocator"></param>
-        /// <returns></returns>
+        /// <param name="provider"><para>zh-cn:参数值。</para><para>en-us:The provider value.</para></param>
+        /// <param name="dbContextLocator"><para>zh-cn:参数值。</para><para>en-us:The dbContextLocator value.</para></param>
+        /// <returns><para>zh-cn:操作结果。</para><para>en-us:The operation result.</para></returns>
         private static DbContext ResolveDbContext(IServiceProvider provider, Type dbContextLocator)
         {
             // 判断数据库上下文定位器是否绑定
